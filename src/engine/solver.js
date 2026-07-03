@@ -85,10 +85,24 @@ export function validateGraph(nodes, edges) {
   const warnings = {}
   const errors = []
   const connected = (id, h) => (adj.get(`${id}:${h}`) || []).length > 0
+  // Multiple edges INTO one input port do not form an acoustic junction —
+  // branches must fan out from an output port (e.g. two edges leaving a
+  // driver's front port). Extra feeders are ignored by the solver, so warn.
+  const inCounts = new Map()
+  for (const e of edges) {
+    const k = `${e.target}:${e.targetHandle}`
+    inCounts.set(k, (inCounts.get(k) || 0) + 1)
+  }
+  const multiFed = new Set(
+    [...inCounts.entries()].filter(([, c]) => c > 1).map(([k]) => k.split(':')[0]),
+  )
   const drivers = nodes.filter((n) => n.type === 'driver')
   if (drivers.length === 0) errors.push('Add a Driver node to run a simulation.')
   for (const n of nodes) {
     const w = []
+    if (multiFed.has(n.id)) {
+      w.push('Multiple sources feed one input port — this is NOT a junction and extra feeders are ignored. To branch (e.g. offset-driver stub), draw both edges FROM the same output port instead.')
+    }
     if (n.type === 'driver') {
       if (!connected(n.id, 'front') && !connected(n.id, 'rear'))
         w.push('Neither driver port is connected — both radiate into half space by default.')

@@ -98,7 +98,7 @@ export function WaveguideNode({ id, data, selected }) {
         </span>
       </div>
       <Handle type="target" position={Position.Top} id="throat" title="Throat (S1)" />
-      <Handle type="source" position={Position.Bottom} id="mouth" title="Mouth (S2)" />
+      <Handle type="source" position={Position.Bottom} id="mouth" title="Mouth (S2) — unconnected = OPEN end (radiates). For a closed end, connect a Radiation node set to Rigid wall." />
       <span className="handle-label" style={{ top: 1, left: '54%' }}>throat</span>
       <span className="handle-label" style={{ bottom: 1, left: '54%' }}>mouth</span>
     </div>
