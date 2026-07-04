@@ -236,16 +236,29 @@ export const useStore = create((set, get) => ({
       projectName: proj.name || 'Untitled',
       settings: { ...get().settings, ...(proj.settings || {}) },
       history: [], future: [], snapshots: [], selectedNodeId: null,
+      _lastSavedName: proj.name || 'Untitled',
     })
     get().scheduleCompute()
   },
-  setProjectName: (name) => { set({ projectName: name }); get().autoSave() },
+  // Renaming debounces the save so intermediate keystrokes never persist,
+  // and a completed rename MOVES the auto-save (old key is removed).
+  _nameTimer: null,
+  _lastSavedName: null,
+  setProjectName: (name) => {
+    set({ projectName: name })
+    const t = get()._nameTimer
+    if (t) clearTimeout(t)
+    set({ _nameTimer: setTimeout(() => get().autoSave(), 1000) })
+  },
   autoSave: () => {
     try {
       const proj = get().serialize()
       if (!proj.nodes.length) return
+      const prev = get()._lastSavedName
       localStorage.setItem(`acousim:project:${proj.name}`, JSON.stringify(proj))
       localStorage.setItem('acousim:lastProject', proj.name)
+      if (prev && prev !== proj.name) localStorage.removeItem(`acousim:project:${prev}`)
+      set({ _lastSavedName: proj.name })
     } catch { /* quota */ }
   },
 }))
