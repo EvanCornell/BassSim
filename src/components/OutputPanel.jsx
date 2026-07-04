@@ -30,7 +30,7 @@ function BaseChart({ data, lines, yLabel, yDomain, y2Label, y2Domain, refLines =
           stroke={GRID} tickFormatter={(v) => (v >= 1000 ? `${v / 1000}k` : v)}
         />
         <YAxis
-          yAxisId="left" domain={yDomain || ['auto', 'auto']}
+          yAxisId="left" domain={yDomain || ['auto', 'auto']} allowDataOverflow
           tick={{ fill: '#9aa7b8', fontSize: 10 }} stroke={GRID} width={44}
           label={yLabel ? { value: yLabel, angle: -90, position: 'insideLeft', fill: '#6b7687', fontSize: 10 } : undefined}
         />
@@ -64,6 +64,58 @@ function BaseChart({ data, lines, yLabel, yDomain, y2Label, y2Domain, refLines =
       </LineChart>
     </ResponsiveContainer>
   )
+}
+
+// Per-chart Y-scale control: Fit (computed useful range), Full (recharts
+// auto = entire data range), or Manual min/max. Persisted in settings so it
+// survives tab switches and project save/load.
+function useYScale(id, fitDomain) {
+  const ys = useStore((s) => s.settings.yScales?.[id]) || { mode: 'fit', min: '', max: '' }
+  const updateSettings = useStore((s) => s.updateSettings)
+  const setYs = (patch) => {
+    const cur = useStore.getState().settings.yScales || {}
+    updateSettings({ yScales: { ...cur, [id]: { ...ys, ...patch } } })
+  }
+  let domain = ['auto', 'auto']
+  if (ys.mode === 'fit' && fitDomain) domain = fitDomain
+  else if (ys.mode === 'manual' && ys.min !== '' && ys.max !== '') {
+    const lo = parseFloat(ys.min); const hi = parseFloat(ys.max)
+    if (isFinite(lo) && isFinite(hi) && hi > lo) domain = [lo, hi]
+  }
+  const control = (
+    <label title="Y-axis scale: Fit = zoom to the useful range, Full = entire data range, Manual = your own bounds">
+      Y
+      <select value={ys.mode} onChange={(e) => setYs({ mode: e.target.value })} style={{ width: 68 }}>
+        <option value="fit">Fit</option>
+        <option value="auto">Full</option>
+        <option value="manual">Manual</option>
+      </select>
+      {ys.mode === 'manual' && (
+        <>
+          <input type="number" placeholder="min" value={ys.min} onChange={(e) => setYs({ min: e.target.value })} />
+          –
+          <input type="number" placeholder="max" value={ys.max} onChange={(e) => setYs({ max: e.target.value })} />
+        </>
+      )}
+    </label>
+  )
+  return [domain, control]
+}
+
+// Fit helpers. dB-type curves: window below the peak (deep nulls excluded);
+// linear curves: zero to padded max.
+const round5 = (v, up) => (up ? Math.ceil(v / 5) * 5 : Math.floor(v / 5) * 5)
+function fitDb(rows, keys, windowDb = 45) {
+  let peak = -Infinity
+  for (const r of rows) for (const k of keys) { const v = r[k]; if (v != null && v > peak) peak = v }
+  if (!isFinite(peak)) return null
+  return [round5(peak - windowDb, false), round5(peak + 4, true)]
+}
+function fitLinear(rows, keys, floor = 0, atLeast = 0) {
+  let hi = -Infinity
+  for (const r of rows) for (const k of keys) { const v = r[k]; if (v != null && v > hi) hi = v }
+  if (!isFinite(hi)) return null
+  return [floor, Math.max(hi * 1.08, atLeast)]
 }
 
 // merge results into recharts row objects
@@ -131,8 +183,6 @@ function SPLTab() {
   const nodes = useStore((s) => s.nodes)
   const snapshots = useStore((s) => s.snapshots)
   const [show, setShow] = useState({ driver: true, ports: true, combined: true })
-  const [yMin, setYMin] = useState('')
-  const [yMax, setYMax] = useState('')
   const lines = []
   if (show.combined) lines.push({ dataKey: 'combined', name: 'Combined', color: SERIES[0], width: 2.5 })
   if (show.driver) lines.push({ dataKey: 'driver', name: 'Driver direct', color: SERIES[1] })
@@ -141,15 +191,14 @@ function SPLTab() {
     lines.push({ dataKey: `port_${pid}`, name: n?.data.params.label || 'Port', color: SERIES[(i + 2) % SERIES.length] })
   })
   lines.push(...snapLines(snapshots, 'spl'))
-  const yDomain = yMin !== '' && yMax !== '' ? [parseFloat(yMin), parseFloat(yMax)] : ['auto', 'auto']
+  const [yDomain, yControl] = useYScale('spl', fitDb(data, lines.map((l) => l.dataKey)))
   return (
     <>
       <div className="plot-controls">
         {['combined', 'driver', 'ports'].map((k) => (
           <label key={k}><input type="checkbox" checked={show[k]} onChange={(e) => setShow({ ...show, [k]: e.target.checked })} />{k}</label>
         ))}
-        <label>Y <input type="number" placeholder="min" value={yMin} onChange={(e) => setYMin(e.target.value)} /></label>
-        <label>– <input type="number" placeholder="max" value={yMax} onChange={(e) => setYMax(e.target.value)} /></label>
+        {yControl}
       </div>
       <BaseChart data={data} lines={lines} yLabel="SPL dB @ 1m" yDomain={yDomain} />
     </>
@@ -169,7 +218,13 @@ function ImpedanceTab() {
     <ReferenceLine key={i} yAxisId="left" x={p.f} stroke="#6b7687" strokeDasharray="3 3"
       label={{ value: `F${i + 1} ${p.f.toFixed(1)}`, fill: '#9aa7b8', fontSize: 10, position: 'insideTopLeft' }} />
   ))
-  return <BaseChart data={data} lines={lines} yLabel="|Z| Ω" y2Label="Phase °" y2Domain={[-90, 90]} refLines={refLines} />
+  const [yDomain, yControl] = useYScale('zin', fitLinear(data, ['zmag', ...snapshots.map((_, i) => `snap${i}_zin`)]))
+  return (
+    <>
+      <div className="plot-controls">{yControl}</div>
+      <BaseChart data={data} lines={lines} yLabel="|Z| Ω" yDomain={yDomain} y2Label="Phase °" y2Domain={[-90, 90]} refLines={refLines} />
+    </>
+  )
 }
 
 function ExcursionTab() {
@@ -185,7 +240,13 @@ function ExcursionTab() {
   const refAreas = xmax ? [
     <ReferenceArea key="over" yAxisId="left" y1={xmax} y2={xmax * 3} fill="#e66767" fillOpacity={0.07} />,
   ] : []
-  return <BaseChart data={data} lines={lines} yLabel="mm" refLines={refLines} refAreas={refAreas} />
+  const [yDomain, yControl] = useYScale('exc', fitLinear(data, ['exc'], 0, xmax ? xmax * 1.25 : 0))
+  return (
+    <>
+      <div className="plot-controls">{yControl}</div>
+      <BaseChart data={data} lines={lines} yLabel="mm" yDomain={yDomain} refLines={refLines} refAreas={refAreas} />
+    </>
+  )
 }
 
 function VelocityTab() {
@@ -199,14 +260,16 @@ function VelocityTab() {
     const n = nodes.find((nn) => nn.id === wid)
     return { dataKey: `vel_${wid}`, name: n?.data.params.label || 'Waveguide', color: SERIES[i % SERIES.length] }
   })
+  const [yDomain, yControl] = useYScale('vel', fitLinear(data, lines.map((l) => l.dataKey), 0, vThreshold * 1.25))
   return (
     <>
       <div className="plot-controls">
         <label title="Approximate turbulence (chuffing) onset velocity">Threshold
           <input type="number" value={vThreshold} onChange={(e) => { const v = parseFloat(e.target.value); if (v > 0) updateSettings({ vThreshold: v }) }} /> m/s
         </label>
+        {yControl}
       </div>
-      <BaseChart data={data} lines={lines} yLabel="m/s (peak)" refLines={[
+      <BaseChart data={data} lines={lines} yLabel="m/s (peak)" yDomain={yDomain} refLines={[
         <ReferenceLine key="th" yAxisId="left" y={vThreshold} stroke="#e66767" strokeDasharray="6 4"
           label={{ value: `turbulence ~${vThreshold} m/s`, fill: '#e66767', fontSize: 10, position: 'insideTopRight' }} />,
       ]} />
@@ -218,7 +281,13 @@ function PowerTab() {
   const { data } = useChartData(['pow'])
   const snapshots = useStore((s) => s.snapshots)
   const lines = [{ dataKey: 'pow', name: 'Radiated power dBW', color: SERIES[0], width: 2.5 }, ...snapLines(snapshots, 'pow')]
-  return <BaseChart data={data} lines={lines} yLabel="dBW" />
+  const [yDomain, yControl] = useYScale('pow', fitDb(data, lines.map((l) => l.dataKey)))
+  return (
+    <>
+      <div className="plot-controls">{yControl}</div>
+      <BaseChart data={data} lines={lines} yLabel="dBW" yDomain={yDomain} />
+    </>
+  )
 }
 
 function PhaseTab() {
@@ -235,13 +304,15 @@ function PhaseTab() {
     { dataKey: 'phaseSel', name: 'Phase °', color: SERIES[0], width: 2 },
     { dataKey: 'gdAdj', name: 'Group delay ms', color: SERIES[2], yAxisId: 'right', width: 2 },
   ]
+  const [yDomain, yControl] = useYScale('ph', null)
   return (
     <>
       <div className="plot-controls">
         <label><input type="checkbox" checked={settings.unwrapPhase} onChange={(e) => updateSettings({ unwrapPhase: e.target.checked })} />unwrap</label>
         <label>Delay offset <input type="number" step="0.5" value={off} onChange={(e) => { const v = parseFloat(e.target.value); if (!Number.isNaN(v)) updateSettings({ delayOffset: v }) }} /> ms</label>
+        {yControl}
       </div>
-      <BaseChart data={adj} lines={lines} yLabel="deg" y2Label="ms" />
+      <BaseChart data={adj} lines={lines} yLabel="deg" yDomain={yDomain} y2Label="ms" />
     </>
   )
 }
