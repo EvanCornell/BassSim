@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { useStore } from '../store'
+import { waveguideVolume } from '../engine/acoustics'
 
 // Tooltip text: one-line physical explanation per parameter
 const TIPS = {
@@ -223,6 +224,9 @@ function WaveguideForm({ node }) {
       ]} />
       <NumField id={id} field="ecFactor" value={p.ecFactor} label="End corr. k" step="0.01" min="0" />
       <QSection id={id} p={p} />
+      <div style={{ fontSize: 11, color: 'var(--text-2)', marginBottom: 4 }}>
+        Internal volume: <b>{(waveguideVolume(p.flare, p.S1 * 1e-4, p.S2 * 1e-4, p.length / 100) * 1000).toFixed(2)} L</b>
+      </div>
       <div style={{ fontSize: 10.5, color: 'var(--text-3)' }}>
         Set S1 = S2 for a straight port. Q here models port turbulence and wall loss.
       </div>
