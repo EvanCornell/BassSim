@@ -155,6 +155,16 @@ export function areaProfile(flare, S1, S2, L) {
   }
 }
 
+// Internal volume of a waveguide segment (m^3): numeric integral of the
+// exact area profile, so it tracks the selected flare.
+export function waveguideVolume(flare, S1, S2, L, N = 200) {
+  const prof = areaProfile(flare, S1, S2, L)
+  const dx = L / N
+  let v = 0
+  for (let i = 0; i < N; i++) v += prof((i + 0.5) * dx) * dx
+  return v
+}
+
 // Flare (cutoff) frequency for exponential-family horns; null for conical/parabolic
 export function flareCutoff(flare, S1, S2, L) {
   if (S2 <= S1 * 1.0001) return null

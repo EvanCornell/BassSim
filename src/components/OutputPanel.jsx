@@ -4,6 +4,7 @@ import {
   ReferenceLine, ResponsiveContainer, ReferenceArea,
 } from 'recharts'
 import { useStore } from '../store'
+import { waveguideVolume } from '../engine/acoustics'
 
 const SERIES = ['#3987e5', '#199e70', '#c98500', '#9085e9', '#d55181', '#d95926']
 const GRID = '#2d3646'
@@ -320,8 +321,16 @@ function PhaseTab() {
 function MetricsStrip() {
   const metrics = useStore((s) => s.metrics)
   const results = useStore((s) => s.results)
-  const driver = useStore((s) => s.nodes.find((n) => n.type === 'driver'))
+  const nodes = useStore((s) => s.nodes)
+  const driver = nodes.find((n) => n.type === 'driver')
   const xmax = driver?.data.params.Xmax
+  // total internal air volume: chambers + waveguide segments
+  let sysVol = 0
+  for (const n of nodes) {
+    const p = n.data.params
+    if (n.type === 'chamber') sysVol += p.volume || 0
+    else if (n.type === 'waveguide') sysVol += waveguideVolume(p.flare, p.S1 * 1e-4, p.S2 * 1e-4, p.length / 100) * 1000
+  }
   const m = metrics || {}
   const M = ({ label, value, bad }) => (
     <div className="metric"><span className="m-label">{label}</span><span className={`m-value ${bad ? 'bad' : ''}`}>{value}</span></div>
@@ -339,6 +348,7 @@ function MetricsStrip() {
       <M label="X @ F3" value={frac(m.xAtF3)} bad={m.xAtF3 != null && xmax && m.xAtF3 > xmax} />
       <M label="BW (−3 dB)" value={m.bwHz ? `${fmt(m.bwHz, 0)} Hz / ${fmt(m.bwOct, 1)} oct` : '—'} />
       <M label="Max power (Xmax)" value={m.maxPower ? `${fmt(m.maxPower, 0)} W @ ${fmt(m.vMax, 1)} V` : '—'} />
+      <M label="System volume" value={sysVol > 0 ? `${sysVol >= 100 ? sysVol.toFixed(0) : sysVol.toFixed(1)} L` : '—'} />
       {results?.elapsedMs != null && <M label="Solve" value={`${results.elapsedMs.toFixed(0)} ms`} />}
     </div>
   )

@@ -1,7 +1,7 @@
 import React from 'react'
 import { Handle, Position } from 'reactflow'
 import { useStore } from '../store'
-import { C_AIR, flareCutoff, endCorrectionLength } from '../engine/acoustics'
+import { C_AIR, flareCutoff, endCorrectionLength, waveguideVolume } from '../engine/acoustics'
 
 const NODE_COLORS = {
   driver: 'var(--s1)',
@@ -78,11 +78,13 @@ export function WaveguideNode({ id, data, selected }) {
   const ec = endCorrectionLength(S2, p.ecFactor ?? 0.732)
   const fq = C_AIR / (4 * (L + ec)) // quarter-wave tuning
   const fc = flareCutoff(p.flare, p.S1 * 1e-4, S2, L)
+  const volL = waveguideVolume(p.flare, p.S1 * 1e-4, S2, L) * 1000
   return (
     <div className={`acou-node ${selected ? 'selected' : ''}`}>
       <Head type="waveguide" label={p.label || 'Waveguide'} warn={warn} />
       <div className="node-body">
         {p.S1}→{p.S2} cm² · {p.length} cm · {p.flare}<br />
+        vol <span className="node-readout" title="Internal air volume of this segment (from the flare profile)">{volL >= 100 ? volL.toFixed(0) : volL.toFixed(1)} L</span> ·{' '}
         {isStraight
           ? <>λ/4 <span className="node-readout">{fq.toFixed(1)} Hz</span></>
           : fc
