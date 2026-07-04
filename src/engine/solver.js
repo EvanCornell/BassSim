@@ -101,7 +101,7 @@ export function validateGraph(nodes, edges) {
   for (const n of nodes) {
     const w = []
     if (multiFed.has(n.id)) {
-      w.push('Multiple sources feed one input port — this is NOT a junction and extra feeders are ignored. To branch (e.g. offset-driver stub), draw both edges FROM the same output port instead.')
+      w.push('Multiple edges feed this input port. Driven sources are superposed but do not load each other (approximate — OK for e.g. a series-bandpass cabin fed by driver rear + port). A passive side branch (closed stub) here would be ignored: branch stubs FROM an output port instead.')
     }
     if (n.type === 'driver') {
       if (!connected(n.id, 'front') && !connected(n.id, 'rear'))
@@ -165,6 +165,11 @@ export function runSimulation(nodes, edges, settings) {
   }
   for (const wg of waveguides) res.velocity[wg.id] = new Array(npts).fill(0)
   for (const r of radiators) res.splPorts[r.id] = new Array(npts).fill(null)
+  // an unconnected waveguide mouth radiates too — give it a port SPL series
+  const mouthConnected = new Set(edges.filter((e) => e.sourceHandle === 'mouth').map((e) => e.source))
+  for (const wg of waveguides) {
+    if (!mouthConnected.has(wg.id)) res.splPorts[wg.id] = new Array(npts).fill(null)
+  }
 
   const driverSIs = new Map(drivers.map((d) => [d.id, driverSI(d.data.params)]))
 
@@ -257,8 +262,13 @@ export function runSimulation(nodes, edges, settings) {
       return Z
     }
 
-    // Forward propagation: push (p, U) into a node, record radiator outputs
+    // Forward propagation: push (p, U) into a node, record radiator outputs.
+    // Volume velocity through each waveguide is accumulated COMPLEX across
+    // all propagation passes (a node can be reached from several sources,
+    // e.g. a cabin fed by both the driver rear and a port) so the velocity
+    // readout stays coherent with the summed SPL.
     const emit = { pressures: [], driverP: ZERO, portP: {}, powers: 0 }
+    const wgAcc = new Map() // waveguide id -> { Ut, Um } complex sums
     const propagateInto = (node, fromHandle, p, U, visited, viaFront) => {
       if (visited.has(node.id)) return
       const nv = new Set(visited); nv.add(node.id)
@@ -285,9 +295,10 @@ export function runSimulation(nodes, edges, settings) {
         const M = getMatrix(node)
         const [p2, U2] = propagate(M, p, U)
         if (node.type === 'waveguide') {
-          const vt = abs(U) / M.S1
-          const vm = abs(U2) / M.S2
-          res.velocity[node.id][i] = Math.max(vt, vm) * Math.SQRT2 // peak
+          const acc = wgAcc.get(node.id) || { Ut: ZERO, Um: ZERO }
+          acc.Ut = add(acc.Ut, U)
+          acc.Um = add(acc.Um, U2)
+          wgAcc.set(node.id, acc)
         }
         const outHandle = node.type === 'waveguide' ? 'mouth' : 'out'
         const downstream = (adj.get(`${node.id}:${outHandle}`) || []).filter((o) => !visited.has(o.node.id))
@@ -377,6 +388,15 @@ export function runSimulation(nodes, edges, settings) {
           }
         }
       }
+    }
+
+    // waveguide velocities from coherently summed volume velocity
+    for (const [wid, acc] of wgAcc) {
+      const M = matCache.get(wid)
+      if (!M) continue
+      const vt = abs(acc.Ut) / M.S1
+      const vm = abs(acc.Um) / M.S2
+      res.velocity[wid][i] = Math.max(vt, vm) * Math.SQRT2 // peak
     }
 
     // aggregate
