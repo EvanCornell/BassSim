@@ -9,6 +9,7 @@ import DriverDB from './components/DriverDB'
 import TSCalc from './components/TSCalc'
 import ProjectManager from './components/ProjectManager'
 import VelocityPopup from './components/VelocityPopup'
+import NLLab from './components/NLLab'
 
 // Starter example: a ported box (driver front → radiation, rear → chamber → port → radiation)
 const DEMO = {
@@ -52,6 +53,7 @@ function ErrorBanner() {
 export default function App() {
   const loadSerialized = useStore((s) => s.loadSerialized)
   const setRestorePrompt = useStore((s) => s.setRestorePrompt)
+  const view = useStore((s) => s.view)
 
   // initial load: offer to restore the last auto-saved project, else demo
   useEffect(() => {
@@ -87,12 +89,18 @@ export default function App() {
       <RestoreBanner />
       <ErrorBanner />
       <div className="main-row">
-        <Palette />
-        <div className="canvas-wrap">
-          <FlowCanvas />
-          <VelocityPopup />
-        </div>
-        <ParamPanel />
+        {view === 'nllab' ? (
+          <div style={{ flex: 1, minWidth: 0 }}><NLLab /></div>
+        ) : (
+          <>
+            <Palette />
+            <div className="canvas-wrap">
+              <FlowCanvas />
+              <VelocityPopup />
+            </div>
+            <ParamPanel />
+          </>
+        )}
       </div>
       <OutputPanel />
       <DriverDB />

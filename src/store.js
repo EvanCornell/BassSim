@@ -27,6 +27,7 @@ function graphSignature(nodes, edges, settings) {
     nodes.map((n) => [n.id, n.type, n.data.params]),
     edges.map((e) => [e.source, e.sourceHandle, e.target, e.targetHandle]),
     settings.fmin, settings.fmax, settings.npts, settings.voltage, settings.rg, settings.masking,
+    settings.nlEnabled,
   ])
 }
 
@@ -47,7 +48,10 @@ export const useStore = create((set, get) => ({
     fmin: 10, fmax: 1000, npts: 512,
     voltage: 2.83, impedance: 4, power: 2, rg: 0,
     vThreshold: 17, masking: false, unwrapPhase: true, delayOffset: 0,
+    nlEnabled: false,
   },
+  view: 'editor', // 'editor' | 'nllab'
+  setView: (v) => set({ view: v }),
   history: [],
   future: [],
 

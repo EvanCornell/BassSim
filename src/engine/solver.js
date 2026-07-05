@@ -9,6 +9,7 @@ import {
   RHO, C_AIR, SOLID_ANGLES, radiationImpedance, waveguideMatrix, chamberMatrix,
   endCorrectionLength, flareCutoff, combineQ,
 } from './acoustics'
+import { cycleAverage, hasNL } from './nonlinear'
 
 const P_REF = 20e-6
 
@@ -173,11 +174,33 @@ export function runSimulation(nodes, edges, settings) {
 
   const driverSIs = new Map(drivers.map((d) => [d.id, driverSI(d.data.params)]))
 
+  // EXPERIMENTAL nonlinear mode: per-driver, per-frequency parameter scale
+  // factors, refined by damped fixed-point iteration over full sweeps.
+  const nlActive = !!settings.nlEnabled && drivers.some((d) => hasNL(d.data.params.nl))
+  const nlScales = new Map() // driver id -> { bl, cms, le: Float64Array }
+  for (const d of drivers) {
+    nlScales.set(d.id, {
+      bl: new Float64Array(npts).fill(1),
+      cms: new Float64Array(npts).fill(1),
+      le: new Float64Array(npts).fill(1),
+    })
+  }
+  const effDriver = (id, i) => {
+    const d = driverSIs.get(id)
+    if (!nlActive) return d
+    const s = nlScales.get(id)
+    return { ...d, Bl: d.Bl * s.bl[i], Cms: d.Cms * s.cms[i], Le: d.Le * s.le[i] }
+  }
+  res.excursionByDriver = {}
+  for (const d of drivers) res.excursionByDriver[d.id] = new Array(npts).fill(0)
+
   // Which radiators are fed (directly or via chain) from a driver FRONT port
   // vs elsewhere, decided during propagation (first pass tags them).
 
   const combinedPressure = new Array(npts)
 
+  const nlIters = nlActive ? 4 : 1
+  for (let nlIter = 0; nlIter < nlIters; nlIter++) {
   for (let i = 0; i < npts; i++) {
     const f = freqs[i]
     const w = 2 * Math.PI * f
@@ -234,7 +257,7 @@ export function runSimulation(nodes, edges, settings) {
         Z._radS = Sd
       } else if (node.type === 'driver') {
         // Another driver acting as a passive load through one of its ports
-        const d = driverSIs.get(node.id)
+        const d = effDriver(node.id, i)
         const otherHandle = fromHandle === 'front' ? 'rear' : 'front'
         const others = adj.get(`${node.id}:${otherHandle}`) || []
         let Zother = others.length
@@ -331,7 +354,7 @@ export function runSimulation(nodes, edges, settings) {
     let zinFirst = null
     let excSum = 0
     for (const drv of drivers) {
-      const d = driverSIs.get(drv.id)
+      const d = effDriver(drv.id, i)
       const visited = new Set([drv.id])
       const frontConns = adj.get(`${drv.id}:front`) || []
       const rearConns = adj.get(`${drv.id}:rear`) || []
@@ -355,7 +378,9 @@ export function runSimulation(nodes, edges, settings) {
       const Zin = add(ZeNoRg, div(C(d.Bl * d.Bl, 0), ZmechTot))
       if (!zinFirst) zinFirst = Zin
 
-      excSum += (abs(u) * Math.SQRT2) / w // peak displacement m
+      const xPk = (abs(u) * Math.SQRT2) / w // peak displacement m
+      excSum += xPk
+      res.excursionByDriver[drv.id][i] = xPk * 1000 // mm
 
       // front branch(es)
       if (frontConns.length) {
@@ -417,6 +442,25 @@ export function runSimulation(nodes, edges, settings) {
     res.power[i] = emit.powers
     res.phase[i] = (arg(pTot) * 180) / Math.PI
   }
+
+  // refine nonlinear parameter scales from this sweep's excursions
+  if (nlActive && nlIter < nlIters - 1) {
+    const DAMP = 0.6
+    for (const drv of drivers) {
+      const nl = drv.data.params.nl
+      if (!hasNL(nl)) continue
+      const s = nlScales.get(drv.id)
+      const xs = res.excursionByDriver[drv.id]
+      for (let i = 0; i < npts; i++) {
+        const X = xs[i]
+        s.bl[i] = s.bl[i] * (1 - DAMP) + DAMP * cycleAverage(nl.Bl, X)
+        s.cms[i] = s.cms[i] * (1 - DAMP) + DAMP * cycleAverage(nl.Cms, X)
+        s.le[i] = s.le[i] * (1 - DAMP) + DAMP * cycleAverage(nl.Le, X)
+      }
+    }
+  }
+  } // nl iterations
+  res.nl = { active: nlActive, iterations: nlIters }
 
   // unwrap phase & group delay
   const unwrapped = new Array(npts)
