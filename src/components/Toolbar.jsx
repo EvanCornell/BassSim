@@ -1,10 +1,11 @@
-import React, { useRef } from 'react'
+import React, { useRef, useState } from 'react'
 import { useStore, SCHEMA_VERSION } from '../store'
 import { exportProjectJSON, exportCSV, exportSchematicPNG, exportMetricsTxt } from '../utils/export'
 
 export default function Toolbar() {
   const store = useStore()
   const fileRef = useRef(null)
+  const [showExpWarning, setShowExpWarning] = useState(false)
   const { settings, updateSettings, snapshots } = store
 
   const onNew = () => {
@@ -70,31 +71,57 @@ export default function Toolbar() {
         <input type="checkbox" checked={settings.masking} onChange={(e) => updateSettings({ masking: e.target.checked })} />
         <span style={{ fontSize: 11, color: 'var(--text-2)' }}>Mask resonances</span>
       </label>
-      <span className="tb-sep" />
-      <label className="tb-group" title="EXPERIMENTAL: large-signal T/S nonlinearity (quasi-linear iteration)" style={{ cursor: 'pointer' }}>
-        <input
-          type="checkbox" checked={!!settings.nlEnabled}
-          onChange={(e) => {
-            if (e.target.checked) {
-              if (confirm('Enable EXPERIMENTAL nonlinear T/S simulation?\n\nThis feature is experimental: its accuracy depends entirely on the accuracy of the Bl(x)/Cms(x)/Le(x) curves you provide, and it may produce misleading results or interact badly with complex circuits. Results at high drive levels are approximations (compression and resonance drift only — no harmonic distortion).\n\nA flat curve at 1.0 reproduces the standard engine exactly.')) {
-                updateSettings({ nlEnabled: true })
+      <div className="toolbar-right">
+        <button
+          disabled={!settings.nlEnabled}
+          title={settings.nlEnabled ? 'Open the large-signal curve editor in a tab' : 'Enable Experimental features to unlock'}
+          style={settings.nlEnabled ? { borderColor: 'var(--amber)', color: 'var(--amber)' } : {}}
+          onClick={() => store.openTab('nllab')}
+        >
+          ⚗ Nonlinear Lab
+        </button>
+        <label className="tb-group" title="Enable experimental features (large-signal T/S nonlinearity)" style={{ cursor: 'pointer' }}>
+          <input
+            type="checkbox" checked={!!settings.nlEnabled}
+            onChange={(e) => {
+              if (e.target.checked) setShowExpWarning(true)
+              else {
+                updateSettings({ nlEnabled: false })
+                store.closeTab('nllab')
               }
-            } else {
-              updateSettings({ nlEnabled: false })
-              store.setView('editor')
-            }
-          }}
-        />
-        <span style={{ fontSize: 11, color: settings.nlEnabled ? 'var(--amber)' : 'var(--text-2)' }}>⚗ Nonlinear</span>
-      </label>
-      <button
-        disabled={!settings.nlEnabled}
-        title={settings.nlEnabled ? 'Open the large-signal curve editor' : 'Enable the ⚗ Nonlinear toggle to unlock'}
-        style={settings.nlEnabled ? { borderColor: 'var(--amber)', color: 'var(--amber)' } : {}}
-        onClick={() => store.setView(store.view === 'nllab' ? 'editor' : 'nllab')}
-      >
-        {store.view === 'nllab' ? 'Node Editor' : 'Nonlinear Lab'}
-      </button>
+            }}
+          />
+          <span style={{ fontSize: 11, color: settings.nlEnabled ? 'var(--amber)' : 'var(--text-2)' }}>Experimental features</span>
+        </label>
+      </div>
+      {showExpWarning && (
+        <div className="modal-backdrop" onClick={() => setShowExpWarning(false)}>
+          <div className="modal" style={{ maxWidth: 480, minWidth: 380 }} onClick={(e) => e.stopPropagation()}>
+            <h3 style={{ color: 'var(--amber)' }}>⚗ Experimental features</h3>
+            <p style={{ fontSize: 13, lineHeight: 1.55 }}>
+              You are enabling <b>large-signal T/S nonlinearity</b> simulation.
+            </p>
+            <p style={{ fontSize: 12.5, lineHeight: 1.55, color: 'var(--text-2)' }}>
+              This feature is experimental. Its accuracy depends entirely on the accuracy
+              of the Bl(x), Cms(x) and Le(x) curves you provide — without measured data,
+              results are plausible-looking guesses. The solver models power compression
+              and resonance drift only; it does not produce harmonic distortion. It may
+              interact unexpectedly with complex circuits.
+            </p>
+            <p style={{ fontSize: 12.5, color: 'var(--text-2)' }}>
+              A flat curve at 1.0 reproduces the standard engine exactly.
+            </p>
+            <div className="close-row">
+              <button onClick={() => setShowExpWarning(false)}>Cancel</button>
+              <button className="primary" onClick={() => {
+                updateSettings({ nlEnabled: true })
+                setShowExpWarning(false)
+                store.openTab('nllab')
+              }}>I understand — continue</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
