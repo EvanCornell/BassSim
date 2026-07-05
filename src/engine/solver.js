@@ -451,11 +451,12 @@ export function runSimulation(nodes, edges, settings) {
       if (!hasNL(nl)) continue
       const s = nlScales.get(drv.id)
       const xs = res.excursionByDriver[drv.id]
+      const xm = drv.data.params.Xmax || 10
       for (let i = 0; i < npts; i++) {
         const X = xs[i]
-        s.bl[i] = s.bl[i] * (1 - DAMP) + DAMP * cycleAverage(nl.Bl, X)
-        s.cms[i] = s.cms[i] * (1 - DAMP) + DAMP * cycleAverage(nl.Cms, X)
-        s.le[i] = s.le[i] * (1 - DAMP) + DAMP * cycleAverage(nl.Le, X)
+        s.bl[i] = s.bl[i] * (1 - DAMP) + DAMP * cycleAverage(nl.Bl, X, xm)
+        s.cms[i] = s.cms[i] * (1 - DAMP) + DAMP * cycleAverage(nl.Cms, X, xm)
+        s.le[i] = s.le[i] * (1 - DAMP) + DAMP * cycleAverage(nl.Le, X, xm)
       }
     }
   }

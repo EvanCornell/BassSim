@@ -10,6 +10,7 @@ import TSCalc from './components/TSCalc'
 import ProjectManager from './components/ProjectManager'
 import VelocityPopup from './components/VelocityPopup'
 import NLLab from './components/NLLab'
+import TabBar from './components/TabBar'
 
 // Starter example: a ported box (driver front → radiation, rear → chamber → port → radiation)
 const DEMO = {
@@ -53,7 +54,7 @@ function ErrorBanner() {
 export default function App() {
   const loadSerialized = useStore((s) => s.loadSerialized)
   const setRestorePrompt = useStore((s) => s.setRestorePrompt)
-  const view = useStore((s) => s.view)
+  const activeTab = useStore((s) => s.activeTab)
 
   // initial load: offer to restore the last auto-saved project, else demo
   useEffect(() => {
@@ -88,8 +89,9 @@ export default function App() {
       <Toolbar />
       <RestoreBanner />
       <ErrorBanner />
+      <TabBar />
       <div className="main-row">
-        {view === 'nllab' ? (
+        {activeTab === 'nllab' ? (
           <div style={{ flex: 1, minWidth: 0 }}><NLLab /></div>
         ) : (
           <>

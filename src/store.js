@@ -50,8 +50,26 @@ export const useStore = create((set, get) => ({
     vThreshold: 17, masking: false, unwrapPhase: true, delayOffset: 0,
     nlEnabled: false,
   },
-  view: 'editor', // 'editor' | 'nllab'
-  setView: (v) => set({ view: v }),
+  // Chrome-style tool tabs. 'editor' is permanent; others open/close/reorder.
+  tabs: ['editor'],
+  activeTab: 'editor',
+  openTab: (id) => {
+    const { tabs } = get()
+    set({ tabs: tabs.includes(id) ? tabs : [...tabs, id], activeTab: id })
+  },
+  closeTab: (id) => {
+    if (id === 'editor') return
+    const { tabs, activeTab } = get()
+    const next = tabs.filter((t) => t !== id)
+    set({ tabs: next, activeTab: activeTab === id ? next[next.length - 1] || 'editor' : activeTab })
+  },
+  moveTab: (from, to) => {
+    const tabs = [...get().tabs]
+    const [t] = tabs.splice(from, 1)
+    tabs.splice(to, 0, t)
+    set({ tabs })
+  },
+  setActiveTab: (id) => set({ activeTab: id }),
   history: [],
   future: [],
 
