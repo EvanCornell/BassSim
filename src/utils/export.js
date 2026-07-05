@@ -36,6 +36,9 @@ export function exportCSV(results, nodes, projectName) {
   }
   cols.push(
     ['Acoustic power (W)', (i) => results.power[i]],
+    ['Electrical power real (W)', (i) => results.peReal?.[i]],
+    ['Electrical power apparent (VA)', (i) => results.peApparent?.[i]],
+    ['Efficiency (%)', (i) => (results.peReal?.[i] > 1e-9 ? (results.power[i] / results.peReal[i]) * 100 : null)],
     ['Phase (deg)', (i) => results.phaseUnwrapped[i]],
     ['Group delay (ms)', (i) => results.groupDelay[i]],
   )

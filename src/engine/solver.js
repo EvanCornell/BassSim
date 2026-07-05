@@ -161,6 +161,8 @@ export function runSimulation(nodes, edges, settings) {
     excursion: new Array(npts),
     velocity: {}, // waveguide node id -> array m/s
     power: new Array(npts),
+    peReal: new Array(npts),     // electrical input power, W (real)
+    peApparent: new Array(npts), // electrical input power, VA (apparent)
     phase: new Array(npts),
     groupDelay: new Array(npts),
   }
@@ -353,6 +355,8 @@ export function runSimulation(nodes, edges, settings) {
     // Superposition over active drivers
     let zinFirst = null
     let excSum = 0
+    let peReal = 0
+    let peApp = 0
     for (const drv of drivers) {
       const d = effDriver(drv.id, i)
       const visited = new Set([drv.id])
@@ -377,6 +381,10 @@ export function runSimulation(nodes, edges, settings) {
       const ZeNoRg = add(C(d.Re, 0), mul(C(d.Le, 0), jwPow(w, d.LeExp)))
       const Zin = add(ZeNoRg, div(C(d.Bl * d.Bl, 0), ZmechTot))
       if (!zinFirst) zinFirst = Zin
+      // electrical power drawn at the driver terminals (Eg is RMS)
+      const zAbs2 = Zin.re * Zin.re + Zin.im * Zin.im
+      peReal += (Eg * Eg * Zin.re) / zAbs2
+      peApp += (Eg * Eg) / Math.sqrt(zAbs2)
 
       const xPk = (abs(u) * Math.SQRT2) / w // peak displacement m
       excSum += xPk
@@ -440,6 +448,8 @@ export function runSimulation(nodes, edges, settings) {
     res.zinPhase[i] = zinFirst ? (arg(zinFirst) * 180) / Math.PI : 0
     res.excursion[i] = excSum * 1000 // mm
     res.power[i] = emit.powers
+    res.peReal[i] = peReal
+    res.peApparent[i] = peApp
     res.phase[i] = (arg(pTot) * 180) / Math.PI
   }
 
