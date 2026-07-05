@@ -74,6 +74,9 @@ export default function App() {
       const tag = e.target.tagName
       if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return
       const st = useStore.getState()
+      // graph shortcuts only apply while the Node Editor tab is active —
+      // other panels (e.g. Nonlinear Lab) handle their own keys
+      if (st.activeTab !== 'editor') return
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !e.shiftKey) { e.preventDefault(); st.undo() }
       else if ((e.ctrlKey || e.metaKey) && (e.key.toLowerCase() === 'y' || (e.key.toLowerCase() === 'z' && e.shiftKey))) { e.preventDefault(); st.redo() }
       else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'd') { e.preventDefault(); st.duplicateSelected() }

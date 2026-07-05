@@ -4,8 +4,9 @@ import { NL_PARAMS, defaultNL, evalCurve, derivedRatios, parseCurveCSV } from '.
 
 // EXPERIMENTAL — large-signal T/S curve lab.
 // Parametric-EQ style editor: click the curve to add a control point, drag it
-// (gain/position), tune width with the slider. Y axis is the ratio to the
-// small-signal value (flat 1.0 = linear). Fills the available screen space.
+// (gain/position), tune width with the slider. Wheel zooms about the cursor,
+// shift-drag (or middle-drag) pans, Delete removes the selected point, and a
+// crosshair guide tracks the cursor along the curve.
 
 const PARAM_INFO = {
   Bl: { unit: 'ratio of Bl(0)', hint: 'Motor force factor vs excursion. Typically droops toward ±Xmax; Xmax by the Klippel criterion is where Bl falls to 0.70.' },
@@ -14,43 +15,128 @@ const PARAM_INFO = {
 }
 const PAD = 46
 
+function niceTicks(lo, hi, target = 8) {
+  const span = hi - lo
+  if (span <= 0) return []
+  const raw = span / target
+  const mag = Math.pow(10, Math.floor(Math.log10(raw)))
+  const step = [1, 2, 5, 10].map((m) => m * mag).find((s) => span / s <= target) || 10 * mag
+  const ticks = []
+  for (let v = Math.ceil(lo / step) * step; v <= hi + 1e-9; v += step) ticks.push(Math.round(v * 1000) / 1000)
+  return ticks
+}
+
 function CurveEditor({ driverId, param, nl, xmax, width, height }) {
   const updateParams = useStore((s) => s.updateParams)
   const [selected, setSelected] = useState(-1)
+  const [hover, setHover] = useState(null) // data-space x under cursor
   const svgRef = useRef(null)
   const curve = nl[param]
-  const xSpan = Math.max(xmax * (curve.extrap ? 1.8 : 1.3), 5)
+  const defSpan = Math.max(xmax * (curve.extrap ? 1.8 : 1.3), 5)
+  const [view, setView] = useState(null) // {x0,x1,y0,y1} data coords
+  const v = view || { x0: -defSpan, x1: defSpan, y0: 0, y1: 1.6 }
   const W = Math.max(width, 400)
   const H = Math.max(height, 260)
 
-  const toPx = (x, r) => [PAD + ((x + xSpan) / (2 * xSpan)) * (W - 2 * PAD), H - PAD - (r / 1.6) * (H - 2 * PAD)]
-  const fromPx = (px, py) => [((px - PAD) / (W - 2 * PAD)) * 2 * xSpan - xSpan, ((H - PAD - py) / (H - 2 * PAD)) * 1.6]
+  const toPx = (x, r) => [
+    PAD + ((x - v.x0) / (v.x1 - v.x0)) * (W - 2 * PAD),
+    H - PAD - ((r - v.y0) / (v.y1 - v.y0)) * (H - 2 * PAD),
+  ]
+  const fromPx = (px, py) => [
+    v.x0 + ((px - PAD) / (W - 2 * PAD)) * (v.x1 - v.x0),
+    v.y0 + ((H - PAD - py) / (H - 2 * PAD)) * (v.y1 - v.y0),
+  ]
 
   const path = useMemo(() => {
     const pts = []
-    for (let k = 0; k <= 200; k++) {
-      const x = -xSpan + (2 * xSpan * k) / 200
+    for (let k = 0; k <= 240; k++) {
+      const x = v.x0 + ((v.x1 - v.x0) * k) / 240
       const [px, py] = toPx(x, evalCurve(curve, x, xmax))
-      pts.push(`${k === 0 ? 'M' : 'L'}${px.toFixed(1)},${py.toFixed(1)}`)
+      pts.push(`${k === 0 ? 'M' : 'L'}${px.toFixed(1)},${Math.max(Math.min(py, H + 40), -40).toFixed(1)}`)
     }
     return pts.join(' ')
-  }, [curve, xSpan, xmax, W, H])
+  }, [curve, v.x0, v.x1, v.y0, v.y1, xmax, W, H])
 
   const commit = (patch) => updateParams(driverId, { nl: { ...nl, [param]: { ...curve, ...patch } } })
+  const curveRef = useRef(curve)
+  curveRef.current = curve
+  const viewRef = useRef(v)
+  viewRef.current = v
+
+  // ---- zoom / pan ----
+  const zoomAt = (px, py, factor) => {
+    const [cx, cy] = fromPx(px, py)
+    const nv = {
+      x0: cx - (cx - v.x0) * factor,
+      x1: cx + (v.x1 - cx) * factor,
+      y0: cy - (cy - v.y0) * factor,
+      y1: cy + (v.y1 - cy) * factor,
+    }
+    if (nv.x1 - nv.x0 < 2 || nv.x1 - nv.x0 > 500) return
+    if (nv.y1 - nv.y0 < 0.1 || nv.y1 - nv.y0 > 6) return
+    setView(nv)
+  }
+  // React onWheel is passive; attach non-passive listener to preventDefault
+  useEffect(() => {
+    const el = svgRef.current
+    if (!el) return
+    const onWheel = (e) => {
+      e.preventDefault()
+      const rect = el.getBoundingClientRect()
+      const cur = viewRef.current
+      const factor = Math.pow(1.18, e.deltaY / 100)
+      // inline zoomAt against latest view
+      const px = e.clientX - rect.left, py = e.clientY - rect.top
+      const cx = cur.x0 + ((px - PAD) / (el.clientWidth - 2 * PAD)) * (cur.x1 - cur.x0)
+      const cy = cur.y0 + ((el.clientHeight - PAD - py) / (el.clientHeight - 2 * PAD)) * (cur.y1 - cur.y0)
+      const nv = {
+        x0: cx - (cx - cur.x0) * factor,
+        x1: cx + (cur.x1 - cx) * factor,
+        y0: cy - (cy - cur.y0) * factor,
+        y1: cy + (cur.y1 - cy) * factor,
+      }
+      if (nv.x1 - nv.x0 < 2 || nv.x1 - nv.x0 > 500) return
+      if (nv.y1 - nv.y0 < 0.1 || nv.y1 - nv.y0 > 6) return
+      setView(nv)
+    }
+    el.addEventListener('wheel', onWheel, { passive: false })
+    return () => el.removeEventListener('wheel', onWheel)
+  }, [])
+
+  const panStart = useRef(null)
+  const onSvgPointerDown = (e) => {
+    if (e.button === 1 || e.shiftKey) {
+      e.preventDefault()
+      panStart.current = { px: e.clientX, py: e.clientY, view: { ...v } }
+      const move = (ev) => {
+        const s = panStart.current
+        if (!s) return
+        const dx = ((ev.clientX - s.px) / (W - 2 * PAD)) * (s.view.x1 - s.view.x0)
+        const dy = ((ev.clientY - s.py) / (H - 2 * PAD)) * (s.view.y1 - s.view.y0)
+        setView({ x0: s.view.x0 - dx, x1: s.view.x1 - dx, y0: s.view.y0 + dy, y1: s.view.y1 + dy })
+      }
+      const up = () => { panStart.current = null; window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up) }
+      window.addEventListener('pointermove', move)
+      window.addEventListener('pointerup', up)
+    }
+  }
 
   const onSvgClick = (e) => {
-    if (e.target.dataset.pt !== undefined) return
+    if (e.target.dataset.pt !== undefined || e.shiftKey || panStart.current) return
     const rect = svgRef.current.getBoundingClientRect()
     const [x, r] = fromPx(e.clientX - rect.left, e.clientY - rect.top)
-    if (Math.abs(x) > xSpan || r < 0 || r > 1.6) return
+    if (x < v.x0 || x > v.x1 || r < v.y0 || r > v.y1) return
     const g = r - evalCurve(curve, x, xmax)
     const points = [...(curve.points || []), { x: Math.round(x * 10) / 10, g: Math.round(g * 100) / 100, w: Math.round(xmax / 3) }]
     commit({ points })
     setSelected(points.length - 1)
   }
 
-  const curveRef = useRef(curve)
-  curveRef.current = curve
+  const onSvgMove = (e) => {
+    const rect = svgRef.current.getBoundingClientRect()
+    const [x] = fromPx(e.clientX - rect.left, e.clientY - rect.top)
+    setHover(x >= v.x0 && x <= v.x1 ? x : null)
+  }
 
   const onDragPoint = (idx, e) => {
     e.stopPropagation()
@@ -65,7 +151,7 @@ function CurveEditor({ driverId, param, nl, xmax, width, height }) {
         const others = { ...cur, points: cur.points.filter((_, j) => j !== idx) }
         return {
           ...p,
-          x: Math.max(-xSpan, Math.min(xSpan, Math.round(x * 10) / 10)),
+          x: Math.round(x * 10) / 10,
           g: Math.round((r - evalCurve(others, x, xmax)) * 100) / 100,
         }
       })
@@ -78,63 +164,105 @@ function CurveEditor({ driverId, param, nl, xmax, width, height }) {
 
   const removePoint = (idx) => { commit({ points: curve.points.filter((_, k) => k !== idx) }); setSelected(-1) }
 
-  const gridStep = xSpan > 30 ? 10 : 5
-  const gridX = []
-  for (let x = -Math.floor(xSpan / gridStep) * gridStep; x <= xSpan; x += gridStep) gridX.push(x)
+  // Delete / Backspace removes the selected point (Lab owns keys on this tab)
+  useEffect(() => {
+    const onKey = (e) => {
+      const tag = e.target.tagName
+      if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return
+      if ((e.key === 'Delete' || e.key === 'Backspace') && selected >= 0 && curveRef.current.points?.[selected]) {
+        e.preventDefault()
+        removePoint(selected)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [selected]) // eslint-disable-line react-hooks/exhaustive-deps
+
   const sel = curve.points?.[selected]
+  const hoverR = hover != null ? evalCurve(curve, hover, xmax) : null
+  const [hpx, hpy] = hover != null ? toPx(hover, hoverR) : [0, 0]
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flex: 1, minHeight: 0 }}>
-      <svg ref={svgRef} width={W} height={H} style={{ background: 'var(--bg)', borderRadius: 8, cursor: 'crosshair' }} onClick={onSvgClick}>
-        {gridX.map((x) => {
-          const [px] = toPx(x, 0)
-          return <g key={x}>
-            <line x1={px} y1={PAD} x2={px} y2={H - PAD} stroke="#232b3a" strokeDasharray={x === 0 ? '' : '2 4'} />
+      <svg
+        ref={svgRef} width={W} height={H}
+        style={{ background: 'var(--bg)', borderRadius: 8, cursor: 'crosshair' }}
+        onClick={onSvgClick} onPointerDown={onSvgPointerDown}
+        onPointerMove={onSvgMove} onPointerLeave={() => setHover(null)}
+      >
+        <defs>
+          <clipPath id="plotclip"><rect x={PAD} y={PAD - 20} width={W - 2 * PAD} height={H - 2 * PAD + 20} /></clipPath>
+        </defs>
+        {niceTicks(v.x0, v.x1, 10).map((x) => {
+          const [px] = toPx(x, v.y0)
+          return <g key={`x${x}`}>
+            <line x1={px} y1={PAD} x2={px} y2={H - PAD} stroke="#232b3a" strokeDasharray={Math.abs(x) < 1e-9 ? '' : '2 4'} />
             <text x={px} y={H - PAD + 15} fill="#6b7687" fontSize="10" textAnchor="middle">{x}</text>
           </g>
         })}
-        {[0.25, 0.5, 0.7, 1.0, 1.25, 1.5].map((r) => {
-          const [, py] = toPx(0, r)
-          return <g key={r}>
-            <line x1={PAD} y1={py} x2={W - PAD} y2={py} stroke={r === 1 ? '#3d4859' : '#232b3a'} strokeDasharray={r === 1 ? '' : '2 4'} />
-            <text x={PAD - 6} y={py + 3} fill="#6b7687" fontSize="10" textAnchor="end">{r.toFixed(2)}</text>
+        {niceTicks(v.y0, v.y1, 6).map((r) => {
+          const [, py] = toPx(v.x0, r)
+          return <g key={`y${r}`}>
+            <line x1={PAD} y1={py} x2={W - PAD} y2={py} stroke={Math.abs(r - 1) < 1e-9 ? '#3d4859' : '#232b3a'} strokeDasharray={Math.abs(r - 1) < 1e-9 ? '' : '2 4'} />
+            <text x={PAD - 6} y={py + 3} fill="#6b7687" fontSize="10" textAnchor="end">{r}</text>
           </g>
         })}
-        {[-xmax, xmax].map((x) => {
-          const [px] = toPx(x, 0)
-          return <line key={x} x1={px} y1={PAD} x2={px} y2={H - PAD} stroke="#e66767" strokeDasharray="5 4" opacity="0.6" />
-        })}
-        <text x={toPx(xmax, 0)[0]} y={PAD - 6} fill="#e66767" fontSize="10" textAnchor="middle">+Xmax</text>
-        <text x={toPx(-xmax, 0)[0]} y={PAD - 6} fill="#e66767" fontSize="10" textAnchor="middle">−Xmax</text>
-        <path d={path} stroke="#3987e5" strokeWidth="2.5" fill="none" />
-        {(curve.points || []).map((p, k) => {
-          const [px, py] = toPx(p.x, evalCurve(curve, p.x, xmax))
-          return (
-            <g key={k}>
-              <circle
-                data-pt={k} cx={px} cy={py} r={selected === k ? 9 : 7}
-                fill={selected === k ? '#c98500' : '#9085e9'} stroke="var(--bg)" strokeWidth="2"
-                style={{ cursor: 'grab' }}
-                onPointerDown={(e) => onDragPoint(k, e)}
-                onDoubleClick={(e) => { e.stopPropagation(); removePoint(k) }}
-              />
-              {curve.sym && Math.abs(p.x) > 0.01 && (() => {
-                const [mx, my] = toPx(-p.x, evalCurve(curve, -p.x, xmax))
-                return <circle cx={mx} cy={my} r={5} fill="none" stroke="#9085e9" strokeWidth="1.5" strokeDasharray="2 2" />
-              })()}
+        <g clipPath="url(#plotclip)">
+          {[-xmax, xmax].map((x) => {
+            if (x < v.x0 || x > v.x1) return null
+            const [px] = toPx(x, 0)
+            return <g key={x}>
+              <line x1={px} y1={PAD} x2={px} y2={H - PAD} stroke="#e66767" strokeDasharray="5 4" opacity="0.6" />
+              <text x={px} y={PAD - 6} fill="#e66767" fontSize="10" textAnchor="middle">{x > 0 ? '+Xmax' : '−Xmax'}</text>
             </g>
-          )
-        })}
-        <text x={W / 2} y={H - 8} fill="#6b7687" fontSize="10" textAnchor="middle">excursion (mm) — click curve to add a point, drag to shape, double-click to remove</text>
+          })}
+          {/* cursor guide: vertical bar + dot on the curve */}
+          {hover != null && (
+            <g pointerEvents="none">
+              <line x1={hpx} y1={PAD} x2={hpx} y2={H - PAD} stroke="#5598e7" strokeDasharray="3 3" opacity="0.7" />
+              <circle cx={hpx} cy={hpy} r="4.5" fill="none" stroke="#5598e7" strokeWidth="2" />
+              <text x={hpx + 8} y={Math.max(hpy - 10, PAD + 12)} fill="#9ec5f4" fontSize="11">
+                {hover.toFixed(1)} mm · {hoverR.toFixed(3)}
+              </text>
+            </g>
+          )}
+          <path d={path} stroke="#3987e5" strokeWidth="2.5" fill="none" />
+          {(curve.points || []).map((p, k) => {
+            const [px, py] = toPx(p.x, evalCurve(curve, p.x, xmax))
+            return (
+              <g key={k}>
+                <circle
+                  data-pt={k} cx={px} cy={py} r={selected === k ? 9 : 7}
+                  fill={selected === k ? '#c98500' : '#9085e9'} stroke="var(--bg)" strokeWidth="2"
+                  style={{ cursor: 'grab' }}
+                  onPointerDown={(e) => onDragPoint(k, e)}
+                  onDoubleClick={(e) => { e.stopPropagation(); removePoint(k) }}
+                />
+                {curve.sym && Math.abs(p.x) > 0.01 && (() => {
+                  const [mx, my] = toPx(-p.x, evalCurve(curve, -p.x, xmax))
+                  return <circle cx={mx} cy={my} r={5} fill="none" stroke="#9085e9" strokeWidth="1.5" strokeDasharray="2 2" />
+                })()}
+              </g>
+            )
+          })}
+        </g>
+        <text x={W / 2} y={H - 8} fill="#6b7687" fontSize="10" textAnchor="middle">
+          excursion (mm) — click: add point · drag point: shape · Delete/double-click: remove · wheel: zoom · shift+drag: pan
+        </text>
       </svg>
       <div style={{ display: 'flex', gap: 16, alignItems: 'center', fontSize: 12, minHeight: 28, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: 4 }}>
+          <button title="Zoom in" onClick={() => zoomAt(W / 2, H / 2, 1 / 1.35)}>＋</button>
+          <button title="Zoom out" onClick={() => zoomAt(W / 2, H / 2, 1.35)}>－</button>
+          <button title="Reset view" onClick={() => setView(null)} disabled={!view}>⟲ Fit</button>
+        </div>
         {sel ? (
           <>
             <span>Point {selected + 1}:</span>
             <label>x <input type="number" step="0.5" value={sel.x} style={{ width: 64 }}
-              onChange={(e) => { const v = parseFloat(e.target.value); if (isFinite(v)) commit({ points: curve.points.map((p, k) => k === selected ? { ...p, x: v } : p) }) }} /> mm</label>
+              onChange={(e) => { const val = parseFloat(e.target.value); if (isFinite(val)) commit({ points: curve.points.map((p, k) => k === selected ? { ...p, x: val } : p) }) }} /> mm</label>
             <label>gain <input type="number" step="0.05" value={sel.g} style={{ width: 64 }}
-              onChange={(e) => { const v = parseFloat(e.target.value); if (isFinite(v)) commit({ points: curve.points.map((p, k) => k === selected ? { ...p, g: v } : p) }) }} /></label>
+              onChange={(e) => { const val = parseFloat(e.target.value); if (isFinite(val)) commit({ points: curve.points.map((p, k) => k === selected ? { ...p, g: val } : p) }) }} /></label>
             <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>width
               <input type="range" min="1" max={Math.ceil(xmax * 1.5)} step="0.5" value={sel.w} style={{ width: 160 }}
                 onChange={(e) => commit({ points: curve.points.map((p, k) => k === selected ? { ...p, w: parseFloat(e.target.value) } : p) })} />
@@ -222,7 +350,7 @@ export default function NLLab() {
         <label className="tb-group" title="Linear excursion limit — red markers on the chart; used by the extrapolation toggle and the excursion plot">
           Xmax
           <input type="number" step="0.5" min="1" value={xmax} style={{ width: 60 }}
-            onChange={(e) => { const v = parseFloat(e.target.value); if (v > 0) updateParams(driver.id, { Xmax: v }) }} />
+            onChange={(e) => { const val = parseFloat(e.target.value); if (val > 0) updateParams(driver.id, { Xmax: val }) }} />
           mm
         </label>
         <label style={{ display: 'flex', gap: 5, alignItems: 'center', fontSize: 12, cursor: 'pointer' }}
