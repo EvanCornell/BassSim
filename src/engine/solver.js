@@ -9,7 +9,7 @@ import {
   RHO, C_AIR, SOLID_ANGLES, radiationImpedance, waveguideMatrix, chamberMatrix,
   endCorrectionLength, flareCutoff, combineQ,
 } from './acoustics'
-import { cycleAverage, hasNL } from './nonlinear'
+import { cycleAverage, complianceRatio, hasNL } from './nonlinear'
 
 const P_REF = 20e-6
 
@@ -455,7 +455,7 @@ export function runSimulation(nodes, edges, settings) {
       for (let i = 0; i < npts; i++) {
         const X = xs[i]
         s.bl[i] = s.bl[i] * (1 - DAMP) + DAMP * cycleAverage(nl.Bl, X, xm)
-        s.cms[i] = s.cms[i] * (1 - DAMP) + DAMP * cycleAverage(nl.Cms, X, xm)
+        s.cms[i] = s.cms[i] * (1 - DAMP) + DAMP * complianceRatio(nl, X, xm)
         s.le[i] = s.le[i] * (1 - DAMP) + DAMP * cycleAverage(nl.Le, X, xm)
       }
     }

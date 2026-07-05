@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { useStore } from '../store'
-import { NL_PARAMS, defaultNL, evalCurve, derivedRatios, parseCurveCSV } from '../engine/nonlinear'
+import { NL_PARAMS, defaultNL, evalCurve, derivedRatios, parseCurveCSV, normalizeTable, curveHasContent } from '../engine/nonlinear'
 
 // EXPERIMENTAL — large-signal T/S curve lab.
 // Parametric-EQ style editor: click the curve to add a control point, drag it
@@ -9,10 +9,23 @@ import { NL_PARAMS, defaultNL, evalCurve, derivedRatios, parseCurveCSV } from '.
 // crosshair guide tracks the cursor along the curve.
 
 const PARAM_INFO = {
-  Bl: { unit: 'ratio of Bl(0)', hint: 'Motor force factor vs excursion. Typically droops toward ±Xmax; Xmax by the Klippel criterion is where Bl falls to 0.70.' },
-  Cms: { unit: 'ratio of Cms(0)', hint: 'Suspension compliance vs excursion. Progressive suspensions stiffen (ratio < 1) at high excursion, raising Fs and reducing output.' },
-  Le: { unit: 'ratio of Le(0)', hint: 'Voice-coil inductance vs excursion. Typically rises as the coil moves inward over the pole, falls moving outward (asymmetric — turn Symmetric off).' },
+  Bl: { hint: 'Motor force factor vs excursion. Typically droops toward ±Xmax; Xmax by the Klippel criterion is where Bl falls to 0.70.' },
+  Cms: { hint: 'Suspension compliance vs excursion. Progressive suspensions get LESS compliant (curve drops) at high excursion, raising Fs and reducing output.' },
+  Kms: { hint: 'Suspension stiffness vs excursion — the reciprocal view of Cms, as published in Klippel reports. Stiffness RISES at high excursion. If this curve has any content it takes precedence over Cms(x).' },
+  Le: { hint: 'Voice-coil inductance vs excursion. Typically rises as the coil moves inward over the pole, falls moving outward (asymmetric — turn Symmetric off).' },
 }
+
+// small-signal reference value per parameter, for the actual-value y axis
+function refValue(param, p) {
+  switch (param) {
+    case 'Bl': return { v: p.Bl || 1, unit: 'T·m' }
+    case 'Cms': return { v: p.Cms || 1, unit: 'mm/N' }
+    case 'Kms': return { v: p.Cms ? 1 / p.Cms : 1, unit: 'N/mm' }
+    case 'Le': return { v: p.Le || 1, unit: 'mH' }
+    default: return { v: 1, unit: '' }
+  }
+}
+const fmtVal = (v) => (Math.abs(v) >= 100 ? v.toFixed(0) : Math.abs(v) >= 10 ? v.toFixed(1) : v.toPrecision(3))
 const PAD = 46
 
 function niceTicks(lo, hi, target = 8) {
@@ -26,7 +39,7 @@ function niceTicks(lo, hi, target = 8) {
   return ticks
 }
 
-function CurveEditor({ driverId, param, nl, xmax, width, height }) {
+function CurveEditor({ driverId, param, nl, xmax, width, height, refv }) {
   const updateParams = useStore((s) => s.updateParams)
   const [selected, setSelected] = useState(-1)
   const [hover, setHover] = useState(null) // data-space x under cursor
@@ -202,11 +215,13 @@ function CurveEditor({ driverId, param, nl, xmax, width, height }) {
         })}
         {niceTicks(v.y0, v.y1, 6).map((r) => {
           const [, py] = toPx(v.x0, r)
+          const isRef = Math.abs(r - 1) < 1e-9
           return <g key={`y${r}`}>
-            <line x1={PAD} y1={py} x2={W - PAD} y2={py} stroke={Math.abs(r - 1) < 1e-9 ? '#3d4859' : '#232b3a'} strokeDasharray={Math.abs(r - 1) < 1e-9 ? '' : '2 4'} />
-            <text x={PAD - 6} y={py + 3} fill="#6b7687" fontSize="10" textAnchor="end">{r}</text>
+            <line x1={PAD} y1={py} x2={W - PAD} y2={py} stroke={isRef ? '#3d4859' : '#232b3a'} strokeDasharray={isRef ? '' : '2 4'} />
+            <text x={PAD - 6} y={py + 3} fill={isRef ? '#9aa7b8' : '#6b7687'} fontSize="10" textAnchor="end">{fmtVal(r * refv.v)}</text>
           </g>
         })}
+        <text x={14} y={PAD - 8} fill="#9aa7b8" fontSize="10">{param} ({refv.unit})</text>
         <g clipPath="url(#plotclip)">
           {[-xmax, xmax].map((x) => {
             if (x < v.x0 || x > v.x1) return null
@@ -222,7 +237,7 @@ function CurveEditor({ driverId, param, nl, xmax, width, height }) {
               <line x1={hpx} y1={PAD} x2={hpx} y2={H - PAD} stroke="#5598e7" strokeDasharray="3 3" opacity="0.7" />
               <circle cx={hpx} cy={hpy} r="4.5" fill="none" stroke="#5598e7" strokeWidth="2" />
               <text x={hpx + 8} y={Math.max(hpy - 10, PAD + 12)} fill="#9ec5f4" fontSize="11">
-                {hover.toFixed(1)} mm · {hoverR.toFixed(3)}
+                {hover.toFixed(1)} mm · {fmtVal(hoverR * refv.v)} {refv.unit} ({(hoverR * 100).toFixed(0)}%)
               </text>
             </g>
           )}
@@ -312,6 +327,8 @@ export default function NLLab() {
   const nl = { ...defaultNL(), ...(p.nl || {}) }
   const xmax = p.Xmax || 10
   const curve = nl[param]
+  const refv = refValue(param, p)
+  const suspConflict = curveHasContent(nl.Cms) && curveHasContent(nl.Kms)
 
   const xPk = (() => {
     const arr = results?.excursionByDriver?.[driver.id]
@@ -327,8 +344,12 @@ export default function NLLab() {
     const reader = new FileReader()
     reader.onload = () => {
       try {
-        const table = parseCurveCSV(reader.result)
+        const raw = parseCurveCSV(reader.result)
+        const { table, wasAbsolute, v0 } = normalizeTable(raw)
         setCurve({ points: [], table })
+        if (wasAbsolute) {
+          alert(`Imported absolute values — normalized by the value at x=0 (${fmtVal(v0)}). The chart shows them against this driver's reference ${param} = ${fmtVal(refv.v)} ${refv.unit}.`)
+        }
       } catch (err) { alert(`Import failed: ${err.message}`) }
     }
     reader.readAsText(file)
@@ -370,10 +391,12 @@ export default function NLLab() {
         <button onClick={() => setCurve({ points: [], table: null })}>Reset {param}(x)</button>
       </div>
       <div style={{ fontSize: 11.5, color: 'var(--text-3)', marginBottom: 6 }}>
-        {PARAM_INFO[param].hint} Y axis: {PARAM_INFO[param].unit}. Flat 1.0 = linear engine.
+        {PARAM_INFO[param].hint}{' '}
+        Reference (flat line) = small-signal {param} = <b style={{ color: 'var(--text-2)' }}>{fmtVal(refv.v)} {refv.unit}</b>; a flat curve reproduces the linear engine.
         {curve.table && <b> Imported table active as baseline; points deform it.</b>}
+        {suspConflict && <b style={{ color: 'var(--amber)' }}> ⚠ Both Cms(x) and Kms(x) have content — Kms(x) takes precedence; reset one of them.</b>}
       </div>
-      <CurveEditor key={driver.id + param} driverId={driver.id} param={param} nl={nl} xmax={xmax} width={size.w - 40} height={size.h} />
+      <CurveEditor key={driver.id + param} driverId={driver.id} param={param} nl={nl} xmax={xmax} width={size.w - 40} height={size.h} refv={refv} />
       <div style={{ display: 'flex', gap: 22, fontSize: 12, flexWrap: 'wrap', padding: '8px 2px 0', borderTop: '1px solid var(--border)', marginTop: 8 }}>
         {der ? (
           <>

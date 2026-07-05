@@ -10,14 +10,28 @@
 // compression and resonance drift; does NOT produce harmonic distortion
 // products (that needs a time-domain engine).
 
-export const NL_PARAMS = ['Bl', 'Cms', 'Le']
+// Kms(x) (suspension stiffness, as published by Klippel reports) is the
+// reciprocal representation of Cms(x): they describe the same suspension.
+// When the Kms curve has content it takes precedence over Cms.
+export const NL_PARAMS = ['Bl', 'Cms', 'Kms', 'Le']
 
 export function emptyCurve() {
   return { points: [], table: null }
 }
 
 export function defaultNL() {
-  return { Bl: emptyCurve(), Cms: emptyCurve(), Le: emptyCurve() }
+  return { Bl: emptyCurve(), Cms: emptyCurve(), Kms: emptyCurve(), Le: emptyCurve() }
+}
+
+export function curveHasContent(curve) {
+  return (curve?.points?.length || 0) > 0 || (curve?.table?.length || 0) > 0
+}
+
+// Effective compliance ratio at excursion X: from Kms if defined, else Cms.
+// Stiffness averages physically over the cycle, so Cms_eff = 1/avg(Kms).
+export function complianceRatio(nl, X, xmax = 0) {
+  if (curveHasContent(nl?.Kms)) return 1 / Math.max(cycleAverage(nl.Kms, X, xmax), 0.05)
+  return cycleAverage(nl?.Cms, X, xmax)
 }
 
 // baseline: imported table (linear interp, clamped ends) or flat 1.0
@@ -80,14 +94,14 @@ export function cycleAverage(curve, X, xmax = 0) {
 
 export function hasNL(nl) {
   if (!nl) return false
-  return NL_PARAMS.some((p) => (nl[p]?.points?.length || 0) > 0 || (nl[p]?.table?.length || 0) > 0)
+  return NL_PARAMS.some((p) => curveHasContent(nl[p]))
 }
 
 // Derived small-signal ratios at excursion X, for display in the Lab:
 // Fs ∝ 1/√Cms, Qes ∝ 1/Bl² · √(M/C)... expressed as ratios:
 export function derivedRatios(nl, X, xmax = 0) {
   const rBl = cycleAverage(nl.Bl, X, xmax)
-  const rC = cycleAverage(nl.Cms, X, xmax)
+  const rC = complianceRatio(nl, X, xmax)
   return {
     Bl: rBl,
     Cms: rC,
@@ -96,6 +110,23 @@ export function derivedRatios(nl, X, xmax = 0) {
     Qes: Math.sqrt(1 / rC) / (rBl * rBl),
     Vas: rC,
   }
+}
+
+// Normalize an imported table to ratios. Published curves are usually
+// absolute values (e.g. Kms in N/mm); if the value at x=0 is far from 1 we
+// treat the table as absolute and divide by its x=0 value.
+export function normalizeTable(table) {
+  let v0 = null
+  for (let i = 1; i < table.length; i++) {
+    const [x0, y0] = table[i - 1]
+    const [x1, y1] = table[i]
+    if (x0 <= 0 && x1 >= 0) { v0 = y0 + ((y1 - y0) * (0 - x0)) / (x1 - x0); break }
+  }
+  if (v0 == null) v0 = table[0][1]
+  if (Math.abs(v0) < 1e-12) throw new Error('Curve value at x=0 is zero — cannot normalize.')
+  const isAbsolute = v0 < 0.5 || v0 > 2
+  if (!isAbsolute) return { table, wasAbsolute: false, v0 }
+  return { table: table.map(([x, y]) => [x, y / v0]), wasAbsolute: true, v0 }
 }
 
 // CSV: lines of "x_mm, ratio". Returns sorted table or throws.
