@@ -70,6 +70,10 @@ export const useStore = create((set, get) => ({
     set({ tabs })
   },
   setActiveTab: (id) => set({ activeTab: id }),
+
+  // per-chart X-axis zoom (drag-select on the plots); not persisted
+  xZoom: {},
+  setXZoom: (id, range) => set({ xZoom: { ...get().xZoom, [id]: range } }),
   history: [],
   future: [],
 

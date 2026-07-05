@@ -8,27 +8,56 @@ import { waveguideVolume } from '../engine/acoustics'
 
 const SERIES = ['#3987e5', '#199e70', '#c98500', '#9085e9', '#d55181', '#d95926']
 const GRID = '#2d3646'
-const TICKS = [10, 20, 30, 50, 100, 200, 300, 500, 1000, 2000]
+const TICKS = [10, 15, 20, 30, 40, 50, 70, 100, 150, 200, 300, 500, 700, 1000, 1500, 2000]
 
 const fmt = (v, d = 1) => (v == null || !isFinite(v) ? '—' : v.toFixed(d))
 
-function useLogTicks(fmin, fmax) {
-  return useMemo(() => TICKS.filter((t) => t >= fmin && t <= fmax), [fmin, fmax])
-}
-
-function BaseChart({ data, lines, yLabel, yDomain, y2Label, y2Domain, refLines = [], refAreas = [], children }) {
+function BaseChart({ chartId, data, lines, yLabel, yDomain, y2Label, y2Domain, refLines = [], refAreas = [], children }) {
   const settings = useStore((s) => s.settings)
-  const ticks = useLogTicks(settings.fmin, settings.fmax)
+  const xZoom = useStore((s) => s.xZoom[chartId])
+  const setXZoom = useStore((s) => s.setXZoom)
+  const [dragL, setDragL] = useState(null)
+  const [dragR, setDragR] = useState(null)
+  const xDomain = xZoom || [settings.fmin, settings.fmax]
+  const ticks = useMemo(() => {
+    const t = TICKS.filter((v) => v >= xDomain[0] && v <= xDomain[1])
+    return t.length >= 3 ? t : undefined // very narrow zoom: let recharts pick
+  }, [xDomain[0], xDomain[1]])
   const hasY2 = lines.some((l) => l.yAxisId === 'right')
+  const commitZoom = () => {
+    if (dragL != null && dragR != null) {
+      const a = Math.min(dragL, dragR)
+      const b = Math.max(dragL, dragR)
+      if (b / a > 1.05) setXZoom(chartId, [a, b])
+    }
+    setDragL(null)
+    setDragR(null)
+  }
   return (
+    <>
+    {xZoom && (
+      <button
+        style={{ position: 'absolute', bottom: 10, left: 14, zIndex: 5, fontSize: 11 }}
+        title="Reset frequency zoom (or double-click the chart)"
+        onClick={() => setXZoom(chartId, null)}
+      >⟲ {fmt(xZoom[0], 0)}–{fmt(xZoom[1], 0)} Hz</button>
+    )}
     <ResponsiveContainer width="100%" height="100%">
-      <LineChart data={data} margin={{ top: 8, right: hasY2 ? 8 : 20, bottom: 4, left: 0 }}>
+      <LineChart
+        data={data} margin={{ top: 8, right: hasY2 ? 8 : 20, bottom: 4, left: 0 }}
+        onMouseDown={(e) => { if (e && e.activeLabel != null) setDragL(e.activeLabel) }}
+        onMouseMove={(e) => { if (dragL != null && e && e.activeLabel != null) setDragR(e.activeLabel) }}
+        onMouseUp={commitZoom}
+        onMouseLeave={() => { setDragL(null); setDragR(null) }}
+        onDoubleClick={() => setXZoom(chartId, null)}
+        style={{ userSelect: 'none' }}
+      >
         <CartesianGrid stroke={GRID} strokeDasharray="2 4" />
         <XAxis
-          dataKey="f" type="number" scale="log"
-          domain={[settings.fmin, settings.fmax]}
+          dataKey="f" type="number" scale="log" allowDataOverflow
+          domain={xDomain}
           ticks={ticks} tick={{ fill: '#9aa7b8', fontSize: 10 }}
-          stroke={GRID} tickFormatter={(v) => (v >= 1000 ? `${v / 1000}k` : v)}
+          stroke={GRID} tickFormatter={(v) => (v >= 1000 ? `${v / 1000}k` : Math.round(v * 10) / 10)}
         />
         <YAxis
           yAxisId="left" domain={yDomain || ['auto', 'auto']} allowDataOverflow
@@ -61,9 +90,13 @@ function BaseChart({ data, lines, yLabel, yDomain, y2Label, y2Domain, refLines =
           />
         ))}
         {refLines}
+        {dragL != null && dragR != null && (
+          <ReferenceArea yAxisId="left" x1={dragL} x2={dragR} fill="#3987e5" fillOpacity={0.15} />
+        )}
         {children}
       </LineChart>
     </ResponsiveContainer>
+    </>
   )
 }
 
@@ -141,6 +174,11 @@ function useChartData(keys) {
         for (const [wid, arr] of Object.entries(results.velocity || {})) row[`vel_${wid}`] = arr[i]
       }
       if (keys.includes('pow')) row.pow = results.power[i] > 0 ? 10 * Math.log10(results.power[i]) : null
+      if (keys.includes('pe')) { row.peW = results.peReal?.[i]; row.peVA = results.peApparent?.[i] }
+      if (keys.includes('eff')) {
+        const pe = results.peReal?.[i]
+        row.eff = pe > 1e-9 && results.power[i] >= 0 ? (results.power[i] / pe) * 100 : null
+      }
       if (keys.includes('ph')) { row.phase = results.phase[i]; row.phaseU = results.phaseUnwrapped[i]; row.gd = results.groupDelay[i] }
       rows[i] = row
     }
@@ -201,7 +239,7 @@ function SPLTab() {
         ))}
         {yControl}
       </div>
-      <BaseChart data={data} lines={lines} yLabel="SPL dB @ 1m" yDomain={yDomain} />
+      <BaseChart chartId="spl" data={data} lines={lines} yLabel="SPL dB @ 1m" yDomain={yDomain} />
     </>
   )
 }
@@ -223,7 +261,7 @@ function ImpedanceTab() {
   return (
     <>
       <div className="plot-controls">{yControl}</div>
-      <BaseChart data={data} lines={lines} yLabel="|Z| Ω" yDomain={yDomain} y2Label="Phase °" y2Domain={[-90, 90]} refLines={refLines} />
+      <BaseChart chartId="zin" data={data} lines={lines} yLabel="|Z| Ω" yDomain={yDomain} y2Label="Phase °" y2Domain={[-90, 90]} refLines={refLines} />
     </>
   )
 }
@@ -245,7 +283,7 @@ function ExcursionTab() {
   return (
     <>
       <div className="plot-controls">{yControl}</div>
-      <BaseChart data={data} lines={lines} yLabel="mm" yDomain={yDomain} refLines={refLines} refAreas={refAreas} />
+      <BaseChart chartId="exc" data={data} lines={lines} yLabel="mm" yDomain={yDomain} refLines={refLines} refAreas={refAreas} />
     </>
   )
 }
@@ -270,7 +308,7 @@ function VelocityTab() {
         </label>
         {yControl}
       </div>
-      <BaseChart data={data} lines={lines} yLabel="m/s (peak)" yDomain={yDomain} refLines={[
+      <BaseChart chartId="vel" data={data} lines={lines} yLabel="m/s (peak)" yDomain={yDomain} refLines={[
         <ReferenceLine key="th" yAxisId="left" y={vThreshold} stroke="#e66767" strokeDasharray="6 4"
           label={{ value: `turbulence ~${vThreshold} m/s`, fill: '#e66767', fontSize: 10, position: 'insideTopRight' }} />,
       ]} />
@@ -286,7 +324,34 @@ function PowerTab() {
   return (
     <>
       <div className="plot-controls">{yControl}</div>
-      <BaseChart data={data} lines={lines} yLabel="dBW" yDomain={yDomain} />
+      <BaseChart chartId="pow" data={data} lines={lines} yLabel="dBW" yDomain={yDomain} />
+    </>
+  )
+}
+
+function EfficiencyTab() {
+  const { data } = useChartData(['eff'])
+  const lines = [{ dataKey: 'eff', name: 'Efficiency %', color: SERIES[1], width: 2.5 }]
+  const [yDomain, yControl] = useYScale('eff', fitLinear(data, ['eff']))
+  return (
+    <>
+      <div className="plot-controls">{yControl}</div>
+      <BaseChart chartId="eff" data={data} lines={lines} yLabel="acoustic / electrical %" yDomain={yDomain} />
+    </>
+  )
+}
+
+function ElecPowerTab() {
+  const { data } = useChartData(['pe'])
+  const lines = [
+    { dataKey: 'peVA', name: 'Apparent (VA) — amp must source', color: SERIES[2], width: 2 },
+    { dataKey: 'peW', name: 'Real (W) — dissipated + converted', color: SERIES[0], width: 2.5 },
+  ]
+  const [yDomain, yControl] = useYScale('pe', fitLinear(data, ['peW', 'peVA']))
+  return (
+    <>
+      <div className="plot-controls">{yControl}</div>
+      <BaseChart chartId="pe" data={data} lines={lines} yLabel="W / VA" yDomain={yDomain} />
     </>
   )
 }
@@ -313,7 +378,7 @@ function PhaseTab() {
         <label>Delay offset <input type="number" step="0.5" value={off} onChange={(e) => { const v = parseFloat(e.target.value); if (!Number.isNaN(v)) updateSettings({ delayOffset: v }) }} /> ms</label>
         {yControl}
       </div>
-      <BaseChart data={adj} lines={lines} yLabel="deg" yDomain={yDomain} y2Label="ms" />
+      <BaseChart chartId="ph" data={adj} lines={lines} yLabel="deg" yDomain={yDomain} y2Label="ms" />
     </>
   )
 }
@@ -360,6 +425,8 @@ const TABS = [
   ['exc', 'Cone Excursion', ExcursionTab],
   ['vel', 'Port Velocity', VelocityTab],
   ['pow', 'Acoustic Power', PowerTab],
+  ['eff', 'Efficiency', EfficiencyTab],
+  ['pe', 'Elec. Power', ElecPowerTab],
   ['ph', 'Phase & Group Delay', PhaseTab],
 ]
 

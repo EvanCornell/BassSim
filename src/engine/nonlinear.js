@@ -77,7 +77,8 @@ export function evalCurve(curve, x, xmax = 0) {
   } else {
     r = rawEval(curve, x)
   }
-  return Math.min(Math.max(r, 0.05), 3)
+  // no upper limit — only keep the ratio physically positive
+  return Math.max(r, 0.01)
 }
 
 // average ratio over one sinusoidal cycle of peak excursion X (mm).

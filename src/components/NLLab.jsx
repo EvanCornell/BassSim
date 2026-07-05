@@ -86,7 +86,7 @@ function CurveEditor({ driverId, param, nl, xmax, width, height, refv }) {
       y1: cy + (v.y1 - cy) * factor,
     }
     if (nv.x1 - nv.x0 < 2 || nv.x1 - nv.x0 > 500) return
-    if (nv.y1 - nv.y0 < 0.1 || nv.y1 - nv.y0 > 6) return
+    if (nv.y1 - nv.y0 < 0.1 || nv.y1 - nv.y0 > 1000) return
     setView(nv)
   }
   // React onWheel is passive; attach non-passive listener to preventDefault
@@ -109,7 +109,7 @@ function CurveEditor({ driverId, param, nl, xmax, width, height, refv }) {
         y1: cy + (cur.y1 - cy) * factor,
       }
       if (nv.x1 - nv.x0 < 2 || nv.x1 - nv.x0 > 500) return
-      if (nv.y1 - nv.y0 < 0.1 || nv.y1 - nv.y0 > 6) return
+      if (nv.y1 - nv.y0 < 0.1 || nv.y1 - nv.y0 > 1000) return
       setView(nv)
     }
     el.addEventListener('wheel', onWheel, { passive: false })
