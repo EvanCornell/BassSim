@@ -22,26 +22,56 @@ function BaseChart({ chartId, data, lines, yLabel, yDomain, y2Label, y2Domain, r
   const lastLabel = useRef(null) // exact data-x under cursor, from recharts
   const stateRef = useRef({})
   const xDomain = xZoom || [settings.fmin, settings.fmax]
-  stateRef.current = { xDomain, chartId, full: [settings.fmin, settings.fmax] }
 
-  // wheel = cursor-centered zoom of the log frequency axis;
-  // shift-drag (or middle-drag) = pan. Mirrors the T/S curve editor.
+  // numeric Y bounds for zoom math: resolved Fit/Manual domain, or data extent
+  const yBounds = useMemo(() => {
+    if (Array.isArray(yDomain) && isFinite(yDomain[0]) && isFinite(yDomain[1])) return yDomain
+    let lo = Infinity, hi = -Infinity
+    const keys = lines.filter((l) => (l.yAxisId || 'left') === 'left').map((l) => l.dataKey)
+    for (const r of data) for (const k of keys) {
+      const val = r[k]
+      if (val != null && isFinite(val)) { if (val < lo) lo = val; if (val > hi) hi = val }
+    }
+    return isFinite(lo) && hi > lo ? [lo, hi] : [0, 1]
+  }, [yDomain, data, lines])
+  stateRef.current = { xDomain, chartId, full: [settings.fmin, settings.fmax], yBounds }
+
+  const setManualY = (lo, hi) => {
+    const st = useStore.getState()
+    const cur = st.settings.yScales || {}
+    const r4 = (v) => Number(v.toPrecision(4))
+    st.updateSettings({ yScales: { ...cur, [chartId]: { mode: 'manual', min: r4(lo), max: r4(hi) } } })
+  }
+  const resetAll = () => {
+    const st = useStore.getState()
+    st.setXZoom(chartId, null)
+    const cur = st.settings.yScales || {}
+    st.updateSettings({ yScales: { ...cur, [chartId]: { mode: 'fit', min: '', max: '' } } })
+  }
+
+  // wheel = cursor-centered zoom of BOTH axes (log-x, linear-y); the Y-scale
+  // control flips to Manual with the zoomed bounds. shift/middle-drag = pan.
   useEffect(() => {
     const el = wrapRef.current
     if (!el) return
-    const innerFrac = (clientX) => {
+    const fracs = (clientX, clientY) => {
       const rect = el.getBoundingClientRect()
-      const left = 52, right = 30
-      return Math.min(Math.max((clientX - rect.left - left) / (rect.width - left - right), 0), 1)
+      const left = 52, right = 30, top = 10, bottom = 48
+      return [
+        Math.min(Math.max((clientX - rect.left - left) / (rect.width - left - right), 0), 1),
+        Math.min(Math.max(1 - (clientY - rect.top - top) / (rect.height - top - bottom), 0), 1),
+      ]
     }
     const onWheel = (e) => {
       e.preventDefault()
-      const { xDomain: [x0, x1], chartId: id, full } = stateRef.current
+      const { xDomain: [x0, x1], full, yBounds: [y0, y1] } = stateRef.current
+      const [fx, fy] = fracs(e.clientX, e.clientY)
+      const factor = Math.pow(1.18, e.deltaY / 100)
+      // X in log space, centred on the exact data point when we have it
       const l0 = Math.log(x0), l1 = Math.log(x1)
       const lc = lastLabel.current != null && lastLabel.current >= x0 && lastLabel.current <= x1
         ? Math.log(lastLabel.current)
-        : l0 + innerFrac(e.clientX) * (l1 - l0)
-      const factor = Math.pow(1.18, e.deltaY / 100)
+        : l0 + fx * (l1 - l0)
       let n0 = lc - (lc - l0) * factor
       let n1 = lc + (l1 - lc) * factor
       const f0 = Math.log(Math.max(full[0], 1)), f1 = Math.log(full[1])
@@ -49,15 +79,22 @@ function BaseChart({ chartId, data, lines, yLabel, yDomain, y2Label, y2Domain, r
       n1 = Math.min(n1, f1)
       if (n1 - n0 < Math.log(1.15)) return
       const isFull = n0 - f0 < 1e-6 && f1 - n1 < 1e-6
-      useStore.getState().setXZoom(id, isFull ? null : [Math.exp(n0), Math.exp(n1)])
+      if (isFull) { resetAll(); return }
+      useStore.getState().setXZoom(stateRef.current.chartId, [Math.exp(n0), Math.exp(n1)])
+      // Y linear, centred on cursor height → Manual mode
+      const cy = y0 + fy * (y1 - y0)
+      const ny0 = cy - (cy - y0) * factor
+      const ny1 = cy + (y1 - cy) * factor
+      if (ny1 - ny0 > 1e-9) setManualY(ny0, ny1)
     }
     const onPointerDown = (e) => {
       if (!(e.shiftKey || e.button === 1)) return
       e.preventDefault()
       e.stopPropagation() // keep recharts from starting a drag-select
-      const start = { px: e.clientX, dom: [...stateRef.current.xDomain] }
+      const start = { px: e.clientX, py: e.clientY, dom: [...stateRef.current.xDomain], yb: [...stateRef.current.yBounds] }
       const rect = el.getBoundingClientRect()
       const innerW = rect.width - 82
+      const innerH = rect.height - 58
       const move = (ev) => {
         const [x0, x1] = start.dom
         const { full } = stateRef.current
@@ -66,6 +103,9 @@ function BaseChart({ chartId, data, lines, yLabel, yDomain, y2Label, y2Domain, r
         let d = (-(ev.clientX - start.px) / innerW) * (l1 - l0)
         d = Math.max(f0 - l0, Math.min(f1 - l1, d)) // keep the window inside the sweep
         useStore.getState().setXZoom(stateRef.current.chartId, [Math.exp(l0 + d), Math.exp(l1 + d)])
+        const [y0, y1] = start.yb
+        const dy = ((ev.clientY - start.py) / innerH) * (y1 - y0)
+        setManualY(y0 + dy, y1 + dy)
       }
       const up = () => { window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up) }
       window.addEventListener('pointermove', move)
@@ -77,7 +117,7 @@ function BaseChart({ chartId, data, lines, yLabel, yDomain, y2Label, y2Domain, r
       el.removeEventListener('wheel', onWheel)
       el.removeEventListener('pointerdown', onPointerDown, { capture: true })
     }
-  }, [])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
   const ticks = useMemo(() => {
     const t = TICKS.filter((v) => v >= xDomain[0] && v <= xDomain[1])
     return t.length >= 3 ? t : undefined // very narrow zoom: let recharts pick
@@ -97,8 +137,8 @@ function BaseChart({ chartId, data, lines, yLabel, yDomain, y2Label, y2Domain, r
     {xZoom && (
       <button
         style={{ position: 'absolute', bottom: 10, left: 14, zIndex: 5, fontSize: 11 }}
-        title="Reset frequency zoom (or double-click the chart). Wheel = zoom, shift+drag = pan."
-        onClick={() => setXZoom(chartId, null)}
+        title="Reset zoom (or double-click the chart). Wheel = zoom both axes, shift+drag = pan."
+        onClick={resetAll}
       >⟲ {fmt(xZoom[0], 0)}–{fmt(xZoom[1], 0)} Hz</button>
     )}
     <ResponsiveContainer width="100%" height="100%">
@@ -108,7 +148,7 @@ function BaseChart({ chartId, data, lines, yLabel, yDomain, y2Label, y2Domain, r
         onMouseMove={(e) => { if (e && e.activeLabel != null) { lastLabel.current = e.activeLabel; if (dragL != null) setDragR(e.activeLabel) } }}
         onMouseUp={commitZoom}
         onMouseLeave={() => { setDragL(null); setDragR(null) }}
-        onDoubleClick={() => setXZoom(chartId, null)}
+        onDoubleClick={resetAll}
         style={{ userSelect: 'none' }}
       >
         <CartesianGrid stroke={GRID} strokeDasharray="2 4" />
