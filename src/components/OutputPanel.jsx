@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useCallback, useRef } from 'react'
+import React, { useEffect, useMemo, useState, useCallback, useRef } from 'react'
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   ReferenceLine, ResponsiveContainer, ReferenceArea,
@@ -18,7 +18,66 @@ function BaseChart({ chartId, data, lines, yLabel, yDomain, y2Label, y2Domain, r
   const setXZoom = useStore((s) => s.setXZoom)
   const [dragL, setDragL] = useState(null)
   const [dragR, setDragR] = useState(null)
+  const wrapRef = useRef(null)
+  const lastLabel = useRef(null) // exact data-x under cursor, from recharts
+  const stateRef = useRef({})
   const xDomain = xZoom || [settings.fmin, settings.fmax]
+  stateRef.current = { xDomain, chartId, full: [settings.fmin, settings.fmax] }
+
+  // wheel = cursor-centered zoom of the log frequency axis;
+  // shift-drag (or middle-drag) = pan. Mirrors the T/S curve editor.
+  useEffect(() => {
+    const el = wrapRef.current
+    if (!el) return
+    const innerFrac = (clientX) => {
+      const rect = el.getBoundingClientRect()
+      const left = 52, right = 30
+      return Math.min(Math.max((clientX - rect.left - left) / (rect.width - left - right), 0), 1)
+    }
+    const onWheel = (e) => {
+      e.preventDefault()
+      const { xDomain: [x0, x1], chartId: id, full } = stateRef.current
+      const l0 = Math.log(x0), l1 = Math.log(x1)
+      const lc = lastLabel.current != null && lastLabel.current >= x0 && lastLabel.current <= x1
+        ? Math.log(lastLabel.current)
+        : l0 + innerFrac(e.clientX) * (l1 - l0)
+      const factor = Math.pow(1.18, e.deltaY / 100)
+      let n0 = lc - (lc - l0) * factor
+      let n1 = lc + (l1 - lc) * factor
+      const f0 = Math.log(Math.max(full[0], 1)), f1 = Math.log(full[1])
+      n0 = Math.max(n0, f0)
+      n1 = Math.min(n1, f1)
+      if (n1 - n0 < Math.log(1.15)) return
+      const isFull = n0 - f0 < 1e-6 && f1 - n1 < 1e-6
+      useStore.getState().setXZoom(id, isFull ? null : [Math.exp(n0), Math.exp(n1)])
+    }
+    const onPointerDown = (e) => {
+      if (!(e.shiftKey || e.button === 1)) return
+      e.preventDefault()
+      e.stopPropagation() // keep recharts from starting a drag-select
+      const start = { px: e.clientX, dom: [...stateRef.current.xDomain] }
+      const rect = el.getBoundingClientRect()
+      const innerW = rect.width - 82
+      const move = (ev) => {
+        const [x0, x1] = start.dom
+        const { full } = stateRef.current
+        const l0 = Math.log(x0), l1 = Math.log(x1)
+        const f0 = Math.log(Math.max(full[0], 1)), f1 = Math.log(full[1])
+        let d = (-(ev.clientX - start.px) / innerW) * (l1 - l0)
+        d = Math.max(f0 - l0, Math.min(f1 - l1, d)) // keep the window inside the sweep
+        useStore.getState().setXZoom(stateRef.current.chartId, [Math.exp(l0 + d), Math.exp(l1 + d)])
+      }
+      const up = () => { window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up) }
+      window.addEventListener('pointermove', move)
+      window.addEventListener('pointerup', up)
+    }
+    el.addEventListener('wheel', onWheel, { passive: false })
+    el.addEventListener('pointerdown', onPointerDown, { capture: true })
+    return () => {
+      el.removeEventListener('wheel', onWheel)
+      el.removeEventListener('pointerdown', onPointerDown, { capture: true })
+    }
+  }, [])
   const ticks = useMemo(() => {
     const t = TICKS.filter((v) => v >= xDomain[0] && v <= xDomain[1])
     return t.length >= 3 ? t : undefined // very narrow zoom: let recharts pick
@@ -34,11 +93,11 @@ function BaseChart({ chartId, data, lines, yLabel, yDomain, y2Label, y2Domain, r
     setDragR(null)
   }
   return (
-    <>
+    <div ref={wrapRef} style={{ width: '100%', height: '100%' }}>
     {xZoom && (
       <button
         style={{ position: 'absolute', bottom: 10, left: 14, zIndex: 5, fontSize: 11 }}
-        title="Reset frequency zoom (or double-click the chart)"
+        title="Reset frequency zoom (or double-click the chart). Wheel = zoom, shift+drag = pan."
         onClick={() => setXZoom(chartId, null)}
       >⟲ {fmt(xZoom[0], 0)}–{fmt(xZoom[1], 0)} Hz</button>
     )}
@@ -46,7 +105,7 @@ function BaseChart({ chartId, data, lines, yLabel, yDomain, y2Label, y2Domain, r
       <LineChart
         data={data} margin={{ top: 8, right: hasY2 ? 8 : 20, bottom: 4, left: 0 }}
         onMouseDown={(e) => { if (e && e.activeLabel != null) setDragL(e.activeLabel) }}
-        onMouseMove={(e) => { if (dragL != null && e && e.activeLabel != null) setDragR(e.activeLabel) }}
+        onMouseMove={(e) => { if (e && e.activeLabel != null) { lastLabel.current = e.activeLabel; if (dragL != null) setDragR(e.activeLabel) } }}
         onMouseUp={commitZoom}
         onMouseLeave={() => { setDragL(null); setDragR(null) }}
         onDoubleClick={() => setXZoom(chartId, null)}
@@ -96,8 +155,14 @@ function BaseChart({ chartId, data, lines, yLabel, yDomain, y2Label, y2Domain, r
         {children}
       </LineChart>
     </ResponsiveContainer>
-    </>
+    </div>
   )
+}
+
+// Visible-window data for Y "Fit" mode: when zoomed, fit to what's on screen
+function useFitData(chartId, data) {
+  const z = useStore((s) => s.xZoom[chartId])
+  return useMemo(() => (z ? data.filter((r) => r.f >= z[0] && r.f <= z[1]) : data), [data, z])
 }
 
 // Per-chart Y-scale control: Fit (computed useful range), Full (recharts
@@ -230,7 +295,8 @@ function SPLTab() {
     lines.push({ dataKey: `port_${pid}`, name: n?.data.params.label || 'Port', color: SERIES[(i + 2) % SERIES.length] })
   })
   lines.push(...snapLines(snapshots, 'spl'))
-  const [yDomain, yControl] = useYScale('spl', fitDb(data, lines.map((l) => l.dataKey)))
+  const fitData = useFitData('spl', data)
+  const [yDomain, yControl] = useYScale('spl', fitDb(fitData, lines.map((l) => l.dataKey)))
   return (
     <>
       <div className="plot-controls">
@@ -257,7 +323,8 @@ function ImpedanceTab() {
     <ReferenceLine key={i} yAxisId="left" x={p.f} stroke="#6b7687" strokeDasharray="3 3"
       label={{ value: `F${i + 1} ${p.f.toFixed(1)}`, fill: '#9aa7b8', fontSize: 10, position: 'insideTopLeft' }} />
   ))
-  const [yDomain, yControl] = useYScale('zin', fitLinear(data, ['zmag', ...snapshots.map((_, i) => `snap${i}_zin`)]))
+  const fitData = useFitData('zin', data)
+  const [yDomain, yControl] = useYScale('zin', fitLinear(fitData, ['zmag', ...snapshots.map((_, i) => `snap${i}_zin`)]))
   return (
     <>
       <div className="plot-controls">{yControl}</div>
@@ -279,7 +346,8 @@ function ExcursionTab() {
   const refAreas = xmax ? [
     <ReferenceArea key="over" yAxisId="left" y1={xmax} y2={xmax * 3} fill="#e66767" fillOpacity={0.07} />,
   ] : []
-  const [yDomain, yControl] = useYScale('exc', fitLinear(data, ['exc'], 0, xmax ? xmax * 1.25 : 0))
+  const fitData = useFitData('exc', data)
+  const [yDomain, yControl] = useYScale('exc', fitLinear(fitData, ['exc'], 0, xmax ? xmax * 1.25 : 0))
   return (
     <>
       <div className="plot-controls">{yControl}</div>
@@ -299,7 +367,8 @@ function VelocityTab() {
     const n = nodes.find((nn) => nn.id === wid)
     return { dataKey: `vel_${wid}`, name: n?.data.params.label || 'Waveguide', color: SERIES[i % SERIES.length] }
   })
-  const [yDomain, yControl] = useYScale('vel', fitLinear(data, lines.map((l) => l.dataKey), 0, vThreshold * 1.25))
+  const fitData = useFitData('vel', data)
+  const [yDomain, yControl] = useYScale('vel', fitLinear(fitData, lines.map((l) => l.dataKey), 0, vThreshold * 1.25))
   return (
     <>
       <div className="plot-controls">
@@ -320,7 +389,8 @@ function PowerTab() {
   const { data } = useChartData(['pow'])
   const snapshots = useStore((s) => s.snapshots)
   const lines = [{ dataKey: 'pow', name: 'Radiated power dBW', color: SERIES[0], width: 2.5 }, ...snapLines(snapshots, 'pow')]
-  const [yDomain, yControl] = useYScale('pow', fitDb(data, lines.map((l) => l.dataKey)))
+  const fitData = useFitData('pow', data)
+  const [yDomain, yControl] = useYScale('pow', fitDb(fitData, lines.map((l) => l.dataKey)))
   return (
     <>
       <div className="plot-controls">{yControl}</div>
@@ -332,7 +402,8 @@ function PowerTab() {
 function EfficiencyTab() {
   const { data } = useChartData(['eff'])
   const lines = [{ dataKey: 'eff', name: 'Efficiency %', color: SERIES[1], width: 2.5 }]
-  const [yDomain, yControl] = useYScale('eff', fitLinear(data, ['eff']))
+  const fitData = useFitData('eff', data)
+  const [yDomain, yControl] = useYScale('eff', fitLinear(fitData, ['eff']))
   return (
     <>
       <div className="plot-controls">{yControl}</div>
@@ -347,7 +418,8 @@ function ElecPowerTab() {
     { dataKey: 'peVA', name: 'Apparent (VA) — amp must source', color: SERIES[2], width: 2 },
     { dataKey: 'peW', name: 'Real (W) — dissipated + converted', color: SERIES[0], width: 2.5 },
   ]
-  const [yDomain, yControl] = useYScale('pe', fitLinear(data, ['peW', 'peVA']))
+  const fitData = useFitData('pe', data)
+  const [yDomain, yControl] = useYScale('pe', fitLinear(fitData, ['peW', 'peVA']))
   return (
     <>
       <div className="plot-controls">{yControl}</div>
