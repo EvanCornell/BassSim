@@ -1,6 +1,6 @@
 // Acoustic element models: transmission lines, waveguides/horns, radiation
 // impedance of a piston in various solid angles. SI units throughout.
-import { C, ZERO, ONE, add, mul, div, inv, jw, cosh, sinh, matMul, matIdentity } from './complex'
+import { C, ZERO, ONE, add, mul, div, inv, jw, cosh, sinh, matMul, matIdentity } from './complex.js'
 
 export const RHO = 1.184 // air density kg/m^3 (20 °C)
 export const C_AIR = 344 // speed of sound m/s

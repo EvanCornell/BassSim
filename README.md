@@ -53,6 +53,13 @@ power before Xmax is exceeded.
 - **Projects**: auto-save to LocalStorage, restore prompt, project manager with thumbnails, JSON file export/import with schema versioning.
 - **Export**: CSV of all series, PNG schematic of the canvas, plain-text metrics summary.
 
+## MCP server (AI agent access)
+
+The simulation engine is also exposed as an [MCP](https://modelcontextprotocol.io)
+server so AI assistants can model enclosures, simulate, and tune designs
+directly — see [`mcp/README.md`](mcp/README.md). `npm run mcp` starts it;
+`npm run test:mcp` runs the smoke tests.
+
 ## Stack
 
 React 18, React Flow 11, Zustand, math.js (complex arithmetic), Recharts,

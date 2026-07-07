@@ -6,9 +6,12 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "mcp": "node mcp/server.js",
+    "test:mcp": "node mcp/test-client.mjs"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "html-to-image": "^1.11.11",
     "mathjs": "^13.0.0",
     "react": "^18.3.1",
@@ -16,6 +19,7 @@
     "react-hook-form": "^7.52.0",
     "reactflow": "^11.11.4",
     "recharts": "^2.12.7",
+    "zod": "^4.4.3",
     "zustand": "^4.5.4"
   },
   "devDependencies": {
