@@ -56,9 +56,12 @@ power before Xmax is exceeded.
 ## MCP server (AI agent access)
 
 The simulation engine is also exposed as an [MCP](https://modelcontextprotocol.io)
-server so AI assistants can model enclosures, simulate, and tune designs
-directly — see [`mcp/README.md`](mcp/README.md). `npm run mcp` starts it;
-`npm run test:mcp` runs the smoke tests.
+server so AI assistants can search drivers, build and calibrate enclosures,
+simulate, optimize against goals, and compare designs directly — see
+[`mcp/README.md`](mcp/README.md). Run it locally over stdio (`npm run mcp`,
+for Claude Desktop/Code) or as a hosted HTTP connector for claude.ai/ChatGPT
+(`npm run mcp:http`, also Dockerized). `npm run test:mcp` and
+`npm run test:http` run the smoke tests.
 
 ## Stack
 

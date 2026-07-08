@@ -8,7 +8,9 @@
     "build": "vite build",
     "preview": "vite preview",
     "mcp": "node mcp/server.js",
-    "test:mcp": "node mcp/test-client.mjs"
+    "test:mcp": "node mcp/test-client.mjs",
+    "mcp:http": "node mcp/http.js",
+    "test:http": "node mcp/test-http.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
