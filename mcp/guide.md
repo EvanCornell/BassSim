@@ -92,6 +92,20 @@ Handle: `in`. Params: `space` = `free|half|quarter|eighth` (4π/2π/π/π/2),
   Sealed boxes show one peak (`fc`) and a `qtc`.
 - Velocity/SPL scale linearly with voltage; power with voltage².
 
+## Higher-level tools
+
+You rarely need to hand-write project JSON from scratch:
+
+- `driver_search` — browse the built-in T/S library; pass a result as
+  `driver: { db: "UM18", count: 2, wiring: "parallel" }` to a builder.
+- `build_enclosure` — sealed / ported / bandpass4 / bandpass6 topologies with
+  correct wiring. Ported and bandpass4 auto-calibrate port length against the
+  *simulated* tuning. Take the returned project and edit it freely.
+- `optimize` — bounded search over up to 3 parameters for min_f3 / max_spl /
+  flat, with Xmax and port-velocity constraints. Prefer it over manual
+  iteration.
+- `compare` — metrics for several candidate designs side by side.
+
 ## Workflow tips
 
 1. `validate` first — warnings explain topology mistakes in words.

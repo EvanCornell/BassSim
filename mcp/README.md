@@ -14,6 +14,10 @@ project JSON, validate them, simulate, and sweep parameters — the same
 | `simulate` | Full sweep → metrics (F3, tuning, Qtc, excursion vs Xmax, port velocity, max power) + downsampled SPL/impedance curves. |
 | `get_curve` | Any single quantity vs frequency (SPL per port, velocity, efficiency, group delay, …) with windowing. |
 | `sweep_parameter` | Server-side grid sweep of one node param or setting, metrics tabulated per value. |
+| `driver_search` | Query the built-in T/S driver library (brand/model text, Fs/Xmax/Sd filters). |
+| `build_enclosure` | Generate sealed / ported / bandpass4 / bandpass6 projects. Ported and BP4 port lengths are auto-calibrated against the *simulated* tuning. |
+| `optimize` | Bounded search over up to 3 parameters for `min_f3` / `max_spl` / `flat`, with Xmax and port-velocity constraints. Returns the optimized project. |
+| `compare` | Metrics for 2–6 candidate designs side by side. |
 
 The guide is also published as the resource `acousim://guide`.
 

@@ -34,7 +34,8 @@ const call = async (name, args = {}) => {
 
 {
   const tools = (await client.listTools()).tools.map((t) => t.name).sort()
-  check('tool list', JSON.stringify(tools) === JSON.stringify(['design_guide', 'get_curve', 'simulate', 'sweep_parameter', 'validate']), tools.join(','))
+  const expected = ['build_enclosure', 'compare', 'design_guide', 'driver_search', 'get_curve', 'optimize', 'simulate', 'sweep_parameter', 'validate']
+  check('tool list', JSON.stringify(tools) === JSON.stringify(expected), tools.join(','))
 }
 {
   const { text } = await call('design_guide')
@@ -83,6 +84,59 @@ const call = async (name, args = {}) => {
 {
   const res = await client.readResource({ uri: 'acousim://guide' })
   check('guide resource', res.contents[0].text.includes('Project format'))
+}
+
+// ---- phase 2 ----
+let builtPorted = null
+{
+  const { text } = await call('driver_search', { query: 'sundown', xmax_min: 25 })
+  const j = JSON.parse(text)
+  check('driver_search filters', j.count === 3 && j.drivers.every((d) => d.Xmax >= 25), j.drivers.map((d) => d.name).join(', '))
+}
+{
+  const { text } = await call('build_enclosure', {
+    topology: 'ported', driver: { db: 'UM12', count: 1 }, volume: 60, tuning: 30, voltage: 20,
+  })
+  const j = JSON.parse(text)
+  builtPorted = j.project
+  const fb = parseFloat(j.summary.metrics.fb_tuning)
+  check('build ported: calibrated tuning', Math.abs(fb - 30) < 0.3, `fb=${fb} Hz, ${Object.values(j.calibration)[0]}`)
+  check('build ported: valid project', j.project.nodes.length === 3 && j.project.edges.length === 2)
+}
+{
+  const { text } = await call('build_enclosure', { topology: 'sealed', driver: { db: 'UM12' }, volume: 40 })
+  const j = JSON.parse(text)
+  check('build sealed: qtc reported', !!j.summary.metrics.qtc && !!j.summary.metrics.fc_sealed,
+    `fc=${j.summary.metrics.fc_sealed}, qtc=${j.summary.metrics.qtc}`)
+}
+{
+  const { text } = await call('build_enclosure', {
+    topology: 'bandpass4', driver: { db: 'X-12' }, front_volume: 25, rear_volume: 35, tuning: 48,
+  })
+  const j = JSON.parse(text)
+  const fb = parseFloat(j.summary.metrics.fb_tuning)
+  check('build bandpass4: calibrated', Math.abs(fb - 48) < 0.5, `fb=${fb} Hz`)
+}
+{
+  const { r } = await call('build_enclosure', { topology: 'ported', driver: { db: 'SA-1' }, volume: 40 })
+  check('ambiguous driver errors', r.isError === true, r.content[0].text)
+}
+{
+  const { text } = await call('optimize', {
+    project: builtPorted,
+    params: [{ node: 'Port', param: 'length', min: 10, max: 120 }, { node: 'Box', param: 'volume', min: 30, max: 90 }],
+    objective: 'flat', band: [22, 90], max_port_velocity_ms: 17,
+  })
+  const j = JSON.parse(text)
+  check('optimize improves score', j.score_after >= j.score_before && j.simulations > 30,
+    `${j.score_before} → ${j.score_after} in ${j.simulations} sims; ${j.best_values.map((b) => `${b.target}=${b.value}`).join(', ')}`)
+  check('optimize returns project', j.project?.nodes?.length === 3)
+}
+{
+  const { text } = await call('compare', { projects: [ported, builtPorted] })
+  const j = JSON.parse(text)
+  check('compare tabulates', j.comparison.length === 2 && j.comparison.every((r) => r.f3 || r.error),
+    j.comparison.map((r) => `${r.name}: F3 ${r.f3}`).join(' | '))
 }
 
 await client.close()

@@ -10,6 +10,7 @@ import { z } from 'zod'
 import { runSimulation, validateGraph } from '../src/engine/solver.js'
 import { computeMetrics } from '../src/engine/metrics.js'
 import { hydrateProject } from '../src/engine/project.js'
+import { searchDrivers, BUILDERS, calibratePort, optimizeProject } from './builders.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const GUIDE = readFileSync(join(__dirname, 'guide.md'), 'utf8')
@@ -275,6 +276,195 @@ server.registerTool('sweep_parameter', {
       swept: nodeId ? `node ${nodeId} param "${param}"` : `setting "${param}"`,
       rows,
     })
+  } catch (e) { return errResult(e) }
+})
+
+// ---------- phase 2: driver DB, builders, optimizer, compare ----------
+
+server.registerTool('driver_search', {
+  title: 'Search the driver library',
+  description: 'Searches the built-in T/S driver library (car audio subwoofers, pro audio woofers, hi-fi drivers). Returns full parameter sets usable directly as driver node params or as build_enclosure driver.db references.',
+  inputSchema: {
+    query: z.string().optional().describe('Substring of brand/model, e.g. "sundown", "UM18"'),
+    fs_max: z.number().optional().describe('Only drivers with Fs at or below this, Hz'),
+    xmax_min: z.number().optional().describe('Only drivers with Xmax at or above this, mm'),
+    sd_min: z.number().optional().describe('Minimum cone area, cm² (a 12" is ~480, 15" ~810, 18" ~1140)'),
+    sd_max: z.number().optional(),
+  },
+}, async (filters) => {
+  try {
+    const rows = searchDrivers(filters)
+    return jsonResult({
+      count: rows.length,
+      units: 'Fs Hz, Vas L, Re ohm, Bl T·m, Mms g, Cms mm/N, Sd cm², Le mH, Xmax mm',
+      drivers: rows.map(({ brand, model, ...ts }) => ({ name: `${brand} ${model}`, ...ts })),
+      note: 'Values transcribed from public spec sheets — approximate; verify against the datasheet for a real build.',
+    })
+  } catch (e) { return errResult(e) }
+})
+
+const driverSpec = z.record(z.string(), z.any()).describe(
+  'Driver spec: { db: "UM18" } to use a library driver (see driver_search), and/or explicit T/S params '
+  + '(Fs, Qes, Qms, Vas, Re, Bl, Mms, Cms, Sd, Le, Xmax — explicit values override the library). '
+  + 'Plus count (drivers in the box) and wiring: series|parallel|series-parallel.',
+)
+
+server.registerTool('build_enclosure', {
+  title: 'Build an enclosure project',
+  description: 'Generates a valid, simulated project for a standard topology. Ported and 4th-order bandpass boxes are auto-calibrated: the port length is bisected until the SIMULATED tuning matches your target (end corrections included), so the returned tuning is real, not textbook-approximate. Returns the project JSON (editable, works with all other tools and the visual editor) plus a simulation summary.',
+  inputSchema: {
+    topology: z.enum(['sealed', 'ported', 'bandpass4', 'bandpass6']),
+    driver: driverSpec,
+    volume: z.number().optional().describe('Box volume L (sealed/ported)'),
+    front_volume: z.number().optional().describe('Front chamber L (bandpass)'),
+    rear_volume: z.number().optional().describe('Rear chamber L (bandpass)'),
+    tuning: z.number().optional().describe('Target tuning Hz (ported/bandpass4). Calibrated automatically.'),
+    front_tuning: z.number().optional().describe('Front chamber tuning Hz (bandpass6, analytic guess — refine with sweep/optimize)'),
+    rear_tuning: z.number().optional().describe('Rear chamber tuning Hz (bandpass6)'),
+    port_area: z.number().optional().describe('Port cross-section cm² per port (default ≈ total Sd/4)'),
+    port_length: z.number().optional().describe('Fix the port length cm instead of giving a tuning'),
+    port_count: z.number().int().min(1).max(4).optional().describe('Split the port into N identical ports (ported only)'),
+    voltage: z.number().optional().describe('Drive level V RMS (default 2.83)'),
+    name: z.string().optional(),
+  },
+}, async (args) => {
+  try {
+    const { topology, voltage, ...rest } = args
+    const need = (k) => { if (rest[k] == null) throw new Error(`"${topology}" needs ${k}.`) }
+    if (topology === 'sealed' || topology === 'ported') need('volume')
+    if (topology === 'bandpass4' || topology === 'bandpass6') { need('front_volume'); need('rear_volume') }
+    const settings = voltage ? { voltage } : {}
+    const { project, ports, notes } = BUILDERS[topology]({ ...rest, settings })
+    const calibration = {}
+    const simFb = (p) => { const c = run(p); return c.res.ok ? (c.metrics?.fb ?? null) : null }
+    if (rest.tuning && !rest.port_length && (topology === 'ported' || topology === 'bandpass4')) {
+      for (const pid of ports) {
+        const L = calibratePort(project, pid, rest.tuning, simFb)
+        calibration[pid] = `length ${L} cm → simulated fb ${sig(simFb(project))} Hz (target ${rest.tuning})`
+      }
+    }
+    return jsonResult({
+      notes, calibration: Object.keys(calibration).length ? calibration : undefined,
+      summary: summarize(run(project), 30),
+      project,
+    })
+  } catch (e) { return errResult(e) }
+})
+
+// Objective scoring for optimize. Higher = better; constraints are penalties.
+function bandIndices(freqs, band) {
+  const [f1, f2] = band
+  const idx = []
+  for (let i = 0; i < freqs.length; i++) if (freqs[i] >= f1 && freqs[i] <= f2) idx.push(i)
+  if (idx.length < 3) throw new Error(`Band ${f1}-${f2} Hz covers too few sweep points; widen it or the sweep.`)
+  return idx
+}
+
+function makeScore({ objective, band, constraints = {} }) {
+  return (projRaw) => {
+    let ctx
+    try { ctx = run(projRaw) } catch { return -1e9 }
+    if (!ctx.res.ok) return -1e9
+    const { res, metrics, nodes } = ctx
+    let s
+    if (objective === 'min_f3') {
+      s = metrics?.f3 ? -metrics.f3 : -1e6
+    } else {
+      const idx = bandIndices(res.freqs, band)
+      const vals = idx.map((i) => res.splCombined[i]).filter((v) => isFinite(v))
+      const mean = vals.reduce((a, b) => a + b, 0) / vals.length
+      if (objective === 'max_spl') s = mean
+      else { // flat
+        const sd = Math.sqrt(vals.reduce((a, b) => a + (b - mean) ** 2, 0) / vals.length)
+        s = mean - 4 * sd
+      }
+    }
+    const vLimit = constraints.max_port_velocity_ms
+    if (vLimit) {
+      let vmax = 0
+      for (const arr of Object.values(res.velocity)) for (const v of arr) if (v > vmax) vmax = v
+      if (vmax > vLimit) s -= 30 * (vmax / vLimit - 1)
+    }
+    if (constraints.respect_xmax !== false) {
+      for (const [did, arr] of Object.entries(res.excursionByDriver)) {
+        const xmax = constraints.max_excursion_mm || nodes.find((n) => n.id === did)?.data.params.Xmax
+        if (!xmax) continue
+        let xm = 0
+        for (const x of arr) if (x > xm) xm = x
+        if (xm > xmax) s -= 30 * (xm / xmax - 1)
+      }
+    }
+    return s
+  }
+}
+
+server.registerTool('optimize', {
+  title: 'Optimize parameters against a goal',
+  description: 'Server-side optimizer: varies up to 3 node parameters or settings within bounds to maximize an objective, with excursion-vs-Xmax and port-velocity constraints applied as penalties. Uses coordinate grid refinement (~100-300 simulations). Returns the best values, the optimized project JSON, and its simulation summary. Objectives: min_f3 (lowest F3), max_spl (highest mean SPL over band), flat (mean SPL minus 4× ripple over band).',
+  inputSchema: {
+    project: projectParam,
+    params: z.array(z.object({
+      node: z.string().optional().describe('Node id or label; omit to vary a global setting'),
+      param: z.string().describe('e.g. length, volume, S1 — or voltage when node is omitted'),
+      min: z.number(), max: z.number(),
+    })).min(1).max(3),
+    objective: z.enum(['min_f3', 'max_spl', 'flat']),
+    band: z.tuple([z.number(), z.number()]).optional().describe('Frequency band [f1, f2] Hz — required for max_spl and flat'),
+    max_port_velocity_ms: z.number().optional().describe('Penalize designs whose peak port air velocity exceeds this (17 is a good default at full power)'),
+    max_excursion_mm: z.number().optional().describe('Excursion limit; defaults to each driver\'s Xmax'),
+    respect_xmax: z.boolean().optional().describe('Set false to disable the excursion penalty'),
+    rounds: z.number().int().min(1).max(4).optional(),
+    grid: z.number().int().min(5).max(13).optional().describe('Grid points per parameter per round (default 9)'),
+  },
+}, async ({ project, params, objective, band, rounds, grid, ...constraints }) => {
+  try {
+    if ((objective === 'max_spl' || objective === 'flat') && !band) {
+      throw new Error(`Objective "${objective}" needs a band [f1, f2].`)
+    }
+    const { nodes } = hydrateProject(project)
+    const resolved = params.map((prm) => ({
+      ...prm, node: prm.node ? resolveNode(nodes, prm.node).id : undefined,
+    }))
+    const score = makeScore({ objective, band, constraints })
+    const before = score(project)
+    const { best, bestScore, evals, values } = optimizeProject(project, resolved, score,
+      { rounds: rounds || 3, gridN: grid || 9 })
+    return jsonResult({
+      objective: band ? `${objective} over ${band[0]}-${band[1]} Hz` : objective,
+      score_before: sig(before), score_after: sig(bestScore), simulations: evals,
+      best_values: resolved.map((prm, i) => ({
+        target: prm.node ? `${prm.node}.${prm.param}` : `settings.${prm.param}`,
+        value: sig(values[i]),
+      })),
+      summary: summarize(run(best), 30),
+      project: best,
+    })
+  } catch (e) { return errResult(e) }
+})
+
+server.registerTool('compare', {
+  title: 'Compare designs',
+  description: 'Simulates 2-6 projects and tabulates their metrics side by side (F3, tuning, passband, peak SPL, excursion, port velocity, max power before Xmax). Give each project a distinct "name" field.',
+  inputSchema: {
+    projects: z.array(projectParam).min(2).max(6),
+  },
+}, async ({ projects }) => {
+  try {
+    const rows = projects.map((proj, i) => {
+      const name = proj.name || `design ${i + 1}`
+      try {
+        const ctx = run(proj)
+        if (!ctx.res.ok) return { name, error: ctx.res.validation?.errors?.join('; ') }
+        let vmax = 0
+        for (const arr of Object.values(ctx.res.velocity)) for (const v of arr) if (v > vmax) vmax = v
+        return {
+          name,
+          ...metricsSummary(ctx.metrics),
+          max_port_velocity: vmax > 0.01 ? `${sig(vmax)} m/s` : undefined,
+        }
+      } catch (e) { return { name, error: e.message } }
+    })
+    return jsonResult({ comparison: rows })
   } catch (e) { return errResult(e) }
 })
 
