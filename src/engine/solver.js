@@ -196,6 +196,13 @@ export function runSimulation(nodes, edges, settings) {
   res.excursionByDriver = {}
   for (const d of drivers) res.excursionByDriver[d.id] = new Array(npts).fill(0)
 
+  // Interior SPL probes: chambers with params.probe report the acoustic
+  // pressure INSIDE the volume (dB SPL at the probe station), read from the
+  // transfer-matrix state. Observational only — never loads the circuit.
+  const probedChambers = nodes.filter((n) => n.type === 'chamber' && n.data.params.probe)
+  res.splInterior = {}
+  for (const c of probedChambers) res.splInterior[c.id] = new Array(npts).fill(null)
+
   // Which radiators are fed (directly or via chain) from a driver FRONT port
   // vs elsewhere, decided during propagation (first pass tags them).
 
@@ -294,6 +301,7 @@ export function runSimulation(nodes, edges, settings) {
     // readout stays coherent with the summed SPL.
     const emit = { pressures: [], driverP: ZERO, portP: {}, powers: 0 }
     const wgAcc = new Map() // waveguide id -> { Ut, Um } complex sums
+    const probeAcc = new Map() // probed chamber id -> complex interior pressure sum
     const propagateInto = (node, fromHandle, p, U, visited, viaFront) => {
       if (visited.has(node.id)) return
       const nv = new Set(visited); nv.add(node.id)
@@ -324,6 +332,26 @@ export function runSimulation(nodes, edges, settings) {
           acc.Ut = add(acc.Ut, U)
           acc.Um = add(acc.Um, U2)
           wgAcc.set(node.id, acc)
+        }
+        if (node.type === 'chamber' && pd.probe) {
+          // Interior pressure at the probe station: propagate through a
+          // partial TL matrix covering probePos% of the chamber's length.
+          // In masked (lumped) mode pressure is uniform, so the entry value
+          // is the probe value.
+          const pos = Math.min(Math.max((pd.probePos ?? 100) / 100, 0), 1)
+          let px = p
+          if (!masking && pos > 1e-3) {
+            const pk = `${node.id}:probe`
+            let Mx = matCache.get(pk)
+            if (!Mx) {
+              const V = Math.max((pd.volume || 20) * 1e-3, 1e-5) * pos
+              const L = Math.max((pd.length || 30) * 1e-2, 1e-3) * pos
+              Mx = chamberMatrix({ volume: V, length: L, Q: normQ(pd), stuffing: pd.stuffing || 0 }, w, false)
+              matCache.set(pk, Mx)
+            }
+            ;[px] = propagate(Mx, p, U)
+          }
+          probeAcc.set(node.id, add(probeAcc.get(node.id) || ZERO, px))
         }
         const outHandle = node.type === 'waveguide' ? 'mouth' : 'out'
         const downstream = (adj.get(`${node.id}:${outHandle}`) || []).filter((o) => !visited.has(o.node.id))
@@ -421,6 +449,11 @@ export function runSimulation(nodes, edges, settings) {
           }
         }
       }
+    }
+
+    // interior SPL from coherently summed probe pressures
+    for (const [cid, psum] of probeAcc) {
+      if (res.splInterior[cid]) res.splInterior[cid][i] = 20 * Math.log10(Math.max(abs(psum), 1e-12) / P_REF)
     }
 
     // waveguide velocities from coherently summed volume velocity

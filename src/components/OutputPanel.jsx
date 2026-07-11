@@ -278,6 +278,9 @@ function useChartData(keys) {
       if (keys.includes('vel')) {
         for (const [wid, arr] of Object.entries(results.velocity || {})) row[`vel_${wid}`] = arr[i]
       }
+      if (keys.includes('int')) {
+        for (const [cid, arr] of Object.entries(results.splInterior || {})) row[`int_${cid}`] = arr[i]
+      }
       if (keys.includes('pow')) row.pow = results.power[i] > 0 ? 10 * Math.log10(results.power[i]) : null
       if (keys.includes('pe')) { row.peW = results.peReal?.[i]; row.peVA = results.peApparent?.[i] }
       if (keys.includes('eff')) {
@@ -425,6 +428,40 @@ function VelocityTab() {
   )
 }
 
+function InteriorTab() {
+  const { data } = useChartData(['int'])
+  const nodes = useStore((s) => s.nodes)
+  const results = useStore((s) => s.results)
+  const chambers = Object.keys(results?.splInterior || {})
+  const lines = chambers.map((cid, i) => {
+    const n = nodes.find((nn) => nn.id === cid)
+    return { dataKey: `int_${cid}`, name: n?.data.params.label || 'Chamber', color: SERIES[i % SERIES.length] }
+  })
+  const fitData = useFitData('int', data)
+  const [yDomain, yControl] = useYScale('int', fitDb(fitData, lines.map((l) => l.dataKey)))
+  if (!chambers.length) {
+    return (
+      <div style={{ padding: '24px 16px', color: 'var(--text-3)', fontSize: 12.5, lineHeight: 1.6 }}>
+        No interior probes active. Select a Chamber node and enable
+        <b> “SPL probe (mic inside)”</b> to plot the sound pressure level inside
+        that volume — e.g. at the listening position in a car cabin. The probe
+        is a virtual microphone: it never changes the simulation itself.
+      </div>
+    )
+  }
+  return (
+    <>
+      <div className="plot-controls">
+        <span style={{ fontSize: 11, color: 'var(--text-3)' }}>
+          dB SPL inside the volume (no 1 m convention — point pressure at the mic station)
+        </span>
+        {yControl}
+      </div>
+      <BaseChart chartId="int" data={data} lines={lines} yLabel="dB SPL (interior)" yDomain={yDomain} />
+    </>
+  )
+}
+
 function PowerTab() {
   const { data } = useChartData(['pow'])
   const snapshots = useStore((s) => s.snapshots)
@@ -549,6 +586,7 @@ const TABS = [
   ['zin', 'Impedance', ImpedanceTab],
   ['exc', 'Cone Excursion', ExcursionTab],
   ['vel', 'Port Velocity', VelocityTab],
+  ['int', 'Interior SPL', InteriorTab],
   ['pow', 'Acoustic Power', PowerTab],
   ['eff', 'Efficiency', EfficiencyTab],
   ['pe', 'Elec. Power', ElecPowerTab],

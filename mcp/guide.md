@@ -40,7 +40,8 @@ Params: `Fs` Hz, `Qes`, `Qms`, `Vas` L, `Re` Ω, `Bl` T·m, `Mms` g, `Cms` mm/N,
 ### chamber — lumped/TL volume
 Handles: `in` (in), `out` (out). A chamber with only `in` connected is a
 sealed volume. Params: `volume` L, `length` cm (acoustic path, sets TL modes),
-`stuffing` 0–1, `Q`, `label`.
+`stuffing` 0–1, `Q`, `label`, `probe` bool + `probePos` 0–100 (interior SPL
+virtual microphone — see below).
 
 ### waveguide — port, duct, horn segment
 Handles: `throat` (in), `mouth` (out). Params: `S1` throat area cm², `S2`
@@ -91,6 +92,12 @@ Handle: `in`. Params: `space` = `free|half|quarter|eighth` (4π/2π/π/π/2),
 - Ported boxes show two impedance peaks; `fb` = the minimum between them.
   Sealed boxes show one peak (`fc`) and a `qtc`.
 - Velocity/SPL scale linearly with voltage; power with voltage².
+- **Interior SPL** (`probe: true` on a chamber, quantity `spl_interior`):
+  pressure INSIDE the volume at a virtual mic — the right measure for
+  in-cabin listening levels (cabin gain rises 12 dB/oct below the cabin's
+  first mode). `probePos` slides the mic 0% (inlet) → 100% (far wall);
+  position only matters near the axial standing-wave modes. Observational:
+  never changes the simulation. Note: no 1 m convention — point pressure.
 
 ## Higher-level tools
 

@@ -74,6 +74,7 @@ const QUANTITIES = {
   excursion: { label: 'Cone excursion (worst driver), mm peak', get: (r) => r.excursion },
   excursion_driver: { label: 'Cone excursion of one driver, mm peak', get: (r, id) => r.excursionByDriver[id], node: ['driver'] },
   velocity: { label: 'Air velocity in a waveguide, m/s peak', get: (r, id) => r.velocity[id], node: ['waveguide'] },
+  spl_interior: { label: 'SPL inside a chamber, dB (virtual mic; set params.probe=true on the chamber, position via probePos 0-100%)', get: (r, id) => r.splInterior?.[id], node: ['chamber'] },
   acoustic_power: { label: 'Radiated acoustic power, W', get: (r) => r.power },
   electrical_power: { label: 'Electrical input power (real), W', get: (r) => r.peReal },
   apparent_power: { label: 'Electrical input power (apparent), VA', get: (r) => r.peApparent },

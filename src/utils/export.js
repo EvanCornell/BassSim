@@ -34,6 +34,10 @@ export function exportCSV(results, nodes, projectName) {
     const label = nodes.find((n) => n.id === wid)?.data.params.label || wid
     cols.push([`Velocity ${label} (m/s pk)`, (i) => arr[i]])
   }
+  for (const [cid, arr] of Object.entries(results.splInterior || {})) {
+    const label = nodes.find((n) => n.id === cid)?.data.params.label || cid
+    cols.push([`Interior SPL ${label} (dB)`, (i) => arr[i]])
+  }
   cols.push(
     ['Acoustic power (W)', (i) => results.power[i]],
     ['Electrical power real (W)', (i) => results.peReal?.[i]],
