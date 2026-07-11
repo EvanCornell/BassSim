@@ -48,6 +48,10 @@ Then ask, e.g.: *"Design me a ported box for a 12" driver with Fs 28 Hz,
 Qts 0.45, Vas 55 L that stays flat to 30 Hz at 500 W without port chuffing —
 use the acousim tools."*
 
+> **Note:** the production web server (`npm run server`) already exposes the
+> same MCP endpoint at `/mcp` alongside the app and the simulation API — one
+> process serves everything. `mcp/http.js` below is for an MCP-only deployment.
+
 ## Hosted (remote HTTP) — for claude.ai / ChatGPT connectors
 
 The same tools are served over **Streamable HTTP** by `mcp/http.js`, so the

@@ -1,7 +1,7 @@
 import React from 'react'
 import { Handle, Position } from 'reactflow'
 import { useStore } from '../store'
-import { C_AIR, flareCutoff, endCorrectionLength, waveguideVolume } from '../engine/acoustics'
+import { C_AIR, flareCutoff, endCorrectionLength, waveguideVolume } from '../engine/geometry'
 
 const NODE_COLORS = {
   driver: 'var(--s1)',

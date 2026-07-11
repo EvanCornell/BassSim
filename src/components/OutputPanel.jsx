@@ -4,7 +4,7 @@ import {
   ReferenceLine, ResponsiveContainer, ReferenceArea,
 } from 'recharts'
 import { useStore } from '../store'
-import { waveguideVolume } from '../engine/acoustics'
+import { waveguideVolume } from '../engine/geometry'
 
 const SERIES = ['#3987e5', '#199e70', '#c98500', '#9085e9', '#d55181', '#d95926']
 const GRID = '#2d3646'
@@ -495,6 +495,19 @@ function PhaseTab() {
   )
 }
 
+function SimErrorBanner() {
+  const simError = useStore((s) => s.simError)
+  if (!simError) return null
+  return (
+    <div style={{
+      background: '#3a1518', color: '#ff8a80', border: '1px solid #6e2228',
+      borderRadius: 6, padding: '6px 12px', margin: '6px 10px 0', fontSize: 12,
+    }}>
+      ⚠ {simError}
+    </div>
+  )
+}
+
 function MetricsStrip() {
   const metrics = useStore((s) => s.metrics)
   const results = useStore((s) => s.results)
@@ -561,6 +574,7 @@ export default function OutputPanel() {
   return (
     <div className="bottom-panel" style={{ height: collapsed ? 'auto' : height + 70 }}>
       <div className="bp-resize" ref={dragRef} onMouseDown={onDragStart} />
+      <SimErrorBanner />
       <MetricsStrip />
       <div className="plot-tabs">
         {TABS.map(([k, name]) => (

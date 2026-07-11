@@ -1,7 +1,5 @@
 import { create } from 'zustand'
 import { applyNodeChanges, applyEdgeChanges, addEdge } from 'reactflow'
-import { runSimulation } from './engine/solver'
-import { computeMetrics } from './engine/metrics'
 import { SCHEMA_VERSION, DEFAULT_PARAMS } from './engine/project'
 
 export { SCHEMA_VERSION, DEFAULT_PARAMS }
@@ -209,20 +207,44 @@ export const useStore = create((set, get) => ({
   setRestorePrompt: (v) => set({ restorePrompt: v }),
 
   // ---- compute pipeline (debounced 150 ms) ----
+  // Simulation runs SERVER-SIDE: the engine never ships to the browser.
+  // The debounce collapses slider drags; an AbortController cancels the
+  // in-flight request when a newer edit supersedes it.
   _computeTimer: null,
   _lastSig: '',
+  _abort: null,
+  simError: null,
   scheduleCompute: () => {
     const st = get()
     if (st._computeTimer) clearTimeout(st._computeTimer)
-    const timer = setTimeout(() => {
+    const timer = setTimeout(async () => {
       const { nodes, edges, settings } = get()
+      if (!nodes.length) return
       const sig = graphSignature(nodes, edges, settings)
       if (sig === get()._lastSig && get().results) return
-      const xmaxNode = nodes.find((n) => n.type === 'driver')
-      const res = runSimulation(nodes, edges, settings)
-      const metrics = computeMetrics(res, { ...settings, xmax: xmaxNode?.data.params.Xmax })
-      set({ results: res, metrics, _lastSig: sig })
-      get().autoSave()
+      get()._abort?.abort()
+      const ctrl = new AbortController()
+      set({ _abort: ctrl })
+      try {
+        const r = await fetch('/api/simulate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          signal: ctrl.signal,
+          body: JSON.stringify({
+            nodes: nodes.map((n) => ({ id: n.id, type: n.type, params: n.data.params })),
+            edges: edges.map((e) => ({ source: e.source, sourceHandle: e.sourceHandle, target: e.target, targetHandle: e.targetHandle })),
+            settings,
+          }),
+        })
+        if (!r.ok) throw new Error(`server responded ${r.status}`)
+        const { results, metrics } = await r.json()
+        if (get()._abort !== ctrl) return // a newer request superseded this one
+        set({ results, metrics, _lastSig: sig, simError: null })
+        get().autoSave()
+      } catch (e) {
+        if (e.name === 'AbortError' || get()._abort !== ctrl) return
+        set({ simError: `Simulation service unreachable (${e.message}). Retrying on next edit.`, _lastSig: '' })
+      }
     }, 150)
     set({ _computeTimer: timer })
   },

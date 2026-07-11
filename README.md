@@ -8,11 +8,23 @@ cabin modeled as a lossy chamber — is built from the same five elements.
 
 ## Run it
 
+Simulations run **server-side** — the browser bundle contains the UI only,
+no engine code. Development therefore needs both processes:
+
 ```bash
 npm install
-npm run dev     # http://localhost:5173
-npm run build   # production bundle in dist/
+npm run server  # simulation backend on :8788 (terminal 1)
+npm run dev     # UI on http://localhost:5173, proxies /api to :8788 (terminal 2)
 ```
+
+Production is a single process serving the built app, the simulation API,
+and the MCP endpoint:
+
+```bash
+npm start       # build + serve everything on http://localhost:8788
+```
+
+Or with Docker: `docker build -t acousim . && docker run -p 8788:8788 acousim`
 
 ## How it works
 
