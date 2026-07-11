@@ -69,6 +69,15 @@ const call = async (name, args = {}) => {
   check('get_curve missing node errors', r.isError === true)
 }
 {
+  const probed = structuredClone(ported)
+  probed.nodes.find((n) => n.id === 'c1').params.probe = true
+  const { text } = await call('get_curve', { project: probed, quantity: 'spl_interior', node: 'Box', fmin: 15, fmax: 30 })
+  const j = JSON.parse(text)
+  const vals = j.data.map(([, v]) => v)
+  check('interior SPL probe via MCP', vals.length > 5 && Math.max(...vals) > 100,
+    `${vals.length} pts, max ${Math.max(...vals).toFixed(1)} dB inside the box`)
+}
+{
   const { text } = await call('sweep_parameter', { project: ported, node: 'p1', param: 'length', from: 20, to: 80, steps: 7 })
   const j = JSON.parse(text)
   const fbs = j.rows.map((r) => r.fb_hz)

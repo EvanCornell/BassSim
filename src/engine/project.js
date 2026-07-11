@@ -10,7 +10,7 @@ export const DEFAULT_PARAMS = {
     Cms: 0.19, Sd: 480, Le: 1.5, LeExp: 1, Xmax: 15, Rms: 4,
     count: 1, wiring: 'single', Q: 50, lossless: true, label: 'Driver',
   },
-  chamber: { volume: 30, length: 40, shape: 'rectangular', stuffing: 0, Q: 50, lossless: false, label: 'Chamber' },
+  chamber: { volume: 30, length: 40, shape: 'rectangular', stuffing: 0, Q: 50, lossless: false, probe: false, probePos: 100, label: 'Chamber' },
   waveguide: { S1: 80, S2: 80, length: 30, flare: 'conical', ecFactor: 0.732, Q: 50, lossless: false, label: 'Port' },
   pr: { Mmd: 85, Cms: 0.35, Rms: 3, Sd: 480, addedMass: 0, Q: 50, lossless: false, space: 'half', label: 'Passive Radiator' },
   radiation: { space: 'half', label: 'Radiation' },

@@ -200,10 +200,51 @@ function ChamberForm({ node }) {
       <SelectField id={id} field="shape" value={p.shape} options={[['rectangular', 'Rectangular'], ['cylindrical', 'Cylindrical']]} />
       <NumField id={id} field="stuffing" value={p.stuffing} label="Stuffing" unit="g/L" min="0" />
       <QSection id={id} p={p} />
+      <ProbeSection id={id} p={p} />
       <div style={{ fontSize: 10.5, color: 'var(--text-3)', lineHeight: 1.4 }}>
         Low Q (5–10) ≈ flexible panel / car door. High Q (50+) ≈ rigid MDF.
         First standing wave at c/2L = {(344 / (2 * p.length / 100)).toFixed(0)} Hz.
       </div>
+    </div>
+  )
+}
+
+// Interior SPL probe: a virtual microphone inside the chamber. Read-only —
+// it reports the pressure the solver already computes and never loads the
+// circuit. Position slides the mic along the chamber's acoustic length.
+function ProbeSection({ id, p }) {
+  const updateParams = useStore((s) => s.updateParams)
+  return (
+    <div style={{ borderTop: '1px solid var(--border, #30363d)', marginTop: 8, paddingTop: 8 }}>
+      <div className="param-row">
+        <label title="Report SPL inside this volume (virtual microphone). Shows on the Interior SPL chart tab.">
+          <input
+            type="checkbox"
+            checked={!!p.probe}
+            onChange={(e) => updateParams(id, { probe: e.target.checked })}
+            style={{ marginRight: 6 }}
+          />
+          SPL probe (mic inside)
+        </label>
+      </div>
+      {p.probe && (
+        <>
+          <div className="param-row">
+            <label title="Microphone station along the chamber's acoustic length: 0% = inlet, 100% = far wall. Irrelevant below the first standing wave (uniform pressure field), decisive near the axial modes.">
+              Mic position
+            </label>
+            <input
+              type="range" min="0" max="100" step="5"
+              value={p.probePos ?? 100}
+              onChange={(e) => updateParams(id, { probePos: parseFloat(e.target.value) })}
+            />
+            <span style={{ fontSize: 11, minWidth: 34, textAlign: 'right' }}>{p.probePos ?? 100}%</span>
+          </div>
+          <div style={{ fontSize: 10.5, color: 'var(--text-3)', lineHeight: 1.4 }}>
+            Uniform below c/2L (cabin-gain region); position matters at the standing-wave modes.
+          </div>
+        </>
+      )}
     </div>
   )
 }
