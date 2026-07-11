@@ -4,12 +4,12 @@
 import {
   C, ZERO, add, sub, mul, div, inv, abs, arg, jw, jwPow, parallel,
   zInFromMatrix, propagate,
-} from './complex'
+} from './complex.js'
 import {
   RHO, C_AIR, SOLID_ANGLES, radiationImpedance, waveguideMatrix, chamberMatrix,
   endCorrectionLength, flareCutoff, combineQ,
-} from './acoustics'
-import { cycleAverage, complianceRatio, hasNL } from './nonlinear'
+} from './acoustics.js'
+import { cycleAverage, complianceRatio, hasNL } from './nonlinear.js'
 
 const P_REF = 20e-6
 

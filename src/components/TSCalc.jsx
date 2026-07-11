@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useStore } from '../store'
-import { RHO, C_AIR } from '../engine/acoustics'
+import { RHO, C_AIR } from '../engine/geometry'
 
 // T/S parameter solver: derive the full parameter set from measurements.
 // Three methods: datasheet (Fs+Vas+Qes+Qms+Re+Sd), added mass, known box.

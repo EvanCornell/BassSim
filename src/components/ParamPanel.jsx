@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { useStore } from '../store'
-import { waveguideVolume } from '../engine/acoustics'
+import { waveguideVolume } from '../engine/geometry'
 
 // Tooltip text: one-line physical explanation per parameter
 const TIPS = {

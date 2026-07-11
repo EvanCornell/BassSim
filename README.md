@@ -8,11 +8,23 @@ cabin modeled as a lossy chamber — is built from the same five elements.
 
 ## Run it
 
+Simulations run **server-side** — the browser bundle contains the UI only,
+no engine code. Development therefore needs both processes:
+
 ```bash
 npm install
-npm run dev     # http://localhost:5173
-npm run build   # production bundle in dist/
+npm run server  # simulation backend on :8788 (terminal 1)
+npm run dev     # UI on http://localhost:5173, proxies /api to :8788 (terminal 2)
 ```
+
+Production is a single process serving the built app, the simulation API,
+and the MCP endpoint:
+
+```bash
+npm start       # build + serve everything on http://localhost:8788
+```
+
+Or with Docker: `docker build -t acousim . && docker run -p 8788:8788 acousim`
 
 ## How it works
 
@@ -52,6 +64,16 @@ power before Xmax is exceeded.
 - **Resonance masking**: switch chambers to lumped compliances to hide standing-wave artifacts.
 - **Projects**: auto-save to LocalStorage, restore prompt, project manager with thumbnails, JSON file export/import with schema versioning.
 - **Export**: CSV of all series, PNG schematic of the canvas, plain-text metrics summary.
+
+## MCP server (AI agent access)
+
+The simulation engine is also exposed as an [MCP](https://modelcontextprotocol.io)
+server so AI assistants can search drivers, build and calibrate enclosures,
+simulate, optimize against goals, and compare designs directly — see
+[`mcp/README.md`](mcp/README.md). Run it locally over stdio (`npm run mcp`,
+for Claude Desktop/Code) or as a hosted HTTP connector for claude.ai/ChatGPT
+(`npm run mcp:http`, also Dockerized). `npm run test:mcp` and
+`npm run test:http` run the smoke tests.
 
 ## Stack
 
