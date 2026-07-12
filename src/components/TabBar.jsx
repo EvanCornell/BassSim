@@ -4,6 +4,7 @@ import { useStore } from '../store'
 export const TAB_DEFS = {
   editor: { title: 'Node Editor', closable: false },
   nllab: { title: '⚗ Nonlinear Lab', closable: true },
+  settings: { title: '⚙ Settings', closable: true },
 }
 
 export default function TabBar() {

@@ -72,6 +72,9 @@ export default function Toolbar() {
         <span style={{ fontSize: 11, color: 'var(--text-2)' }}>Mask resonances</span>
       </label>
       <div className="toolbar-right">
+        <button title="Account & application settings" onClick={() => store.openTab('settings')}>
+          ⚙ Settings
+        </button>
         <button
           disabled={!settings.nlEnabled}
           title={settings.nlEnabled ? 'Open the large-signal curve editor in a tab' : 'Enable Experimental features to unlock'}

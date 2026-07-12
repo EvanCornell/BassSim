@@ -17,7 +17,10 @@ RUN npm run build
 FROM node:22-alpine
 WORKDIR /app
 COPY package.json package-lock.json ./
-RUN npm ci --omit=dev
+# build tools cover better-sqlite3 when no prebuilt binary matches
+RUN apk add --no-cache --virtual .build python3 make g++ \
+ && npm ci --omit=dev \
+ && apk del .build
 COPY src/engine ./src/engine
 COPY src/data ./src/data
 COPY mcp ./mcp
@@ -25,6 +28,9 @@ COPY server ./server
 COPY --from=build /app/dist ./dist
 
 ENV PORT=8788
+# accounts DB lives here — mount a volume to persist users across upgrades
+ENV ACOUSIM_DATA_DIR=/data
+VOLUME /data
 EXPOSE 8788
 
 HEALTHCHECK --interval=30s --timeout=3s \

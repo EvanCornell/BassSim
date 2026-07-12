@@ -10,6 +10,7 @@ import TSCalc from './components/TSCalc'
 import ProjectManager from './components/ProjectManager'
 import VelocityPopup from './components/VelocityPopup'
 import NLLab from './components/NLLab'
+import SettingsPage, { ResetPasswordPage } from './components/SettingsPage'
 import TabBar from './components/TabBar'
 
 // Starter example: a ported box (driver front → radiation, rear → chamber → port → radiation)
@@ -87,6 +88,8 @@ export default function App() {
     return () => window.removeEventListener('keydown', onKey)
   }, [])
 
+  if (window.location.pathname === '/reset-password') return <ResetPasswordPage />
+
   return (
     <div className="app">
       <Toolbar />
@@ -96,6 +99,8 @@ export default function App() {
       <div className="main-row">
         {activeTab === 'nllab' ? (
           <div style={{ flex: 1, minWidth: 0 }}><NLLab /></div>
+        ) : activeTab === 'settings' ? (
+          <div style={{ flex: 1, minWidth: 0 }}><SettingsPage /></div>
         ) : (
           <>
             <Palette />

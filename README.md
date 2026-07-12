@@ -24,7 +24,17 @@ and the MCP endpoint:
 npm start       # build + serve everything on http://localhost:8788
 ```
 
-Or with Docker: `docker build -t acousim . && docker run -p 8788:8788 acousim`
+Or with Docker: `docker build -t acousim . && docker run -p 8788:8788 -v acousim-data:/data acousim`
+
+### Accounts
+
+The server includes an account system ([Better Auth](https://better-auth.com)
+on SQLite): email + password with reset, plus optional social sign-in
+(Google, Apple, Facebook, GitHub) and post-signup account linking — manage it
+all under **⚙ Settings → Account** in the app. Copy `.env.example` to `.env`:
+`BETTER_AUTH_SECRET` is required in production, each social provider appears
+automatically once its OAuth credentials are set, and password-reset email
+uses SMTP (without it, reset links print to the server log).
 
 ## How it works
 
