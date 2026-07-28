@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { useStore } from '../store'
 import { authClient, PROVIDER_LABELS } from '../auth'
+import { TOOLBAR_ITEMS, TOOLBAR_GROUPS, ALL_ITEM_IDS } from '../toolbarItems'
 
 // ---------- shared bits ----------
 
@@ -316,6 +317,65 @@ function ApplicationSection() {
   )
 }
 
+// ---------- quick bar layout ----------
+
+function QuickBarSection() {
+  const toolbar = useStore((s) => s.toolbar)
+  const toggleToolbarItem = useStore((s) => s.toggleToolbarItem)
+  const moveToolbarItem = useStore((s) => s.moveToolbarItem)
+  const resetToolbar = useStore((s) => s.resetToolbar)
+
+  const rowStyle = {
+    display: 'flex', alignItems: 'center', gap: 8, padding: '5px 6px',
+    borderRadius: 6, fontSize: 13,
+  }
+
+  return (
+    <>
+      <div style={card}>
+        <h4 style={h}>Quick bar contents</h4>
+        <div style={{ ...dim, marginBottom: 12 }}>
+          Choose what appears in the strip under the menu bar and in what order.
+          Shown items are listed first, in bar order — use ▲ ▼ to rearrange them.
+          The Experimental toggle and the ⚙ button are always pinned to the right.
+        </div>
+
+        {TOOLBAR_GROUPS.map(([group, groupLabel]) => {
+          const shown = toolbar.filter((id) => TOOLBAR_ITEMS[id].group === group)
+          const hidden = ALL_ITEM_IDS.filter((id) => TOOLBAR_ITEMS[id].group === group && !toolbar.includes(id))
+          return (
+            <div key={group} style={{ marginBottom: 14 }}>
+              <div style={{ ...dim, textTransform: 'uppercase', letterSpacing: '0.06em', fontSize: 10.5, marginBottom: 4 }}>
+                {groupLabel}
+              </div>
+              {shown.map((id) => (
+                <div key={id} style={rowStyle}>
+                  <input type="checkbox" checked onChange={() => toggleToolbarItem(id)} />
+                  <span style={{ flex: 1 }}>{TOOLBAR_ITEMS[id].label}</span>
+                  <button style={{ ...btn, padding: '2px 7px' }} title="Move earlier"
+                    disabled={toolbar.indexOf(id) === 0}
+                    onClick={() => moveToolbarItem(id, -1)}>▲</button>
+                  <button style={{ ...btn, padding: '2px 7px' }} title="Move later"
+                    disabled={toolbar.indexOf(id) === toolbar.length - 1}
+                    onClick={() => moveToolbarItem(id, 1)}>▼</button>
+                </div>
+              ))}
+              {hidden.map((id) => (
+                <div key={id} style={{ ...rowStyle, color: 'var(--text-3, #8b949e)' }}>
+                  <input type="checkbox" checked={false} onChange={() => toggleToolbarItem(id)} />
+                  <span style={{ flex: 1 }}>{TOOLBAR_ITEMS[id].label}</span>
+                </div>
+              ))}
+            </div>
+          )
+        })}
+
+        <button style={btn} onClick={resetToolbar}>Restore defaults</button>
+      </div>
+    </>
+  )
+}
+
 // ---------- floating settings window ----------
 //
 // Settings is not a workspace panel: it is a modal utility window that opens
@@ -324,6 +384,7 @@ function ApplicationSection() {
 
 const SECTIONS = [
   ['account', '👤 Account', AccountSection],
+  ['quickbar', '📐 Quick bar', QuickBarSection],
   ['app', '🛠 Application', ApplicationSection],
 ]
 

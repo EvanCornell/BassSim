@@ -43,9 +43,12 @@ uses SMTP (without it, reset links print to the server log).
 ## Workspace
 
 Commands live in the menu bar — **File**, **Edit**, **View**, **Simulate**,
-**Tools**, **Help** — with a thin quick-access strip beneath it for the
-controls you touch while iterating (project name, undo/redo, sweep range,
-resonance masking, snapshots).
+**Tools**, **Help** — with a configurable quick bar beneath it: project name,
+undo/redo, a drive-voltage slider, sweep range, resonance masking, snapshots,
+and a live metrics readout (F3/F10, Fb, Qtc, impedance peaks, peak SPL,
+excursion ratios, −3 dB bandwidth, max power before Xmax, system volume, solve
+time). Every item can be shown, hidden or reordered under **Settings ▸ Quick
+bar**; the Experimental toggle and ⚙ button stay pinned right.
 
 The area below is a dock. Five panels — Palette, Node Editor, Parameters,
 Results, Nonlinear Lab — live in tabbed groups:
@@ -90,16 +93,15 @@ cannot do.
 
 ### Outputs
 
-The Results panel carries nine plots (SPL with per-radiator overlays,
+The Results panel carries nine plots: SPL with per-radiator overlays,
 electrical impedance + phase, cone excursion vs Xmax, port velocity, interior
 SPL from in-chamber probes, radiated acoustic power, efficiency, electrical
-power, phase & group delay) above which a live metrics strip shows F3/F10, Fb,
-Qtc, impedance peaks, peak SPL, excursion ratios, −3 dB bandwidth, total
-internal volume, and the maximum input power before Xmax is exceeded.
+power, and phase & group delay. The scalar figures that summarize them live in
+the quick bar, visible whatever panel you are looking at.
 
 ### Tools
 
-- **Amplifier solver**: Voltage/Impedance/Power linked by P = V²/Z, at the top of the Parameters panel.
+- **Amplifier solver**: Voltage/Impedance/Power linked by P = V²/Z, at the top of the Parameters panel; the quick bar's drive slider drives the same figures.
 - **Snapshots**: freeze up to three results as labeled reference overlays.
 - **Resonance masking**: switch chambers to lumped compliances to hide standing-wave artifacts.
 - **Projects**: auto-save to LocalStorage, restore prompt, project manager with thumbnails, JSON file export/import with schema versioning.

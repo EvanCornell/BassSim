@@ -4,9 +4,11 @@ import { SCHEMA_VERSION, DEFAULT_PARAMS } from './engine/project'
 import * as L from './layout'
 import { PANEL_META, PANEL_IDS } from './panelMeta'
 import { exportProjectJSON } from './utils/export'
+import { DEFAULT_TOOLBAR, sanitizeToolbar } from './toolbarItems'
 
 const LAYOUT_KEY = 'acousim:layout'
 const PRESETS_KEY = 'acousim:layoutPresets'
+const TOOLBAR_KEY = 'acousim:toolbar'
 
 function loadLayout() {
   try {
@@ -25,6 +27,15 @@ function loadPresets() {
     const raw = JSON.parse(localStorage.getItem(PRESETS_KEY))
     return Array.isArray(raw) ? raw : []
   } catch { return [] }
+}
+
+// The quick bar is a UI preference, so it lives beside the layout in
+// LocalStorage rather than in `settings` — settings travel inside a project
+// file, and opening someone else's design shouldn't rearrange your toolbar.
+function loadToolbar() {
+  try {
+    return sanitizeToolbar(JSON.parse(localStorage.getItem(TOOLBAR_KEY))) || DEFAULT_TOOLBAR
+  } catch { return DEFAULT_TOOLBAR }
 }
 
 export { SCHEMA_VERSION, DEFAULT_PARAMS }
@@ -139,6 +150,27 @@ export const useStore = create((set, get) => ({
     set({ maximized: null })
     get()._commitLayout(L.isOpen(clean, 'canvas') ? clean : L.dockToEdge(clean, 'canvas', 'right'))
   },
+  // ---- quick-access bar ----
+  toolbar: loadToolbar(),
+  setToolbar: (ids) => {
+    const clean = sanitizeToolbar(ids) || DEFAULT_TOOLBAR
+    set({ toolbar: clean })
+    try { localStorage.setItem(TOOLBAR_KEY, JSON.stringify(clean)) } catch { /* quota */ }
+  },
+  toggleToolbarItem: (id) => {
+    const cur = get().toolbar
+    get().setToolbar(cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id])
+  },
+  moveToolbarItem: (id, delta) => {
+    const cur = [...get().toolbar]
+    const i = cur.indexOf(id)
+    const j = i + delta
+    if (i < 0 || j < 0 || j >= cur.length) return
+    ;[cur[i], cur[j]] = [cur[j], cur[i]]
+    get().setToolbar(cur)
+  },
+  resetToolbar: () => get().setToolbar(DEFAULT_TOOLBAR),
+
   deleteLayoutPreset: (name) => {
     const presets = get().layoutPresets.filter((p) => p.name !== name)
     set({ layoutPresets: presets })
