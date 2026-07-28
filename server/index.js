@@ -17,6 +17,14 @@ import { runSimulation } from '../src/engine/solver.js'
 import { computeMetrics } from '../src/engine/metrics.js'
 import { hydrateProject } from '../src/engine/project.js'
 
+// load .env if present (Node 20.6+); silently skip when absent
+try { process.loadEnvFile() } catch { /* no .env */ }
+
+const { auth, migrateAuthDb, enabledProviders } = await import('./auth.js')
+const { toNodeHandler } = await import('better-auth/node')
+await migrateAuthDb()
+const authHandler = toNodeHandler(auth)
+
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const DIST = join(__dirname, '..', 'dist')
 const PORT = Number(process.env.PORT || 8788)
@@ -78,6 +86,14 @@ const httpServer = createHttpServer(async (req, res) => {
 
   try {
     if (url.pathname === '/healthz') return sendJson(res, 200, { ok: true, server: 'acousim' })
+
+    // auth routes get the raw request (Better Auth parses its own bodies)
+    if (url.pathname.startsWith('/api/auth')) return authHandler(req, res)
+
+    // capabilities for the client UI (which social buttons to show)
+    if (url.pathname === '/api/config') {
+      return sendJson(res, 200, { providers: enabledProviders, smtp: !!process.env.SMTP_HOST })
+    }
 
     if (url.pathname === '/api/simulate') {
       if (req.method !== 'POST') return sendJson(res, 405, { error: 'POST only' })

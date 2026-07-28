@@ -16,7 +16,7 @@ export default function Palette() {
     e.dataTransfer.effectAllowed = 'move'
   }
   return (
-    <div className="sidebar-left">
+    <div className="panel-scroll">
       <h3>Node Palette</h3>
       {ITEMS.map((it) => (
         <div key={it.type} className="palette-item" draggable onDragStart={(e) => onDragStart(e, it.type)}>

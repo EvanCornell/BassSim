@@ -1,6 +1,31 @@
 import { create } from 'zustand'
 import { applyNodeChanges, applyEdgeChanges, addEdge } from 'reactflow'
 import { SCHEMA_VERSION, DEFAULT_PARAMS } from './engine/project'
+import * as L from './layout'
+import { PANEL_META, PANEL_IDS } from './panelMeta'
+import { exportProjectJSON } from './utils/export'
+
+const LAYOUT_KEY = 'acousim:layout'
+const PRESETS_KEY = 'acousim:layoutPresets'
+
+function loadLayout() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(LAYOUT_KEY))
+    if (raw?.version === L.LAYOUT_VERSION) {
+      const clean = L.sanitize(raw.tree, PANEL_IDS)
+      // the canvas is the workspace — never let a saved layout lose it
+      if (clean && L.isOpen(clean, 'canvas')) return clean
+    }
+  } catch { /* corrupt or absent — fall through to the default */ }
+  return L.defaultLayout()
+}
+
+function loadPresets() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(PRESETS_KEY))
+    return Array.isArray(raw) ? raw : []
+  } catch { return [] }
+}
 
 export { SCHEMA_VERSION, DEFAULT_PARAMS }
 
@@ -37,26 +62,88 @@ export const useStore = create((set, get) => ({
     vThreshold: 17, masking: false, unwrapPhase: true, delayOffset: 0,
     nlEnabled: false,
   },
-  // Chrome-style tool tabs. 'editor' is permanent; others open/close/reorder.
-  tabs: ['editor'],
-  activeTab: 'editor',
-  openTab: (id) => {
-    const { tabs } = get()
-    set({ tabs: tabs.includes(id) ? tabs : [...tabs, id], activeTab: id })
+  // ---- dockable workspace ----
+  // `layout` is the tree from src/layout.js; every mutation goes through
+  // layoutOps so persistence happens in exactly one place.
+  layout: loadLayout(),
+  layoutPresets: loadPresets(),
+  maximized: null,          // panel id rendered full-bleed, or null
+  focusedPanel: 'canvas',   // which panel owns the keyboard right now
+  draggingPanel: null,      // panel id mid tab-drag (drives the drop targets)
+  showSettings: false,      // floating settings window
+
+  setDraggingPanel: (id) => set({ draggingPanel: id }),
+  focusPanel: (id) => { if (get().focusedPanel !== id) set({ focusedPanel: id }) },
+  toggleMaximize: (id) => set({ maximized: get().maximized === id ? null : id }),
+  setShowSettings: (v) => set({ showSettings: v }),
+
+  _commitLayout: (tree) => {
+    if (!tree) return
+    set({ layout: tree })
+    try {
+      localStorage.setItem(LAYOUT_KEY, JSON.stringify({ version: L.LAYOUT_VERSION, tree }))
+    } catch { /* quota — the layout just won't survive a reload */ }
   },
-  closeTab: (id) => {
-    if (id === 'editor') return
-    const { tabs, activeTab } = get()
-    const next = tabs.filter((t) => t !== id)
-    set({ tabs: next, activeTab: activeTab === id ? next[next.length - 1] || 'editor' : activeTab })
+
+  layoutOps: {
+    activate: (stackId, panelId) => get()._commitLayout(L.setActive(get().layout, stackId, panelId)),
+    dock: (panelId, stackId, zone) => get()._commitLayout(L.dockPanel(get().layout, panelId, stackId, zone)),
+    dockEdge: (panelId, edge) => get()._commitLayout(L.dockToEdge(get().layout, panelId, edge)),
+    resize: (splitId, index, a, b) => get()._commitLayout(L.resizeChildren(get().layout, splitId, index, a, b)),
+    // Dropping onto a tab reorders within the stack, or tabs the panel in
+    // from elsewhere at that position.
+    dropOnTab: (panelId, stackId, index) => {
+      const tree = get().layout
+      const from = L.findPanelStack(tree, panelId)
+      if (from?.id === stackId) {
+        const cur = from.panels.indexOf(panelId)
+        if (cur === index) return
+        get()._commitLayout(L.moveTabInStack(tree, stackId, cur, index))
+      } else {
+        get()._commitLayout(L.dockPanel(tree, panelId, stackId, 'center'))
+      }
+    },
+    close: (panelId) => {
+      if (PANEL_META[panelId]?.closable === false) return
+      const next = L.removePanel(get().layout, panelId)
+      if (!next) return
+      if (get().maximized === panelId) set({ maximized: null })
+      get()._commitLayout(next)
+    },
+    open: (panelId) => {
+      set({ maximized: null })
+      get()._commitLayout(L.openPanel(get().layout, panelId, PANEL_META[panelId]?.dock))
+      get().focusPanel(panelId)
+    },
+    toggle: (panelId) => {
+      const ops = get().layoutOps
+      if (L.isOpen(get().layout, panelId)) ops.close(panelId)
+      else ops.open(panelId)
+    },
+    reset: () => { set({ maximized: null }); get()._commitLayout(L.defaultLayout()) },
   },
-  moveTab: (from, to) => {
-    const tabs = [...get().tabs]
-    const [t] = tabs.splice(from, 1)
-    tabs.splice(to, 0, t)
-    set({ tabs })
+
+  saveLayoutPreset: (name) => {
+    const presets = [
+      ...get().layoutPresets.filter((p) => p.name !== name),
+      { name, tree: get().layout },
+    ]
+    set({ layoutPresets: presets })
+    try { localStorage.setItem(PRESETS_KEY, JSON.stringify(presets)) } catch { /* quota */ }
   },
-  setActiveTab: (id) => set({ activeTab: id }),
+  applyLayoutPreset: (name) => {
+    const p = get().layoutPresets.find((x) => x.name === name)
+    if (!p) return
+    const clean = L.sanitize(p.tree, PANEL_IDS)
+    if (!clean) return
+    set({ maximized: null })
+    get()._commitLayout(L.isOpen(clean, 'canvas') ? clean : L.dockToEdge(clean, 'canvas', 'right'))
+  },
+  deleteLayoutPreset: (name) => {
+    const presets = get().layoutPresets.filter((p) => p.name !== name)
+    set({ layoutPresets: presets })
+    try { localStorage.setItem(PRESETS_KEY, JSON.stringify(presets)) } catch { /* quota */ }
+  },
 
   // per-chart X-axis zoom (drag-select on the plots); not persisted
   xZoom: {},
@@ -286,6 +373,16 @@ export const useStore = create((set, get) => ({
     const t = get()._nameTimer
     if (t) clearTimeout(t)
     set({ _nameTimer: setTimeout(() => get().autoSave(), 1000) })
+  },
+  // Menu and keyboard both reach these, so they live here rather than in one
+  // of the two call sites.
+  newProject: () => {
+    if (get().nodes.length && !confirm('Start a new project? Current graph is auto-saved under its project name.')) return
+    get().loadSerialized({ name: `Untitled ${new Date().toLocaleTimeString()}`, nodes: [], edges: [] })
+  },
+  saveProjectJSON: () => {
+    get().autoSave()
+    exportProjectJSON(get().serialize())
   },
   autoSave: () => {
     try {

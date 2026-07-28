@@ -593,37 +593,22 @@ const TABS = [
   ['ph', 'Phase & Group Delay', PhaseTab],
 ]
 
+// Sizing is the dock's job now — this panel just fills whatever space its
+// stack gives it.
 export default function OutputPanel() {
   const [tab, setTab] = useState('spl')
-  const [height, setHeight] = useState(300)
-  const [collapsed, setCollapsed] = useState(false)
-  const dragRef = useRef(null)
-
-  const onDragStart = useCallback((e) => {
-    const startY = e.clientY
-    const startH = height
-    const onMove = (ev) => setHeight(Math.max(120, Math.min(window.innerHeight - 200, startH + (startY - ev.clientY))))
-    const onUp = () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp) }
-    window.addEventListener('mousemove', onMove)
-    window.addEventListener('mouseup', onUp)
-  }, [height])
-
   const ActiveTab = TABS.find(([k]) => k === tab)?.[2]
   return (
-    <div className="bottom-panel" style={{ height: collapsed ? 'auto' : height + 70 }}>
-      <div className="bp-resize" ref={dragRef} onMouseDown={onDragStart} />
+    <div className="results-panel">
       <SimErrorBanner />
       <MetricsStrip />
       <div className="plot-tabs">
         {TABS.map(([k, name]) => (
-          <button key={k} className={`plot-tab ${tab === k && !collapsed ? 'active' : ''}`}
-            onClick={() => { setTab(k); setCollapsed(false) }}>{name}</button>
+          <button key={k} className={`plot-tab ${tab === k ? 'active' : ''}`}
+            onClick={() => setTab(k)}>{name}</button>
         ))}
-        <button className="plot-tab" style={{ marginLeft: 'auto' }} onClick={() => setCollapsed(!collapsed)}>
-          {collapsed ? '▲ expand' : '▼ collapse'}
-        </button>
       </div>
-      {!collapsed && ActiveTab && (
+      {ActiveTab && (
         <div className="plot-area" id="plot-area">
           <ActiveTab />
         </div>

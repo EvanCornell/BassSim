@@ -1,16 +1,12 @@
 import React, { useEffect } from 'react'
 import { useStore, SCHEMA_VERSION } from './store'
+import MenuBar from './components/MenuBar'
 import Toolbar from './components/Toolbar'
-import Palette from './components/Palette'
-import FlowCanvas from './components/FlowCanvas'
-import ParamPanel from './components/ParamPanel'
-import OutputPanel from './components/OutputPanel'
+import DockLayout from './components/dock/DockLayout'
 import DriverDB from './components/DriverDB'
 import TSCalc from './components/TSCalc'
 import ProjectManager from './components/ProjectManager'
-import VelocityPopup from './components/VelocityPopup'
-import NLLab from './components/NLLab'
-import TabBar from './components/TabBar'
+import SettingsWindow, { ResetPasswordPage } from './components/SettingsWindow'
 
 // Starter example: a ported box (driver front → radiation, rear → chamber → port → radiation)
 const DEMO = {
@@ -54,7 +50,6 @@ function ErrorBanner() {
 export default function App() {
   const loadSerialized = useStore((s) => s.loadSerialized)
   const setRestorePrompt = useStore((s) => s.setRestorePrompt)
-  const activeTab = useStore((s) => s.activeTab)
 
   // initial load: offer to restore the last auto-saved project, else demo
   useEffect(() => {
@@ -74,43 +69,39 @@ export default function App() {
       const tag = e.target.tagName
       if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return
       const st = useStore.getState()
-      // graph shortcuts only apply while the Node Editor tab is active —
-      // other panels (e.g. Nonlinear Lab) handle their own keys
-      if (st.activeTab !== 'editor') return
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !e.shiftKey) { e.preventDefault(); st.undo() }
-      else if ((e.ctrlKey || e.metaKey) && (e.key.toLowerCase() === 'y' || (e.key.toLowerCase() === 'z' && e.shiftKey))) { e.preventDefault(); st.redo() }
-      else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'd') { e.preventDefault(); st.duplicateSelected() }
-      else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a') { e.preventDefault(); st.selectAll() }
+      const mod = e.ctrlKey || e.metaKey
+      const key = e.key.toLowerCase()
+
+      // project-level shortcuts work wherever the focus is
+      if (mod && key === 'n') { e.preventDefault(); st.newProject(); return }
+      if (mod && key === 's') { e.preventDefault(); st.saveProjectJSON(); return }
+
+      // graph shortcuts belong to the Node Editor — other panels (the
+      // Nonlinear Lab in particular) bind the same keys for their own use
+      if (st.focusedPanel !== 'canvas') return
+      if (mod && key === 'z' && !e.shiftKey) { e.preventDefault(); st.undo() }
+      else if (mod && (key === 'y' || (key === 'z' && e.shiftKey))) { e.preventDefault(); st.redo() }
+      else if (mod && key === 'd') { e.preventDefault(); st.duplicateSelected() }
+      else if (mod && key === 'a') { e.preventDefault(); st.selectAll() }
       else if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); st.deleteSelected() }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [])
 
+  if (window.location.pathname === '/reset-password') return <ResetPasswordPage />
+
   return (
     <div className="app">
+      <MenuBar />
       <Toolbar />
       <RestoreBanner />
       <ErrorBanner />
-      <TabBar />
-      <div className="main-row">
-        {activeTab === 'nllab' ? (
-          <div style={{ flex: 1, minWidth: 0 }}><NLLab /></div>
-        ) : (
-          <>
-            <Palette />
-            <div className="canvas-wrap">
-              <FlowCanvas />
-              <VelocityPopup />
-            </div>
-            <ParamPanel />
-          </>
-        )}
-      </div>
-      <OutputPanel />
+      <DockLayout />
       <DriverDB />
       <TSCalc />
       <ProjectManager />
+      <SettingsWindow />
     </div>
   )
 }
