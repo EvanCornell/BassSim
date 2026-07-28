@@ -5,6 +5,9 @@ import * as L from './layout'
 import { PANEL_META, PANEL_IDS } from './panelMeta'
 import { exportProjectJSON } from './utils/export'
 import { DEFAULT_TOOLBAR, sanitizeToolbar } from './toolbarItems'
+import { channel, isPopout, openPanelWindow, popoutPanelId, SHARED_KEYS, SIM_INPUT_KEYS } from './popout'
+
+const POPOUT = isPopout()
 
 const LAYOUT_KEY = 'acousim:layout'
 const PRESETS_KEY = 'acousim:layoutPresets'
@@ -54,7 +57,28 @@ function graphSignature(nodes, edges, settings) {
   ])
 }
 
-export const useStore = create((set, get) => ({
+// Cross-window sync. Every `set` that touches a shared key is mirrored to the
+// other windows; `applyingRemote` stops the mirror from echoing back.
+//
+// A popped-out tab starts muted and only speaks once the main window has sent
+// it a snapshot. Without that, its own start-up writes would race across the
+// channel and overwrite the project the main window is actually showing.
+let applyingRemote = false
+let muted = POPOUT
+
+export const useStore = create((rawSet, get) => {
+  const set = (partial, replace) => {
+    rawSet(partial, replace)
+    if (applyingRemote || muted || !channel) return
+    // function updaters aren't used in this store, but if one ever is, fall
+    // back to mirroring the whole shared slice rather than missing a key
+    const touched = typeof partial === 'function' ? SHARED_KEYS : Object.keys(partial)
+    const patch = {}
+    for (const k of SHARED_KEYS) if (touched.includes(k)) patch[k] = get()[k]
+    if (Object.keys(patch).length) channel.postMessage({ type: 'patch', patch })
+  }
+
+  return {
   nodes: [],
   edges: [],
   projectName: 'Untitled',
@@ -334,6 +358,9 @@ export const useStore = create((set, get) => ({
   _abort: null,
   simError: null,
   scheduleCompute: () => {
+    // Results arrive from the main window over the sync channel; a popped-out
+    // tab running its own sweep would just duplicate the work.
+    if (POPOUT) return
     const st = get()
     if (st._computeTimer) clearTimeout(st._computeTimer)
     const timer = setTimeout(async () => {
@@ -417,6 +444,7 @@ export const useStore = create((set, get) => ({
     exportProjectJSON(get().serialize())
   },
   autoSave: () => {
+    if (POPOUT) return // one writer for the LocalStorage auto-save
     try {
       const proj = get().serialize()
       if (!proj.nodes.length) return
@@ -427,7 +455,79 @@ export const useStore = create((set, get) => ({
       set({ _lastSavedName: proj.name })
     } catch { /* quota */ }
   },
-}))
+
+  // ---- popped-out panels ----
+  // A panel sent to its own tab leaves the dock; closing that tab brings it
+  // back. Tracking which are out keeps the View menu honest.
+  poppedOut: [],
+  popOutPanel: (id) => {
+    openPanelWindow(id)
+    get()._detachPanel(id)
+  },
+  _detachPanel: (id) => {
+    if (!get().poppedOut.includes(id)) set({ poppedOut: [...get().poppedOut, id] })
+    if (PANEL_META[id]?.closable !== false) get().layoutOps.close(id)
+  },
+  _reattachPanel: (id) => {
+    if (!get().poppedOut.includes(id)) return
+    set({ poppedOut: get().poppedOut.filter((p) => p !== id) })
+    get().layoutOps.open(id)
+  },
+
+  // Apply a patch mirrored from another window without echoing it back.
+  _applyRemote: (patch) => {
+    applyingRemote = true
+    try { rawSet(patch) } finally { applyingRemote = false }
+  },
+  _sharedSnapshot: () => {
+    const st = get()
+    return Object.fromEntries(SHARED_KEYS.map((k) => [k, st[k]]))
+  },
+  }
+})
+
+// ---------- cross-window wiring ----------
+//
+// Protocol, deliberately small:
+//   patch   a shared-state delta, mirrored both ways
+//   hello   a popped-out tab announcing itself; the main window answers with
+//           a full snapshot and lets go of that panel in its dock
+//   full    that snapshot
+//   bye     the tab closing; the main window takes the panel back
+if (channel) {
+  channel.onmessage = ({ data }) => {
+    if (!data || typeof data !== 'object') return
+    const st = useStore.getState()
+
+    if (data.type === 'patch' || data.type === 'full') {
+      st._applyRemote(data.patch)
+      muted = false
+      // A popout can edit shared state (a parameter, the sweep range). The
+      // main window owns the solver, so it re-runs when such an edit lands.
+      if (!POPOUT && SIM_INPUT_KEYS.some((k) => k in data.patch)) {
+        useStore.setState({ _lastSig: '' })
+        useStore.getState().scheduleCompute()
+      }
+      return
+    }
+
+    if (POPOUT) return // the rest is main-window bookkeeping
+
+    if (data.type === 'hello') {
+      channel.postMessage({ type: 'full', patch: st._sharedSnapshot() })
+      st._detachPanel(data.panel)
+    } else if (data.type === 'bye') {
+      st._reattachPanel(data.panel)
+    }
+  }
+
+  if (POPOUT) {
+    const id = popoutPanelId()
+    channel.postMessage({ type: 'hello', panel: id })
+    // pagehide fires on close and on navigation, where unload is unreliable
+    window.addEventListener('pagehide', () => channel.postMessage({ type: 'bye', panel: id }))
+  }
+}
 
 export function listSavedProjects() {
   const out = []
