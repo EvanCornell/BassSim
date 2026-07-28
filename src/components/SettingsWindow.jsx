@@ -277,7 +277,7 @@ function AccountSection() {
 function ApplicationSection() {
   const settings = useStore((s) => s.settings)
   const updateSettings = useStore((s) => s.updateSettings)
-  const closeTab = useStore((s) => s.closeTab)
+  const layoutOps = useStore((s) => s.layoutOps)
   return (
     <>
       <div style={card}>
@@ -302,7 +302,7 @@ function ApplicationSection() {
           <input type="checkbox" checked={!!settings.nlEnabled}
             onChange={(e) => {
               updateSettings({ nlEnabled: e.target.checked })
-              if (!e.target.checked) closeTab('nllab')
+              if (!e.target.checked) layoutOps.close('nllab')
             }} />
           Large-signal T/S nonlinearity (Nonlinear Lab)
         </label>
@@ -316,32 +316,71 @@ function ApplicationSection() {
   )
 }
 
-// ---------- page ----------
+// ---------- floating settings window ----------
+//
+// Settings is not a workspace panel: it is a modal utility window that opens
+// centred over whatever you were doing, can be dragged out of the way by its
+// title bar, and closes on Escape or a backdrop click.
 
 const SECTIONS = [
   ['account', '👤 Account', AccountSection],
   ['app', '🛠 Application', ApplicationSection],
 ]
 
-export default function SettingsPage() {
+export default function SettingsWindow() {
+  const show = useStore((s) => s.showSettings)
+  const setShow = useStore((s) => s.setShowSettings)
   const [section, setSection] = useState('account')
+  const [drag, setDrag] = useState({ x: 0, y: 0 })
+
+  useEffect(() => {
+    if (!show) return
+    const esc = (e) => { if (e.key === 'Escape') setShow(false) }
+    window.addEventListener('keydown', esc)
+    return () => window.removeEventListener('keydown', esc)
+  }, [show, setShow])
+
+  // re-centre each time the window is opened
+  useEffect(() => { if (show) setDrag({ x: 0, y: 0 }) }, [show])
+
+  const onTitleDown = (e) => {
+    if (e.target.closest('button')) return
+    const x0 = e.clientX - drag.x
+    const y0 = e.clientY - drag.y
+    const move = (ev) => setDrag({ x: ev.clientX - x0, y: ev.clientY - y0 })
+    const up = () => {
+      window.removeEventListener('mousemove', move)
+      window.removeEventListener('mouseup', up)
+    }
+    window.addEventListener('mousemove', move)
+    window.addEventListener('mouseup', up)
+  }
+
+  if (!show) return null
   const Active = SECTIONS.find(([k]) => k === section)?.[2] || AccountSection
+
   return (
-    <div style={{ display: 'flex', height: '100%', minHeight: 0, background: 'var(--bg-1, #0d1117)' }}>
-      <div style={{ width: 180, borderRight: '1px solid var(--border, #30363d)', padding: '18px 10px' }}>
-        <div style={{ fontSize: 15, fontWeight: 700, padding: '0 8px 12px' }}>Settings</div>
-        {SECTIONS.map(([k, title]) => (
-          <div key={k}
-            onClick={() => setSection(k)}
-            style={{
-              padding: '8px 10px', borderRadius: 6, cursor: 'pointer', fontSize: 13, marginBottom: 2,
-              background: section === k ? 'var(--bg-3, #21262d)' : 'transparent',
-              color: section === k ? 'var(--text-1, #e6edf3)' : 'var(--text-2, #a0a8b3)',
-            }}>{title}</div>
-        ))}
-      </div>
-      <div style={{ flex: 1, overflow: 'auto', padding: '20px 24px' }}>
-        <Active />
+    <div className="float-backdrop" onMouseDown={() => setShow(false)}>
+      <div
+        className="float-window"
+        style={{ transform: `translate(${drag.x}px, ${drag.y}px)` }}
+        onMouseDown={(e) => e.stopPropagation()}
+      >
+        <div className="fw-title" onMouseDown={onTitleDown}>
+          <span>⚙ Settings</span>
+          <button className="fw-close" title="Close (Esc)" onClick={() => setShow(false)}>✕</button>
+        </div>
+        <div className="fw-body">
+          <div className="fw-nav">
+            {SECTIONS.map(([k, title]) => (
+              <div key={k} className={`fw-nav-item ${section === k ? 'active' : ''}`}
+                onClick={() => setSection(k)}>{title}</div>
+            ))}
+          </div>
+          <div className="fw-content">
+            <Active />
+          </div>
+        </div>
       </div>
     </div>
   )

@@ -182,6 +182,9 @@ function CurveEditor({ driverId, param, nl, xmax, width, height, refv }) {
     const onKey = (e) => {
       const tag = e.target.tagName
       if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return
+      // the Lab only owns Delete while it holds focus — the Node Editor uses
+      // the same key to remove graph nodes
+      if (useStore.getState().focusedPanel !== 'nllab') return
       if ((e.key === 'Delete' || e.key === 'Backspace') && selected >= 0 && curveRef.current.points?.[selected]) {
         e.preventDefault()
         removePoint(selected)
@@ -293,7 +296,7 @@ function CurveEditor({ driverId, param, nl, xmax, width, height, refv }) {
 
 export default function NLLab() {
   const nodes = useStore((s) => s.nodes)
-  const setActiveTab = useStore((s) => s.setActiveTab)
+  const layoutOps = useStore((s) => s.layoutOps)
   const updateParams = useStore((s) => s.updateParams)
   const results = useStore((s) => s.results)
   const drivers = nodes.filter((n) => n.type === 'driver')
@@ -319,7 +322,7 @@ export default function NLLab() {
       <div style={{ padding: 30 }}>
         <h3>Nonlinear Lab</h3>
         <p style={{ color: 'var(--text-3)' }}>Add a Driver node to the circuit first.</p>
-        <button onClick={() => setActiveTab('editor')}>← Back to editor</button>
+        <button onClick={() => layoutOps.open('canvas')}>← Back to editor</button>
       </div>
     )
   }

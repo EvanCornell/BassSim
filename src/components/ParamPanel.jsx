@@ -342,20 +342,11 @@ function RadiationForm({ node }) {
 const FORMS = { driver: DriverForm, chamber: ChamberForm, waveguide: WaveguideForm, pr: PRForm, radiation: RadiationForm }
 
 export default function ParamPanel() {
-  const [collapsed, setCollapsed] = useState(false)
   const selectedNodeId = useStore((s) => s.selectedNodeId)
   const node = useStore((s) => s.nodes.find((n) => n.id === s.selectedNodeId))
-  if (collapsed) {
-    return (
-      <div className="sidebar-right collapsed">
-        <button className="sr-collapse" onClick={() => setCollapsed(false)} title="Expand panel">◀</button>
-      </div>
-    )
-  }
   const Form = node ? FORMS[node.type] : null
   return (
-    <div className="sidebar-right">
-      <button className="sr-collapse" onClick={() => setCollapsed(true)}>Collapse ▶</button>
+    <div className="panel-scroll">
       <AmpSolver />
       {Form
         ? <Form node={node} key={node.id} />

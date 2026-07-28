@@ -6,6 +6,10 @@ infinite canvas, wire their ports together, and every plot updates live: any
 topology — sealed, ported, bandpass, tapped horn, passive radiator, or a car
 cabin modeled as a lossy chamber — is built from the same five elements.
 
+The workspace is a dockable IDE-style layout: every panel can be dragged to a
+new position, tabbed with another panel, resized, maximized or closed, and the
+arrangement is saved and restored automatically.
+
 ## Run it
 
 Simulations run **server-side** — the browser bundle contains the UI only,
@@ -36,6 +40,31 @@ all under **⚙ Settings → Account** in the app. Copy `.env.example` to `.env`
 automatically once its OAuth credentials are set, and password-reset email
 uses SMTP (without it, reset links print to the server log).
 
+## Workspace
+
+Commands live in the menu bar — **File**, **Edit**, **View**, **Simulate**,
+**Tools**, **Help** — with a thin quick-access strip beneath it for the
+controls you touch while iterating (project name, undo/redo, sweep range,
+resonance masking, snapshots).
+
+The area below is a dock. Five panels — Palette, Node Editor, Parameters,
+Results, Nonlinear Lab — live in tabbed groups:
+
+| Action | How |
+|---|---|
+| Move a panel | Drag its tab; the target group highlights the half it will occupy, or its centre to tab in |
+| Dock against the window edge | Drag a tab onto the outer strip of the workspace |
+| Reorder tabs | Drag a tab onto another tab in the same group |
+| Resize | Drag the gap between two groups |
+| Maximize / restore | Double-click a tab, or use the ⛶ button |
+| Show / hide a panel | **View ▸** — a check mark marks the open ones |
+| Restore the default | **View ▸ Reset Layout** |
+| Reusable arrangements | **View ▸ Save Layout As…**, then **Apply Saved Layout ▸** |
+
+The layout and any saved arrangements persist in LocalStorage. Settings is not
+a panel: **Tools ▸ Settings…** (or the ⚙ button) opens it as a floating window
+centred on screen that can be dragged by its title bar and closed with Escape.
+
 ## How it works
 
 The connected graph is converted into a chain of complex 2×2 ABCD transfer
@@ -61,15 +90,16 @@ cannot do.
 
 ### Outputs
 
-Six plot tabs (SPL with per-radiator overlays, electrical impedance + phase,
-cone excursion vs Xmax, port velocity, radiated acoustic power, phase & group
-delay) above which a live metrics strip shows F3/F10, Fb, Qtc, impedance
-peaks, peak SPL, excursion ratios, −3 dB bandwidth, and the maximum input
-power before Xmax is exceeded.
+The Results panel carries nine plots (SPL with per-radiator overlays,
+electrical impedance + phase, cone excursion vs Xmax, port velocity, interior
+SPL from in-chamber probes, radiated acoustic power, efficiency, electrical
+power, phase & group delay) above which a live metrics strip shows F3/F10, Fb,
+Qtc, impedance peaks, peak SPL, excursion ratios, −3 dB bandwidth, total
+internal volume, and the maximum input power before Xmax is exceeded.
 
 ### Tools
 
-- **Amplifier solver**: Voltage/Impedance/Power linked by P = V²/Z, always visible.
+- **Amplifier solver**: Voltage/Impedance/Power linked by P = V²/Z, at the top of the Parameters panel.
 - **Snapshots**: freeze up to three results as labeled reference overlays.
 - **Resonance masking**: switch chambers to lumped compliances to hide standing-wave artifacts.
 - **Projects**: auto-save to LocalStorage, restore prompt, project manager with thumbnails, JSON file export/import with schema versioning.
