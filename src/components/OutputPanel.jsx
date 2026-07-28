@@ -4,7 +4,6 @@ import {
   ReferenceLine, ResponsiveContainer, ReferenceArea,
 } from 'recharts'
 import { useStore } from '../store'
-import { waveguideVolume } from '../engine/geometry'
 
 const SERIES = ['#3987e5', '#199e70', '#c98500', '#9085e9', '#d55181', '#d95926']
 const GRID = '#2d3646'
@@ -545,42 +544,6 @@ function SimErrorBanner() {
   )
 }
 
-function MetricsStrip() {
-  const metrics = useStore((s) => s.metrics)
-  const results = useStore((s) => s.results)
-  const nodes = useStore((s) => s.nodes)
-  const driver = nodes.find((n) => n.type === 'driver')
-  const xmax = driver?.data.params.Xmax
-  // total internal air volume: chambers + waveguide segments
-  let sysVol = 0
-  for (const n of nodes) {
-    const p = n.data.params
-    if (n.type === 'chamber') sysVol += p.volume || 0
-    else if (n.type === 'waveguide') sysVol += waveguideVolume(p.flare, p.S1 * 1e-4, p.S2 * 1e-4, p.length / 100) * 1000
-  }
-  const m = metrics || {}
-  const M = ({ label, value, bad }) => (
-    <div className="metric"><span className="m-label">{label}</span><span className={`m-value ${bad ? 'bad' : ''}`}>{value}</span></div>
-  )
-  const frac = (x) => (x != null && xmax ? `${(x / xmax * 100).toFixed(0)}%` : '—')
-  return (
-    <div className="metrics-strip">
-      <M label="F3" value={m.f3 ? `${fmt(m.f3)} Hz` : '—'} />
-      <M label="F10" value={m.f10 ? `${fmt(m.f10)} Hz` : '—'} />
-      <M label="Fb" value={m.fb ? `${fmt(m.fb)} Hz` : '—'} />
-      <M label="Qtc" value={m.qtc ? fmt(m.qtc, 2) : '—'} />
-      <M label="Z peaks" value={(m.zPeaks || []).slice(0, 3).map((p) => `${p.f.toFixed(0)}Hz/${p.v.toFixed(0)}Ω`).join('  ') || '—'} />
-      <M label="Peak SPL" value={m.peakSPL ? `${fmt(m.peakSPL)} dB` : '—'} />
-      <M label="X @ Fb" value={frac(m.xAtFb)} bad={m.xAtFb != null && xmax && m.xAtFb > xmax} />
-      <M label="X @ F3" value={frac(m.xAtF3)} bad={m.xAtF3 != null && xmax && m.xAtF3 > xmax} />
-      <M label="BW (−3 dB)" value={m.bwHz ? `${fmt(m.bwHz, 0)} Hz / ${fmt(m.bwOct, 1)} oct` : '—'} />
-      <M label="Max power (Xmax)" value={m.maxPower ? `${fmt(m.maxPower, 0)} W @ ${fmt(m.vMax, 1)} V` : '—'} />
-      <M label="System volume" value={sysVol > 0 ? `${sysVol >= 100 ? sysVol.toFixed(0) : sysVol.toFixed(1)} L` : '—'} />
-      {results?.elapsedMs != null && <M label="Solve" value={`${results.elapsedMs.toFixed(0)} ms`} />}
-    </div>
-  )
-}
-
 const TABS = [
   ['spl', 'SPL Response', SPLTab],
   ['zin', 'Impedance', ImpedanceTab],
@@ -601,7 +564,6 @@ export default function OutputPanel() {
   return (
     <div className="results-panel">
       <SimErrorBanner />
-      <MetricsStrip />
       <div className="plot-tabs">
         {TABS.map(([k, name]) => (
           <button key={k} className={`plot-tab ${tab === k ? 'active' : ''}`}
