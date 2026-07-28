@@ -531,50 +531,33 @@ function PhaseTab() {
   )
 }
 
-function SimErrorBanner() {
-  const simError = useStore((s) => s.simError)
-  if (!simError) return null
+// Each chart is its own dockable panel; this is the shell they share.
+function ChartPanel({ children }) {
   return (
-    <div style={{
-      background: '#3a1518', color: '#ff8a80', border: '1px solid #6e2228',
-      borderRadius: 6, padding: '6px 12px', margin: '6px 10px 0', fontSize: 12,
-    }}>
-      {simError}
+    <div className="results-panel">
+      <div className="plot-area">{children}</div>
     </div>
   )
 }
 
-const TABS = [
-  ['spl', 'SPL Response', SPLTab],
-  ['zin', 'Impedance', ImpedanceTab],
-  ['exc', 'Cone Excursion', ExcursionTab],
-  ['vel', 'Port Velocity', VelocityTab],
-  ['int', 'Interior SPL', InteriorTab],
-  ['pow', 'Acoustic Power', PowerTab],
-  ['eff', 'Efficiency', EfficiencyTab],
-  ['pe', 'Elec. Power', ElecPowerTab],
-  ['ph', 'Phase & Group Delay', PhaseTab],
-]
+// id → component, keyed the same as the per-chart zoom state in the store so
+// a chart keeps its zoom when it is re-docked or tabbed away.
+export const CHART_PANELS = {
+  spl: SPLTab,
+  zin: ImpedanceTab,
+  exc: ExcursionTab,
+  vel: VelocityTab,
+  int: InteriorTab,
+  pow: PowerTab,
+  eff: EfficiencyTab,
+  pe: ElecPowerTab,
+  ph: PhaseTab,
+}
 
-// Sizing is the dock's job now — this panel just fills whatever space its
-// stack gives it.
-export default function OutputPanel() {
-  const [tab, setTab] = useState('spl')
-  const ActiveTab = TABS.find(([k]) => k === tab)?.[2]
-  return (
-    <div className="results-panel">
-      <SimErrorBanner />
-      <div className="plot-tabs">
-        {TABS.map(([k, name]) => (
-          <button key={k} className={`plot-tab ${tab === k ? 'active' : ''}`}
-            onClick={() => setTab(k)}>{name}</button>
-        ))}
-      </div>
-      {ActiveTab && (
-        <div className="plot-area" id="plot-area">
-          <ActiveTab />
-        </div>
-      )}
-    </div>
-  )
+export function chartPanelComponent(id) {
+  const Chart = CHART_PANELS[id]
+  if (!Chart) return null
+  const Wrapped = () => <ChartPanel><Chart /></ChartPanel>
+  Wrapped.displayName = `ChartPanel(${id})`
+  return Wrapped
 }
