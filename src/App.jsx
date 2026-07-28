@@ -7,6 +7,8 @@ import DriverDB from './components/DriverDB'
 import TSCalc from './components/TSCalc'
 import ProjectManager from './components/ProjectManager'
 import SettingsWindow, { ResetPasswordPage } from './components/SettingsWindow'
+import PopoutView from './components/PopoutView'
+import { isPopout } from './popout'
 
 // Starter example: a ported box (driver front → radiation, rear → chamber → port → radiation)
 const DEMO = {
@@ -59,8 +61,11 @@ export default function App() {
   const loadSerialized = useStore((s) => s.loadSerialized)
   const setRestorePrompt = useStore((s) => s.setRestorePrompt)
 
-  // initial load: offer to restore the last auto-saved project, else demo
+  // initial load: offer to restore the last auto-saved project, else demo.
+  // A popped-out tab owns no project — loading one here would broadcast it
+  // over whatever the main window already has open.
   useEffect(() => {
+    if (isPopout()) return
     const last = localStorage.getItem('acousim:lastProject')
     let restored = null
     if (last) {
@@ -98,6 +103,7 @@ export default function App() {
   }, [])
 
   if (window.location.pathname === '/reset-password') return <ResetPasswordPage />
+  if (isPopout()) return <PopoutView />
 
   return (
     <div className="app">

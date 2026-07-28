@@ -107,6 +107,11 @@ function DockStack({ node }) {
         </div>
         <button
           className="dock-chrome-btn"
+          title="Open this panel in a new browser tab"
+          onClick={() => useStore.getState().popOutPanel(active)}
+        >⧉</button>
+        <button
+          className="dock-chrome-btn"
           title={maximized ? 'Restore layout' : 'Maximize this panel'}
           onClick={() => useStore.getState().toggleMaximize(active)}
         >{maximized ? '❐' : '⛶'}</button>

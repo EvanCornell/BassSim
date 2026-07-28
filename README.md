@@ -65,9 +65,17 @@ groups:
 | Reorder tabs | Drag a tab onto another tab in the same group |
 | Resize | Drag the gap between two groups |
 | Maximize / restore | Double-click a tab, or use the ⛶ button |
+| Send to another monitor | The ⧉ button, or **View ▸ Open in New Tab ▸** — opens that panel in its own browser tab |
 | Show / hide a panel | **View ▸**, with the plots under **View ▸ Charts** — a check mark marks the open ones |
 | Restore the default | **View ▸ Reset Layout** |
 | Reusable arrangements | **View ▸ Save Layout As…**, then **Apply Saved Layout ▸** |
+
+Any panel can be popped out into its own browser tab (`/panel?id=…`) and
+dragged onto a second monitor. The tab shows that panel alone and stays live: a
+`BroadcastChannel` mirrors the shared state — graph, parameters, settings,
+results, chart zoom — so an edit in either window redraws both. The panel
+leaves the dock while it is out and returns when the tab is closed. The main
+window remains the only one that runs the solver and writes the auto-save.
 
 By default the workspace opens with SPL Response, Impedance, Cone Excursion
 and Port Velocity tabbed together below the canvas; the other five plots are a

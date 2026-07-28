@@ -7,7 +7,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { useStore, SCHEMA_VERSION } from '../store'
 import { isOpen } from '../layout'
-import { PANEL_META, MAIN_IDS, CHART_IDS } from '../panelMeta'
+import { PANEL_META, PANEL_IDS, MAIN_IDS, CHART_IDS } from '../panelMeta'
 import { exportCSV, exportSchematicPNG, exportMetricsTxt } from '../utils/export'
 
 const MOD = navigator.platform.toLowerCase().includes('mac') ? '⌘' : 'Ctrl'
@@ -66,7 +66,18 @@ export default function MenuBar() {
   const [showExpWarning, setShowExpWarning] = useState(false)
   const fileRef = useRef(null)
   const barRef = useRef(null)
-  const { settings, updateSettings, layout, layoutOps, layoutPresets, snapshots } = store
+  const { settings, updateSettings, layout, layoutOps, layoutPresets, snapshots, poppedOut } = store
+
+  // A popped-out panel is neither open in the dock nor closed — say so, and
+  // let the menu item bring its tab back to the front.
+  const panelItem = (id) => ({
+    label: PANEL_META[id].title,
+    checked: isOpen(layout, id) || poppedOut.includes(id),
+    hint: poppedOut.includes(id) ? 'in a tab' : '',
+    disabled: PANEL_META[id].closable === false
+      || (PANEL_META[id].requires && !settings[PANEL_META[id].requires]),
+    onClick: () => (poppedOut.includes(id) ? store.popOutPanel(id) : layoutOps.toggle(id)),
+  })
 
   // click-away and Escape close the open menu
   useEffect(() => {
@@ -132,21 +143,24 @@ export default function MenuBar() {
     ]],
 
     ['View', [
-      ...MAIN_IDS.map((id) => ({
-        label: PANEL_META[id].title,
-        checked: isOpen(layout, id),
-        disabled: PANEL_META[id].closable === false
-          || (PANEL_META[id].requires && !settings[PANEL_META[id].requires]),
-        onClick: () => layoutOps.toggle(id),
-      })),
+      ...MAIN_IDS.map(panelItem),
+      { label: '-' },
+      { label: 'Charts', submenu: CHART_IDS.map(panelItem) },
       { label: '-' },
       {
-        label: 'Charts',
-        submenu: CHART_IDS.map((id) => ({
-          label: PANEL_META[id].title,
-          checked: isOpen(layout, id),
-          onClick: () => layoutOps.toggle(id),
-        })),
+        label: 'Open Focused Panel in New Tab',
+        hint: 'or the ⧉ button',
+        onClick: () => store.popOutPanel(store.focusedPanel),
+      },
+      {
+        label: 'Open in New Tab',
+        submenu: PANEL_IDS
+          .filter((id) => !PANEL_META[id].requires || settings[PANEL_META[id].requires])
+          .map((id) => ({
+            label: PANEL_META[id].title,
+            checked: poppedOut.includes(id),
+            onClick: () => store.popOutPanel(id),
+          })),
       },
       { label: '-' },
       {
