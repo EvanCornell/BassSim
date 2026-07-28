@@ -7,7 +7,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { useStore, SCHEMA_VERSION } from '../store'
 import { isOpen } from '../layout'
-import { PANEL_META, PANEL_IDS } from '../panelMeta'
+import { PANEL_META, MAIN_IDS, CHART_IDS } from '../panelMeta'
 import { exportCSV, exportSchematicPNG, exportMetricsTxt } from '../utils/export'
 
 const MOD = navigator.platform.toLowerCase().includes('mac') ? '⌘' : 'Ctrl'
@@ -132,13 +132,22 @@ export default function MenuBar() {
     ]],
 
     ['View', [
-      ...PANEL_IDS.map((id) => ({
+      ...MAIN_IDS.map((id) => ({
         label: PANEL_META[id].title,
         checked: isOpen(layout, id),
         disabled: PANEL_META[id].closable === false
           || (PANEL_META[id].requires && !settings[PANEL_META[id].requires]),
         onClick: () => layoutOps.toggle(id),
       })),
+      { label: '-' },
+      {
+        label: 'Charts',
+        submenu: CHART_IDS.map((id) => ({
+          label: PANEL_META[id].title,
+          checked: isOpen(layout, id),
+          onClick: () => layoutOps.toggle(id),
+        })),
+      },
       { label: '-' },
       {
         label: store.maximized ? 'Restore Panel Sizes' : 'Maximize Focused Panel',
@@ -211,8 +220,6 @@ export default function MenuBar() {
           } else setShowExpWarning(true)
         },
       },
-      { label: '-' },
-      { label: 'Settings…', onClick: () => store.setShowSettings(true) },
     ]],
 
     ['Help', [
@@ -253,6 +260,13 @@ export default function MenuBar() {
           onHover={() => { if (open) setOpen(title) }}
         />
       ))}
+      {/* Settings is a section of its own rather than an item buried in a
+          menu: one click opens the window, no dropdown in between. */}
+      <button
+        className="menu-title"
+        onClick={(e) => { e.stopPropagation(); setOpen(null); store.setShowSettings(true) }}
+        onMouseEnter={() => { if (open) setOpen(null) }}
+      >Settings</button>
       <input ref={fileRef} type="file" accept=".json,application/json" style={{ display: 'none' }} onChange={onLoadFile} />
 
       {showExpWarning && (

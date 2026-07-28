@@ -41,6 +41,14 @@ function RestoreBanner() {
   )
 }
 
+// Server-side simulation unreachable — a whole-app condition now that the
+// charts are separate panels, any of which may be closed.
+function SimErrorBanner() {
+  const simError = useStore((s) => s.simError)
+  if (!simError) return null
+  return <div className="err-banner">{simError}</div>
+}
+
 function ErrorBanner() {
   const errors = useStore((s) => s.results?.validation?.errors)
   if (!errors || !errors.length) return null
@@ -96,6 +104,7 @@ export default function App() {
       <MenuBar />
       <Toolbar />
       <RestoreBanner />
+      <SimErrorBanner />
       <ErrorBanner />
       <DockLayout />
       <DriverDB />

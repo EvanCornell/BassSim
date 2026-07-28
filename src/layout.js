@@ -19,7 +19,7 @@
 let counter = 0
 export const uid = (p = 'n') => `${p}${Date.now().toString(36)}${(counter++).toString(36)}`
 
-export const LAYOUT_VERSION = 1
+export const LAYOUT_VERSION = 2
 
 export function stack(panels, opts = {}) {
   return {
@@ -35,13 +35,14 @@ export function split(dir, children, size = 1) {
   return { id: uid('d'), type: 'split', dir, size, children }
 }
 
-// Default workspace: palette on the left, canvas over results in the middle,
-// parameters on the right — the classic three-column IDE arrangement.
+// Default workspace: palette on the left, canvas over the four charts most
+// designs are judged by, parameters on the right — the classic three-column
+// IDE arrangement. The remaining plots are opened from View ▸ Charts.
 export const defaultLayout = () => split('row', [
   stack(['palette'], { size: 16 }),
   split('col', [
-    stack(['canvas'], { size: 62 }),
-    stack(['results'], { size: 38 }),
+    stack(['canvas'], { size: 60 }),
+    stack(['spl', 'zin', 'exc', 'vel'], { size: 40, active: 'spl' }),
   ], 60),
   stack(['params'], { size: 24 }),
 ])
@@ -193,8 +194,12 @@ export function moveTabInStack(tree, stackId, from, to) {
 export function openPanel(tree, panelId, hint) {
   const existing = findPanelStack(tree, panelId)
   if (existing) return setActive(tree, existing.id, panelId)
-  if (hint?.nextTo) {
-    const host = findPanelStack(tree, hint.nextTo)
+  // `nextTo` names one neighbour; `nextToAny` names a family (the charts), so
+  // the panel joins whichever member happens to be on screen
+  const candidates = hint?.nextTo ? [hint.nextTo] : (hint?.nextToAny || [])
+  for (const sibling of candidates) {
+    if (sibling === panelId) continue
+    const host = findPanelStack(tree, sibling)
     if (host) return dockPanel(tree, panelId, host.id, hint.zone || 'center')
   }
   return dockToEdge(tree, panelId, hint?.edge || 'bottom')

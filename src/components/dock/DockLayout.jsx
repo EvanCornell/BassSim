@@ -73,6 +73,7 @@ function DockStack({ node }) {
       onMouseDownCapture={() => active && useStore.getState().focusPanel(active)}
     >
       <div className="dock-tabs">
+        <div className="dock-tabscroll">
         {node.panels.map((pid, idx) => (
           <div
             key={pid}
@@ -103,7 +104,7 @@ function DockStack({ node }) {
             )}
           </div>
         ))}
-        <div className="dock-tabfill" />
+        </div>
         <button
           className="dock-chrome-btn"
           title={maximized ? 'Restore layout' : 'Maximize this panel'}
@@ -222,10 +223,11 @@ export default function DockLayout() {
       <div className="dock-root">
         <div className="dock-stack focused" style={{ flex: '1 1 0%' }}>
           <div className="dock-tabs">
-            <div className="dock-tab active">
-              <span className="dt-title">{panelTitle(maximized)}</span>
+            <div className="dock-tabscroll">
+              <div className="dock-tab active">
+                <span className="dt-title">{panelTitle(maximized)}</span>
+              </div>
             </div>
-            <div className="dock-tabfill" />
             <button className="dock-chrome-btn" title="Restore layout"
               onClick={() => useStore.getState().toggleMaximize(maximized)}>❐</button>
           </div>

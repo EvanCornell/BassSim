@@ -35,7 +35,7 @@ Or with Docker: `docker build -t acousim . && docker run -p 8788:8788 -v acousim
 The server includes an account system ([Better Auth](https://better-auth.com)
 on SQLite): email + password with reset, plus optional social sign-in
 (Google, Apple, Facebook, GitHub) and post-signup account linking — manage it
-all under **Tools ▸ Settings ▸ Account** in the app. Copy `.env.example` to `.env`:
+all under **Settings ▸ Account** in the app. Copy `.env.example` to `.env`:
 `BETTER_AUTH_SECRET` is required in production, each social provider appears
 automatically once its OAuth credentials are set, and password-reset email
 uses SMTP (without it, reset links print to the server log).
@@ -43,7 +43,8 @@ uses SMTP (without it, reset links print to the server log).
 ## Workspace
 
 Commands live in the menu bar — **File**, **Edit**, **View**, **Simulate**,
-**Tools**, **Help**. Beneath it sits a configurable quick bar for per-design
+**Tools**, **Help**, and **Settings**, which opens its window directly rather
+than hiding behind a dropdown. Beneath it sits a configurable quick bar for per-design
 adjustments: by default the project name, undo/redo, a drive-voltage box with
 its resulting wattage, the snapshot button, and a live metrics readout (F3/F10,
 Fb, Qtc, impedance peaks, peak SPL, excursion ratios, −3 dB bandwidth, max
@@ -52,8 +53,10 @@ masking are available there too but off by default, since both are set-once
 controls that also live in **Settings ▸ Application** and the Simulate menu.
 Every item can be shown, hidden or reordered under **Settings ▸ Quick bar**.
 
-The area below is a dock. Five panels — Palette, Node Editor, Parameters,
-Results, Nonlinear Lab — live in tabbed groups:
+The area below is a dock. Every panel is independent — Palette, Node Editor,
+Parameters, Nonlinear Lab, and each of the nine plots — so any combination can
+be tiled side by side instead of hidden behind one another. They live in tabbed
+groups:
 
 | Action | How |
 |---|---|
@@ -62,13 +65,15 @@ Results, Nonlinear Lab — live in tabbed groups:
 | Reorder tabs | Drag a tab onto another tab in the same group |
 | Resize | Drag the gap between two groups |
 | Maximize / restore | Double-click a tab, or use the ⛶ button |
-| Show / hide a panel | **View ▸** — a check mark marks the open ones |
+| Show / hide a panel | **View ▸**, with the plots under **View ▸ Charts** — a check mark marks the open ones |
 | Restore the default | **View ▸ Reset Layout** |
 | Reusable arrangements | **View ▸ Save Layout As…**, then **Apply Saved Layout ▸** |
 
-The layout and any saved arrangements persist in LocalStorage. Settings is not
-a panel: **Tools ▸ Settings…** opens it as a floating window
-centred on screen that can be dragged by its title bar and closed with Escape.
+By default the workspace opens with SPL Response, Impedance, Cone Excursion
+and Port Velocity tabbed together below the canvas; the other five plots are a
+click away in **View ▸ Charts**. The layout and any saved arrangements persist
+in LocalStorage. Settings is not a panel: it is a floating window, centred on
+screen, draggable by its title bar and dismissed with Escape.
 
 ## How it works
 
@@ -95,11 +100,12 @@ cannot do.
 
 ### Outputs
 
-The Results panel carries nine plots: SPL with per-radiator overlays,
+Nine plots, each its own dockable panel: SPL with per-radiator overlays,
 electrical impedance + phase, cone excursion vs Xmax, port velocity, interior
 SPL from in-chamber probes, radiated acoustic power, efficiency, electrical
-power, and phase & group delay. The scalar figures that summarize them live in
-the quick bar, visible whatever panel you are looking at.
+power, and phase & group delay. Every one keeps its own zoom and Y-scale mode.
+The scalar figures that summarize them live in the quick bar, visible whatever
+panel you are looking at.
 
 ### Tools
 

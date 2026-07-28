@@ -2,15 +2,16 @@
 //
 // Adding a panel to AcouSim means one entry in PANEL_META plus one line here:
 // the dock layout, the View menu and the saved-layout sanitizer all read from
-// those, so nothing else needs to learn about it.
+// those, so nothing else needs to learn about it. Chart panels are generated
+// from the chart registry instead of listed one by one.
 import React from 'react'
-import { PANEL_META } from '../../panelMeta'
+import { PANEL_META, CHART_IDS } from '../../panelMeta'
 import Palette from '../Palette'
 import FlowCanvas from '../FlowCanvas'
 import ParamPanel from '../ParamPanel'
-import OutputPanel from '../OutputPanel'
 import NLLab from '../NLLab'
 import VelocityPopup from '../VelocityPopup'
+import { chartPanelComponent } from '../OutputPanel'
 
 function CanvasPanel() {
   return (
@@ -25,8 +26,8 @@ const COMPONENTS = {
   palette: Palette,
   canvas: CanvasPanel,
   params: ParamPanel,
-  results: OutputPanel,
   nllab: NLLab,
+  ...Object.fromEntries(CHART_IDS.map((id) => [id, chartPanelComponent(id)])),
 }
 
 export const PANELS = Object.fromEntries(
