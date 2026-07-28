@@ -35,7 +35,7 @@ Or with Docker: `docker build -t acousim . && docker run -p 8788:8788 -v acousim
 The server includes an account system ([Better Auth](https://better-auth.com)
 on SQLite): email + password with reset, plus optional social sign-in
 (Google, Apple, Facebook, GitHub) and post-signup account linking — manage it
-all under **⚙ Settings → Account** in the app. Copy `.env.example` to `.env`:
+all under **Tools ▸ Settings ▸ Account** in the app. Copy `.env.example` to `.env`:
 `BETTER_AUTH_SECRET` is required in production, each social provider appears
 automatically once its OAuth credentials are set, and password-reset email
 uses SMTP (without it, reset links print to the server log).
@@ -43,12 +43,14 @@ uses SMTP (without it, reset links print to the server log).
 ## Workspace
 
 Commands live in the menu bar — **File**, **Edit**, **View**, **Simulate**,
-**Tools**, **Help** — with a configurable quick bar beneath it: project name,
-undo/redo, a drive-voltage slider, sweep range, resonance masking, snapshots,
-and a live metrics readout (F3/F10, Fb, Qtc, impedance peaks, peak SPL,
-excursion ratios, −3 dB bandwidth, max power before Xmax, system volume, solve
-time). Every item can be shown, hidden or reordered under **Settings ▸ Quick
-bar**; the Experimental toggle and ⚙ button stay pinned right.
+**Tools**, **Help**. Beneath it sits a configurable quick bar for per-design
+adjustments: by default the project name, undo/redo, a drive-voltage box with
+its resulting wattage, the snapshot button, and a live metrics readout (F3/F10,
+Fb, Qtc, impedance peaks, peak SPL, excursion ratios, −3 dB bandwidth, max
+power before Xmax, system volume, solve time). Sweep range and resonance
+masking are available there too but off by default, since both are set-once
+controls that also live in **Settings ▸ Application** and the Simulate menu.
+Every item can be shown, hidden or reordered under **Settings ▸ Quick bar**.
 
 The area below is a dock. Five panels — Palette, Node Editor, Parameters,
 Results, Nonlinear Lab — live in tabbed groups:
@@ -65,7 +67,7 @@ Results, Nonlinear Lab — live in tabbed groups:
 | Reusable arrangements | **View ▸ Save Layout As…**, then **Apply Saved Layout ▸** |
 
 The layout and any saved arrangements persist in LocalStorage. Settings is not
-a panel: **Tools ▸ Settings…** (or the ⚙ button) opens it as a floating window
+a panel: **Tools ▸ Settings…** opens it as a floating window
 centred on screen that can be dragged by its title bar and closed with Escape.
 
 ## How it works
@@ -101,7 +103,7 @@ the quick bar, visible whatever panel you are looking at.
 
 ### Tools
 
-- **Amplifier solver**: Voltage/Impedance/Power linked by P = V²/Z, at the top of the Parameters panel; the quick bar's drive slider drives the same figures.
+- **Amplifier solver**: Voltage/Impedance/Power linked by P = V²/Z, at the top of the Parameters panel; the quick bar's drive box sets the same voltage.
 - **Snapshots**: freeze up to three results as labeled reference overlays.
 - **Resonance masking**: switch chambers to lumped compliances to hide standing-wave artifacts.
 - **Projects**: auto-save to LocalStorage, restore prompt, project manager with thumbnails, JSON file export/import with schema versioning.

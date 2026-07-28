@@ -96,7 +96,6 @@ function DockStack({ node }) {
             onClick={() => { layoutOps.activate(node.id, pid); useStore.getState().focusPanel(pid) }}
             onDoubleClick={() => useStore.getState().toggleMaximize(pid)}
           >
-            <span className="dt-icon">{PANELS[pid]?.icon}</span>
             <span className="dt-title">{panelTitle(pid)}</span>
             {PANELS[pid]?.closable !== false && (
               <span className="dt-x" title="Close panel"
@@ -224,7 +223,6 @@ export default function DockLayout() {
         <div className="dock-stack focused" style={{ flex: '1 1 0%' }}>
           <div className="dock-tabs">
             <div className="dock-tab active">
-              <span className="dt-icon">{PANELS[maximized].icon}</span>
               <span className="dt-title">{panelTitle(maximized)}</span>
             </div>
             <div className="dock-tabfill" />

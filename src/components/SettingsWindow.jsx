@@ -279,8 +279,35 @@ function ApplicationSection() {
   const settings = useStore((s) => s.settings)
   const updateSettings = useStore((s) => s.updateSettings)
   const layoutOps = useStore((s) => s.layoutOps)
+  const row = { display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, marginBottom: 8 }
   return (
     <>
+      <div style={card}>
+        <h4 style={h}>Simulation</h4>
+        <label style={row}>
+          Frequency sweep
+          <input
+            type="number" min="1" style={{ ...inputStyle, width: 80, marginBottom: 0 }}
+            value={settings.fmin}
+            onChange={(e) => { const v = parseFloat(e.target.value); if (v > 0) updateSettings({ fmin: v }) }}
+          />
+          to
+          <input
+            type="number" style={{ ...inputStyle, width: 80, marginBottom: 0 }}
+            value={settings.fmax}
+            onChange={(e) => { const v = parseFloat(e.target.value); if (v > settings.fmin) updateSettings({ fmax: v }) }}
+          /> Hz
+        </label>
+        <label style={{ ...row, cursor: 'pointer', marginBottom: 0 }}>
+          <input type="checkbox" checked={!!settings.masking}
+            onChange={(e) => updateSettings({ masking: e.target.checked })} />
+          Mask chamber resonances
+        </label>
+        <div style={{ ...dim, marginTop: 6 }}>
+          Masking switches chambers to lumped compliances, hiding the standing-wave
+          peaks at n·c/2L so the underlying alignment is easier to read.
+        </div>
+      </div>
       <div style={card}>
         <h4 style={h}>Charts</h4>
         <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, marginBottom: 8 }}>
@@ -337,7 +364,6 @@ function QuickBarSection() {
         <div style={{ ...dim, marginBottom: 12 }}>
           Choose what appears in the strip under the menu bar and in what order.
           Shown items are listed first, in bar order — use ▲ ▼ to rearrange them.
-          The Experimental toggle and the ⚙ button are always pinned to the right.
         </div>
 
         {TOOLBAR_GROUPS.map(([group, groupLabel]) => {
@@ -383,9 +409,9 @@ function QuickBarSection() {
 // title bar, and closes on Escape or a backdrop click.
 
 const SECTIONS = [
-  ['account', '👤 Account', AccountSection],
-  ['quickbar', '📐 Quick bar', QuickBarSection],
-  ['app', '🛠 Application', ApplicationSection],
+  ['account', 'Account', AccountSection],
+  ['quickbar', 'Quick bar', QuickBarSection],
+  ['app', 'Application', ApplicationSection],
 ]
 
 export default function SettingsWindow() {
@@ -428,7 +454,7 @@ export default function SettingsWindow() {
         onMouseDown={(e) => e.stopPropagation()}
       >
         <div className="fw-title" onMouseDown={onTitleDown}>
-          <span>⚙ Settings</span>
+          <span>Settings</span>
           <button className="fw-close" title="Close (Esc)" onClick={() => setShow(false)}>✕</button>
         </div>
         <div className="fw-body">

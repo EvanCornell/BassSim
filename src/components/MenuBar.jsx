@@ -63,6 +63,7 @@ function Menu({ title, items, open, onOpen, onHover }) {
 export default function MenuBar() {
   const store = useStore()
   const [open, setOpen] = useState(null)
+  const [showExpWarning, setShowExpWarning] = useState(false)
   const fileRef = useRef(null)
   const barRef = useRef(null)
   const { settings, updateSettings, layout, layoutOps, layoutPresets, snapshots } = store
@@ -200,6 +201,16 @@ export default function MenuBar() {
         hint: nlLocked ? 'experimental' : '',
         onClick: () => layoutOps.open('nllab'),
       },
+      {
+        label: 'Experimental features',
+        checked: !!settings.nlEnabled,
+        onClick: () => {
+          if (settings.nlEnabled) {
+            updateSettings({ nlEnabled: false })
+            layoutOps.close('nllab')
+          } else setShowExpWarning(true)
+        },
+      },
       { label: '-' },
       { label: 'Settings…', onClick: () => store.setShowSettings(true) },
     ]],
@@ -243,6 +254,35 @@ export default function MenuBar() {
         />
       ))}
       <input ref={fileRef} type="file" accept=".json,application/json" style={{ display: 'none' }} onChange={onLoadFile} />
+
+      {showExpWarning && (
+        <div className="modal-backdrop" onClick={() => setShowExpWarning(false)}>
+          <div className="modal" style={{ maxWidth: 480, minWidth: 380 }} onClick={(e) => e.stopPropagation()}>
+            <h3 style={{ color: 'var(--amber)' }}>Experimental features</h3>
+            <p style={{ fontSize: 13, lineHeight: 1.55 }}>
+              You are enabling <b>large-signal T/S nonlinearity</b> simulation.
+            </p>
+            <p style={{ fontSize: 12.5, lineHeight: 1.55, color: 'var(--text-2)' }}>
+              This feature is experimental. Its accuracy depends entirely on the accuracy
+              of the Bl(x), Cms(x) and Le(x) curves you provide — without measured data,
+              results are plausible-looking guesses. The solver models power compression
+              and resonance drift only; it does not produce harmonic distortion. It may
+              interact unexpectedly with complex circuits.
+            </p>
+            <p style={{ fontSize: 12.5, color: 'var(--text-2)' }}>
+              A flat curve at 1.0 reproduces the standard engine exactly.
+            </p>
+            <div className="close-row">
+              <button onClick={() => setShowExpWarning(false)}>Cancel</button>
+              <button className="primary" onClick={() => {
+                updateSettings({ nlEnabled: true })
+                setShowExpWarning(false)
+                layoutOps.open('nllab')
+              }}>I understand — continue</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
