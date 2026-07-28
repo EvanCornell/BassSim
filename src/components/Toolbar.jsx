@@ -3,9 +3,9 @@
 // Contents are user-configurable (Settings ▸ Quick bar): `store.toolbar` is an
 // ordered list of item ids from src/toolbarItems.js, and this renders them in
 // that order. Metric items are data-driven and need no case here; controls get
-// one each. The right-hand cluster (Experimental, ⚙) is deliberately pinned —
-// it is the way back to Settings even if every other item is switched off.
-import React, { useState } from 'react'
+// one each. Application-level switches (Settings, experimental features) belong
+// to the menu bar, not here — this strip is for per-design adjustments.
+import React from 'react'
 import { useStore } from '../store'
 import { TOOLBAR_ITEMS, metricValue } from '../toolbarItems'
 
@@ -31,24 +31,16 @@ function UndoRedo() {
   )
 }
 
-// Drive level, adjustable on the fly. The slider is the fast control and the
-// number box the precise one; both go through setAmp so P = V²/Z stays linked.
+// Drive level, adjustable on the fly. Goes through setAmp so P = V²/Z stays
+// linked with the amplifier solver in the Parameters panel.
 function VoltageControl() {
   const settings = useStore((s) => s.settings)
   const setAmp = useStore((s) => s.setAmp)
-  const v = settings.voltage
-  // slider spans 0.1–60 V, but typing a larger value is still allowed and the
-  // slider simply pins to its maximum
   return (
     <div className="tb-group tb-voltage" title="Amplifier drive voltage — power follows as V²/Z">
       <label>Drive</label>
       <input
-        type="range" min="0.1" max="60" step="0.1"
-        value={Math.min(v, 60)}
-        onChange={(e) => setAmp('voltage', parseFloat(e.target.value))}
-      />
-      <input
-        type="number" step="0.01" min="0" value={v}
+        type="number" step="0.01" min="0" value={settings.voltage}
         onChange={(e) => { const x = parseFloat(e.target.value); if (x >= 0) setAmp('voltage', x) }}
       />
       <label>V</label>
@@ -88,8 +80,8 @@ function SnapshotControl() {
   const store = useStore()
   return (
     <>
-      <button onClick={store.takeSnapshot} disabled={store.snapshots.length >= 3}
-        title="Freeze the current result as a reference overlay (max 3)">📌 Snapshot</button>
+      <button className="snap-btn" onClick={store.takeSnapshot} disabled={store.snapshots.length >= 3}
+        title="Freeze the current result as a reference overlay (max 3)">Snap</button>
       {store.snapshots.map((s) => (
         <span key={s.id} className="snapshot-chip" style={{ borderColor: s.color }}>
           <span className="pi-dot" style={{ background: s.color }} />
@@ -130,15 +122,9 @@ function Metric({ id }) {
 
 export default function Toolbar() {
   const toolbar = useStore((s) => s.toolbar)
-  const settings = useStore((s) => s.settings)
-  const updateSettings = useStore((s) => s.updateSettings)
-  const layoutOps = useStore((s) => s.layoutOps)
-  const setShowSettings = useStore((s) => s.setShowSettings)
-  const [showExpWarning, setShowExpWarning] = useState(false)
 
-  // Consecutive metrics are collected into one block that wraps internally.
-  // Without this the whole bar wraps, which strands the pinned right-hand
-  // cluster on a near-empty second row.
+  // Consecutive metrics are collected into one block that wraps internally,
+  // so a long readout does not force the controls onto a second row.
   const runs = []
   for (const id of toolbar) {
     const group = TOOLBAR_ITEMS[id]?.group
@@ -163,51 +149,6 @@ export default function Toolbar() {
         </React.Fragment>
       ))}
 
-      <div className="toolbar-right">
-        <label className="tb-group" title="Enable experimental features (large-signal T/S nonlinearity)" style={{ cursor: 'pointer' }}>
-          <input
-            type="checkbox" checked={!!settings.nlEnabled}
-            onChange={(e) => {
-              if (e.target.checked) setShowExpWarning(true)
-              else {
-                updateSettings({ nlEnabled: false })
-                layoutOps.close('nllab')
-              }
-            }}
-          />
-          <span style={{ fontSize: 11, color: settings.nlEnabled ? 'var(--amber)' : 'var(--text-2)' }}>Experimental</span>
-        </label>
-        <button className="icon-btn" title="Settings" onClick={() => setShowSettings(true)}>⚙</button>
-      </div>
-
-      {showExpWarning && (
-        <div className="modal-backdrop" onClick={() => setShowExpWarning(false)}>
-          <div className="modal" style={{ maxWidth: 480, minWidth: 380 }} onClick={(e) => e.stopPropagation()}>
-            <h3 style={{ color: 'var(--amber)' }}>⚗ Experimental features</h3>
-            <p style={{ fontSize: 13, lineHeight: 1.55 }}>
-              You are enabling <b>large-signal T/S nonlinearity</b> simulation.
-            </p>
-            <p style={{ fontSize: 12.5, lineHeight: 1.55, color: 'var(--text-2)' }}>
-              This feature is experimental. Its accuracy depends entirely on the accuracy
-              of the Bl(x), Cms(x) and Le(x) curves you provide — without measured data,
-              results are plausible-looking guesses. The solver models power compression
-              and resonance drift only; it does not produce harmonic distortion. It may
-              interact unexpectedly with complex circuits.
-            </p>
-            <p style={{ fontSize: 12.5, color: 'var(--text-2)' }}>
-              A flat curve at 1.0 reproduces the standard engine exactly.
-            </p>
-            <div className="close-row">
-              <button onClick={() => setShowExpWarning(false)}>Cancel</button>
-              <button className="primary" onClick={() => {
-                updateSettings({ nlEnabled: true })
-                setShowExpWarning(false)
-                layoutOps.open('nllab')
-              }}>I understand — continue</button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

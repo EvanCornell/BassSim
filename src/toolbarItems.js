@@ -42,8 +42,11 @@ export const TOOLBAR_GROUPS = [
 
 export const ALL_ITEM_IDS = Object.keys(TOOLBAR_ITEMS)
 
+// Sweep range and resonance masking are off by default: both are set-once
+// controls reachable from Settings ▸ Application and the Simulate menu, so
+// they earn their place in the bar only if you actually tweak them often.
 export const DEFAULT_TOOLBAR = [
-  'project', 'undo', 'voltage', 'sweep', 'masking', 'snapshot',
+  'project', 'undo', 'voltage', 'snapshot',
   'm_f3', 'm_f10', 'm_fb', 'm_qtc', 'm_zpeaks', 'm_peakspl',
   'm_xfb', 'm_xf3', 'm_bw', 'm_maxpower', 'm_volume', 'm_solve',
 ]

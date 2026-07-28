@@ -539,7 +539,7 @@ function SimErrorBanner() {
       background: '#3a1518', color: '#ff8a80', border: '1px solid #6e2228',
       borderRadius: 6, padding: '6px 12px', margin: '6px 10px 0', fontSize: 12,
     }}>
-      ⚠ {simError}
+      {simError}
     </div>
   )
 }

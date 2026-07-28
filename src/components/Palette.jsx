@@ -25,7 +25,7 @@ export default function Palette() {
         </div>
       ))}
       <h3 style={{ marginTop: 8 }}>Library</h3>
-      <button onClick={() => setShowDriverDB(true)}>🔍 Driver Database</button>
+      <button onClick={() => setShowDriverDB(true)}>Driver Database</button>
       <div style={{ fontSize: 10.5, color: 'var(--text-3)', lineHeight: 1.5, marginTop: 'auto' }}>
         Drag an element onto the canvas, wire ports together, and results update live.
         Every node has its own Q-factor loss.

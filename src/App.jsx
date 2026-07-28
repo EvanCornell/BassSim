@@ -44,7 +44,7 @@ function RestoreBanner() {
 function ErrorBanner() {
   const errors = useStore((s) => s.results?.validation?.errors)
   if (!errors || !errors.length) return null
-  return <div className="err-banner">⚠ {errors.join(' · ')}</div>
+  return <div className="err-banner">{errors.join(' · ')}</div>
 }
 
 export default function App() {

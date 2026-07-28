@@ -362,7 +362,7 @@ export default function NLLab() {
   return (
     <div ref={wrapRef} style={{ padding: '12px 20px', height: '100%', display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'hidden' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6, flexWrap: 'wrap' }}>
-        <h3 style={{ margin: 0 }}>⚗ Nonlinear Lab <span style={{ fontSize: 11, color: 'var(--amber)' }}>EXPERIMENTAL</span></h3>
+        <h3 style={{ margin: 0 }}>Nonlinear Lab <span style={{ fontSize: 11, color: 'var(--amber)' }}>EXPERIMENTAL</span></h3>
         <select value={driver.id} onChange={(e) => setDriverId(e.target.value)} style={{ width: 170 }}>
           {drivers.map((d) => <option key={d.id} value={d.id}>{d.data.params.label || d.id}</option>)}
         </select>
@@ -397,7 +397,7 @@ export default function NLLab() {
         {PARAM_INFO[param].hint}{' '}
         Reference (flat line) = small-signal {param} = <b style={{ color: 'var(--text-2)' }}>{fmtVal(refv.v)} {refv.unit}</b>; a flat curve reproduces the linear engine.
         {curve.table && <b> Imported table active as baseline; points deform it.</b>}
-        {suspConflict && <b style={{ color: 'var(--amber)' }}> ⚠ Both Cms(x) and Kms(x) have content — Kms(x) takes precedence; reset one of them.</b>}
+        {suspConflict && <b style={{ color: 'var(--amber)' }}> Both Cms(x) and Kms(x) have content — Kms(x) takes precedence; reset one of them.</b>}
       </div>
       <CurveEditor key={driver.id + param} driverId={driver.id} param={param} nl={nl} xmax={xmax} width={size.w - 40} height={size.h} refv={refv} />
       <div style={{ display: 'flex', gap: 22, fontSize: 12, flexWrap: 'wrap', padding: '8px 2px 0', borderTop: '1px solid var(--border)', marginTop: 8 }}>

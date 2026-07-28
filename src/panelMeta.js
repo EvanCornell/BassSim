@@ -9,31 +9,26 @@
 export const PANEL_META = {
   palette: {
     title: 'Palette',
-    icon: '🧩',
     closable: true,
     dock: { edge: 'left' },
   },
   canvas: {
     title: 'Node Editor',
-    icon: '◈',
     closable: false,
     dock: { edge: 'right' },
   },
   params: {
     title: 'Parameters',
-    icon: '⚙',
     closable: true,
     dock: { edge: 'right' },
   },
   results: {
     title: 'Results',
-    icon: '📈',
     closable: true,
     dock: { nextTo: 'canvas', zone: 'bottom', edge: 'bottom' },
   },
   nllab: {
     title: 'Nonlinear Lab',
-    icon: '⚗',
     closable: true,
     dock: { nextTo: 'canvas', zone: 'center', edge: 'right' },
     requires: 'nlEnabled',
