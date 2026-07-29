@@ -16,8 +16,37 @@
   --s4: #9085e9;
   --s5: #d55181;
   --s6: #d95926;
+  --scroll-thumb: #39445a;
+  --scroll-thumb-hover: #4d5b76;
 }
 * { box-sizing: border-box; }
+
+/* ---------- scrollbars ----------
+   A rounded thumb in the panel palette on a transparent track, inset by a
+   transparent border so it reads as floating over the content.
+   `color-scheme` also darkens the native widgets the app doesn't paint itself
+   (select popups, spin buttons).
+
+   The two engines are addressed separately on purpose: from Chrome 121 the
+   standard `scrollbar-width`/`scrollbar-color` properties *disable* the
+   ::-webkit-scrollbar pseudo-elements wherever they are set, so declaring both
+   globally would silently throw away the rounded styling below. Firefox, which
+   has no pseudo-elements to offer, gets the standard properties instead. */
+:root { color-scheme: dark; }
+@supports not selector(::-webkit-scrollbar) {
+  * { scrollbar-width: thin; scrollbar-color: var(--scroll-thumb) transparent; }
+}
+::-webkit-scrollbar { width: 12px; height: 12px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--scroll-thumb);
+  border: 3px solid transparent; /* 6px of visible thumb, still easy to grab */
+  background-clip: content-box;
+  border-radius: 8px;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--scroll-thumb-hover); background-clip: content-box; }
+::-webkit-scrollbar-thumb:active { background: var(--accent); background-clip: content-box; }
+::-webkit-scrollbar-corner { background: transparent; }
 html, body, #root { height: 100%; margin: 0; }
 body {
   font-family: 'Inter', -apple-system, 'Segoe UI', Roboto, sans-serif;
