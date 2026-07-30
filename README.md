@@ -83,6 +83,40 @@ click away in **View ▸ Charts**. The layout and any saved arrangements persist
 in LocalStorage. Settings is not a panel: it is a floating window, centred on
 screen, draggable by its title bar and dismissed with Escape.
 
+### Keyboard
+
+Every command runs through one registry (`src/keymap.js`), so the global key
+handler, the shortcut hints in the menus and the rebinding UI can never
+disagree. Defaults:
+
+| | |
+|---|---|
+| Undo / redo | `Ctrl+Z` · `Ctrl+Shift+Z` or `Ctrl+Y` |
+| Cut / copy / paste / duplicate | `Ctrl+X` · `Ctrl+C` · `Ctrl+V` · `Ctrl+D` |
+| Select all / delete | `Ctrl+A` · `Del` |
+| Add driver / chamber / waveguide / passive radiator / radiation | `D` `C` `W` `P` `R` |
+| Drive level ±1 V, ±0.1 V | `Alt+↑ ↓` · `Alt+Shift+↑ ↓` |
+| New / save / open project | `Ctrl+N` · `Ctrl+S` · `Ctrl+O` |
+| Snapshot, masking, recompute | `Alt+S` · `Alt+M` · `Ctrl+Enter` |
+| Settings, maximize panel, pop out panel | `Ctrl+,` · `Alt+Enter` · `Alt+O` |
+
+Commands marked *editor* — the graph edits and the bare-letter add keys — fire
+only while the Node Editor holds focus, which is what keeps single letters out
+of the way of the Nonlinear Lab and the charts. No command fires while a text
+field has focus.
+
+Everything is rebindable under **Settings ▸ Keyboard**: click a shortcut to
+record a replacement, `+` to give a command a second one. Assigning a combo
+already in use takes it from the other command and says so. `Ctrl` and `⌘` are
+the same modifier, so one default set fits both platforms, and bindings are
+matched on the physical key so a layout change or a held Shift doesn't shift
+their meaning.
+
+Nodes added by keyboard land under the pointer when it is over the canvas,
+cascading down-right if that spot is taken. Copy/paste works on a selection:
+**Ctrl/⌘+click** adds a node to it, **Shift+drag** rubber-bands a group. Pasting
+brings the edges that were wholly inside the selection, rewired to the copies.
+
 ## How it works
 
 The connected graph is converted into a chain of complex 2×2 ABCD transfer

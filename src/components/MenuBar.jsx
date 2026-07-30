@@ -9,8 +9,8 @@ import { useStore, SCHEMA_VERSION } from '../store'
 import { isOpen } from '../layout'
 import { PANEL_META, PANEL_IDS, MAIN_IDS, CHART_IDS } from '../panelMeta'
 import { exportCSV, exportSchematicPNG, exportMetricsTxt } from '../utils/export'
+import { formatCombo } from '../keymap'
 
-const MOD = navigator.platform.toLowerCase().includes('mac') ? '⌘' : 'Ctrl'
 
 // ---------- dropdown primitives ----------
 
@@ -66,7 +66,11 @@ export default function MenuBar() {
   const [showExpWarning, setShowExpWarning] = useState(false)
   const fileRef = useRef(null)
   const barRef = useRef(null)
-  const { settings, updateSettings, layout, layoutOps, layoutPresets, snapshots, poppedOut } = store
+  const { settings, updateSettings, layout, layoutOps, layoutPresets, snapshots, poppedOut, bindings } = store
+
+  // Menu hints read the live bindings, so rebinding a command in Settings
+  // updates every menu that mentions it.
+  const key = (id) => formatCombo(bindings[id]?.[0])
 
   // A popped-out panel is neither open in the dock nor closed — say so, and
   // let the menu item bring its tab back to the front.
@@ -117,10 +121,10 @@ export default function MenuBar() {
 
   const MENUS = [
     ['File', [
-      { label: 'New Project', hint: `${MOD}+N`, onClick: store.newProject },
+      { label: 'New Project', hint: key('project.new'), onClick: store.newProject },
       { label: 'Open Project…', onClick: () => store.setShowProjectManager(true) },
       { label: '-' },
-      { label: 'Save Project As JSON…', hint: `${MOD}+S`, onClick: store.saveProjectJSON },
+      { label: 'Save Project As JSON…', hint: key('project.save'), onClick: store.saveProjectJSON },
       { label: 'Import Project JSON…', onClick: () => fileRef.current?.click() },
       { label: '-' },
       {
@@ -134,12 +138,12 @@ export default function MenuBar() {
     ]],
 
     ['Edit', [
-      { label: 'Undo', hint: `${MOD}+Z`, disabled: !store.history.length, onClick: store.undo },
-      { label: 'Redo', hint: `${MOD}+Y`, disabled: !store.future.length, onClick: store.redo },
+      { label: 'Undo', hint: key('edit.undo'), disabled: !store.history.length, onClick: store.undo },
+      { label: 'Redo', hint: key('edit.redo'), disabled: !store.future.length, onClick: store.redo },
       { label: '-' },
-      { label: 'Duplicate Selection', hint: `${MOD}+D`, onClick: store.duplicateSelected },
-      { label: 'Select All Nodes', hint: `${MOD}+A`, onClick: store.selectAll },
-      { label: 'Delete Selection', hint: 'Del', danger: true, onClick: store.deleteSelected },
+      { label: 'Duplicate Selection', hint: key('edit.duplicate'), onClick: store.duplicateSelected },
+      { label: 'Select All Nodes', hint: key('edit.selectAll'), onClick: store.selectAll },
+      { label: 'Delete Selection', hint: key('edit.delete'), danger: true, onClick: store.deleteSelected },
     ]],
 
     ['View', [
@@ -149,7 +153,7 @@ export default function MenuBar() {
       { label: '-' },
       {
         label: 'Open Focused Panel in New Tab',
-        hint: 'or the ⧉ button',
+        hint: key('view.popout'),
         onClick: () => store.popOutPanel(store.focusedPanel),
       },
       {
@@ -165,7 +169,7 @@ export default function MenuBar() {
       { label: '-' },
       {
         label: store.maximized ? 'Restore Panel Sizes' : 'Maximize Focused Panel',
-        hint: 'dbl-click tab',
+        hint: key('view.maximize'),
         onClick: () => store.toggleMaximize(store.maximized ? store.maximized : store.focusedPanel),
       },
       { label: '-' },
@@ -201,7 +205,7 @@ export default function MenuBar() {
       { label: '-' },
       {
         label: 'Take Snapshot',
-        hint: 'max 3',
+        hint: key('sim.snapshot'),
         disabled: snapshots.length >= 3 || !store.results?.ok,
         onClick: store.takeSnapshot,
       },
@@ -211,7 +215,7 @@ export default function MenuBar() {
         onClick: () => snapshots.forEach((s) => store.removeSnapshot(s.id)),
       },
       { label: '-' },
-      { label: 'Recompute Now', onClick: () => { useStore.setState({ _lastSig: '' }); store.scheduleCompute() } },
+      { label: 'Recompute Now', hint: key('sim.recompute'), onClick: store.recomputeNow },
     ]],
 
     ['Tools', [
@@ -238,16 +242,9 @@ export default function MenuBar() {
 
     ['Help', [
       {
-        label: 'Keyboard Shortcuts',
-        onClick: () => alert(
-          `Node Editor\n`
-          + `  ${MOD}+Z / ${MOD}+Y   undo / redo\n`
-          + `  ${MOD}+D            duplicate selection\n`
-          + `  ${MOD}+A            select all nodes\n`
-          + `  Delete            delete selection\n\n`
-          + `Project\n  ${MOD}+N new    ${MOD}+S save JSON\n\n`
-          + `Workspace\n  drag a panel tab to re-dock it\n  double-click a tab to maximize\n  Escape closes an open menu`,
-        ),
+        label: 'Keyboard Shortcuts…',
+        hint: key('view.settings'),
+        onClick: () => store.setShowSettings(true, 'keyboard'),
       },
       {
         label: 'About AcouSim',

@@ -9,6 +9,7 @@ import ProjectManager from './components/ProjectManager'
 import SettingsWindow, { ResetPasswordPage } from './components/SettingsWindow'
 import PopoutView from './components/PopoutView'
 import { isPopout } from './popout'
+import { COMMANDS, comboFromEvent, resolve } from './keymap'
 
 // Starter example: a ported box (driver front → radiation, rear → chamber → port → radiation)
 const DEMO = {
@@ -76,27 +77,22 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // keyboard shortcuts
+  // Keyboard commands. Every binding is resolved through src/keymap.js, so
+  // the menus, Settings ▸ Keyboard and this handler can never disagree.
   useEffect(() => {
     const onKey = (e) => {
-      const tag = e.target.tagName
-      if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return
+      // let text fields have their keys, including the editing shortcuts
+      const el = e.target
+      const tag = el?.tagName
+      if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA' || el?.isContentEditable) return
+
+      const combo = comboFromEvent(e)
+      if (!combo) return
       const st = useStore.getState()
-      const mod = e.ctrlKey || e.metaKey
-      const key = e.key.toLowerCase()
-
-      // project-level shortcuts work wherever the focus is
-      if (mod && key === 'n') { e.preventDefault(); st.newProject(); return }
-      if (mod && key === 's') { e.preventDefault(); st.saveProjectJSON(); return }
-
-      // graph shortcuts belong to the Node Editor — other panels (the
-      // Nonlinear Lab in particular) bind the same keys for their own use
-      if (st.focusedPanel !== 'canvas') return
-      if (mod && key === 'z' && !e.shiftKey) { e.preventDefault(); st.undo() }
-      else if (mod && (key === 'y' || (key === 'z' && e.shiftKey))) { e.preventDefault(); st.redo() }
-      else if (mod && key === 'd') { e.preventDefault(); st.duplicateSelected() }
-      else if (mod && key === 'a') { e.preventDefault(); st.selectAll() }
-      else if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); st.deleteSelected() }
+      const id = resolve(st.bindings, combo, st.focusedPanel)
+      if (!id) return
+      e.preventDefault()
+      COMMANDS[id].run(st)
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
