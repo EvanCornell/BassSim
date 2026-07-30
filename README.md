@@ -113,7 +113,9 @@ matched on the physical key so a layout change or a held Shift doesn't shift
 their meaning.
 
 Nodes added by keyboard land under the pointer when it is over the canvas,
-cascading down-right if that spot is taken.
+cascading down-right if that spot is taken. Copy/paste works on a selection:
+**Ctrl/⌘+click** adds a node to it, **Shift+drag** rubber-bands a group. Pasting
+brings the edges that were wholly inside the selection, rewired to the copies.
 
 ## How it works
 

@@ -65,6 +65,12 @@ function CanvasInner() {
         onNodeContextMenu={(e, n) => { e.preventDefault(); setSelected(n.id) }}
         onPaneClick={() => setSelected(null)}
         deleteKeyCode={null}
+        // React Flow defaults additive selection to Meta alone, which leaves
+        // Windows and Linux with no way to click a second node — and without a
+        // multi-node selection, copying a subgraph is unreachable.
+        multiSelectionKeyCode={['Meta', 'Control']}
+        selectionKeyCode="Shift"
+        selectionOnDrag={false}
         fitView
         minZoom={0.15}
         maxZoom={2.5}
