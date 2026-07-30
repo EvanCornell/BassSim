@@ -8,13 +8,26 @@
 // Panels stay mounted when their tab is inactive — hidden with display:none
 // rather than unmounted — so React Flow keeps its viewport and the charts keep
 // their zoom when you tab away and back.
-import React, { useCallback, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { useStore } from '../../store'
 import { PANELS, panelTitle } from './panels'
 
 const DRAG_MIME = 'application/acousim-panel'
 const MIN_PX = 90        // a pane can never be dragged smaller than this
 const EDGE_FRACTION = 0.28 // outer 28% of a stack docks to that side
+
+// The payload decides what a drag means, never the store flag alone: a palette
+// element carries application/acousim-node and must reach the canvas untouched,
+// even if a previous tab drag left draggingPanel set.
+const isPanelDrag = (e) => !!e.dataTransfer?.types?.includes(DRAG_MIME)
+
+// Chromium never fires dragend when the drag source is removed mid-drag, which
+// is exactly what a successful tab drop does — the tree is rebuilt and the tab
+// disappears. Clear the flag as soon as we act on the drop.
+const endPanelDrag = () => {
+  const s = useStore.getState()
+  if (s.draggingPanel) s.setDraggingPanel(null)
+}
 
 // ---------- panel body ----------
 
@@ -52,18 +65,19 @@ function DockStack({ node }) {
   }
 
   const onBodyDragOver = (e) => {
-    if (!dragging) return
+    if (!dragging || !isPanelDrag(e)) return
     e.preventDefault()
     e.stopPropagation()
     setZone(zoneAt(e))
   }
 
   const onBodyDrop = (e) => {
-    if (!dragging) return
+    if (!dragging || !isPanelDrag(e)) return
     e.preventDefault()
     e.stopPropagation()
     layoutOps.dock(dragging, node.id, zoneAt(e))
     setZone(null)
+    endPanelDrag()
   }
 
   return (
@@ -85,14 +99,18 @@ function DockStack({ node }) {
               e.dataTransfer.effectAllowed = 'move'
               useStore.getState().setDraggingPanel(pid)
             }}
-            onDragEnd={() => { useStore.getState().setDraggingPanel(null); setTabDrop(null) }}
-            onDragOver={(e) => { if (dragging) { e.preventDefault(); e.stopPropagation(); setTabDrop(idx) } }}
+            onDragEnd={() => { endPanelDrag(); setTabDrop(null) }}
+            onDragOver={(e) => {
+              if (!dragging || !isPanelDrag(e)) return
+              e.preventDefault(); e.stopPropagation(); setTabDrop(idx)
+            }}
             onDragLeave={() => setTabDrop(null)}
             onDrop={(e) => {
-              if (!dragging) return
+              if (!dragging || !isPanelDrag(e)) return
               e.preventDefault(); e.stopPropagation()
               setTabDrop(null)
               layoutOps.dropOnTab(dragging, node.id, idx)
+              endPanelDrag()
             }}
             onClick={() => { layoutOps.activate(node.id, pid); useStore.getState().focusPanel(pid) }}
             onDoubleClick={() => useStore.getState().toggleMaximize(pid)}
@@ -208,9 +226,18 @@ function EdgeDrops() {
         <div
           key={edge}
           className={`edge-drop ${edge} ${hot === edge ? 'hot' : ''}`}
-          onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setHot(edge) }}
+          onDragOver={(e) => {
+            if (!isPanelDrag(e)) return
+            e.preventDefault(); e.stopPropagation(); setHot(edge)
+          }}
           onDragLeave={() => setHot(null)}
-          onDrop={(e) => { e.preventDefault(); e.stopPropagation(); setHot(null); layoutOps.dockEdge(dragging, edge) }}
+          onDrop={(e) => {
+            if (!isPanelDrag(e)) return
+            e.preventDefault(); e.stopPropagation()
+            setHot(null)
+            layoutOps.dockEdge(dragging, edge)
+            endPanelDrag()
+          }}
         />
       ))}
     </>
@@ -222,6 +249,21 @@ function EdgeDrops() {
 export default function DockLayout() {
   const layout = useStore((s) => s.layout)
   const maximized = useStore((s) => s.maximized)
+
+  // Safety net: whatever a drag was, once it is over the workspace must not be
+  // left in docking mode. A stuck flag keeps the edge strips over the window
+  // and turns every later palette drag into a panel move.
+  useEffect(() => {
+    // Bubble phase, so the panel's own drop handler has already run and read
+    // the flag before it is cleared.
+    const clear = () => endPanelDrag()
+    window.addEventListener('drop', clear)
+    window.addEventListener('dragend', clear)
+    return () => {
+      window.removeEventListener('drop', clear)
+      window.removeEventListener('dragend', clear)
+    }
+  }, [])
 
   if (maximized && PANELS[maximized]) {
     return (

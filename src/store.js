@@ -296,8 +296,16 @@ export const useStore = create((rawSet, get) => {
     get().pushHistory()
     const id = nextId(type)
     const params = { ...DEFAULT_PARAMS[type] }
-    const node = { id, type, position, data: { params } }
-    set({ nodes: [...get().nodes, node], selectedNodeId: id })
+    // A new node arrives selected — and alone in the selection — so it can be
+    // copied, nudged or deleted straight away without clicking it first.
+    const node = { id, type, position, data: { params }, selected: true }
+    set({
+      nodes: [...get().nodes.map((n) => (n.selected ? { ...n, selected: false } : n)), node],
+      edges: get().edges.some((e) => e.selected)
+        ? get().edges.map((e) => (e.selected ? { ...e, selected: false } : e))
+        : get().edges,
+      selectedNodeId: id,
+    })
     get().scheduleCompute()
     return id
   },
@@ -336,7 +344,10 @@ export const useStore = create((rawSet, get) => {
       selected: false,
       data: { params: JSON.parse(JSON.stringify(n.data.params)) },
     }))
-    set({ nodes: [...nodes.map((n) => ({ ...n, selected: false })), ...copies.map((c) => ({ ...c, selected: true }))] })
+    set({
+      nodes: [...nodes.map((n) => ({ ...n, selected: false })), ...copies.map((c) => ({ ...c, selected: true }))],
+      selectedNodeId: copies[copies.length - 1].id,
+    })
     get().scheduleCompute()
   },
 

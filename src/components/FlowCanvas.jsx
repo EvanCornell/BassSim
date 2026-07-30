@@ -42,6 +42,9 @@ function CanvasInner() {
     if (!type) return
     const pos = screenToFlowPosition({ x: e.clientX, y: e.clientY })
     addNode(type, pos)
+    // The drag began in the palette, which took keyboard focus with it. Hand it
+    // back so the node just dropped can be copied or deleted straight away.
+    useStore.getState().focusPanel('canvas')
   }, [screenToFlowPosition, addNode])
 
   return (
