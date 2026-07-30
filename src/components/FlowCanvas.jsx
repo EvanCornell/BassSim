@@ -1,4 +1,4 @@
-import React, { useCallback, useRef } from 'react'
+import React, { useCallback, useEffect, useRef } from 'react'
 import ReactFlow, { Background, Controls, MiniMap, useReactFlow, ReactFlowProvider } from 'reactflow'
 import { useStore } from '../store'
 import { nodeTypes } from './nodes'
@@ -20,6 +20,21 @@ function CanvasInner() {
   const setSelected = useStore((s) => s.setSelected)
   const { screenToFlowPosition } = useReactFlow()
   const wrapper = useRef(null)
+  const pointer = useRef(null)
+
+  // Publish where a keyboard-added node should land: under the pointer if it
+  // is over the canvas, otherwise the middle of the visible canvas.
+  useEffect(() => {
+    const dropPoint = () => {
+      const rect = wrapper.current?.getBoundingClientRect()
+      if (!rect) return null
+      const p = pointer.current
+      const inside = p && p.x >= rect.left && p.x <= rect.right && p.y >= rect.top && p.y <= rect.bottom
+      return screenToFlowPosition(inside ? p : { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 })
+    }
+    useStore.setState({ _flowApi: { dropPoint } })
+    return () => useStore.setState({ _flowApi: null })
+  }, [screenToFlowPosition])
 
   const onDrop = useCallback((e) => {
     e.preventDefault()
@@ -30,7 +45,12 @@ function CanvasInner() {
   }, [screenToFlowPosition, addNode])
 
   return (
-    <div ref={wrapper} style={{ width: '100%', height: '100%' }}>
+    <div
+      ref={wrapper}
+      style={{ width: '100%', height: '100%' }}
+      onPointerMove={(e) => { pointer.current = { x: e.clientX, y: e.clientY } }}
+      onPointerLeave={() => { pointer.current = null }}
+    >
       <ReactFlow
         nodes={nodes}
         edges={edges}

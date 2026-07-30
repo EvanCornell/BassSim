@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { useStore } from '../store'
 import { authClient, PROVIDER_LABELS } from '../auth'
 import { TOOLBAR_ITEMS, TOOLBAR_GROUPS, ALL_ITEM_IDS } from '../toolbarItems'
+import { COMMANDS, COMMAND_GROUPS, DEFAULT_BINDINGS, comboFromEvent, formatCombo } from '../keymap'
 
 // ---------- shared bits ----------
 
@@ -402,6 +403,108 @@ function QuickBarSection() {
   )
 }
 
+// ---------- keyboard ----------
+
+// A chip showing one combo; click it to re-record, or use its ✕ to drop it.
+function ComboChip({ combo, onRemove, onClick }) {
+  return (
+    <span className="key-chip" onClick={onClick} title="Click to replace this shortcut">
+      <kbd>{formatCombo(combo)}</kbd>
+      <span className="kc-x" title="Remove this shortcut"
+        onClick={(e) => { e.stopPropagation(); onRemove() }}>✕</span>
+    </span>
+  )
+}
+
+function KeyboardSection() {
+  const bindings = useStore((s) => s.bindings)
+  const assignBinding = useStore((s) => s.assignBinding)
+  const removeBinding = useStore((s) => s.removeBinding)
+  const resetBindings = useStore((s) => s.resetBindings)
+  const [recording, setRecording] = useState(null)   // { id, replacing }
+  const [note, setNote] = useState(null)
+
+  // While recording, the window swallows every key so the shortcut being
+  // captured cannot also trigger the command it is bound to.
+  useEffect(() => {
+    if (!recording) return
+    const onKey = (e) => {
+      e.preventDefault()
+      e.stopPropagation()
+      if (e.key === 'Escape') { setRecording(null); return }
+      const combo = comboFromEvent(e)
+      if (!combo) return
+      if (recording.replacing) removeBinding(recording.id, recording.replacing)
+      const stolen = assignBinding(recording.id, combo)
+      setNote(stolen
+        ? `${formatCombo(combo)} was taken from “${COMMANDS[stolen].label}”.`
+        : null)
+      setRecording(null)
+    }
+    window.addEventListener('keydown', onKey, true)
+    return () => window.removeEventListener('keydown', onKey, true)
+  }, [recording, assignBinding, removeBinding])
+
+  const isDefault = (id) => {
+    const def = DEFAULT_BINDINGS[id] || []
+    const cur = bindings[id] || []
+    return cur.length === def.length && cur.every((c, i) => c === def[i])
+  }
+
+  return (
+    <>
+      <div style={{ ...card, maxWidth: 640 }}>
+        <h4 style={h}>Keyboard shortcuts</h4>
+        <div style={{ ...dim, marginBottom: 4 }}>
+          Click a shortcut to replace it, or <b>+</b> to add a second one to the
+          same command. Assigning a combo that is already in use takes it from
+          the other command. Escape cancels while recording.
+        </div>
+        <div style={{ ...dim, marginBottom: 12 }}>
+          Shortcuts marked <i>editor</i> only fire while the Node Editor has
+          focus, which is what lets bare letters place components without
+          getting in the way of typing elsewhere.
+        </div>
+        {note && <div style={{ ...okStyle, marginBottom: 8 }}>{note}</div>}
+
+        {COMMAND_GROUPS.map(([group, ids]) => (
+          <div key={group} style={{ marginBottom: 14 }}>
+            <div style={{ ...dim, textTransform: 'uppercase', letterSpacing: '0.06em', fontSize: 10.5, marginBottom: 4 }}>
+              {group}
+            </div>
+            {ids.map((id) => (
+              <div key={id} className="key-row">
+                <span className="kr-label">
+                  {COMMANDS[id].label}
+                  {COMMANDS[id].scope === 'canvas' && <span className="kr-scope">editor</span>}
+                </span>
+                <span className="kr-combos">
+                  {(bindings[id] || []).map((combo) => (
+                    <ComboChip
+                      key={combo}
+                      combo={combo}
+                      onRemove={() => removeBinding(id, combo)}
+                      onClick={() => { setNote(null); setRecording({ id, replacing: combo }) }}
+                    />
+                  ))}
+                  {recording?.id === id && <span className="key-chip recording"><kbd>press keys…</kbd></span>}
+                  {!recording && (
+                    <button className="kr-add" title="Add another shortcut"
+                      onClick={() => { setNote(null); setRecording({ id, replacing: null }) }}>+</button>
+                  )}
+                  {!isDefault(id) && <span className="kr-changed" title="Changed from the default">•</span>}
+                </span>
+              </div>
+            ))}
+          </div>
+        ))}
+
+        <button style={btn} onClick={() => { setNote(null); resetBindings() }}>Restore defaults</button>
+      </div>
+    </>
+  )
+}
+
 // ---------- floating settings window ----------
 //
 // Settings is not a workspace panel: it is a modal utility window that opens
@@ -410,6 +513,7 @@ function QuickBarSection() {
 
 const SECTIONS = [
   ['account', 'Account', AccountSection],
+  ['keyboard', 'Keyboard', KeyboardSection],
   ['quickbar', 'Quick bar', QuickBarSection],
   ['app', 'Application', ApplicationSection],
 ]
@@ -417,7 +521,8 @@ const SECTIONS = [
 export default function SettingsWindow() {
   const show = useStore((s) => s.showSettings)
   const setShow = useStore((s) => s.setShowSettings)
-  const [section, setSection] = useState('account')
+  const section = useStore((s) => s.settingsSection)
+  const setSection = useStore((s) => s.setSettingsSection)
   const [drag, setDrag] = useState({ x: 0, y: 0 })
 
   useEffect(() => {

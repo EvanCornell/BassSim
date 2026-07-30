@@ -18,7 +18,7 @@ export const SYNC_CHANNEL = 'acousim-sync'
 export const SHARED_KEYS = [
   'nodes', 'edges', 'projectName', 'settings',
   'results', 'metrics', 'snapshots',
-  'selectedNodeId', 'velocityPopupNodeId', 'simError', 'xZoom',
+  'selectedNodeId', 'velocityPopupNodeId', 'simError', 'xZoom', 'clipboard',
 ]
 
 // Editing any of these means the simulation is stale.

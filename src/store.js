@@ -6,6 +6,7 @@ import { PANEL_META, PANEL_IDS } from './panelMeta'
 import { exportProjectJSON } from './utils/export'
 import { DEFAULT_TOOLBAR, sanitizeToolbar } from './toolbarItems'
 import { channel, isPopout, openPanelWindow, popoutPanelId, SHARED_KEYS, SIM_INPUT_KEYS } from './popout'
+import { loadBindings, saveBindings, DEFAULT_BINDINGS, COMMAND_IDS, findConflict } from './keymap'
 
 const POPOUT = isPopout()
 
@@ -47,6 +48,15 @@ let idCounter = 1
 export const nextId = (type) => `${type}_${Date.now().toString(36)}_${idCounter++}`
 
 const HISTORY_LIMIT = 80
+
+// Adding several elements without moving the mouse would stack them all on
+// one point, so step down-right until the spot is clear.
+function freeSpotNear(spot, nodes, step = 34, limit = 40) {
+  const taken = (x, y) => nodes.some((n) => Math.abs(n.position.x - x) < step && Math.abs(n.position.y - y) < step)
+  let { x, y } = spot
+  for (let i = 0; i < limit && taken(x, y); i++) { x += step; y += step }
+  return { x, y }
+}
 
 function graphSignature(nodes, edges, settings) {
   return JSON.stringify([
@@ -103,14 +113,43 @@ export const useStore = create((rawSet, get) => {
   layout: loadLayout(),
   layoutPresets: loadPresets(),
   maximized: null,          // panel id rendered full-bleed, or null
-  focusedPanel: 'canvas',   // which panel owns the keyboard right now
+  focusedPanel: POPOUT ? popoutPanelId() : 'canvas', // which panel owns the keyboard
   draggingPanel: null,      // panel id mid tab-drag (drives the drop targets)
   showSettings: false,      // floating settings window
+  settingsSection: 'account',
+  clipboard: null,
 
   setDraggingPanel: (id) => set({ draggingPanel: id }),
   focusPanel: (id) => { if (get().focusedPanel !== id) set({ focusedPanel: id }) },
   toggleMaximize: (id) => set({ maximized: get().maximized === id ? null : id }),
-  setShowSettings: (v) => set({ showSettings: v }),
+  setShowSettings: (v, section) => set({ showSettings: v, ...(section ? { settingsSection: section } : {}) }),
+  setSettingsSection: (id) => set({ settingsSection: id }),
+
+  // ---- keyboard bindings ----
+  bindings: loadBindings(),
+  setBinding: (id, combos) => {
+    const next = { ...get().bindings, [id]: combos }
+    set({ bindings: next })
+    saveBindings(next)
+  },
+  // Assigning a combo takes it from whichever command held it, the way most
+  // editors behave — silently leaving two commands on one key is worse.
+  assignBinding: (id, combo) => {
+    const next = {}
+    for (const cid of COMMAND_IDS) next[cid] = [...(get().bindings[cid] || [])]
+    const stolenFrom = findConflict(next, combo, id)
+    if (stolenFrom) next[stolenFrom] = next[stolenFrom].filter((c) => c !== combo)
+    if (!next[id].includes(combo)) next[id] = [...next[id], combo]
+    set({ bindings: next })
+    saveBindings(next)
+    return stolenFrom
+  },
+  removeBinding: (id, combo) => get().setBinding(id, (get().bindings[id] || []).filter((c) => c !== combo)),
+  resetBindings: () => {
+    const fresh = Object.fromEntries(COMMAND_IDS.map((id) => [id, [...(DEFAULT_BINDINGS[id] || [])]]))
+    set({ bindings: fresh })
+    saveBindings(fresh)
+  },
 
   _commitLayout: (tree) => {
     if (!tree) return
@@ -302,6 +341,80 @@ export const useStore = create((rawSet, get) => {
   },
 
   selectAll: () => set({ nodes: get().nodes.map((n) => ({ ...n, selected: true })) }),
+
+  // ---- clipboard ----
+  // An in-app clipboard rather than the system one: the graph is a structure,
+  // not text, and reading the system clipboard needs a permission prompt on
+  // every paste. It rides the sync channel, so you can copy in the main window
+  // and paste into a popped-out Node Editor.
+  copySelection: () => {
+    const { nodes, edges } = get()
+    const sel = nodes.filter((n) => n.selected)
+    if (!sel.length) return 0
+    const ids = new Set(sel.map((n) => n.id))
+    set({
+      clipboard: {
+        nodes: sel.map((n) => ({ type: n.type, id: n.id, position: { ...n.position }, params: JSON.parse(JSON.stringify(n.data.params)) })),
+        // only edges wholly inside the selection: a dangling half-edge would
+        // have nothing to reconnect to on paste
+        edges: edges
+          .filter((e) => ids.has(e.source) && ids.has(e.target))
+          .map((e) => ({ source: e.source, sourceHandle: e.sourceHandle, target: e.target, targetHandle: e.targetHandle })),
+      },
+    })
+    return sel.length
+  },
+  cutSelection: () => {
+    if (!get().copySelection()) return
+    get().deleteSelected()
+  },
+  pasteClipboard: () => {
+    const clip = get().clipboard
+    if (!clip?.nodes?.length) return
+    get().pushHistory()
+    const remap = {}
+    const fresh = clip.nodes.map((n) => {
+      const id = nextId(n.type)
+      remap[n.id] = id
+      return {
+        id,
+        type: n.type,
+        position: { x: n.position.x + 40, y: n.position.y + 40 },
+        selected: true,
+        data: { params: { ...DEFAULT_PARAMS[n.type], ...JSON.parse(JSON.stringify(n.params)) } },
+      }
+    })
+    const freshEdges = clip.edges.map((e) => ({
+      id: `e_${remap[e.source]}_${remap[e.target]}_${Math.random().toString(36).slice(2, 7)}`,
+      source: remap[e.source], sourceHandle: e.sourceHandle,
+      target: remap[e.target], targetHandle: e.targetHandle,
+    }))
+    set({
+      nodes: [...get().nodes.map((n) => ({ ...n, selected: false })), ...fresh],
+      edges: [...get().edges, ...freshEdges],
+      selectedNodeId: fresh[fresh.length - 1].id,
+    })
+    get().scheduleCompute()
+  },
+
+  // ---- keyboard-driven placement ----
+  // Set by FlowCanvas so a keyboard-added node can land under the pointer
+  // rather than at a fixed spot.
+  _flowApi: null,
+  addNodeAtCursor: (type) => {
+    const api = get()._flowApi
+    const spot = api?.dropPoint?.() || { x: 80, y: 80 }
+    return get().addNode(type, freeSpotNear(spot, get().nodes))
+  },
+
+  nudgeVoltage: (delta) => {
+    const v = Math.max(0, Math.round((get().settings.voltage + delta) * 100) / 100)
+    get().setAmp('voltage', v)
+  },
+  recomputeNow: () => {
+    useStore.setState({ _lastSig: '' })
+    get().scheduleCompute()
+  },
 
   // ---- settings / amplifier ----
   updateSettings: (patch) => {
