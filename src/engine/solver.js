@@ -195,6 +195,13 @@ export function runSimulation(nodes, edges, settings) {
   }
   res.excursionByDriver = {}
   for (const d of drivers) res.excursionByDriver[d.id] = new Array(npts).fill(0)
+  // Xmax per driver (mm) so the charts and metrics can judge each cone against
+  // its own limit rather than borrowing the first driver's.
+  res.xmaxByDriver = {}
+  for (const d of drivers) res.xmaxByDriver[d.id] = driverSIs.get(d.id).Xmax * 1000
+  // Worst cone as a fraction of its own Xmax — the meaningful headline when
+  // drivers differ. Dimensionless, so mixed Xmax values compare directly.
+  res.excursionRatio = new Array(npts).fill(0)
 
   // Interior SPL probes: chambers with params.probe report the acoustic
   // pressure INSIDE the volume (dB SPL at the probe station), read from the
@@ -382,7 +389,8 @@ export function runSimulation(nodes, edges, settings) {
 
     // Superposition over active drivers
     let zinFirst = null
-    let excSum = 0
+    let excWorst = 0   // largest single-cone displacement, m
+    let ratioWorst = 0 // largest displacement as a fraction of that cone's Xmax
     let peReal = 0
     let peApp = 0
     for (const drv of drivers) {
@@ -415,7 +423,10 @@ export function runSimulation(nodes, edges, settings) {
       peApp += (Eg * Eg) / Math.sqrt(zAbs2)
 
       const xPk = (abs(u) * Math.SQRT2) / w // peak displacement m
-      excSum += xPk
+      // Displacements of different cones are not additive — each driver moves
+      // its own xPk. The aggregate series reports the worst offender.
+      if (xPk > excWorst) excWorst = xPk
+      if (d.Xmax > 0) ratioWorst = Math.max(ratioWorst, xPk / d.Xmax)
       res.excursionByDriver[drv.id][i] = xPk * 1000 // mm
 
       // front branch(es)
@@ -479,7 +490,8 @@ export function runSimulation(nodes, edges, settings) {
     }
     res.zinMag[i] = zinFirst ? abs(zinFirst) : 0
     res.zinPhase[i] = zinFirst ? (arg(zinFirst) * 180) / Math.PI : 0
-    res.excursion[i] = excSum * 1000 // mm
+    res.excursion[i] = excWorst * 1000 // mm
+    res.excursionRatio[i] = ratioWorst
     res.power[i] = emit.powers
     res.peReal[i] = peReal
     res.peApparent[i] = peApp

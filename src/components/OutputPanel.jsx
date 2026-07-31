@@ -273,7 +273,17 @@ function useChartData(keys) {
         portIds.forEach((pid, k) => { row[`port_${pid}`] = results.splPorts[pid][i] })
       }
       if (keys.includes('zin')) { row.zmag = results.zinMag[i]; row.zphase = results.zinPhase[i] }
-      if (keys.includes('exc')) row.exc = results.excursion[i]
+      if (keys.includes('exc')) {
+        row.exc = results.excursion[i]
+        for (const [did, arr] of Object.entries(results.excursionByDriver || {})) {
+          row[`exc_${did}`] = arr[i]
+          // percentage of that driver's own Xmax, so cones with different
+          // limits can be read against one another
+          const xm = results.xmaxByDriver?.[did]
+          if (xm > 0) row[`excr_${did}`] = (arr[i] / xm) * 100
+        }
+        if (results.excursionRatio) row.excr = results.excursionRatio[i] * 100
+      }
       if (keys.includes('vel')) {
         for (const [wid, arr] of Object.entries(results.velocity || {})) row[`vel_${wid}`] = arr[i]
       }
@@ -302,6 +312,11 @@ function useChartData(keys) {
           let v = src[idx]
           if (key === 'pow') v = v > 0 ? 10 * Math.log10(v) : null
           rows[i][`snap${si}_${key}`] = v
+          // the excursion plot can also be read in % of Xmax; give snapshots
+          // the matching series so overlays survive the unit switch
+          if (key === 'exc' && s.excursionRatio) {
+            rows[i][`snap${si}_excr`] = s.excursionRatio[nearestIdx(s.freqs, f)] * 100
+          }
         }
       }
     })
@@ -378,22 +393,73 @@ function ImpedanceTab() {
 function ExcursionTab() {
   const { data } = useChartData(['exc'])
   const snapshots = useStore((s) => s.snapshots)
-  const driver = useStore((s) => s.nodes.find((n) => n.type === 'driver'))
-  const xmax = driver?.data.params.Xmax
-  const lines = [{ dataKey: 'exc', name: 'Excursion mm (peak)', color: SERIES[0], width: 2.5 }, ...snapLines(snapshots, 'exc')]
-  const refLines = xmax ? [
-    <ReferenceLine key="xmax" yAxisId="left" y={xmax} stroke="#e66767" strokeDasharray="6 4"
-      label={{ value: `Xmax ${xmax} mm`, fill: '#e66767', fontSize: 10, position: 'insideTopRight' }} />,
+  const nodes = useStore((s) => s.nodes)
+  const results = useStore((s) => s.results)
+  // One trace per driver: cones in different places do not move together, and
+  // they are not interchangeable when their Xmax differs.
+  const xmaxByDriver = results?.xmaxByDriver || {}
+  const driverIds = Object.keys(results?.excursionByDriver || {})
+  const multi = driverIds.length > 1
+  const labelOf = (id) => nodes.find((n) => n.id === id)?.data.params.label || id
+  const limits = [...new Set(driverIds.map((id) => xmaxByDriver[id]).filter((v) => v > 0))].sort((a, b) => a - b)
+  const fallbackXmax = nodes.find((n) => n.type === 'driver')?.data.params.Xmax
+  const xmaxes = limits.length ? limits : (fallbackXmax > 0 ? [fallbackXmax] : [])
+  // Millimetres are what you order parts by; percent is the only way to compare
+  // cones whose Xmax differs, so mixed limits default to it.
+  const mixed = xmaxes.length > 1
+  const [unit, setUnit] = useState(null)
+  const pct = (unit ?? (mixed ? '%' : 'mm')) === '%'
+
+  const seriesKey = (id) => (pct ? `excr_${id}` : `exc_${id}`)
+  const lines = multi
+    ? [
+      ...driverIds.map((id, i) => ({
+        dataKey: seriesKey(id), name: labelOf(id), color: SERIES[i % SERIES.length], width: 2,
+      })),
+      ...snapLines(snapshots, pct ? 'excr' : 'exc'),
+    ]
+    : [
+      { dataKey: pct ? 'excr' : 'exc', name: pct ? '% of Xmax' : 'Excursion mm (peak)', color: SERIES[0], width: 2.5 },
+      ...snapLines(snapshots, pct ? 'excr' : 'exc'),
+    ]
+
+  // In percent every driver shares one 100% limit; in mm there is a line per
+  // distinct Xmax, labelled with its drivers when they differ.
+  const nameFor = (xm) => (mixed
+    ? `Xmax ${xm} mm — ${driverIds.filter((id) => xmaxByDriver[id] === xm).map(labelOf).join(', ')}`
+    : `Xmax ${xm} mm`)
+  const refLines = pct
+    ? [
+      <ReferenceLine key="xmax100" yAxisId="left" y={100} stroke="#e66767" strokeDasharray="6 4"
+        label={{ value: 'Xmax', fill: '#e66767', fontSize: 10, position: 'insideTopRight' }} />,
+    ]
+    : xmaxes.map((xm) => (
+      <ReferenceLine key={`xmax${xm}`} yAxisId="left" y={xm} stroke="#e66767" strokeDasharray="6 4"
+        label={{ value: nameFor(xm), fill: '#e66767', fontSize: 10, position: 'insideTopRight' }} />
+    ))
+  // Shade above the first limit anything runs into.
+  const ceiling = pct ? 100 : xmaxes[0]
+  const refAreas = ceiling ? [
+    <ReferenceArea key="over" yAxisId="left" y1={ceiling} y2={ceiling * 3} fill="#e66767" fillOpacity={0.07} />,
   ] : []
-  const refAreas = xmax ? [
-    <ReferenceArea key="over" yAxisId="left" y1={xmax} y2={xmax * 3} fill="#e66767" fillOpacity={0.07} />,
-  ] : []
+
   const fitData = useFitData('exc', data)
-  const [yDomain, yControl] = useYScale('exc', fitLinear(fitData, ['exc'], 0, xmax ? xmax * 1.25 : 0))
+  const fitKeys = multi ? driverIds.map(seriesKey) : [pct ? 'excr' : 'exc']
+  const [yDomain, yControl] = useYScale(pct ? 'excPct' : 'exc',
+    fitLinear(fitData, fitKeys, 0, ceiling ? ceiling * 1.25 : 0))
   return (
     <>
-      <div className="plot-controls">{yControl}</div>
-      <BaseChart chartId="exc" data={data} lines={lines} yLabel="mm" yDomain={yDomain} refLines={refLines} refAreas={refAreas} />
+      <div className="plot-controls">
+        <label title="Millimetres of cone travel, or each driver's travel as a percentage of its own Xmax">Units
+          <select value={pct ? '%' : 'mm'} onChange={(e) => setUnit(e.target.value)} style={{ width: 88 }}>
+            <option value="mm">mm</option>
+            <option value="%">% Xmax</option>
+          </select>
+        </label>
+        {yControl}
+      </div>
+      <BaseChart chartId="exc" data={data} lines={lines} yLabel={pct ? '% of Xmax' : 'mm'}
+        yDomain={yDomain} refLines={refLines} refAreas={refAreas} />
     </>
   )
 }

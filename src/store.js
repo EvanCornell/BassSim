@@ -458,6 +458,7 @@ export const useStore = create((rawSet, get) => {
         splCombined: results.splCombined,
         zinMag: results.zinMag,
         excursion: results.excursion,
+        excursionRatio: results.excursionRatio,
         groupDelay: results.groupDelay,
         power: results.power,
       }],
