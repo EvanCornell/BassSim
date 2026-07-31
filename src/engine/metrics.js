@@ -23,7 +23,7 @@ function localMaxima(freqs, vals, minProminence = 1) {
 
 export function computeMetrics(res, settings) {
   if (!res || !res.ok || !res.freqs.length) return null
-  const { freqs, splCombined, zinMag, excursion } = res
+  const { freqs, splCombined, zinMag, excursion, excursionRatio, excursionByDriver } = res
   const n = freqs.length
   const m = {}
 
@@ -104,10 +104,38 @@ export function computeMetrics(res, settings) {
   m.xAtFb = atFreq(m.fb)
   m.xAtF3 = atFreq(m.f3)
 
-  // Max power before Xmax (displacement scales linearly with voltage)
-  if (xmax && xPk > 0) {
-    const vNow = settings.voltage || 2.83
-    const vMax = (vNow * xmax) / xPk
+  // Peak headroom: the closest any single cone comes to its own Xmax. With one
+  // driver this is just xPeak/Xmax; with several it picks whichever runs out
+  // first, which need not be the one moving furthest.
+  let rPk = 0, rPkF = null
+  if (excursionRatio) {
+    for (let i = 0; i < n; i++) {
+      if (excursionRatio[i] > rPk) { rPk = excursionRatio[i]; rPkF = freqs[i] }
+    }
+  }
+  if (rPk > 0) {
+    m.xRatioPeak = rPk
+    m.xRatioPeakF = rPkF
+    // which driver is the limiting one at that frequency
+    if (excursionByDriver && res.xmaxByDriver) {
+      const at = freqs.indexOf(rPkF)
+      let worst = null, worstR = 0
+      for (const [id, arr] of Object.entries(excursionByDriver)) {
+        const xm = res.xmaxByDriver[id]
+        if (!(xm > 0) || at < 0) continue
+        const r = arr[at] / xm
+        if (r > worstR) { worstR = r; worst = id }
+      }
+      m.xLimitDriver = worst
+    }
+  }
+
+  // Max power before Xmax (displacement scales linearly with voltage). Driven
+  // by the headroom ratio so a mixed set of drivers is judged per driver;
+  // falls back to the single-Xmax path for results predating the ratio.
+  const vNow = settings.voltage || 2.83
+  const vMax = rPk > 0 ? vNow / rPk : (xmax && xPk > 0 ? (vNow * xmax) / xPk : null)
+  if (vMax) {
     const zMin = Math.min(...zinMag.filter((v) => v > 0.1))
     m.maxPower = (vMax * vMax) / zMin
     m.vMax = vMax

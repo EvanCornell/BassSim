@@ -135,6 +135,11 @@ with inactive drivers present as passive impedances.
 | **Passive Radiator** | Mechanical resonator in shunt with added-mass tuning and a Cms-from-Fs calculator. |
 | **Radiation Termination** | Circular-piston radiation impedance (Bessel/Struve) into 4π/2π/π/π⁄2 space, rigid wall, or anechoic ρc termination. |
 
+Each driver's excursion is tracked separately, and the scalar readouts (peak
+excursion, X @ Fb, X @ F3, max power before Xmax) report whichever cone comes
+closest to *its own* Xmax — not the sum of their travel, and not the first
+driver's limit applied to all of them.
+
 **Every node has an independent Q factor** (or lossless) applied as a complex
 loss term — wall flexure on chambers, port turbulence on waveguides, surround
 loss on passive radiators — which is the main thing Hornresp's single QL
@@ -143,7 +148,8 @@ cannot do.
 ### Outputs
 
 Nine plots, each its own dockable panel: SPL with per-radiator overlays,
-electrical impedance + phase, cone excursion vs Xmax, port velocity, interior
+electrical impedance + phase, cone excursion vs Xmax (one trace per driver,
+in mm or as a percentage of each driver's own Xmax), port velocity, interior
 SPL from in-chamber probes, radiated acoustic power, efficiency, electrical
 power, and phase & group delay. Every one keeps its own zoom and Y-scale mode.
 The scalar figures that summarize them live in the quick bar, visible whatever
@@ -178,3 +184,9 @@ Built-in driver T/S values are transcribed from public spec sheets and are
 approximate. Tractrix and Le Cléac'h flares are approximated by hypex area
 profiles. The model is lumped/1-D (plane-wave): higher-order cross modes and
 diffraction are out of scope.
+
+Drivers that feed the *same* port — two woofers whose rears enter one chamber —
+are superposed but do not currently load each other, so each sees the full
+enclosure rather than its share of it; the affected nodes carry a warning in
+the app. For identical drivers on one enclosure, use the driver node's array
+count instead, which models the shared loading correctly.
