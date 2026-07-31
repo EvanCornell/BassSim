@@ -10,121 +10,22 @@ import {
   endCorrectionLength, flareCutoff, combineQ,
 } from './acoustics.js'
 import { cycleAverage, complianceRatio, hasNL } from './nonlinear.js'
+import {
+  driverSI, normQ, driverPassiveMechZ, buildGraph, validateGraph,
+} from './network.js'
+import { runSimulationNodal } from './nodal.js'
+
+// Both solvers are part of the public surface: the app, the server and the MCP
+// tools all import from here.
+export { driverSI, validateGraph }
 
 const P_REF = 20e-6
-
-// ---------- unit conversion: node params (display units) → SI ----------
-
-export function driverSI(p) {
-  const n = Math.max(1, Math.round(p.count || 1))
-  let s = 1, par = 1
-  if (p.wiring === 'series') s = n
-  else if (p.wiring === 'parallel') par = n
-  else if (p.wiring === 'series-parallel') {
-    const r = Math.round(Math.sqrt(n))
-    if (r * r === n && r > 1) { s = r; par = r } else { par = n }
-  }
-  const Sd = (p.Sd || 500) * 1e-4 // cm² → m²
-  const Mms = (p.Mms || 100) * 1e-3 // g → kg
-  const Cms = (p.Cms || 0.2) * 1e-3 // mm/N → m/N
-  return {
-    n, s, par,
-    Re: ((p.Re || 4) * s) / par,
-    Le: (((p.Le || 1) * 1e-3) * s) / par, // mH → H
-    LeExp: p.LeExp ?? 1,
-    Bl: (p.Bl || 15) * s,
-    Sd: Sd * n,
-    Mms: Mms * n,
-    Cms: Cms / n,
-    Rms: (p.Rms || 3) * n,
-    Fs: p.Fs || 30,
-    Xmax: (p.Xmax || 10) * 1e-3,
-    Q: normQ(p),
-  }
-}
-
-function normQ(p) {
-  if (p.lossless) return Infinity
-  const q = p.Q ?? 50
-  return q > 0 ? q : Infinity
-}
-
-// ---------- element impedance / matrix builders ----------
-
-function driverPassiveMechZ(d, Rg, w) {
-  // Blocked electrical impedance reflected into mechanical domain
-  const Ze = add(C(Rg + d.Re, 0), mul(C(d.Le, 0), jwPow(w, d.LeExp)))
-  const Zm = add(
-    C(d.Rms + (isFinite(d.Q) ? (2 * Math.PI * d.Fs * d.Mms) / d.Q : 0), 0),
-    add(C(0, w * d.Mms), div(C(1, 0), jw(w * d.Cms))),
-  )
-  return add(Zm, div(C(d.Bl * d.Bl, 0), Ze))
-}
-
-// ---------- graph model ----------
-
-// Build adjacency: for each node+handle, list of connected {node, handle}
-function buildGraph(nodes, edges) {
-  const byId = new Map(nodes.map((n) => [n.id, n]))
-  const out = new Map() // `${id}:${handle}` -> [{node, handle}]
-  for (const e of edges) {
-    const src = byId.get(e.source)
-    const tgt = byId.get(e.target)
-    if (!src || !tgt) continue
-    const key = `${e.source}:${e.sourceHandle}`
-    if (!out.has(key)) out.set(key, [])
-    out.get(key).push({ node: tgt, handle: e.targetHandle })
-    const rkey = `${e.target}:${e.targetHandle}`
-    if (!out.has(rkey)) out.set(rkey, [])
-    out.get(rkey).push({ node: src, handle: e.sourceHandle })
-  }
-  return { byId, adj: out }
-}
-
-export function validateGraph(nodes, edges) {
-  const { adj } = buildGraph(nodes, edges)
-  const warnings = {}
-  const errors = []
-  const connected = (id, h) => (adj.get(`${id}:${h}`) || []).length > 0
-  // Multiple edges INTO one input port do not form an acoustic junction —
-  // branches must fan out from an output port (e.g. two edges leaving a
-  // driver's front port). Extra feeders are ignored by the solver, so warn.
-  const inCounts = new Map()
-  for (const e of edges) {
-    const k = `${e.target}:${e.targetHandle}`
-    inCounts.set(k, (inCounts.get(k) || 0) + 1)
-  }
-  const multiFed = new Set(
-    [...inCounts.entries()].filter(([, c]) => c > 1).map(([k]) => k.split(':')[0]),
-  )
-  const drivers = nodes.filter((n) => n.type === 'driver')
-  if (drivers.length === 0) errors.push('Add a Driver node to run a simulation.')
-  for (const n of nodes) {
-    const w = []
-    if (multiFed.has(n.id)) {
-      w.push('Multiple edges feed this input port. Driven sources are superposed but do not load each other (approximate — OK for e.g. a series-bandpass cabin fed by driver rear + port). A passive side branch (closed stub) here would be ignored: branch stubs FROM an output port instead.')
-    }
-    if (n.type === 'driver') {
-      if (!connected(n.id, 'front') && !connected(n.id, 'rear'))
-        w.push('Neither driver port is connected — both radiate into half space by default.')
-    } else if (n.type === 'waveguide') {
-      if (!connected(n.id, 'throat')) w.push('Throat is not connected.')
-      if (!connected(n.id, 'mouth')) w.push('Mouth is unconnected — treated as radiating into half space.')
-    } else if (n.type === 'chamber') {
-      if (!connected(n.id, 'in')) w.push('Chamber inlet is not connected.')
-    } else if (n.type === 'radiation') {
-      if (!connected(n.id, 'in')) w.push('Radiation termination has no input.')
-    } else if (n.type === 'pr') {
-      if (!connected(n.id, 'in')) w.push('Passive radiator is not mounted to anything.')
-    }
-    if (w.length) warnings[n.id] = w
-  }
-  return { warnings, errors }
-}
 
 // ---------- solve ----------
 
 export function runSimulation(nodes, edges, settings) {
+  // The nodal solver is a drop-in alternative producing the same result shape.
+  if (settings?.solver === 'nodal') return runSimulationNodal(nodes, edges, settings)
   const t0 = performance.now()
   const { byId, adj } = buildGraph(nodes, edges)
   const validation = validateGraph(nodes, edges)

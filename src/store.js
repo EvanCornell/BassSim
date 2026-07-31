@@ -63,7 +63,7 @@ function graphSignature(nodes, edges, settings) {
     nodes.map((n) => [n.id, n.type, n.data.params]),
     edges.map((e) => [e.source, e.sourceHandle, e.target, e.targetHandle]),
     settings.fmin, settings.fmax, settings.npts, settings.voltage, settings.rg, settings.masking,
-    settings.nlEnabled,
+    settings.nlEnabled, settings.solver,
   ])
 }
 
@@ -105,7 +105,7 @@ export const useStore = create((rawSet, get) => {
     fmin: 10, fmax: 1000, npts: 512,
     voltage: 2.83, impedance: 4, power: 2, rg: 0,
     vThreshold: 17, masking: false, unwrapPhase: true, delayOffset: 0,
-    nlEnabled: false,
+    nlEnabled: false, solver: 'chain',
   },
   // ---- dockable workspace ----
   // `layout` is the tree from src/layout.js; every mutation goes through

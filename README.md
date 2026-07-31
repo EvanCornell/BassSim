@@ -119,11 +119,29 @@ brings the edges that were wholly inside the selection, rewired to the copies.
 
 ## How it works
 
-The connected graph is converted into a chain of complex 2×2 ABCD transfer
-matrices in `[pressure; volume velocity]` state, solved at 512 log-spaced
-frequencies (10–1000 Hz by default, adjustable). Parallel branches are
-combined in shunt at junctions; multiple drivers are handled by superposition
-with inactive drivers present as passive impedances.
+The connected graph is solved at 512 log-spaced frequencies (10–1000 Hz by
+default, adjustable) in `[pressure; volume velocity]` state. Two solvers are
+available under **Settings ▸ Application**, and they agree to rounding error
+on any topology that branches outward from the drivers:
+
+- **Transfer matrix (chain)** — the default. Elements become complex 2×2 ABCD
+  matrices; impedances are combined back from the termination, then pressure
+  and volume velocity are pushed forward. Parallel branches combine in shunt at
+  junctions, and multiple drivers are superposed with the inactive ones present
+  as passive impedances.
+- **Nodal network** — one conservation equation per acoustic junction, solved
+  simultaneously as `Y·p = U`. A walk cannot express a junction where several
+  sources meet, so the chain solver superposes drivers that share a chamber
+  without letting them load each other. Nodal analysis has no such restriction:
+  mutual loading, an unpowered cone being driven by box pressure (and radiating
+  what it moves), and any topology with loops all fall out of the solution. Same
+  component models, same speed.
+
+`npm run test:engine` checks the two against each other across sealed, ported,
+bandpass, passive-radiator, horn, masked, probed and array topologies, and
+checks the shared-chamber case — where they are *meant* to differ — against the
+array model, which arrives at the correct mutual loading by an independent
+route.
 
 ### Node types
 
@@ -186,7 +204,7 @@ profiles. The model is lumped/1-D (plane-wave): higher-order cross modes and
 diffraction are out of scope.
 
 Drivers that feed the *same* port — two woofers whose rears enter one chamber —
-are superposed but do not currently load each other, so each sees the full
-enclosure rather than its share of it; the affected nodes carry a warning in
-the app. For identical drivers on one enclosure, use the driver node's array
-count instead, which models the shared loading correctly.
+are superposed by the chain solver without loading each other, so each sees the
+full enclosure rather than its share of it; the affected nodes carry a warning.
+Switch to the nodal solver for those designs, or use the driver node's array
+count when the drivers are identical.

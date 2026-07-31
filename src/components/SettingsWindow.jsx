@@ -310,6 +310,27 @@ function ApplicationSection() {
         </div>
       </div>
       <div style={card}>
+        <h4 style={h}>Solver</h4>
+        <label style={row}>
+          Method
+          <select
+            style={{ ...inputStyle, width: 220, marginBottom: 0 }}
+            value={settings.solver || 'chain'}
+            onChange={(e) => updateSettings({ solver: e.target.value })}
+          >
+            <option value="chain">Transfer matrix (chain)</option>
+            <option value="nodal">Nodal network</option>
+          </select>
+        </label>
+        <div style={dim}>
+          Both solve the same equations and agree to rounding error on any
+          topology that branches outward from the drivers. The nodal solver
+          additionally handles junctions where several sources meet — drivers
+          sharing one chamber load each other, and an unpowered cone moves and
+          radiates instead of only absorbing. It costs nothing extra to run.
+        </div>
+      </div>
+      <div style={card}>
         <h4 style={h}>Charts</h4>
         <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, marginBottom: 8 }}>
           Port velocity warning threshold

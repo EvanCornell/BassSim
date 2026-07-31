@@ -9,6 +9,7 @@
     "preview": "vite preview",
     "mcp": "node mcp/server.js",
     "test:mcp": "node mcp/test-client.mjs",
+    "test:engine": "node test/engine-parity.mjs",
     "mcp:http": "node mcp/http.js",
     "test:http": "node mcp/test-http.mjs",
     "server": "node server/index.js",

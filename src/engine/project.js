@@ -21,6 +21,7 @@ export const DEFAULT_SETTINGS = {
   voltage: 2.83, impedance: 4, power: 2, rg: 0,
   vThreshold: 17, masking: false, unwrapPhase: true, delayOffset: 0,
   nlEnabled: false,
+  solver: 'chain', // 'chain' = transfer-matrix walk, 'nodal' = admittance network
 }
 
 // Serialized project → the {nodes, edges, settings} shape runSimulation expects.
