@@ -9,6 +9,9 @@ import { runSimulation, validateGraph } from '../src/engine/solver.js'
 import { computeMetrics } from '../src/engine/metrics.js'
 import { hydrateProject } from '../src/engine/project.js'
 import { searchDrivers, BUILDERS, calibratePort, optimizeProject } from './builders.js'
+import {
+  CORE_FIELDS, EXT_FIELDS, POPULATED_EXT_KEYS, DRIVER_BRANDS, SOURCE_LABELS,
+} from '../src/data/drivers.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const GUIDE = readFileSync(join(__dirname, 'guide.md'), 'utf8')
@@ -281,24 +284,64 @@ server.registerTool('sweep_parameter', {
 
 // ---------- phase 2: driver DB, builders, optimizer, compare ----------
 
+server.registerTool('driver_fields', {
+  title: 'Describe the driver record schema',
+  description: 'Lists every parameter a driver library record can carry: the core T/S set the solver runs on, and the extended catalog parameters (power handling, sensitivity, voice coil and motor construction, recommended enclosure) that some manufacturers publish and others do not. Use it to discover what driver_search can filter on.',
+  inputSchema: {},
+}, async () => {
+  try {
+    return jsonResult({
+      core: CORE_FIELDS.map((f) => ({ key: f.key, label: f.label, unit: f.unit, usedBySolver: !!f.solver })),
+      extended: EXT_FIELDS.map((f) => ({
+        key: f.key, group: f.group, label: f.label, unit: f.unit, type: f.type, desc: f.desc,
+        populated: POPULATED_EXT_KEYS.includes(f.key),
+      })),
+      brands: DRIVER_BRANDS,
+      sources: SOURCE_LABELS,
+      note: 'Extended fields are sparse — check for null. Only fields marked populated appear anywhere in the current library.',
+    })
+  } catch (e) { return errResult(e) }
+})
+
 server.registerTool('driver_search', {
   title: 'Search the driver library',
-  description: 'Searches the built-in T/S driver library (car audio subwoofers, pro audio woofers, hi-fi drivers). Returns full parameter sets usable directly as driver node params or as build_enclosure driver.db references.',
+  description: 'Searches the built-in T/S driver library (pro audio woofers, car audio subwoofers, hi-fi drivers). Returns parameter sets usable directly as driver node params or as build_enclosure driver.db references. Call driver_fields first to see what extended parameters are available to filter on.',
   inputSchema: {
-    query: z.string().optional().describe('Substring of brand/model, e.g. "sundown", "UM18"'),
+    query: z.string().optional().describe('Substring of brand/model, e.g. "sundown", "18SW115"'),
+    brand: z.string().optional().describe('Exact brand, e.g. "B&C"'),
+    source: z.enum(['official', 'datasheet']).optional()
+      .describe('"official" = imported from the manufacturer\'s own catalog export; "datasheet" = hand transcribed, less reliable'),
+    fs_min: z.number().optional().describe('Only drivers with Fs at or above this, Hz'),
     fs_max: z.number().optional().describe('Only drivers with Fs at or below this, Hz'),
     xmax_min: z.number().optional().describe('Only drivers with Xmax at or above this, mm'),
     sd_min: z.number().optional().describe('Minimum cone area, cm² (a 12" is ~480, 15" ~810, 18" ~1140)'),
     sd_max: z.number().optional(),
+    ext: z.record(z.string(), z.any()).optional().describe(
+      'Extended-parameter filters keyed as in driver_fields. Numbers take { min, max }, '
+      + 'text takes a substring: { pNom: { min: 1000 }, magnet: "Neodymium" }'),
+    detail: z.enum(['core', 'full']).optional()
+      .describe('"core" (default) returns the T/S set only; "full" adds every extended parameter'),
+    limit: z.number().optional().describe('Cap the number of drivers returned (default 60)'),
   },
-}, async (filters) => {
+}, async ({ detail, limit, ...filters }) => {
   try {
     const rows = searchDrivers(filters)
+    const capped = rows.slice(0, limit ?? 60)
     return jsonResult({
       count: rows.length,
+      returned: capped.length,
+      truncated: capped.length < rows.length
+        ? 'Narrow the filters or raise limit to see the rest.' : undefined,
       units: 'Fs Hz, Vas L, Re ohm, Bl T·m, Mms g, Cms mm/N, Sd cm², Le mH, Xmax mm',
-      drivers: rows.map(({ brand, model, ...ts }) => ({ name: `${brand} ${model}`, ...ts })),
-      note: 'Values transcribed from public spec sheets — approximate; verify against the datasheet for a real build.',
+      drivers: capped.map((d) => {
+        const { brand, model, ext, source, suspect, name, ...ts } = d
+        return {
+          name, source, ...ts,
+          ...(detail === 'full' ? { ext } : {}),
+          ...(suspect ? { suspect } : {}),
+        }
+      }),
+      note: 'source "official" rows come from a manufacturer catalog export; "datasheet" rows are hand transcribed and approximate. A "suspect" field means the row\'s published Qes/Qts/Vas disagree with its own Bl/Re/Mms/Cms — the simulation follows the latter.',
     })
   } catch (e) { return errResult(e) }
 })

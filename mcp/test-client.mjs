@@ -34,7 +34,7 @@ const call = async (name, args = {}) => {
 
 {
   const tools = (await client.listTools()).tools.map((t) => t.name).sort()
-  const expected = ['build_enclosure', 'compare', 'design_guide', 'driver_search', 'get_curve', 'optimize', 'simulate', 'sweep_parameter', 'validate']
+  const expected = ['build_enclosure', 'compare', 'design_guide', 'driver_fields', 'driver_search', 'get_curve', 'optimize', 'simulate', 'sweep_parameter', 'validate']
   check('tool list', JSON.stringify(tools) === JSON.stringify(expected), tools.join(','))
 }
 {
@@ -101,6 +101,45 @@ let builtPorted = null
   const { text } = await call('driver_search', { query: 'sundown', xmax_min: 25 })
   const j = JSON.parse(text)
   check('driver_search filters', j.count === 3 && j.drivers.every((d) => d.Xmax >= 25), j.drivers.map((d) => d.name).join(', '))
+}
+{
+  const { text } = await call('driver_fields', {})
+  const j = JSON.parse(text)
+  const flux = j.extended.find((f) => f.key === 'flux')
+  check('driver_fields describes the schema',
+    j.core.some((f) => f.key === 'Bl' && f.usedBySolver) && flux?.unit === 'T' && flux.populated
+      && j.brands.includes('B&C'),
+    `${j.core.length} core, ${j.extended.length} extended, ${j.brands.length} brands`)
+}
+{
+  // The extended set is only worth carrying if it is queryable.
+  const { text } = await call('driver_search', {
+    brand: 'B&C', ext: { pNom: { min: 1500 }, magnet: 'Neodymium' }, detail: 'full', limit: 5,
+  })
+  const j = JSON.parse(text)
+  check('driver_search filters on extended parameters',
+    j.count > 0 && j.drivers.every((d) => d.ext.pNom >= 1500 && /Neodymium/i.test(d.ext.magnet)),
+    `${j.count} B&C neo drivers ≥1500 W, e.g. ${j.drivers[0]?.name}`)
+}
+{
+  const { text } = await call('driver_search', { query: '18SW115-4' })
+  const j = JSON.parse(text)
+  const d = j.drivers[0]
+  // Core rows must stay lean: extended fields only on request.
+  check('driver_search core detail omits ext', d && d.ext === undefined && d.source === 'official',
+    `${d?.name} Fs=${d?.Fs} source=${d?.source}`)
+}
+{
+  const { text } = await call('build_enclosure', {
+    topology: 'sealed', driver: { db: '18SW115-4' }, volume: 100,
+  })
+  const j = JSON.parse(text)
+  const p = j.project.nodes.find((n) => n.type === 'driver').params
+  // A database row carries provenance and construction detail; none of it
+  // belongs in a node's params.
+  check('library driver contributes solver params only',
+    p.Bl === 26 && p.ext === undefined && p.source === undefined && p.suspect === undefined,
+    Object.keys(p).join(','))
 }
 {
   const { text } = await call('build_enclosure', {
