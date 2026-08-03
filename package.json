@@ -9,6 +9,8 @@
     "preview": "vite preview",
     "mcp": "node mcp/server.js",
     "test:mcp": "node mcp/test-client.mjs",
+    "test:drivers": "node test/drivers.mjs",
+    "import:catalog": "node scripts/import-catalog.mjs",
     "mcp:http": "node mcp/http.js",
     "test:http": "node mcp/test-http.mjs",
     "server": "node server/index.js",

@@ -1,20 +1,45 @@
 // Phase-2 helpers for the MCP server: driver lookup, self-calibrating
 // enclosure builders, an optimizer, and comparison scoring.
-import { BUILTIN_DRIVERS } from '../src/data/drivers.js'
+import { BUILTIN_DRIVERS, driverToParams, EXT_BY_KEY } from '../src/data/drivers.js'
 import { C_AIR } from '../src/engine/acoustics.js'
 
 // ---------- driver lookup ----------
 
-export function searchDrivers({ query, fs_max, xmax_min, sd_min, sd_max } = {}) {
+export function searchDrivers({
+  query, brand, source, fs_min, fs_max, xmax_min, sd_min, sd_max, ext,
+} = {}) {
   let rows = BUILTIN_DRIVERS
   if (query) {
     const q = String(query).toLowerCase()
     rows = rows.filter((d) => `${d.brand} ${d.model}`.toLowerCase().includes(q))
   }
+  if (brand) {
+    const b = String(brand).toLowerCase()
+    rows = rows.filter((d) => d.brand.toLowerCase() === b)
+  }
+  if (source) rows = rows.filter((d) => d.source === source)
+  if (fs_min != null) rows = rows.filter((d) => d.Fs >= fs_min)
   if (fs_max != null) rows = rows.filter((d) => d.Fs <= fs_max)
   if (xmax_min != null) rows = rows.filter((d) => d.Xmax >= xmax_min)
   if (sd_min != null) rows = rows.filter((d) => d.Sd >= sd_min)
   if (sd_max != null) rows = rows.filter((d) => d.Sd <= sd_max)
+
+  // Generic extended-parameter filtering, so a new catalog column becomes
+  // queryable the moment it is declared in the schema — no tool change.
+  // { pNom: { min: 1000 }, magnet: 'Neodymium Inside Slug' }
+  for (const [key, want] of Object.entries(ext || {})) {
+    const f = EXT_BY_KEY[key]
+    if (!f) throw new Error(`Unknown extended parameter "${key}". Call driver_fields to list them.`)
+    if (want && typeof want === 'object') {
+      if (want.min != null) rows = rows.filter((d) => d.ext[key] != null && d.ext[key] >= want.min)
+      if (want.max != null) rows = rows.filter((d) => d.ext[key] != null && d.ext[key] <= want.max)
+    } else if (f.type === 'text') {
+      const w = String(want).toLowerCase()
+      rows = rows.filter((d) => String(d.ext[key] ?? '').toLowerCase().includes(w))
+    } else {
+      rows = rows.filter((d) => d.ext[key] === want)
+    }
+  }
   return rows
 }
 
@@ -37,9 +62,10 @@ export function driverParams(spec = {}) {
   let label = spec.label || 'Driver'
   if (spec.db) {
     const d = findDriver(spec.db)
-    const { brand, model, ...ts } = d
-    base = ts
-    label = spec.label || model
+    // Only the solver-facing fields; a database row also carries provenance
+    // and construction detail that has no business in a node's params.
+    base = driverToParams(d)
+    label = spec.label || d.model
   }
   const { db, count, wiring, ...overrides } = spec
   return {

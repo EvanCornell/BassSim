@@ -129,7 +129,7 @@ with inactive drivers present as passive impedances.
 
 | Node | Model |
 |---|---|
-| **Driver** | Electro-mechano-acoustic source with full T/S set, semi-inductance Le·(jω)ⁿ, series/parallel arrays, and a T/S solver (datasheet, added-mass, known-box methods) plus a searchable driver database (LocalStorage-extensible). |
+| **Driver** | Electro-mechano-acoustic source with full T/S set, semi-inductance Le·(jω)ⁿ, series/parallel arrays, and a T/S solver (datasheet, added-mass, known-box methods) plus a searchable [driver database](#driver-database) of 197 drivers (LocalStorage-extensible). |
 | **Chamber** | Finite transmission line (area = Volume/Length) so longitudinal standing waves at n·c/2L appear as real response features. Stuffing slows sound and adds loss. |
 | **Waveguide Segment** | Any duct/port/horn: conical, exponential, parabolic, hypex, tractrix≈, Le Cléac'h≈ profiles discretized into 24 exact-area slices. Straight port when S1 = S2. Per-node velocity readout on canvas with a click-through velocity chart and turbulence threshold. |
 | **Passive Radiator** | Mechanical resonator in shunt with added-mass tuning and a Cms-from-Fs calculator. |
@@ -144,6 +144,42 @@ driver's limit applied to all of them.
 loss term — wall flexure on chambers, port turbulence on waveguides, surround
 loss on passive radiators — which is the main thing Hornresp's single QL
 cannot do.
+
+### Driver database
+
+197 drivers under **Tools ▸ Driver Database**, filterable by brand, Fs, Vas
+and Xmax. Clicking a row fills the selected Driver node.
+
+A record is flat for the thirteen core T/S values and nests everything else
+under `ext`. That split is load-bearing: the solver reads Mms, Cms, Rms, Sd,
+Re, Le and Bl and nothing more, so applying a database row can never smuggle
+construction trivia into a node's parameters. Extended parameters are sparse
+by design — B&C publish flux density and winding depth, most brands publish a
+power rating and stop — so every one is optional, and the schema is declared
+as data in `src/data/driver-fields.js` rather than hardcoded, which is what
+lets the browser, the CSV export and the MCP tools stay correct as fields are
+added. `driver_fields` hands an agent the same list.
+
+| Source | Drivers | Meaning |
+|---|---|---|
+| `official` | 172 (B&C) | Generated from the manufacturer's own catalog export; full extended parameter set. |
+| `datasheet` | 25 | Hand-transcribed from individual spec sheets; core T/S only. |
+
+Catalog imports are generated, not edited. Drop the export in `data/catalogs/`,
+add a column-mapping profile to `scripts/import-catalog.mjs`, and run
+`npm run import:catalog <brand>` — a second manufacturer lands as data, not as
+code. Cms and Rms are *derived* from the published Fs, Mms and Qms rather than
+transcribed, so the modeled driver resonates at exactly the frequency and
+mechanical Q its datasheet claims; every other value is copied verbatim.
+
+`npm run test:drivers` checks the library: schema conformance, the identities
+the importer is responsible for, and a consistency audit. A T/S set is
+over-determined, so a row's published Qes, Qts and Vas can be checked against
+the Bl, Re, Mms and Cms the solver actually runs on. Rows that fail carry a
+`suspect` label, shown as ⚠ in the browser, and the test asserts every failing
+row is labelled — the count cannot grow unnoticed. 3 of the 172 catalog rows
+are flagged; 18 of the 25 hand-transcribed ones are, which is the honest
+measure of the difference between the two sources.
 
 ### Outputs
 
@@ -170,8 +206,8 @@ server so AI assistants can search drivers, build and calibrate enclosures,
 simulate, optimize against goals, and compare designs directly — see
 [`mcp/README.md`](mcp/README.md). Run it locally over stdio (`npm run mcp`,
 for Claude Desktop/Code) or as a hosted HTTP connector for claude.ai/ChatGPT
-(`npm run mcp:http`, also Dockerized). `npm run test:mcp` and
-`npm run test:http` run the smoke tests.
+(`npm run mcp:http`, also Dockerized). `npm run test:mcp`,
+`npm run test:http` and `npm run test:drivers` run the checks.
 
 ## Stack
 
@@ -180,9 +216,10 @@ React Hook Form, Vite.
 
 ## Caveats
 
-Built-in driver T/S values are transcribed from public spec sheets and are
-approximate. Tractrix and Le Cléac'h flares are approximated by hypex area
-profiles. The model is lumped/1-D (plane-wave): higher-order cross modes and
+Driver T/S values sourced `datasheet` are hand transcriptions and are
+approximate — the ⚠ label marks the ones known to contradict themselves.
+Prefer `official` rows. Tractrix and Le Cléac'h flares are approximated by
+hypex area profiles. The model is lumped/1-D (plane-wave): higher-order cross modes and
 diffraction are out of scope.
 
 Drivers that feed the *same* port — two woofers whose rears enter one chamber —
