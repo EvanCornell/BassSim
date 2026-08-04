@@ -1,5 +1,26 @@
 // Derived metrics from a completed sweep.
 
+/**
+ * Find prominent local maxima in a sampled curve.
+ *
+ * Used to locate impedance peaks, which is how the tuning frequency and box
+ * alignment are identified. Two filters keep noise out: a peak must rise
+ * `minProminence` above the lowest point within ±40 samples, and peaks closer
+ * together than 5% in frequency are merged to the taller one — a single
+ * physical resonance sampled on a log grid often produces several adjacent
+ * candidates.
+ *
+ * The first and last two samples are skipped, so a curve that is still rising
+ * at the edge of the sweep reports no peak there rather than a false one.
+ *
+ * @param {number[]} freqs - Frequency axis, Hz, ascending.
+ * @param {number[]} vals - Curve sampled on that axis.
+ * @param {number} [minProminence=1] - Minimum rise above the local floor, in the units of `vals`.
+ * @returns {Array<{f: number, v: number, i: number}>} Surviving peaks in ascending frequency order, each with its frequency, value and sample index.
+ * @pre freqs.length === vals.length
+ * @post freqs and vals are not modified
+ * @pure
+ */
 function localMaxima(freqs, vals, minProminence = 1) {
   const peaks = []
   for (let i = 2; i < vals.length - 2; i++) {
@@ -21,6 +42,31 @@ function localMaxima(freqs, vals, minProminence = 1) {
   return merged
 }
 
+/**
+ * Reduce a completed sweep to the scalar figures shown in the quick bar.
+ *
+ * Passband level is the median of the top quartile of SPL rather than the peak,
+ * so a single resonance spike cannot drag the reference — and therefore F3 —
+ * off with it. F3 and F10 are then found by linear interpolation at the first
+ * upward crossing of that reference.
+ *
+ * The impedance peak count decides how the box is interpreted: two peaks mean a
+ * vented alignment, so the minimum between them is the tuning `fb`; one peak
+ * means sealed, so it is `fc` and `qtc` follows from the exact second-order
+ * high-pass relation between fc and F3.
+ *
+ * Maximum power before Xmax is driven by the per-driver headroom ratio, so a
+ * mixed set of drivers is judged against each cone's own limit; it falls back
+ * to a single global Xmax for results produced before that ratio existed.
+ *
+ * @param {object|null} res - A result from `runSimulation`.
+ * @param {object} settings - Sweep settings.
+ * @param {number} [settings.voltage=2.83] - Drive voltage the sweep was run at, V RMS.
+ * @param {number} [settings.xmax] - Legacy single Xmax, mm, used only when the result carries no per-driver ratio.
+ * @returns {object|null} Metrics — any of `passband`, `peakSPL`, `f3`, `f10`, `bwHz`, `bwOct`, `zPeaks`, `fb`, `fbZ`, `fc`, `qtc`, `xPeak`, `xPeakF`, `xAtFb`, `xAtF3`, `xRatioPeak`, `xRatioPeakF`, `xLimitDriver`, `maxPower`, `vMax` — or `null` when the sweep failed or is empty. Individual fields are absent rather than null when the topology does not define them, so a sealed box has no `fb`.
+ * @post res and settings are not modified
+ * @pure
+ */
 export function computeMetrics(res, settings) {
   if (!res || !res.ok || !res.freqs.length) return null
   const { freqs, splCombined, zinMag, excursion, excursionRatio, excursionByDriver } = res
@@ -34,6 +80,16 @@ export function computeMetrics(res, settings) {
   m.peakSPL = sorted[0] ?? 0
 
   // F3 / F10: lowest frequency where response last rises through pass-3
+  /**
+   * Frequency at which the response first rises to `drop` dB below passband.
+   *
+   * Scans upward and interpolates linearly between the straddling samples, so
+   * the answer is not quantised to the sweep grid.
+   *
+   * @param {number} drop - Level below passband to find, dB (3 for F3, 10 for F10).
+   * @returns {number|null} The crossing frequency in Hz, or `null` when the response never reaches that level anywhere in the sweep.
+   * @reads the enclosing sweep's `splCombined`, `freqs` and computed `pass` level.
+   */
   const findFx = (drop) => {
     const target = pass - drop
     for (let i = 0; i < n; i++) {
@@ -92,6 +148,16 @@ export function computeMetrics(res, settings) {
   }
   m.xPeak = xPk
   m.xPeakF = xPkF
+  /**
+   * Cone excursion at the sweep sample nearest a given frequency.
+   *
+   * Nearest is measured in log-frequency, matching the sweep's own spacing, so
+   * the choice is not biased toward the high end of the range.
+   *
+   * @param {number|null} f - Frequency of interest, Hz. A falsy value means the caller had no such frequency to look up.
+   * @returns {number|null} Excursion in mm, or `null` when `f` is falsy.
+   * @reads the enclosing sweep's `freqs` and `excursion` arrays.
+   */
   const atFreq = (f) => {
     if (!f) return null
     let best = 0, bd = Infinity

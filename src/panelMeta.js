@@ -8,6 +8,13 @@
 //   closable false pins the panel open — the canvas is the workspace itself
 //   dock     where View ▸ puts the panel when it isn't already visible
 //   requires a settings flag that must be truthy for the panel to be offered
+/**
+ * Metadata for every panel the workspace knows how to render.
+ *
+ * Doubles as the panel registry: `layout.sanitize` treats an id absent from
+ * this map as unknown and drops it, which is what keeps an old saved layout
+ * from referencing a panel that no longer exists.
+ */
 export const PANEL_META = {
   palette: {
     title: 'Palette',
@@ -48,9 +55,12 @@ export const PANEL_META = {
   ph: { title: 'Phase & Group Delay', group: 'charts' },
 }
 
+/** Every known panel id. The allow-list `layout.sanitize` filters a saved layout against. */
 export const PANEL_IDS = Object.keys(PANEL_META)
 
+/** Panel ids for the plots, listed under View ▸ Charts. */
 export const CHART_IDS = PANEL_IDS.filter((id) => PANEL_META[id].group === 'charts')
+/** Panel ids for the non-chart panels, listed directly under View. */
 export const MAIN_IDS = PANEL_IDS.filter((id) => PANEL_META[id].group === 'main')
 
 // Charts are interchangeable, so opening one joins whichever chart stack is
@@ -60,4 +70,11 @@ for (const id of CHART_IDS) {
   PANEL_META[id].dock = { nextToAny: CHART_IDS, zone: 'center', edge: 'bottom' }
 }
 
+/**
+ * Display title for a panel.
+ *
+ * @param {string} id - Panel id.
+ * @returns {string} The registered title, falling back to the raw id so an unknown panel still labels its tab with something.
+ * @pure
+ */
 export const panelTitle = (id) => PANEL_META[id]?.title || id

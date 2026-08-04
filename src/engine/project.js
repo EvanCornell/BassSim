@@ -2,8 +2,20 @@
 // A project is plain JSON: { name, settings, nodes: [{id,type,position,params}],
 // edges: [{source,sourceHandle,target,targetHandle}] }.
 
+/**
+ * Version of the `.acousim.json` project schema this build reads and writes.
+ *
+ * Bumped only for changes a loader cannot absorb by falling back to defaults.
+ */
 export const SCHEMA_VERSION = 1
 
+/**
+ * Default params for each node type, in display units.
+ *
+ * Doubles as the schema: `hydrateProject` treats a type absent from this map as
+ * unknown, and every saved node is merged over its entry so a project written by
+ * an older build gains any parameter added since.
+ */
 export const DEFAULT_PARAMS = {
   driver: {
     Fs: 30, Qts: 0.45, Qes: 0.5, Qms: 5, Vas: 60, Re: 3.6, Bl: 15, Mms: 150,
@@ -16,6 +28,12 @@ export const DEFAULT_PARAMS = {
   radiation: { space: 'half', label: 'Radiation' },
 }
 
+/**
+ * Default sweep and display settings for a new project.
+ *
+ * `impedance` and `power` are UI conveniences linked to `voltage` by P = V²/Z;
+ * the solver reads only `voltage`.
+ */
 export const DEFAULT_SETTINGS = {
   fmin: 10, fmax: 1000, npts: 512,
   voltage: 2.83, impedance: 4, power: 2, rg: 0,
@@ -23,8 +41,27 @@ export const DEFAULT_SETTINGS = {
   nlEnabled: false,
 }
 
-// Serialized project → the {nodes, edges, settings} shape runSimulation expects.
-// Unknown node types and missing params get defaults, same as the app's loader.
+/**
+ * Turn a serialized project into the shape `runSimulation` expects.
+ *
+ * Missing params are filled from `DEFAULT_PARAMS`, so a project that specifies
+ * only what matters — which is how the MCP tools and hand-written JSON tend to
+ * arrive — hydrates into a complete graph. This mirrors the app's own loader, so
+ * a file behaves identically whether opened in the editor or posted to the API.
+ *
+ * Structural problems are collected and reported together rather than thrown at
+ * the first one, because a hand-edited file usually has more than one and fixing
+ * them one round-trip at a time is miserable.
+ *
+ * @param {object} proj - A parsed `.acousim.json` project.
+ * @param {Array<object>} [proj.nodes] - Serialized nodes, each `{id, type, position, params}`.
+ * @param {Array<object>} [proj.edges] - Serialized edges. Missing ids are assigned positionally.
+ * @param {object} [proj.settings] - Sweep settings, merged over `DEFAULT_SETTINGS`.
+ * @returns {{nodes: Array<object>, edges: Array<object>, settings: object}} The hydrated graph.
+ * @throws {Error} When a node lacks an id, a node has an unknown type, or an edge references a missing node. The full list is on the error's `projectErrors` property as well as its message.
+ * @post proj is not modified — nodes and params are copied, not aliased.
+ * @pure
+ */
 export function hydrateProject(proj) {
   const errors = []
   const nodes = (proj.nodes || []).map((n, i) => {

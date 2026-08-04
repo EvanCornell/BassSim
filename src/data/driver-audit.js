@@ -15,14 +15,62 @@
 const RHO = 1.204
 const C_AIR = 343.2
 
+/**
+ * Relative difference between a computed value and a published one.
+ *
+ * @param {number} a - The computed value.
+ * @param {number} b - The published value, used as the denominator.
+ * @returns {number} `|a - b| / |b|`, so 0.1 is a 10% disagreement.
+ * @pre b is non-zero — every caller guards with `> 0` first
+ * @pure
+ */
 const rel = (a, b) => Math.abs(a - b) / Math.abs(b)
+
+/**
+ * The same difference as a whole percentage, for the message text.
+ *
+ * @param {number} a - The computed value.
+ * @param {number} b - The published value.
+ * @returns {number} The difference in percent, rounded.
+ * @pure
+ */
 const pct = (a, b) => Math.round(rel(a, b) * 100)
 
-// Tolerances are set above the rounding noise of a published table — a
-// catalog quoting Q to two decimals cannot be held tighter than a few percent
-// — and below the level at which a mismatch changes the predicted alignment.
+/**
+ * Per-parameter tolerances for the consistency audit, as relative differences.
+ *
+ * Set above the rounding noise of a published table — a catalog quoting Q to two
+ * decimals cannot be held tighter than a few percent — and below the level at
+ * which a mismatch changes the predicted alignment. Vas is loosest because
+ * manufacturers disagree on how much of the surround counts toward Sd, and Sd
+ * enters the relation squared.
+ */
 export const TOL = { Qes: 0.15, Qts: 0.12, Vas: 0.35 }
 
+/**
+ * Check a driver record against the identities its own parameters imply.
+ *
+ * A T/S set is over-determined: Qes, Qts and Vas all follow from the Bl, Re,
+ * Mms, Cms and Sd the solver actually runs on. When a published value disagrees
+ * with the one implied by its siblings, the row describes two different drivers,
+ * and the simulation will follow the solver's set rather than the headline
+ * figure a buyer recognises.
+ *
+ * Discrepancies are returned as human-readable sentences rather than codes
+ * because they are shown verbatim in the database browser and committed into the
+ * generated data as `suspect` labels. Nothing is corrected here — the fix
+ * requires knowing which column was mis-transcribed, which only the datasheet
+ * can say.
+ *
+ * Each check is skipped unless every value it needs is present and positive, so
+ * a sparse hand-transcribed row is audited on whatever it does provide instead
+ * of being flagged for what it omits.
+ *
+ * @param {object} d - A driver record. Reads `Fs`, `Qes`, `Qts`, `Qms`, `Vas`, `Re`, `Bl`, `Mms`, `Cms` and `Sd`.
+ * @returns {string[]} One sentence per inconsistency found, empty when the record is self-consistent.
+ * @post d is not modified.
+ * @pure
+ */
 export function auditDriver(d) {
   const flags = []
 
