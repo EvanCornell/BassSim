@@ -28,6 +28,14 @@ const api = JSON.parse(readFileSync(join(REPO, 'docs/api.json'), 'utf8'))
  */
 function indexContracts() {
   const idx = new Map()
+  /**
+   * Record one declaration under its bare name.
+   *
+   * @param {string} name - The method or constant name.
+   * @param {{file: string, method: object}} entry - Where it is declared.
+   * @returns {void}
+   * @mutates The index being built.
+   */
   const add = (name, entry) => {
     if (!idx.has(name)) idx.set(name, [])
     idx.get(name).push(entry)
@@ -90,6 +98,16 @@ function parseFailures(out) {
     const body = []
     for (j += 1; j < lines.length && !/^\s*\.\.\.\s*$/.test(lines[j]); j++) body.push(lines[j])
 
+    /**
+     * Read one key out of the failure's YAML block.
+     *
+     * Handles both an inline scalar and a `|-` literal block, which is how
+     * Node emits a multi-line assertion diff.
+     *
+     * @param {string} key - The YAML key to read.
+     * @returns {string|null} The value with quotes stripped, or `null` when the key is absent.
+     * @reads the `body` lines captured for the current failure.
+     */
     const field = (key) => {
       const at = body.findIndex((l) => new RegExp(`^\\s*${key}:`).test(l))
       if (at < 0) return null
