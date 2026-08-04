@@ -15,8 +15,11 @@ import { __internals } from '../../src/components/DriverDB.jsx'
 // CONTRACT: "Load the user's saved custom drivers." /
 // "`Array<object>` — Custom driver records, or an empty list when absent or
 // corrupt."
-// AMBIGUITY: the spec names no LocalStorage key, so a corrupt-payload case
-// cannot be set up blind; the "absent" case is what a fresh environment gives.
+// AMBIGUITY (still open after the pack correction): the spec's new "Exported
+// constants" section lists only `__internals`, so the LocalStorage key is still
+// undocumented — see AMBIGUITIES.md §B. The corrupt-payload branch therefore
+// still cannot be set up blind; the "absent" case is what a fresh environment
+// gives.
 test('loadCustom: returns an array of driver records', () => {
   const out = __internals.loadCustom()
   assert.ok(Array.isArray(out), 'must return an Array')

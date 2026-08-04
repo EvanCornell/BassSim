@@ -14,12 +14,15 @@ const emptyDrag = () => ({
   dataTransfer: { types: [], items: [], getData: () => '' },
 })
 
-// A palette drag: it "carries its own type", which is not a panel tab.
+// A palette drag: it "carries its own type", which is not a panel tab. The type
+// is documented in the Palette.jsx contract — "The canvas reads the
+// `application/acousim-node` type on drop, which is what keeps a palette drag
+// from being confused with any other drag."
 const paletteDrag = () => ({
   dataTransfer: {
-    types: ['application/reactflow'],
-    items: [{ kind: 'string', type: 'application/reactflow' }],
-    getData: (t) => (t === 'application/reactflow' ? 'driver' : ''),
+    types: ['application/acousim-node'],
+    items: [{ kind: 'string', type: 'application/acousim-node' }],
+    getData: (t) => (t === 'application/acousim-node' ? 'driver' : ''),
   },
 })
 
@@ -29,8 +32,10 @@ const paletteDrag = () => ({
 
 // CONTRACT: "Whether a drag event is a panel tab drag." /
 // "`boolean` — True when the drag carries a panel tab."
-// AMBIGUITY: the spec never states the payload key or MIME type that marks a
-// panel tab, so only the negative cases are assertable blind.
+// AMBIGUITY (still open after the pack correction): the spec still never states
+// the payload key or MIME type that marks a panel tab — see AMBIGUITIES.md §B —
+// so only the negative cases are assertable blind. The palette case below is
+// now pinned to the real palette MIME type from the Palette.jsx contract.
 test('isPanelDrag: false when the drag carries no payload', () => {
   const r = __internals.isPanelDrag(emptyDrag())
   assert.equal(typeof r, 'boolean', 'must return a boolean, not a truthy value')

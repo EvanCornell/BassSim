@@ -44,6 +44,34 @@ function storageKeys() {
   return out
 }
 
+// CONTRACT (constants): "`KEYMAP_KEY` — LocalStorage key holding the user's binding overrides.
+// Value: `"acousim:keymap"`"
+const KEYMAP_KEY = 'acousim:keymap'
+
+// CONTRACT (constants): "`COMMANDS` — Keys: `edit.undo`, `edit.redo`, `edit.cut`, `edit.copy`,
+// `edit.paste`, `edit.duplicate`, `edit.selectAll`, `edit.delete`, `drive.up`, `drive.down`,
+// `drive.upFine`, `drive.downFine`, `project.new`, `project.save`, `project.open`,
+// `sim.snapshot`, `sim.mask`, `sim.recompute`, `view.settings`, `view.maximize`, `view.popout`"
+const LISTED_COMMAND_KEYS = [
+  'edit.undo', 'edit.redo', 'edit.cut', 'edit.copy', 'edit.paste', 'edit.duplicate',
+  'edit.selectAll', 'edit.delete', 'drive.up', 'drive.down', 'drive.upFine', 'drive.downFine',
+  'project.new', 'project.save', 'project.open', 'sim.snapshot', 'sim.mask', 'sim.recompute',
+  'view.settings', 'view.maximize', 'view.popout',
+]
+
+// CONTRACT (constants): "`DEFAULT_BINDINGS` — The default combo (or combos) for each command.
+// Keys: `edit.undo`, … `add.driver`, `add.chamber`, `add.waveguide`, `add.pr`, `add.radiation`, …"
+// CONTRACT (module): "Adding a command means one entry in COMMANDS and one default in
+// DEFAULT_BINDINGS", so every DEFAULT_BINDINGS key is also a command id.
+const ADD_COMMAND_IDS = ['add.driver', 'add.chamber', 'add.waveguide', 'add.pr', 'add.radiation']
+const DEFAULT_BINDING_KEYS = [
+  'edit.undo', 'edit.redo', 'edit.cut', 'edit.copy', 'edit.paste', 'edit.duplicate',
+  'edit.selectAll', 'edit.delete', ...ADD_COMMAND_IDS,
+  'drive.up', 'drive.down', 'drive.upFine', 'drive.downFine',
+  'project.new', 'project.save', 'project.open', 'sim.snapshot', 'sim.mask', 'sim.recompute',
+  'view.settings', 'view.maximize', 'view.popout',
+]
+
 function ev(over = {}) {
   return { code: undefined, key: undefined, ctrlKey: false, metaKey: false, altKey: false, shiftKey: false, ...over }
 }

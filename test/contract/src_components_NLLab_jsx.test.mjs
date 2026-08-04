@@ -66,8 +66,9 @@ test('refValue: @pure — twice-equal results and unmodified arguments', () => {
 
 // CONTRACT: "Format an axis value at a readable precision for its magnitude." /
 // "`string` — The formatted value."
-// AMBIGUITY: "readable precision for its magnitude" fixes no digit count, so
-// only string-ness and value fidelity are asserted.
+// AMBIGUITY (still open after the pack correction, AMBIGUITIES.md §C):
+// "readable precision for its magnitude" fixes no digit count, so only
+// string-ness and value fidelity are asserted.
 test('fmtVal: returns a string that still reads back as the value', () => {
   for (const v of [0, 1, 1.5, 12.345, 1234.5, 0.001234, -42.7]) {
     const s = __internals.fmtVal(v)
@@ -122,6 +123,10 @@ test('niceTicks: step is 1, 2 or 5 times a power of ten and ticks are evenly spa
     }
     const step = ticks[1] - ticks[0]
     assert.ok(step > 0, 'ticks must ascend')
+    // "Axis tick positions at round intervals": a repeated position is not a
+    // tick position, so the values must be distinct.
+    assert.equal(new Set(ticks).size, ticks.length,
+      `duplicate ticks for (${lo}, ${hi}): ${ticks.join(', ')}`)
     for (let i = 1; i < ticks.length; i++) {
       assert.ok(
         Math.abs(ticks[i] - ticks[i - 1] - step) <= Math.abs(step) * 1e-6,

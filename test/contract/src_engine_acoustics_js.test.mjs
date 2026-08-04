@@ -59,6 +59,26 @@ function assertIsABCD(M) {
 }
 
 // ---------------------------------------------------------------------------
+// Exported constants
+
+// CONTRACT: "`SOLID_ANGLES` — Solid angle Ω in steradians for each named
+// radiating space. `free` is a driver suspended in air, `half` a flush-mounted
+// baffle, and each step down halves the space: baffle against a wall, then into
+// a corner." / Keys: free, half, quarter, eighth.
+// `radiationImpedance` fixes the scale: "Baseline is the flanged piston (2π)",
+// i.e. `half` = 2π sr. Free air is the whole sphere, 4π; each step down halves.
+test('SOLID_ANGLES: Ω in steradians for each named radiating space', () => {
+  assert.deepEqual(
+    Object.keys(SOLID_ANGLES).sort(),
+    ['eighth', 'free', 'half', 'quarter'],
+  )
+  near(SOLID_ANGLES.free, 4 * Math.PI, TOL, 'free:')
+  near(SOLID_ANGLES.half, 2 * Math.PI, TOL, 'half:')
+  near(SOLID_ANGLES.quarter, Math.PI, TOL, 'quarter:')
+  near(SOLID_ANGLES.eighth, Math.PI / 2, TOL, 'eighth:')
+})
+
+// ---------------------------------------------------------------------------
 // besselJ1(x)
 
 // CONTRACT: "`number` — J₁(x)."
@@ -229,11 +249,13 @@ test('radiationImpedance: anechoic returns the real characteristic impedance ρc
   const z1b = radiationImpedance(1, 'anechoic', 2 * Math.PI * 5000)
   assert.equal(z1b.re, z1.re)
   assert.equal(z1b.im, 0)
-  // Scales exactly as 1/S, so re·S is the constant ρc.
-  for (const S of [0.001, 0.05, 2]) {
+  // Scales exactly as 1/S, and the constant is ρc — RHO · C_AIR from
+  // src/engine/geometry.js, the only published values for those constants.
+  for (const S of [0.001, 0.05, 1, 2]) {
     const z = radiationImpedance(S, 'anechoic', 2 * Math.PI * 100)
     assert.equal(z.im, 0, `S=${S}: anechoic must be purely real`)
     relNear(z.re * S, z1.re, 1e-12, `S=${S}: ρc from re·S:`)
+    relNear(z.re, (RHO * C_AIR) / S, 1e-12, `S=${S}: must equal ρc/S:`)
   }
 })
 
@@ -256,8 +278,8 @@ test('radiationImpedance: rigid returns a near-infinite impedance', () => {
 
 // CONTRACT: "Smaller solid angles raise the low-frequency radiation resistance
 // by 2π/Ω — this is the corner loading that makes a subwoofer louder in a room
-// corner". Baseline is the flanged piston (Ω = 2π, 'half'), so at low frequency
-// Re scales by 2π/Ω: free (4π) → 0.5, half → 1, quarter (π) → 2, eighth (π/2) → 4.
+// corner". Ω comes from the published SOLID_ANGLES map, and the baseline is the
+// flanged piston (2π, i.e. `half`).
 // Tolerance 2% relative: at 2ka ≈ 1e-3 the piston resistance is deep in its
 // ka² regime, where the documented interpolation is at its asymptote.
 test('radiationImpedance: low-frequency resistance scales as 2π/Ω', () => {
@@ -265,9 +287,15 @@ test('radiationImpedance: low-frequency resistance scales as 2π/Ω', () => {
   const w = 1 // ~0.16 Hz: deep in the low-frequency limit
   const half = radiationImpedance(S, 'half', w).re
   assert.ok(half > 0, `half-space Re must be positive at w=${w}, got ${half}`)
-  relNear(radiationImpedance(S, 'free', w).re, 0.5 * half, 0.02, 'free:')
-  relNear(radiationImpedance(S, 'quarter', w).re, 2 * half, 0.02, 'quarter:')
-  relNear(radiationImpedance(S, 'eighth', w).re, 4 * half, 0.02, 'eighth:')
+  for (const angle of ['free', 'half', 'quarter', 'eighth']) {
+    const factor = (2 * Math.PI) / SOLID_ANGLES[angle]
+    relNear(radiationImpedance(S, angle, w).re, factor * half, 0.02, `${angle} (2π/Ω = ${factor}):`)
+  }
+  // And the ordering the prose describes: each step down raises the resistance.
+  const re = (a) => radiationImpedance(S, a, w).re
+  assert.ok(re('free') < re('half'), 'half space must load more than free air')
+  assert.ok(re('half') < re('quarter'), 'quarter space must load more than half')
+  assert.ok(re('quarter') < re('eighth'), 'eighth space must load more than quarter')
 })
 
 // CONTRACT: "while converging to ρc/S at high ka, where the piston no longer
@@ -361,15 +389,22 @@ test('tlineMatrix: extraAlpha defaults to 0', () => {
 })
 
 // CONTRACT: "`c` — `number` _(optional, default `C_AIR`)_ — Speed of sound,
-// m/s." AMBIGUITY: C_AIR is not exported by this module per the spec, so its
-// numeric value cannot be checked blind. What is checkable is that omitting c
-// is equivalent to some fixed default and that c is honoured when supplied.
-test('tlineMatrix: c defaults to a fixed speed of sound and is honoured when given', () => {
-  const a = tlineMatrix(0.01, 0.5, 2 * Math.PI * 100, null)
-  const b = tlineMatrix(0.01, 0.5, 2 * Math.PI * 100, null)
-  assertMatNear(a, b, TOL, 'default c must be deterministic:')
-  const slow = tlineMatrix(0.01, 0.5, 2 * Math.PI * 100, null, 100)
-  assert.notEqual(slow[0][0].re, a[0][0].re, 'c must be honoured when supplied')
+// m/s." C_AIR is published by src/engine/geometry.js with the value 344, so
+// omitting c must be identical to passing C_AIR, and to passing 344.
+test('tlineMatrix: c defaults to C_AIR', () => {
+  const w = 2 * Math.PI * 100
+  const omitted = tlineMatrix(0.01, 0.5, w, null)
+  assertMatNear(tlineMatrix(0.01, 0.5, w, null, C_AIR), omitted, TOL, 'c = C_AIR:')
+  assertMatNear(tlineMatrix(0.01, 0.5, w, null, 344), omitted, TOL, 'c = 344:')
+  // Also with a lossy Q and an explicit extraAlpha, so the default is not only
+  // exercised on the lossless path.
+  assertMatNear(
+    tlineMatrix(0.01, 0.5, w, 25, C_AIR, 0.3),
+    tlineMatrix(0.01, 0.5, w, 25, undefined, 0.3),
+    TOL, 'c = undefined must fall back to C_AIR:',
+  )
+  const slow = tlineMatrix(0.01, 0.5, w, null, 100)
+  assert.notEqual(slow[0][0].re, omitted[0][0].re, 'c must be honoured when supplied')
 })
 
 // CONTRACT: "Because it is a true distributed line rather than a lumped
@@ -646,20 +681,84 @@ test('chamberMatrix: lumped returns a pure shunt compliance', () => {
   )
 })
 
-// CONTRACT: "`chamber.length` — `number` — Acoustic path length, m. Floored at
-// 1e-4 to keep the derived area finite."
-test('chamberMatrix: length is floored at 1e-4', () => {
+// CONTRACT: "`chamber.length` — `number` — Acoustic path length, m. The floor
+// of 1e-4 applies only to the Volume/Length division that derives the
+// cross-section; the line itself is built at the length as given, so a length
+// of 0 yields a zero-length line rather than a 1e-4 one."
+// Combined with "modelled as a finite transmission line" and "a line of area
+// Volume/Length", the chamber is exactly `tlineMatrix(V/max(L,1e-4), L, w, Q)`
+// when unstuffed.
+test('chamberMatrix: the 1e-4 floor applies to the derived area, not the line length', () => {
   const w = 2 * Math.PI * 100
-  const ref = chamberMatrix({ volume: 0.05, length: 1e-4, Q: 20 }, w)
-  for (const length of [0, 1e-9, 1e-5, 9.9e-5]) {
-    assertMatNear(
-      chamberMatrix({ volume: 0.05, length, Q: 20 }, w), ref, TOL,
-      `length=${length} must be floored to 1e-4:`,
-    )
+  const V = 0.05
+  const scaleOf = (M) => Math.max(
+    ...[].concat(...M.map((r) => r.map((z) => Math.hypot(z.re, z.im)))), 1,
+  )
+  for (const L of [0.4, 1e-2, 1e-4, 1e-5, 1e-9]) {
+    const area = V / Math.max(L, 1e-4)
+    const line = tlineMatrix(area, L, w, null)
+    const M = chamberMatrix({ volume: V, length: L, Q: null }, w)
+    // Relative tolerance 1e-12 against the largest entry magnitude: the two
+    // routes should be the same arithmetic, so only round-off may differ.
+    assertMatNear(M, line, 1e-12 * scaleOf(line), `length=${L}:`)
   }
-  // Just above the floor the length is used as given.
-  const above = chamberMatrix({ volume: 0.05, length: 1e-2, Q: 20 }, w)
-  assert.notEqual(above[0][1].im, ref[0][1].im)
+})
+
+// CONTRACT: "so a length of 0 yields a zero-length line rather than a 1e-4 one."
+// A zero-length line is the identity two-port (see `matIdentity`: "the identity
+// two-port, representing a lossless connection of zero length").
+test('chamberMatrix: a length of 0 yields a zero-length line', () => {
+  const w = 2 * Math.PI * 100
+  const M = chamberMatrix({ volume: 0.05, length: 0, Q: 20 }, w)
+  near(M[0][0].re, 1, 1e-12, 'A.re:')
+  near(M[0][0].im, 0, 1e-12, 'A.im:')
+  near(M[0][1].re, 0, 1e-12, 'B.re:')
+  near(M[0][1].im, 0, 1e-12, 'B.im:')
+  near(M[1][0].re, 0, 1e-12, 'C.re:')
+  near(M[1][0].im, 0, 1e-12, 'C.im:')
+  near(M[1][1].re, 1, 1e-12, 'D.re:')
+  near(M[1][1].im, 0, 1e-12, 'D.im:')
+  // Explicitly NOT the 1e-4-length chamber, which the old wording implied.
+  const floored = chamberMatrix({ volume: 0.05, length: 1e-4, Q: 20 }, w)
+  assert.notEqual(
+    floored[0][1].im, M[0][1].im,
+    'length 0 must not be treated as a line of length 1e-4',
+  )
+})
+
+// CONTRACT: "The floor of 1e-4 applies only to the Volume/Length division that
+// derives the cross-section" — below the floor the area stops changing, but the
+// line length keeps shrinking, so two sub-floor lengths still differ.
+test('chamberMatrix: sub-floor lengths share an area but not a line length', () => {
+  const w = 2 * Math.PI * 100
+  const a = chamberMatrix({ volume: 0.05, length: 1e-5, Q: null }, w)
+  const b = chamberMatrix({ volume: 0.05, length: 1e-6, Q: null }, w)
+  assert.notEqual(
+    a[0][1].im, b[0][1].im,
+    'the line length below the floor must still be the length as given',
+  )
+  // Both use the same clamped area V/1e-4. Tolerance 1e-12 absolute: the
+  // matrix entries here are O(1) (diagonal) and O(1e-5) (off-diagonal), so
+  // 1e-12 is far tighter than any difference in the derived area would produce.
+  const area = 0.05 / 1e-4
+  assertMatNear(a, tlineMatrix(area, 1e-5, w, null), 1e-12, 'length=1e-5:')
+  assertMatNear(b, tlineMatrix(area, 1e-6, w, null), 1e-12, 'length=1e-6:')
+})
+
+// CONTRACT: "Treating a box as a line of area Volume/Length" — above the floor,
+// doubling the length at fixed volume halves the cross-section.
+test('chamberMatrix: above the floor the area is Volume/Length', () => {
+  const w = 2 * Math.PI * 100
+  const M = chamberMatrix({ volume: 0.08, length: 0.5, Q: null }, w)
+  const scale = Math.max(
+    ...[].concat(...M.map((r) => r.map((z) => Math.hypot(z.re, z.im)))), 1,
+  )
+  assertMatNear(M, tlineMatrix(0.08 / 0.5, 0.5, w, null), 1e-12 * scale)
+  const longer = chamberMatrix({ volume: 0.08, length: 1, Q: null }, w)
+  const scale2 = Math.max(
+    ...[].concat(...longer.map((r) => r.map((z) => Math.hypot(z.re, z.im)))), 1,
+  )
+  assertMatNear(longer, tlineMatrix(0.08 / 1, 1, w, null), 1e-12 * scale2)
 })
 
 // CONTRACT: "Stuffing does two things: it slows sound as the process shifts

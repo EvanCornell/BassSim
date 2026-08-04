@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { chartPanelComponent, __internals } from '../../src/components/OutputPanel.jsx'
+import { chartPanelComponent, CHART_PANELS, __internals } from '../../src/components/OutputPanel.jsx'
 
 // UNREACHABLE — not covered: BaseChart and all its nested closures
 // (setManualY, r4, resetAll, fracs, onWheel, onPointerDown, move, up,
@@ -13,23 +13,42 @@ import { chartPanelComponent, __internals } from '../../src/components/OutputPan
 // chartPanelComponent
 // ---------------------------------------------------------------------------
 
-// CONTRACT: "`React.ComponentType|null` — The wrapped panel component, or
+// CONTRACT (Exported constants): "`CHART_PANELS` — Chart id to component."
+// "Keys: `spl`, `zin`, `exc`, `vel`, `int`, `pow`, `eff`, `pe`, `ph`"
+const CHART_IDS = ['spl', 'zin', 'exc', 'vel', 'int', 'pow', 'eff', 'pe', 'ph']
+
+test('chartPanelComponent: CHART_PANELS publishes exactly the documented chart ids', () => {
+  assert.deepStrictEqual(Object.keys(CHART_PANELS).sort(), [...CHART_IDS].sort())
+})
+
+// CONTRACT: "`React.ComponentType|null` — A newly built panel component, or
 // `null` for an unknown id."
-// AMBIGUITY: the spec never lists the valid chart ids, so only the unknown-id
-// branch is assertable.
 test('chartPanelComponent: null for an unknown id', () => {
   assert.equal(chartPanelComponent('definitely-not-a-chart-id'), null)
   assert.equal(chartPanelComponent(''), null)
 })
 
-// CONTRACT: "@pure — ... Calling it twice with equal inputs must produce equal
-// output and change nothing observable."
-// AMBIGUITY: "equal output" for a value documented as a ComponentType can only
-// mean the same component, since two freshly built function components are
-// never equal to one another. The strictest defensible reading is asserted.
-test('chartPanelComponent: @pure — twice with equal inputs gives equal output', () => {
-  assert.equal(chartPanelComponent('spl'), chartPanelComponent('spl'))
-  assert.equal(chartPanelComponent('nope'), chartPanelComponent('nope'))
+// CONTRACT: "Build the dockable panel component for one chart." /
+// "`React.ComponentType|null` — A newly built panel component"
+test('chartPanelComponent: builds a component for every documented chart id', () => {
+  for (const id of CHART_IDS) {
+    const C = chartPanelComponent(id)
+    assert.notEqual(C, null, `${id} is a known chart id`)
+    // A React.ComponentType is a function, or an object for memo/forwardRef.
+    assert.ok(typeof C === 'function' || typeof C === 'object',
+      `${id} should yield a component type, got ${typeof C}`)
+  }
+})
+
+// CONTRACT: "A fresh component is built on every call, so two calls with the
+// same id return distinct — though behaviourally identical — component types."
+// CONTRACT: "None, but not `@pure`: the returned component is a new object each
+// call, so results are never equal by identity."
+test('chartPanelComponent: two calls with the same id return distinct components', () => {
+  for (const id of CHART_IDS) {
+    assert.notEqual(chartPanelComponent(id), chartPanelComponent(id),
+      `${id} must build a fresh component each call`)
+  }
 })
 
 // ---------------------------------------------------------------------------
@@ -85,6 +104,16 @@ test('round5: rounds down to a multiple of 5 when up is false', () => {
   assert.equal(__internals.round5(12.5, false), 10)
 })
 
+// CONTRACT: "`number` — The rounded bound." — a bound that lands on zero is the
+// number 0. Negative zero is a different value under strict equality and would
+// reach the axis labels as such.
+test('round5: a bound landing on zero is not negative zero', () => {
+  assert.ok(Object.is(__internals.round5(-0.1, true), 0), 'round5(-0.1, up) should be +0')
+  assert.ok(Object.is(__internals.round5(0, true), 0))
+  assert.ok(Object.is(__internals.round5(0, false), 0))
+  assert.ok(Object.is(__internals.round5(4.9, false), 0), 'round5(4.9, down) should be +0')
+})
+
 // CONTRACT: "`up` — `boolean` — Round up rather than down."
 test('round5: rounds up to a multiple of 5 when up is true', () => {
   for (const v of [-37, -35, -0.1, 0, 3, 12.5, 101]) {
@@ -114,25 +143,28 @@ const dbRows = [
   { f: 80, a: 40, b: 30, other: 400 },
 ]
 
-// CONTRACT: "A useful Y range for a dB curve: a fixed window below the peak."
+// CONTRACT: "The upper bound is not the peak: it is the peak plus 4 dB of
+// headroom ... Both bounds are then rounded outward to a multiple of 5."
+// CONTRACT: "`[number, number]|null` — The domain as
+// `[round5(peak − windowDb, down), round5(peak + 4, up)]`"
 // CONTRACT: "`windowDb` — `number` (optional, default `45`) — How far below the
 // peak to show."
-// AMBIGUITY: unlike fitLinear, fitDb documents no padding on the upper bound,
-// so the strictest reading is [peak - windowDb, peak]. The peak here is 100 so
-// both bounds are already multiples of 5 and any label rounding is a no-op.
+// Peak of the requested keys is 100: [round5(55, down), round5(104, up)].
 test('fitDb: a fixed window below the peak, defaulting to 45 dB', () => {
-  assert.deepStrictEqual(__internals.fitDb(dbRows, ['a', 'b']), [55, 100])
+  assert.deepStrictEqual(__internals.fitDb(dbRows, ['a', 'b']), [55, 105])
 })
 
 // CONTRACT: "`windowDb` — `number` — How far below the peak to show."
+// [round5(100 − 20, down), round5(104, up)]
 test('fitDb: honours an explicit window', () => {
-  assert.deepStrictEqual(__internals.fitDb(dbRows, ['a', 'b'], 20), [80, 100])
+  assert.deepStrictEqual(__internals.fitDb(dbRows, ['a', 'b'], 20), [80, 105])
 })
 
 // CONTRACT: "`keys` — `string[]` — Series keys to consider."
+// 'other' holds 400 but is not requested, so the peak must come from 'b' (95):
+// [round5(50, down), round5(99, up)].
 test('fitDb: considers only the requested series keys', () => {
-  // 'other' holds 400 but is not requested, so the peak must come from 'b'.
-  assert.deepStrictEqual(__internals.fitDb(dbRows, ['b'], 45), [50, 95])
+  assert.deepStrictEqual(__internals.fitDb(dbRows, ['b'], 45), [50, 100])
 })
 
 // CONTRACT: "`[number, number]|null` — The domain, or `null` when no data is
@@ -247,15 +279,26 @@ test('nearestIdx: works at the minimum of the precondition range', () => {
   assert.equal(__internals.nearestIdx([5, 9], 8.9), 1)
 })
 
-// CONTRACT: "`number` — Index of the nearest sample." — a valid index into arr,
-// asserted over a non-uniform ascending axis.
+// CONTRACT: "When two samples are exactly equidistant the higher index wins,
+// which keeps a resampled overlay from drifting low across a run of ties."
+test('nearestIdx: the higher index wins an exact tie', () => {
+  assert.equal(__internals.nearestIdx([10, 20, 30, 40], 25), 2)
+  assert.equal(__internals.nearestIdx([10, 20, 30, 40], 15), 1)
+  assert.equal(__internals.nearestIdx([10, 20, 30, 40], 35), 3)
+  assert.equal(__internals.nearestIdx([0, 1], 0.5), 1)
+})
+
+// CONTRACT: "`number` — Index of the nearest sample. When two samples are
+// exactly equidistant the higher index wins" — a valid index into arr, asserted
+// over a non-uniform ascending axis (f = 3 is an exact tie between 2 and 4).
 test('nearestIdx: returns a valid index of the truly nearest sample', () => {
   const arr = [1, 2, 4, 8, 16, 32, 64, 128]
   for (const f of [1.4, 3, 5, 9, 17, 40, 100, 200]) {
     const i = __internals.nearestIdx(arr, f)
     assert.ok(Number.isInteger(i) && i >= 0 && i < arr.length, `index ${i} in range`)
+    // <= so that, as documented, a tie resolves to the higher index.
     const best = arr.reduce(
-      (bi, v, vi) => (Math.abs(v - f) < Math.abs(arr[bi] - f) ? vi : bi),
+      (bi, v, vi) => (Math.abs(v - f) <= Math.abs(arr[bi] - f) ? vi : bi),
       0,
     )
     assert.equal(i, best, `nearest to ${f}`)
@@ -277,9 +320,10 @@ test('nearestIdx: @pure — twice-equal results and unmodified arguments', () =>
 
 // CONTRACT: "Series descriptors for the snapshot overlays of one quantity." /
 // "`Array<object>` — Line descriptors for `BaseChart`."
-// AMBIGUITY: the spec names no field of a line descriptor and no shape for a
-// stored snapshot, so only the array-of-objects contract is assertable. The
-// "dashed and thinner than the live trace" claim is not testable blind.
+// AMBIGUITY (still open after the pack correction, AMBIGUITIES.md §C): the spec
+// names no field of a line descriptor and no shape for a stored snapshot, so
+// only the array-of-objects contract is assertable. The "dashed and thinner than
+// the live trace" claim is not testable blind.
 test('snapLines: returns an array of line descriptors', () => {
   const out = __internals.snapLines(
     [{ id: 's1', name: 'A', results: {} }, { id: 's2', name: 'B', results: {} }],

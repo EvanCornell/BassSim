@@ -24,6 +24,44 @@ const { baseValue, rawEval } = __internals
 const flatTable = (v) => ({ points: [], table: [[-1000, v], [1000, v]] })
 
 // ======================================================================
+// Exported constants
+// ======================================================================
+
+// CONTRACT (exported constants): "### `NL_PARAMS` — The nonlinear parameter
+//            names a driver may carry curves for. ... Values: `Bl`, `Cms`,
+//            `Kms`, `Le`"
+// The listing is a set of values; no order is claimed, so the contents are
+// compared sorted.
+test('NL_PARAMS: holds exactly the four documented parameter names', () => {
+  assert.deepEqual([...NL_PARAMS].sort(), ['Bl', 'Cms', 'Kms', 'Le'])
+})
+
+// CONTRACT: "The nonlinear parameter names a driver may carry curves for."
+// CONTRACT (defaultNL): "One empty curve per nonlinear parameter"
+test('NL_PARAMS: defaultNL carries one empty curve per name in NL_PARAMS', () => {
+  const nl = defaultNL()
+  assert.deepEqual(Object.keys(nl).sort(), [...NL_PARAMS].sort())
+  for (const k of NL_PARAMS) assert.deepEqual(nl[k], emptyCurve())
+})
+
+// CONTRACT (hasNL): "True when at least one of Bl, Cms, Kms or Le has content."
+test('NL_PARAMS: content in any name from NL_PARAMS is enough for hasNL', () => {
+  for (const k of NL_PARAMS) {
+    const nl = defaultNL()
+    nl[k] = { points: [{ x: 0, g: -0.2, w: 3 }], table: null }
+    assert.equal(hasNL(nl), true, `content in ${k} should make hasNL true`)
+  }
+})
+
+// CONTRACT (exported constants): "### `__internals`  Keys: `baseValue`, `rawEval`"
+test('__internals: publishes exactly the documented keys', () => {
+  assert.deepEqual(Object.keys(__internals).sort(), ['baseValue', 'rawEval'])
+  for (const k of Object.keys(__internals)) {
+    assert.equal(typeof __internals[k], 'function', `${k} should be callable`)
+  }
+})
+
+// ======================================================================
 // emptyCurve()
 // ======================================================================
 
@@ -330,6 +368,10 @@ test('complianceRatio: exactly 1 when neither curve has content', () => {
 // CONTRACT: "A Kms curve therefore takes precedence over a Cms curve when both
 //            are present."
 // CONTRACT: "the correct result is `1/avg(Kms)`, not `avg(1/Kms)`"
+// CONTRACT (exported constants): "`Cms` and `Kms` are two descriptions of the
+//            same suspension, so a driver normally has one or the other rather
+//            than both." — this test is the abnormal case the precedence rule
+//            exists to settle.
 test('complianceRatio: a Kms curve takes precedence over a Cms curve', () => {
   const nl = defaultNL()
   nl.Kms = flatTable(0.5) // constant stiffness ratio 0.5 -> compliance 1/0.5 = 2

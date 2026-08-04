@@ -37,6 +37,20 @@ const METRIC_KEYS = [
   'xLimitDriver', 'maxPower', 'vMax',
 ]
 
+// CONTRACT: "The exceptions are `f3`, `f10`, `xPeakF`, `xAtFb` and `xAtF3`,
+//            which are always present and carry `null` when undefined"
+const NULLABLE_KEYS = ['f3', 'f10', 'xPeakF', 'xAtFb', 'xAtF3']
+
+// ======================================================================
+// Exported constants
+// ======================================================================
+
+// CONTRACT (exported constants): "### `__internals`  Keys: `localMaxima`"
+test('__internals: publishes exactly the documented keys', () => {
+  assert.deepEqual(Object.keys(__internals).sort(), ['localMaxima'])
+  assert.equal(typeof __internals.localMaxima, 'function')
+})
+
 // ======================================================================
 // computeMetrics(res, settings)
 // ======================================================================
@@ -73,12 +87,35 @@ test('computeMetrics: returns only documented fields', () => {
   }
 })
 
-// CONTRACT: "Individual fields are absent rather than null when the topology
-//            does not define them, so a sealed box has no `fb`."
-test('computeMetrics: undefined fields are absent, never null', () => {
+// CONTRACT: "Most fields are simply absent when the topology does not define
+//            them, so a sealed box has no `fb` key at all. The exceptions are
+//            `f3`, `f10`, `xPeakF`, `xAtFb` and `xAtF3`, which are always
+//            present and carry `null` when undefined"
+test('computeMetrics: the five nullable fields are always present', () => {
+  const m = computeMetrics(sweep(), {})
+  for (const k of NULLABLE_KEYS) {
+    assert.ok(Object.hasOwn(m, k), `${k} should always be present`)
+  }
+})
+
+// CONTRACT: "Most fields are simply absent when the topology does not define
+//            them ... The exceptions are `f3`, `f10`, `xPeakF`, `xAtFb` and
+//            `xAtF3`, which are always present and carry `null` when undefined"
+test('computeMetrics: only the five documented exceptions may be null', () => {
   const m = computeMetrics(sweep(), {})
   for (const [k, v] of Object.entries(m)) {
+    if (NULLABLE_KEYS.includes(k)) continue
     assert.notEqual(v, null, `${k} is null; it should be absent instead`)
+    assert.notEqual(v, undefined, `${k} is undefined; it should be absent instead`)
+  }
+})
+
+// CONTRACT: "`xAtFb` is null for a sealed box because it is looked up at a
+//            tuning that does not exist."
+test('computeMetrics: xAtFb is null when there is no tuning to look it up at', () => {
+  const m = computeMetrics(sweep(), {})
+  if (!Object.hasOwn(m, 'fb')) {
+    assert.equal(m.xAtFb, null, 'no fb means xAtFb has no tuning to be read at')
   }
 })
 
@@ -96,9 +133,11 @@ test('computeMetrics: passband never exceeds peakSPL', () => {
 // CONTRACT: "F3 and F10 are then found by linear interpolation at the first
 //            upward crossing of that reference." — F10 is a deeper drop, so it
 //            can never sit above F3.
+// f3 and f10 are always-present nullable fields, so the ordering claim applies
+// only where both are actually defined.
 test('computeMetrics: f10 is never above f3', () => {
   const m = computeMetrics(sweep(), {})
-  if (Object.hasOwn(m, 'f3') && Object.hasOwn(m, 'f10')) {
+  if (typeof m.f3 === 'number' && typeof m.f10 === 'number') {
     assert.ok(m.f10 <= m.f3, `f10 ${m.f10} > f3 ${m.f3}`)
   }
 })

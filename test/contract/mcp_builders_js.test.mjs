@@ -1,6 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import {
+  BUILDERS,
   searchDrivers,
   findDriver,
   driverParams,
@@ -13,6 +14,10 @@ import {
   optimizeProject,
   __internals,
 } from '../../mcp/builders.js'
+// The projection guarantee driverParams delegates to is documented in
+// src/data/driver-fields.js; its contract is used here to assert the exact
+// boundary rather than a weakened approximation.
+import { driverToParams, EXT_BY_KEY } from '../../src/data/driver-fields.js'
 
 const { nid, pos, baseProject, addNode, edge } = __internals
 
@@ -32,25 +37,16 @@ const LIB = searchDrivers()
 const D0 = LIB[0]
 const NAME0 = `${D0.brand} ${D0.model}`
 
-/** Extended field of a row, wherever the schema puts extended columns. */
+// CONTRACT (src/data/driver-fields.js): "A database entry is flat for the
+// parameters the solver consumes and nests everything else under `ext`."
+/** Extended field of a row. */
 function extOf(row, key) {
-  if (row && row.ext && typeof row.ext === 'object' && key in row.ext) return row.ext[key]
-  return row ? row[key] : undefined
+  return row && row.ext && typeof row.ext === 'object' ? row.ext[key] : undefined
 }
 
-/** An extended field name that some rows carry and others do not. */
+/** A schema-declared extended field that some rows carry and others do not. */
 function splitExtKey() {
-  const bag = new Set()
-  for (const row of LIB) {
-    if (row.ext && typeof row.ext === 'object') for (const k of Object.keys(row.ext)) bag.add(k)
-  }
-  if (bag.size === 0) {
-    // No nested `ext` container: extended columns are top-level extras.
-    const counts = new Map()
-    for (const row of LIB) for (const k of Object.keys(row)) counts.set(k, (counts.get(k) || 0) + 1)
-    for (const [k, n] of counts) if (n > 0 && n < LIB.length) bag.add(k)
-  }
-  for (const k of bag) {
+  for (const k of Object.keys(EXT_BY_KEY)) {
     const withIt = LIB.filter((r) => extOf(r, k) !== undefined && extOf(r, k) !== null)
     const without = LIB.filter((r) => extOf(r, k) === undefined || extOf(r, k) === null)
     if (withIt.length > 0 && without.length > 0) {
@@ -60,6 +56,19 @@ function splitExtKey() {
   }
   return null
 }
+
+// CONTRACT: "### `BUILDERS` — Enclosure builders keyed by topology name. ...
+// Keys: `sealed`, `ported`, `bandpass4`, `bandpass6`"
+test('BUILDERS: the dispatch table is keyed by topology name', () => {
+  assert.deepEqual(Object.keys(BUILDERS).sort(), ['bandpass4', 'bandpass6', 'ported', 'sealed'])
+  for (const k of Object.keys(BUILDERS)) assert.equal(typeof BUILDERS[k], 'function')
+})
+
+// CONTRACT: "### `__internals` — Keys: `nid`, `pos`, `baseProject`, `addNode`,
+// `edge`"
+test('__internals: publishes exactly the documented internal helpers', () => {
+  assert.deepEqual(Object.keys(__internals).sort(), ['addNode', 'baseProject', 'edge', 'nid', 'pos'])
+})
 
 // ===========================================================================
 // searchDrivers
@@ -97,34 +106,69 @@ test('searchDrivers: query matches the joined brand and model, case-insensitivel
   assert.deepEqual(hits, searchDrivers({ query: NAME0.toLowerCase() }))
 })
 
-// CONTRACT: "Filters are conjunctive"
+// CONTRACT: "Filters are conjunctive" / "The numeric filters read the record's
+// own field names — `Fs`, `Xmax`, `Sd`, capitalised as the driver schema
+// spells them"
 test('searchDrivers: filters are conjunctive', () => {
-  const fsValues = LIB.map((r) => r.fs).filter((v) => typeof v === 'number')
-  assert.ok(fsValues.length > 0, 'library rows carry an fs figure')
+  const fsValues = LIB.map((r) => r.Fs).filter((v) => typeof v === 'number')
+  assert.ok(fsValues.length > 0, 'library rows carry an Fs figure')
   const mid = fsValues.slice().sort((a, b) => a - b)[Math.floor(fsValues.length / 2)]
   const hits = searchDrivers({ brand: D0.brand, fs_min: mid })
   for (const r of hits) {
     assert.equal(r.brand.toLowerCase(), D0.brand.toLowerCase())
-    assert.ok(r.fs >= mid)
+    assert.ok(r.Fs >= mid)
   }
   // and it is a subset of either filter alone
   assert.ok(hits.length <= searchDrivers({ brand: D0.brand }).length)
   assert.ok(hits.length <= searchDrivers({ fs_min: mid }).length)
 })
 
-// CONTRACT: "`criteria.fs_min` — Minimum Fs, Hz." / "`criteria.fs_max` — Maximum Fs, Hz."
-test('searchDrivers: fs_min and fs_max bound Fs inclusively', () => {
-  const fsValues = LIB.map((r) => r.fs).filter((v) => typeof v === 'number').sort((a, b) => a - b)
+// CONTRACT: "`criteria.fs_min` — Minimum Fs, Hz." / "`criteria.fs_max` —
+// Maximum Fs, Hz." / "`criteria.xmax_min` — Minimum Xmax, mm." /
+// "`criteria.sd_min`" / "`criteria.sd_max`" — read as `Fs`, `Xmax`, `Sd`.
+test('searchDrivers: the numeric filters bound the capitalised schema fields', () => {
+  const fsValues = LIB.map((r) => r.Fs).filter((v) => typeof v === 'number').sort((a, b) => a - b)
   const lo = fsValues[0]
   const hi = fsValues[fsValues.length - 1]
   const mid = (lo + hi) / 2
-  for (const r of searchDrivers({ fs_min: mid })) assert.ok(r.fs >= mid)
-  for (const r of searchDrivers({ fs_max: mid })) assert.ok(r.fs <= mid)
-  // AMBIGUITY: the contract states the "rows lacking the field are excluded"
-  // rule only for `ext`, not for the core numeric filters, so no assertion is
-  // made about rows carrying no Fs figure.
-  for (const r of searchDrivers({ fs_min: lo, fs_max: hi })) {
-    assert.ok(r.fs >= lo && r.fs <= hi)
+  for (const r of searchDrivers({ fs_min: mid })) assert.ok(r.Fs >= mid)
+  for (const r of searchDrivers({ fs_max: mid })) assert.ok(r.Fs <= mid)
+  for (const r of searchDrivers({ fs_min: lo, fs_max: hi })) assert.ok(r.Fs >= lo && r.Fs <= hi)
+
+  const xmax = LIB.map((r) => r.Xmax).filter((v) => typeof v === 'number').sort((a, b) => a - b)
+  assert.ok(xmax.length > 0)
+  const xMid = xmax[Math.floor(xmax.length / 2)]
+  for (const r of searchDrivers({ xmax_min: xMid })) assert.ok(r.Xmax >= xMid)
+
+  const sd = LIB.map((r) => r.Sd).filter((v) => typeof v === 'number').sort((a, b) => a - b)
+  assert.ok(sd.length > 0)
+  const sdMid = sd[Math.floor(sd.length / 2)]
+  for (const r of searchDrivers({ sd_min: sdMid })) assert.ok(r.Sd >= sdMid)
+  for (const r of searchDrivers({ sd_max: sdMid })) assert.ok(r.Sd <= sdMid)
+})
+
+// CONTRACT: "a row missing the field being filtered on is excluded, exactly as
+// for an extended parameter."
+test('searchDrivers: a row missing the core field being filtered on is excluded', () => {
+  for (const [criterion, field] of [
+    ['fs_min', 'Fs'],
+    ['fs_max', 'Fs'],
+    ['xmax_min', 'Xmax'],
+    ['sd_min', 'Sd'],
+    ['sd_max', 'Sd'],
+  ]) {
+    // A bound that admits every row that has the field at all.
+    const bound = criterion.endsWith('_min') ? -Infinity : Infinity
+    const hits = searchDrivers({ [criterion]: bound })
+    for (const r of hits) {
+      assert.equal(
+        typeof r[field],
+        'number',
+        `${r.brand} ${r.model} has no ${field} but survived a ${criterion} filter`,
+      )
+    }
+    const missing = LIB.filter((r) => typeof r[field] !== 'number')
+    assert.equal(hits.length, LIB.length - missing.length, `${criterion} excluded the wrong count`)
   }
 })
 
@@ -225,25 +269,62 @@ test('findDriver: an exact full-name match resolves, for every uniquely named ro
   assert.ok(checked > 0)
 })
 
-// CONTRACT: "An exact match on ... the model alone breaks a tie, so
-// \"18SW115-4\" resolves even though it is a substring of nothing else."
-test('findDriver: an exact model match breaks a tie', () => {
+// CONTRACT: "An exact match on ... the model alone breaks a tie" / "\"exact\"
+// is exact, not longest: a model that is a strict substring of another model
+// resolves only if it matches one of them exactly, so `SA-12` is fine while
+// `SA-1` is ambiguous."
+test('findDriver: an exact model match resolves, however many rows it substring-matches', () => {
   const byModel = new Map()
   for (const r of LIB) byModel.set(r.model, (byModel.get(r.model) || 0) + 1)
-  // Rows whose model is unique as an exact string but is a substring of some
-  // other row's "brand model" — the tie the contract says is broken.
   let checked = 0
   for (const r of LIB) {
     if (byModel.get(r.model) !== 1) continue
     const substringHits = LIB.filter((o) =>
       `${o.brand} ${o.model}`.toLowerCase().includes(r.model.toLowerCase()),
     )
-    if (substringHits.length < 2) continue
     const got = findDriver(r.model)
-    assert.equal(got.model, r.model, `exact model "${r.model}" should win over ${substringHits.length} substring hits`)
+    assert.equal(
+      got.model,
+      r.model,
+      `exact model "${r.model}" must resolve over ${substringHits.length} substring hits`,
+    )
     checked++
   }
-  assert.ok(checked > 0, 'the library contains a model that is a substring of another entry')
+  assert.ok(checked > 0)
+})
+
+// CONTRACT: "\"exact\" is exact, not longest ... `SA-1` is ambiguous." — a
+// query that is a strict substring of several entries and equals none of them
+// exactly must not silently resolve to the longest or the first.
+test('findDriver: a strict substring matching several entries and none exactly is ambiguous', () => {
+  const exactNames = new Set()
+  for (const r of LIB) {
+    exactNames.add(r.model.toLowerCase())
+    exactNames.add(`${r.brand} ${r.model}`.toLowerCase())
+  }
+  // Build candidate queries from prefixes of every model, keeping those that
+  // substring-match at least two rows while equalling no name exactly.
+  const candidates = []
+  for (const r of LIB) {
+    for (let n = r.model.length - 1; n >= 2; n--) {
+      const q = r.model.slice(0, n)
+      if (exactNames.has(q.toLowerCase())) continue
+      const hits = LIB.filter((o) => `${o.brand} ${o.model}`.toLowerCase().includes(q.toLowerCase()))
+      if (hits.length >= 2) {
+        candidates.push({ q, hits })
+        break
+      }
+    }
+    if (candidates.length >= 5) break
+  }
+  assert.ok(candidates.length > 0, 'the library admits an ambiguous substring query')
+  for (const { q, hits } of candidates) {
+    assert.throws(
+      () => findDriver(q),
+      (e) => e instanceof Error && hits.some((h) => e.message.includes(h.model)),
+      `"${q}" matches ${hits.length} entries exactly none of them, so it must be ambiguous`,
+    )
+  }
 })
 
 // CONTRACT: @throws Error "When nothing matches ... Both messages name the
@@ -298,22 +379,50 @@ test('findDriver: @pure — equal inputs give equal output', () => {
 // database record also carries provenance and construction detail that has no
 // business in a node's params, so this projects through `driverToParams`
 // rather than spreading the record."
-test('driverParams: projects rather than spreads — provenance never appears', () => {
-  const p = driverParams({ db: NAME0 })
-  assert.equal(typeof p, 'object')
-  // `source` is documented in searchDrivers as the record's provenance.
-  assert.equal('source' in p, false, 'provenance must not reach node params')
-  // Extended catalog columns are construction detail, not solver fields.
-  assert.equal('ext' in p, false)
-  // AMBIGUITY: the spec names `driverToParams` but does not enumerate the
-  // projected keys, so the positive direction is asserted only for the keys
-  // this contract does name (count, wiring, label) plus the requirement that
-  // the result is strictly narrower than the record.
-  const recordKeys = Object.keys(D0)
-  assert.ok(
-    recordKeys.some((k) => !(k in p)),
-    'the projection must drop at least one database-only field',
+// and (driver-fields.js) Postcondition: "The result contains no `ext`,
+// `source`, `suspect` or `brand` key, whatever the input carries."
+test('driverParams: projects rather than spreads — ext, source, suspect and brand never appear', () => {
+  for (const spec of [{ db: NAME0 }, { db: NAME0, count: 4, wiring: 'series' }]) {
+    const p = driverParams(spec)
+    assert.equal(typeof p, 'object')
+    for (const forbidden of ['ext', 'source', 'suspect', 'brand']) {
+      assert.equal(forbidden in p, false, `${forbidden} must never reach node params`)
+    }
+  }
+  // Every row in the library, not just the first.
+  for (const r of LIB) {
+    const p = driverParams({ db: `${r.brand} ${r.model}` })
+    for (const forbidden of ['ext', 'source', 'suspect', 'brand']) {
+      assert.equal(forbidden in p, false, `${r.brand} ${r.model} leaked ${forbidden}`)
+    }
+  }
+})
+
+// CONTRACT: "Only the solver-facing fields are taken from a library row ... so
+// this projects through `driverToParams` rather than spreading the record."
+// (driver-fields.js) "Node params: `label` from the model name, plus each
+// present core T/S field." / "Fields the record omits stay absent".
+test('driverParams: the library-derived part is exactly driverToParams', () => {
+  const projected = driverToParams(D0)
+  assert.deepEqual(
+    driverParams({ db: NAME0 }),
+    { ...projected, count: 1, wiring: 'single' },
+    'the result must be driverToParams plus only the documented count and wiring',
   )
+  // Documented keys present, in both directions, across every row.
+  for (const r of LIB) {
+    const proj = driverToParams(r)
+    const p = driverParams({ db: `${r.brand} ${r.model}`, count: 2 })
+    for (const k of Object.keys(proj)) {
+      assert.ok(k in p, `projected field ${k} is missing for ${r.model}`)
+      assert.deepEqual(p[k], proj[k], `projected field ${k} differs for ${r.model}`)
+    }
+    assert.deepEqual(
+      Object.keys(p).sort(),
+      [...new Set([...Object.keys(proj), 'count', 'wiring'])].sort(),
+      `unexpected keys in params for ${r.model}`,
+    )
+  }
 })
 
 // CONTRACT: "`spec.count` — Drivers in this node." _(default `1`)_ /
@@ -385,10 +494,11 @@ test('portLengthGuess: ecFactor defaults to 0.732', () => {
   assert.notEqual(portLengthGuess(32, 60, 100), portLengthGuess(32, 60, 100, 0.1))
 })
 
-// CONTRACT: "Port length in cm, floored at 1 cm — the end correction alone can
-// exceed the required length for a large port on a small box, which would
-// otherwise give a negative length."
-test('portLengthGuess: the result is a number floored at 1 cm', () => {
+// CONTRACT: "Port length in cm. Never below 1: the end correction alone can
+// exceed the required length for a large port on a small box, and a negative
+// length is not a port. A returned 1 therefore means \"this geometry cannot
+// reach that tuning\", not \"1 cm will do it\"."
+test('portLengthGuess: never below 1 cm, and 1 signals an unreachable tuning', () => {
   const normal = portLengthGuess(32, 60, 100)
   assert.equal(typeof normal, 'number')
   assert.ok(Number.isFinite(normal))
