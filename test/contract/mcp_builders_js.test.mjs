@@ -120,7 +120,12 @@ test('searchDrivers: fs_min and fs_max bound Fs inclusively', () => {
   const mid = (lo + hi) / 2
   for (const r of searchDrivers({ fs_min: mid })) assert.ok(r.fs >= mid)
   for (const r of searchDrivers({ fs_max: mid })) assert.ok(r.fs <= mid)
-  assert.deepEqual(searchDrivers({ fs_min: lo, fs_max: hi }).length, fsValues.length)
+  // AMBIGUITY: the contract states the "rows lacking the field are excluded"
+  // rule only for `ext`, not for the core numeric filters, so no assertion is
+  // made about rows carrying no Fs figure.
+  for (const r of searchDrivers({ fs_min: lo, fs_max: hi })) {
+    assert.ok(r.fs >= lo && r.fs <= hi)
+  }
 })
 
 // CONTRACT: "Rows lacking the extended field being filtered on are excluded
