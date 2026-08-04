@@ -180,6 +180,12 @@ function renderModule(mod) {
       const sh = c.shape
       if (sh?.kind === 'object' && sh.keys?.length) {
         L.push(`Keys: ${sh.keys.map((k) => `\`${k}\``).join(', ')}`)
+        if (sh.partial) {
+          L.push('')
+          L.push('**This list is incomplete.** Further keys are added at construction')
+          L.push('time and are not visible in the source declaration, so treat it as a')
+          L.push('subset rather than the full set.')
+        }
         L.push('')
         for (const [outer, inner] of Object.entries(sh.nested || {})) {
           L.push(`- \`${outer}\` holds: ${inner.map((k) => `\`${k}\``).join(', ')}`)

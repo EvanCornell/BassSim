@@ -511,6 +511,11 @@ export function scanFile(relPath) {
       const props = node.properties
         .filter((pr) => (pr.type === 'ObjectProperty' || pr.type === 'ObjectMethod') && !pr.computed)
       const keys = props.map((pr) => pr.key?.name ?? pr.key?.value).filter((k) => k != null)
+      // A spread or a computed key contributes names the source does not
+      // spell out. Publishing the literal ones as if they were the whole set
+      // is worse than publishing nothing: a reader has no way to tell the list
+      // is short, and every count derived from it is wrong.
+      const partial = node.properties.some((pr) => pr.type === 'SpreadElement' || pr.computed)
       // One level of nesting, because for a registry keyed by kind — node types
       // to their parameters, panels to their metadata — the inner names are the
       // vocabulary, and the outer ones alone say almost nothing.
@@ -523,7 +528,10 @@ export function scanFile(relPath) {
           .filter((k) => k != null)
         if (inner.length) nested[pr.key?.name ?? pr.key?.value] = inner
       }
-      return Object.keys(nested).length ? { kind: 'object', keys, nested } : { kind: 'object', keys }
+      const out = { kind: 'object', keys }
+      if (Object.keys(nested).length) out.nested = nested
+      if (partial) out.partial = true
+      return out
     }
     if (node.type === 'ArrayExpression') {
       const lit = node.elements.filter((e) => e && (e.type === 'StringLiteral' || e.type === 'NumericLiteral'))

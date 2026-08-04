@@ -12,6 +12,18 @@
 // Keys come from `event.code` (the physical key) rather than `event.key`, so a
 // binding does not change meaning when Shift is held — `shift+1` stays
 // `shift+1` instead of becoming `!`.
+//
+// Every command carries a `scope`, one of exactly two values:
+//
+//   global   fires wherever focus is
+//   canvas   fires only while the Node Editor — panel id `canvas` — holds
+//            focus, so the Nonlinear Lab and the charts keep Delete, Ctrl+C
+//            and the bare letter keys for themselves
+//
+// No command fires while a text field has focus, whatever its scope. Where a
+// canvas-scoped and a global command share a combo, the canvas one wins while
+// the Node Editor has focus and the global one applies everywhere else — which
+// is what `resolve` implements and what `findConflict` treats as a collision.
 
 /**
  * Whether this browser is running on an Apple platform.
@@ -23,10 +35,6 @@ export const IS_MAC = typeof navigator !== 'undefined'
   && /mac|iphone|ipad/i.test(navigator.platform || navigator.userAgent || '')
 
 // ---------- commands ----------
-//
-//   scope 'global' fires wherever focus is; 'canvas' only while the Node
-//         Editor holds it, so the Nonlinear Lab and the charts keep Delete,
-//         Ctrl+C and the bare letter keys for themselves.
 
 /** Node types that get a bare-letter add shortcut, paired with their menu label. */
 const NODE_TYPES = [

@@ -20,6 +20,18 @@ Keys come from `event.code` (the physical key) rather than `event.key`, so a
 binding does not change meaning when Shift is held — `shift+1` stays
 `shift+1` instead of becoming `!`.
 
+Every command carries a `scope`, one of exactly two values:
+
+  global   fires wherever focus is
+  canvas   fires only while the Node Editor — panel id `canvas` — holds
+           focus, so the Nonlinear Lab and the charts keep Delete, Ctrl+C
+           and the bare letter keys for themselves
+
+No command fires while a text field has focus, whatever its scope. Where a
+canvas-scoped and a global command share a combo, the canvas one wins while
+the Node Editor has focus and the global one applies everywhere else — which
+is what `resolve` implements and what `findConflict` treats as a collision.
+
 ## Exported constants
 
 Names this module publishes that are not methods. The method contracts
@@ -36,6 +48,10 @@ modifier when matching, so a single default set fits both platforms.
 ### `COMMANDS`
 
 Keys: `edit.undo`, `edit.redo`, `edit.cut`, `edit.copy`, `edit.paste`, `edit.duplicate`, `edit.selectAll`, `edit.delete`, `drive.up`, `drive.down`, `drive.upFine`, `drive.downFine`, `project.new`, `project.save`, `project.open`, `sim.snapshot`, `sim.mask`, `sim.recompute`, `view.settings`, `view.maximize`, `view.popout`
+
+**This list is incomplete.** Further keys are added at construction
+time and are not visible in the source declaration, so treat it as a
+subset rather than the full set.
 
 - `edit.undo` holds: `label`, `group`, `scope`, `run`
 - `edit.redo` holds: `label`, `group`, `scope`, `run`
