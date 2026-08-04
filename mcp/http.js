@@ -16,6 +16,13 @@ const PORT = Number(process.env.PORT || 8787)
 const TOKEN = process.env.ACOUSIM_TOKEN || ''
 const MCP_PATH = '/mcp'
 
+/**
+ * CORS headers allowing any origin.
+ *
+ * Open deliberately: browser-based MCP clients connect from origins this
+ * server cannot know in advance. The security boundary is the bearer token,
+ * not the origin.
+ */
 const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
@@ -24,13 +31,46 @@ const CORS = {
   'Access-Control-Max-Age': '86400',
 }
 
+/**
+ * Send a JSON response with the CORS headers attached.
+ *
+ * @param {import('node:http').ServerResponse} res - The response.
+ * @param {number} code - HTTP status.
+ * @param {any} body - Serializable payload.
+ * @param {Object<string, string>} [headers={}] - Extra headers, merged last so they can override.
+ * @returns {void}
+ * @sideEffect Writes the response head and ends it.
+ */
 const send = (res, code, body, headers = {}) => {
   res.writeHead(code, { 'Content-Type': 'application/json', ...CORS, ...headers })
   res.end(JSON.stringify(body))
 }
 
+/**
+ * Build a JSON-RPC 2.0 error object.
+ *
+ * Transport-level failures are reported in the protocol's own error shape,
+ * so a client sees a structured error rather than an HTML error page.
+ *
+ * @param {number} code - JSON-RPC error code.
+ * @param {string} message - Human-readable message.
+ * @param {string|number|null} [id=null] - Request id being answered.
+ * @returns {{jsonrpc: string, error: {code: number, message: string}, id: any}} A JSON-RPC error envelope.
+ * @pure
+ */
 const rpcError = (code, message, id = null) => ({ jsonrpc: '2.0', error: { code, message }, id })
 
+/**
+ * Read and parse a JSON request body.
+ *
+ * Capped at 4 MB and checked as it streams, so an oversized request is
+ * rejected before it is buffered rather than after.
+ *
+ * @param {import('node:http').IncomingMessage} req - The request.
+ * @returns {Promise<any|undefined>} The parsed body, or `undefined` for an empty one.
+ * @throws {Error} When the body exceeds 4 MB or is not valid JSON.
+ * @sideEffect Consumes the request stream.
+ */
 async function readBody(req) {
   let raw = ''
   for await (const chunk of req) {
@@ -40,6 +80,21 @@ async function readBody(req) {
   return raw ? JSON.parse(raw) : undefined
 }
 
+/**
+ * Handle one HTTP request: CORS preflight, health check, auth, then MCP.
+ *
+ * A fresh server and transport are built per request. That is what makes
+ * concurrent calls unable to cross-talk, and is only affordable because
+ * every tool takes the full project JSON and keeps no session state.
+ *
+ * Anything other than POST on the MCP path is refused with 405: SSE streams
+ * and session resumption are not offered in stateless mode.
+ *
+ * @param {import('node:http').IncomingMessage} req - The request.
+ * @param {import('node:http').ServerResponse} res - The response.
+ * @returns {Promise<void>} Resolves once the response has been handed off.
+ * @sideEffect Reads environment configuration, constructs an MCP server per request, and writes the response.
+ */
 const httpServer = createHttpServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`)
 

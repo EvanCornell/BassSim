@@ -21,13 +21,49 @@ const MAX_SWEEP_STEPS = 41
 
 // ---------- helpers ----------
 
+/**
+ * Round a number to a fixed significant-figure count for JSON output.
+ *
+ * Tool responses are read by a language model, and full float precision is
+ * noise that costs tokens without adding meaning: 4 significant figures is
+ * well past the accuracy of the model producing them.
+ *
+ * @param {number|null|undefined} v - The value.
+ * @param {number} [n=4] - Significant figures.
+ * @returns {number|null} The rounded number, or `null` for absent and non-finite values so the JSON carries an explicit "no value" rather than `NaN`.
+ * @pure
+ */
 const sig = (v, n = 4) => (v == null || !isFinite(v) ? null : Number(Number(v).toPrecision(n)))
 
+/**
+ * Describe a node as `label (id)`, or just its id when it has no label.
+ *
+ * Used throughout the tool responses so an agent reads "Port (waveguide_3)"
+ * rather than an opaque id.
+ *
+ * @param {Array<object>} nodes - Hydrated graph nodes.
+ * @param {string} id - Node id.
+ * @returns {string} A human-readable node reference.
+ * @pure
+ */
 function labelOf(nodes, id) {
   const n = nodes.find((x) => x.id === id)
   return n?.data.params.label ? `${n.data.params.label} (${id})` : id
 }
 
+/**
+ * Resolve a node reference, which may be an id or a label.
+ *
+ * Agents naturally refer to "the port" rather than `waveguide_3`, so both
+ * work. Ids are matched first, then labels case-insensitively.
+ *
+ * @param {Array<object>} nodes - Hydrated graph nodes.
+ * @param {string} ref - Node id or label.
+ * @param {string[]|null} [types=null] - Restrict to these node types. `null` searches every node.
+ * @returns {object} The matching node.
+ * @throws {Error} When nothing matches. The message lists the available nodes, so an agent can correct itself without another round-trip.
+ * @pure
+ */
 function resolveNode(nodes, ref, types = null) {
   const pool = types ? nodes.filter((n) => types.includes(n.type)) : nodes
   const hit = pool.find((n) => n.id === ref)
@@ -39,6 +75,19 @@ function resolveNode(nodes, ref, types = null) {
   return hit
 }
 
+/**
+ * Hydrate a project and simulate it.
+ *
+ * The shared entry point behind every simulating tool. Point count is
+ * capped at 1024 regardless of what the project asks for, since a tool call
+ * is a synchronous request and an agent can otherwise request an
+ * arbitrarily expensive sweep.
+ *
+ * @param {object} projRaw - A serialized project.
+ * @returns {{nodes: Array<object>, edges: Array<object>, settings: object, res: object, metrics: object|null}} The hydrated graph, the raw result, and metrics — `null` when the simulation failed.
+ * @throws {Error} When the project is structurally invalid, propagated from `hydrateProject`.
+ * @sideEffect Runs the solver, which is the expensive part of every tool call.
+ */
 function run(projRaw) {
   const { nodes, edges, settings } = hydrateProject(projRaw)
   settings.npts = Math.min(settings.npts || 512, MAX_NPTS)
@@ -48,7 +97,24 @@ function run(projRaw) {
   return { nodes, edges, settings, res, metrics }
 }
 
-// Downsample a curve to ~points, always keeping the extremum sample.
+/**
+ * Reduce a curve to about `points` samples for a tool response.
+ *
+ * A 512-point curve is far more than an agent needs and far more than it
+ * should pay for in tokens. The samples are evenly spaced across the
+ * window, but the minimum and maximum are always added — without them, an
+ * impedance peak or an excursion spike could fall between samples and the
+ * agent would conclude the design is fine when it is not.
+ *
+ * @param {number[]} freqs - Frequency axis, Hz.
+ * @param {number[]} arr - Curve sampled on that axis.
+ * @param {number} [points=48] - Target sample count. The result may hold up to two more, for the extrema.
+ * @param {number|null} [fmin=null] - Window the output to at or above this frequency.
+ * @param {number|null} [fmax=null] - Window the output to at or below this frequency.
+ * @returns {Array<[number|null, number|null]>} `[frequency, value]` pairs in ascending frequency order, rounded for output.
+ * @pre freqs.length === arr.length
+ * @pure
+ */
 function downsample(freqs, arr, points = 48, fmin = null, fmax = null) {
   let i0 = 0, i1 = freqs.length - 1
   if (fmin != null) while (i0 < i1 && freqs[i0] < fmin) i0++
@@ -69,29 +135,208 @@ function downsample(freqs, arr, points = 48, fmin = null, fmax = null) {
 }
 
 const QUANTITIES = {
-  spl: { label: 'SPL combined, dB @ 1 m', get: (r) => r.splCombined },
-  spl_driver: { label: 'SPL direct driver radiation, dB', get: (r) => r.splDriver },
-  spl_port: { label: 'SPL of one radiator, dB', get: (r, id) => r.splPorts[id], node: ['waveguide', 'radiation', 'pr'] },
-  impedance: { label: 'Electrical input impedance, ohm', get: (r) => r.zinMag },
-  impedance_phase: { label: 'Impedance phase, deg', get: (r) => r.zinPhase },
-  excursion: { label: 'Cone excursion (worst driver), mm peak', get: (r) => r.excursion },
-  excursion_driver: { label: 'Cone excursion of one driver, mm peak', get: (r, id) => r.excursionByDriver[id], node: ['driver'] },
-  velocity: { label: 'Air velocity in a waveguide, m/s peak', get: (r, id) => r.velocity[id], node: ['waveguide'] },
-  spl_interior: { label: 'SPL inside a chamber, dB (virtual mic; set params.probe=true on the chamber, position via probePos 0-100%)', get: (r, id) => r.splInterior?.[id], node: ['chamber'] },
-  acoustic_power: { label: 'Radiated acoustic power, W', get: (r) => r.power },
-  electrical_power: { label: 'Electrical input power (real), W', get: (r) => r.peReal },
-  apparent_power: { label: 'Electrical input power (apparent), VA', get: (r) => r.peApparent },
+  spl: {
+    label: 'SPL combined, dB @ 1 m',
+    /**
+     * Coherent sum of every radiator in the design — the headline response.
+     *
+     * @param {object} r - A simulation result.
+     * @returns {Array<number>} SPL in dB at 1 m, per frequency.
+     * @pure
+     */
+    get: (r) => r.splCombined,
+  },
+  spl_driver: {
+    label: 'SPL direct driver radiation, dB',
+    /**
+     * Only the output reaching the listener from a driver's front port, excluding anything radiated by a port or passive radiator.
+     *
+     * @param {object} r - A simulation result.
+     * @returns {Array<number|null>} SPL in dB, `null` where nothing radiates directly.
+     * @pure
+     */
+    get: (r) => r.splDriver,
+  },
+  spl_port: {
+    label: 'SPL of one radiator, dB',
+    node: ['waveguide', 'radiation', 'pr'],
+    /**
+     * Output of a single radiating terminal, for judging how much of the total each contributes.
+     *
+     * @param {object} r - A simulation result.
+     * @param {string} id - Radiator node id.
+     * @returns {Array<number|null>|undefined} SPL in dB, or `undefined` when that node radiates nothing.
+     * @pure
+     */
+    get: (r, id) => r.splPorts[id],
+  },
+  impedance: {
+    label: 'Electrical input impedance, ohm',
+    /**
+     * Impedance magnitude at the amplifier terminals. Its peaks identify the box alignment.
+     *
+     * @param {object} r - A simulation result.
+     * @returns {Array<number>} Impedance magnitude in ohms.
+     * @pure
+     */
+    get: (r) => r.zinMag,
+  },
+  impedance_phase: {
+    label: 'Impedance phase, deg',
+    /**
+     * Impedance phase angle, which decides how reactive a load the amplifier sees.
+     *
+     * @param {object} r - A simulation result.
+     * @returns {Array<number>} Phase in degrees.
+     * @pure
+     */
+    get: (r) => r.zinPhase,
+  },
+  excursion: {
+    label: 'Cone excursion (worst driver), mm peak',
+    /**
+     * Largest single-cone displacement at each frequency. Cone travel is not additive, so this reports the worst offender rather than a sum.
+     *
+     * @param {object} r - A simulation result.
+     * @returns {Array<number>} Peak displacement in mm.
+     * @pure
+     */
+    get: (r) => r.excursion,
+  },
+  excursion_driver: {
+    label: 'Cone excursion of one driver, mm peak',
+    node: ['driver'],
+    /**
+     * Displacement of one specific driver, for judging each cone against its own Xmax.
+     *
+     * @param {object} r - A simulation result.
+     * @param {string} id - Driver node id.
+     * @returns {Array<number>|undefined} Peak displacement in mm.
+     * @pure
+     */
+    get: (r, id) => r.excursionByDriver[id],
+  },
+  velocity: {
+    label: 'Air velocity in a waveguide, m/s peak',
+    node: ['waveguide'],
+    /**
+     * Peak air speed in a port or duct. Above roughly 17 m/s a port begins to chuff audibly.
+     *
+     * @param {object} r - A simulation result.
+     * @param {string} id - Waveguide node id.
+     * @returns {Array<number>|undefined} Peak velocity in m/s.
+     * @pure
+     */
+    get: (r, id) => r.velocity[id],
+  },
+  spl_interior: {
+    label: 'SPL inside a chamber, dB (virtual mic; set params.probe=true on the chamber, position via probePos 0-100%)',
+    node: ['chamber'],
+    /**
+     * Pressure at a virtual microphone inside a chamber — the right measure for in-cabin listening levels. Requires `probe: true` on that chamber.
+     *
+     * @param {object} r - A simulation result.
+     * @param {string} id - Chamber node id.
+     * @returns {Array<number|null>|undefined} Interior SPL in dB, or `undefined` when that chamber has no probe.
+     * @pure
+     */
+    get: (r, id) => r.splInterior?.[id],
+  },
+  acoustic_power: {
+    label: 'Radiated acoustic power, W',
+    /**
+     * Total acoustic power leaving the enclosure, summed over every radiator.
+     *
+     * @param {object} r - A simulation result.
+     * @returns {Array<number>} Acoustic power in watts.
+     * @pure
+     */
+    get: (r) => r.power,
+  },
+  electrical_power: {
+    label: 'Electrical input power (real), W',
+    /**
+     * Real power drawn at the driver terminals — what the amplifier actually delivers.
+     *
+     * @param {object} r - A simulation result.
+     * @returns {Array<number>} Real power in watts.
+     * @pure
+     */
+    get: (r) => r.peReal,
+  },
+  apparent_power: {
+    label: 'Electrical input power (apparent), VA',
+    /**
+     * Apparent power, which exceeds the real power wherever the load is reactive.
+     *
+     * @param {object} r - A simulation result.
+     * @returns {Array<number>} Apparent power in VA.
+     * @pure
+     */
+    get: (r) => r.peApparent,
+  },
   efficiency: {
     label: 'Acoustic efficiency, %',
+    /**
+     * Acoustic power as a percentage of electrical input power.
+     *
+     * Derived rather than stored, since it is the ratio of two series the
+     * solver already produces. Guarded against a near-zero denominator at
+     * frequencies where the driver draws essentially nothing.
+     *
+     * @param {object} r - A simulation result.
+     * @returns {Array<number|null>} Efficiency in percent, `null` where input power is too small to divide by.
+     * @pure
+     */
     get: (r) => r.freqs.map((_, i) => (r.peReal[i] > 1e-9 ? (r.power[i] / r.peReal[i]) * 100 : null)),
   },
-  phase: { label: 'Unwrapped phase, deg', get: (r) => r.phaseUnwrapped },
-  group_delay: { label: 'Group delay, ms', get: (r) => r.groupDelay },
+  phase: {
+    label: 'Unwrapped phase, deg',
+    /**
+     * Phase of the combined pressure, unwrapped so it runs continuously.
+     *
+     * @param {object} r - A simulation result.
+     * @returns {Array<number>} Unwrapped phase in degrees.
+     * @pure
+     */
+    get: (r) => r.phaseUnwrapped,
+  },
+  group_delay: {
+    label: 'Group delay, ms',
+    /**
+     * Group delay, the derivative of unwrapped phase with respect to frequency.
+     *
+     * @param {object} r - A simulation result.
+     * @returns {Array<number>} Group delay in milliseconds.
+     * @pure
+     */
+    get: (r) => r.groupDelay,
+  },
 }
 
+/**
+ * Reduce computed metrics to a labelled, unit-carrying object for JSON output.
+ *
+ * Absent figures are omitted rather than emitted as null, so a sealed box's
+ * summary simply has no tuning field instead of one saying `null` — which
+ * reads to an agent as a missing measurement rather than an inapplicable one.
+ *
+ * @param {object|null} metrics - Metrics from `computeMetrics`.
+ * @returns {object|null} A flat object of formatted metrics, or `null` when there were none.
+ * @pure
+ */
 function metricsSummary(metrics) {
   if (!metrics) return null
   const m = {}
+  /**
+   * Add one metric, skipping it when there is no usable value.
+   *
+   * @param {string} k - Output key.
+   * @param {number|null|undefined} v - The value.
+   * @param {string} [unit] - Unit appended to the formatted number. Omit for dimensionless figures.
+   * @returns {void}
+   * @mutates Adds to the enclosing output object.
+   */
   const put = (k, v, unit) => { if (v != null && isFinite(v)) m[k] = unit ? `${sig(v)} ${unit}` : sig(v) }
   put('f3', metrics.f3, 'Hz'); put('f10', metrics.f10, 'Hz')
   put('fb_tuning', metrics.fb, 'Hz'); put('fc_sealed', metrics.fc, 'Hz'); put('qtc', metrics.qtc)
@@ -104,6 +349,22 @@ function metricsSummary(metrics) {
   return m
 }
 
+/**
+ * Build the JSON summary returned by `simulate`.
+ *
+ * Shaped for an agent rather than a chart: the headline metrics, the
+ * validation warnings in plain language, per-radiator peak air velocity,
+ * per-driver peak excursion annotated against each cone's own Xmax, and
+ * two downsampled curves. Excursion over Xmax is called out in the text as
+ * "EXCEEDED" so the agent cannot miss it by not comparing two numbers.
+ *
+ * A failed simulation returns early with the errors and no curves.
+ *
+ * @param {object} ctx - The result of `run`.
+ * @param {number} [points=40] - Curve downsample resolution.
+ * @returns {object} The summary object, ready to serialize.
+ * @pure
+ */
 function summarize({ nodes, settings, res, metrics }, points = 40) {
   const warnings = Object.entries(res.validation?.warnings || {}).flatMap(([id, ws]) =>
     ws.map((w) => `${labelOf(nodes, id)}: ${w}`))
@@ -137,11 +398,38 @@ function summarize({ nodes, settings, res, metrics }, points = 40) {
   return out
 }
 
+/**
+ * Wrap a value as a successful MCP tool result.
+ *
+ * @param {any} obj - Serializable payload.
+ * @returns {{content: Array<{type: string, text: string}>}} An MCP tool result carrying the JSON as text.
+ * @pure
+ */
 const jsonResult = (obj) => ({ content: [{ type: 'text', text: JSON.stringify(obj, null, 1) }] })
+/**
+ * Wrap an error as a failed MCP tool result.
+ *
+ * Returned rather than thrown, so the agent receives the message and can
+ * correct its input instead of the transport reporting an opaque failure.
+ *
+ * @param {Error} e - The error.
+ * @returns {{isError: boolean, content: Array<{type: string, text: string}>}} An MCP error result.
+ * @pure
+ */
 const errResult = (e) => ({ isError: true, content: [{ type: 'text', text: `Error: ${e.message}` }] })
 
 // ---------- server ----------
 
+/**
+ * Build a fully configured MCP server with every tool and resource registered.
+ *
+ * A factory rather than a singleton because the HTTP transport is
+ * stateless: each POST is handled by a fresh instance, which is what makes
+ * it safe to run behind a load balancer.
+ *
+ * @returns {McpServer} A server ready to connect to a transport.
+ * @sideEffect Reads `mcp/guide.md` from disk at module load, and registers tools on the new instance.
+ */
 export function createServer() {
 const server = new McpServer(
   { name: 'acousim', version: '0.1.0' },
@@ -373,13 +661,28 @@ server.registerTool('build_enclosure', {
 }, async (args) => {
   try {
     const { topology, voltage, ...rest } = args
-    const need = (k) => { if (rest[k] == null) throw new Error(`"${topology}" needs ${k}.`) }
+    /**
+   * Assert that an optional argument was supplied.
+   *
+   * @param {string} k - Argument name.
+   * @returns {void}
+   * @throws {Error} When the argument is missing, naming it so the agent can retry correctly.
+   * @reads the enclosing tool arguments.
+   */
+  const need = (k) => { if (rest[k] == null) throw new Error(`"${topology}" needs ${k}.`) }
     if (topology === 'sealed' || topology === 'ported') need('volume')
     if (topology === 'bandpass4' || topology === 'bandpass6') { need('front_volume'); need('rear_volume') }
     const settings = voltage ? { voltage } : {}
     const { project, ports, notes } = BUILDERS[topology]({ ...rest, settings })
     const calibration = {}
-    const simFb = (p) => { const c = run(p); return c.res.ok ? (c.metrics?.fb ?? null) : null }
+    /**
+   * Simulate a project and report its tuning, for port calibration.
+   *
+   * @param {object} p - The project to simulate.
+   * @returns {number|null} Tuning in Hz — the vented `fb`, falling back to a sealed box's `fc` — or `null` when the simulation failed.
+   * @sideEffect Runs the solver.
+   */
+  const simFb = (p) => { const c = run(p); return c.res.ok ? (c.metrics?.fb ?? null) : null }
     if (rest.tuning && !rest.port_length && (topology === 'ported' || topology === 'bandpass4')) {
       for (const pid of ports) {
         const L = calibratePort(project, pid, rest.tuning, simFb)
@@ -395,6 +698,15 @@ server.registerTool('build_enclosure', {
 })
 
 // Objective scoring for optimize. Higher = better; constraints are penalties.
+/**
+ * Sweep indices falling inside a frequency band.
+ *
+ * @param {number[]} freqs - Frequency axis, Hz.
+ * @param {[number, number]} band - Band as `[f1, f2]` Hz.
+ * @returns {number[]} Indices inside the band, ascending.
+ * @throws {Error} When fewer than three points fall in the band — averaging SPL over one or two samples would produce a confident number from almost no data, so this refuses rather than misleading the optimizer.
+ * @pure
+ */
 function bandIndices(freqs, band) {
   const [f1, f2] = band
   const idx = []
@@ -403,6 +715,33 @@ function bandIndices(freqs, band) {
   return idx
 }
 
+/**
+ * Build the objective function the optimizer maximizes.
+ *
+ * Three objectives: `min_f3` maximizes the negated F3, `max_spl` the mean
+ * level across the band, and `flat` the mean minus four times the standard
+ * deviation — which trades roughly 4 dB of level for each 1 dB of ripple
+ * removed, and is what makes "flat" prefer a smooth response over a loud
+ * lumpy one.
+ *
+ * Constraints are penalties, not hard limits, and are scaled by how far
+ * they are exceeded. A design 10% over Xmax loses 3 points rather than
+ * being discarded, so the search can still traverse a slightly-invalid
+ * region on its way to a better answer instead of being walled off from it.
+ *
+ * A project that fails to simulate scores −1e9, which is low enough never
+ * to win but finite, so it does not poison comparisons.
+ *
+ * @param {object} spec - Objective spec.
+ * @param {'min_f3'|'max_spl'|'flat'} spec.objective - What to maximize.
+ * @param {[number, number]} [spec.band] - Frequency band, required for `max_spl` and `flat`.
+ * @param {object} [spec.constraints={}] - Penalty settings.
+ * @param {number} [spec.constraints.max_port_velocity_ms] - Penalize peak port velocity above this.
+ * @param {number} [spec.constraints.max_excursion_mm] - Excursion limit; defaults to each driver's own Xmax.
+ * @param {boolean} [spec.constraints.respect_xmax] - Set false to drop the excursion penalty entirely.
+ * @returns {(project: object) => number} A scoring function; higher is better.
+ * @sideEffect The returned function runs a full simulation on every call.
+ */
 function makeScore({ objective, band, constraints = {} }) {
   return (projRaw) => {
     let ctx
