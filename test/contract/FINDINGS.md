@@ -8,6 +8,27 @@ Decide per entry which side is wrong; nothing here is fixed automatically.
 
 23 failing assertion(s) across 16 method(s).
 
+## Index
+
+| Method | Failing | Declared in |
+|---|---|---|
+| [`hydrateProject`](#hydrateproject--4-failing) | 4 | `src/engine/project.js` |
+| [`parseJsdoc`](#parsejsdoc--2-failing) | 2 | `scripts/contracts-lib.mjs` |
+| [`round5`](#round5--2-failing) | 2 | `src/components/OutputPanel.jsx` |
+| [`CORE_FIELDS`](#core_fields--2-failing) | 2 | `src/data/driver-fields.js` |
+| [`runSimulation`](#runsimulation--2-failing) | 2 | `src/engine/solver.js` |
+| [`portLengthGuess`](#portlengthguess--1-failing) | 1 | `mcp/builders.js` |
+| [`stripDash`](#stripdash--1-failing) | 1 | `scripts/contracts-lib.mjs` |
+| [`EXT_GROUPS`](#ext_groups--1-failing) | 1 | `src/data/driver-fields.js` |
+| [`chamberMatrix`](#chambermatrix--1-failing) | 1 | `src/engine/acoustics.js` |
+| [`computeMetrics`](#computemetrics--1-failing) | 1 | `src/engine/metrics.js` |
+| [`DEFAULT_SETTINGS`](#default_settings--1-failing) | 1 | `src/engine/project.js` |
+| [`dockToEdge`](#docktoedge--1-failing) | 1 | `src/layout.js` |
+| [`setToolbar`](#settoolbar--1-failing) | 1 | `src/store.js` |
+| [`pushHistory`](#pushhistory--1-failing) | 1 | `src/store.js` |
+| [`updateParams`](#updateparams--1-failing) | 1 | `src/store.js` |
+| [`pasteClipboard`](#pasteclipboard--1-failing) | 1 | `src/store.js` |
+
 ## `hydrateProject` — 4 failing
 
 Declared in: `src/engine/project.js`
@@ -17,14 +38,41 @@ Contract clauses:
 - `@post proj is not modified — nodes and params are copied, not aliased.`
 - `@pure`
 
-- **missing params are filled from DEFAULT_PARAMS**
-  - `error: |- | code: 'ERR_ASSERTION' | expected: 'object' | actual: 'undefined' | operator: 'strictEqual'`
-- **saved params are merged over the defaults**
-  - `error: "Cannot read properties of undefined (reading 'Fs')" | code: 'ERR_TEST_FAILURE'`
-- **proj is not modified**
-  - `error: "Cannot set properties of undefined (setting '__custom__')" | code: 'ERR_TEST_FAILURE'`
-- **hydrated params do not alias DEFAULT_PARAMS**
-  - `error: "Cannot set properties of undefined (setting 'Fs')" | code: 'ERR_TEST_FAILURE'`
+### missing params are filled from DEFAULT_PARAMS
+
+`test/contract/src_engine_project_js.test.mjs:133:1`
+
+```
+driver: params must be an object
++ actual - expected
+
++ 'undefined'
+- 'object'
+```
+
+### saved params are merged over the defaults
+
+`test/contract/src_engine_project_js.test.mjs:148:1`
+
+```
+Cannot read properties of undefined (reading 'Fs')
+```
+
+### proj is not modified
+
+`test/contract/src_engine_project_js.test.mjs:303:1`
+
+```
+Cannot set properties of undefined (setting '__custom__')
+```
+
+### hydrated params do not alias DEFAULT_PARAMS
+
+`test/contract/src_engine_project_js.test.mjs:323:1`
+
+```
+Cannot set properties of undefined (setting 'Fs')
+```
 
 ## `parseJsdoc` — 2 failing
 
@@ -34,10 +82,29 @@ Contract clauses:
 
 - `@pure`
 
-- **params carry type, name, optionality and default**
-  - `error: |- | code: 'ERR_ASSERTION' | expected: true | actual: false | operator: '=='`
-- **returns and throws are parsed**
-  - `error: |- | code: 'ERR_ASSERTION' | expected: true | actual: false | operator: '=='`
+### params carry type, name, optionality and default
+
+`test/contract/scripts_contracts-lib_mjs.test.mjs:241:1`
+
+```
+The expression evaluated to a falsy value:
+
+assert.ok(String(d.params[0].description).includes('The first.'))
+expected: true
+actual:   false
+```
+
+### returns and throws are parsed
+
+`test/contract/scripts_contracts-lib_mjs.test.mjs:259:1`
+
+```
+The expression evaluated to a falsy value:
+
+assert.ok(String(d.returns.description).includes('Whether it worked.'))
+expected: true
+actual:   false
+```
 
 ## `round5` — 2 failing
 
@@ -47,19 +114,61 @@ Contract clauses:
 
 - `@pure`
 
-- **rounds down to a multiple of 5 when up is false**
-  - `error: |- | code: 'ERR_ASSERTION' | expected: 0 | actual: -0 | operator: 'strictEqual'`
-- **rounds up to a multiple of 5 when up is true**
-  - `error: |- | code: 'ERR_ASSERTION' | expected: 0 | actual: -0 | operator: 'strictEqual'`
+### rounds down to a multiple of 5 when up is false
+
+`test/contract/src_components_OutputPanel_jsx.test.mjs:95:1`
+
+```
+-40 should be a multiple of 5
++ actual - expected
+
++ -0
+- 0
+```
+
+### rounds up to a multiple of 5 when up is true
+
+`test/contract/src_components_OutputPanel_jsx.test.mjs:118:1`
+
+```
+-35 should be a multiple of 5
++ actual - expected
+
++ -0
+- 0
+```
 
 ## `CORE_FIELDS` — 2 failing
 
-_No contract found under this name — the test may be misnamed._
+Declared in: `src/data/driver-fields.js`
 
-- **exactly eight entries are marked solver: true**
-  - `error: |- | code: 'ERR_ASSERTION' | expected: 8 | actual: 9 | operator: 'strictEqual'`
-- **the solver-marked eight are exactly the fields driverSI reads**
-  - `error: |- | code: 'ERR_ASSERTION' | expected: | actual: | operator: 'deepStrictEqual'`
+### exactly eight entries are marked solver: true
+
+`test/contract/src_data_driver-fields_js.test.mjs:73:1`
+
+```
+Expected values to be strictly equal:
+
+9 !== 8
+expected: 8
+actual:   9
+```
+
+### the solver-marked eight are exactly the fields driverSI reads
+
+`test/contract/src_data_driver-fields_js.test.mjs:88:1`
+
+```
+Expected values to be strictly deep-equal:
++ actual - expected
+... Skipped lines
+
+[
+'Bl',
+'Cms',
+'Fs',
+'Le',
+```
 
 ## `runSimulation` — 2 failing
 
@@ -72,10 +181,63 @@ Contract clauses:
 - `@mutates Stashes solver scratch state on the caller's node objects (`node._Zl`) and on returned impedances (`Z._radS`). Harmless to the graph's meaning, but the input array is not left untouched.`
 - `@sideEffect Reads `performance.now()` twice to report `elapsedMs`, so the result is not bit-identical across runs.`
 
-- **voltage defaults to 2.83**
-  - `error: |- | code: 'ERR_ASSERTION' | expected: | actual: | operator: 'notDeepStrictEqual'`
-- **rg defaults to 0**
-  - `error: |- | code: 'ERR_ASSERTION' | expected: | actual: | operator: 'notDeepStrictEqual'`
+### voltage defaults to 2.83
+
+`test/contract/src_engine_solver_js.test.mjs:388:1`
+
+```
+Expected "actual" not to be strictly deep-equal to:
+
+[
+-146.02059991327963,
+-146.02059991327963,
+-146.02059991327963,
+-146.02059991327963,
+-146.02059991327963,
+-146.02059991327963,
+-146.02059991327963,
+-146.02059991327963,
+-146.02059991327963,
+-146.02059991327963,
+-146.02059991327963,
+-146.02059991327963,
+-146.02059991327963,
+-146.02059991327963,
+-146.02059991327963,
+-146.02059991327963
+]
+expected: 
+actual:   
+```
+
+### rg defaults to 0
+
+`test/contract/src_engine_solver_js.test.mjs:403:1`
+
+```
+Expected "actual" not to be strictly deep-equal to:
+
+[
+-146.02059991327963,
+-146.02059991327963,
+-146.02059991327963,
+-146.02059991327963,
+-146.02059991327963,
+-146.02059991327963,
+-146.02059991327963,
+-146.02059991327963,
+-146.02059991327963,
+-146.02059991327963,
+-146.02059991327963,
+-146.02059991327963,
+-146.02059991327963,
+-146.02059991327963,
+-146.02059991327963,
+-146.02059991327963
+]
+expected: 
+actual:   
+```
 
 ## `portLengthGuess` — 1 failing
 
@@ -85,8 +247,17 @@ Contract clauses:
 
 - `@pure`
 
-- **never below 1 cm, and 1 signals an unreachable tuning**
-  - `error: |- | code: 'ERR_ASSERTION' | expected: 1 | actual: 9330.204767611753 | operator: 'strictEqual'`
+### never below 1 cm, and 1 signals an unreachable tuning
+
+`test/contract/mcp_builders_js.test.mjs:501:1`
+
+```
+Expected values to be strictly equal:
++ actual - expected
+
++ 9330.204767611753
+- 1
+```
 
 ## `stripDash` — 1 failing
 
@@ -96,15 +267,33 @@ Contract clauses:
 
 - `@pure`
 
-- **the optional dash separator is removed**
-  - `error: |- | code: 'ERR_ASSERTION' | expected: 'The description.' | actual: '- The description.' | operator: 'strictEqual'`
+### the optional dash separator is removed
+
+`test/contract/scripts_contracts-lib_mjs.test.mjs:530:1`
+
+```
+Expected values to be strictly equal:
++ actual - expected
+
++ '- The description.'
+- 'The description.'
+```
 
 ## `EXT_GROUPS` — 1 failing
 
-_No contract found under this name — the test may be misnamed._
+Declared in: `src/data/driver-fields.js`
 
-- **an array of 1 display group name**
-  - `error: |- | code: 'ERR_ASSERTION' | expected: 1 | actual: 5 | operator: 'strictEqual'`
+### an array of 1 display group name
+
+`test/contract/src_data_driver-fields_js.test.mjs:123:1`
+
+```
+Expected values to be strictly equal:
+
+5 !== 1
+expected: 1
+actual:   5
+```
 
 ## `chamberMatrix` — 1 failing
 
@@ -116,8 +305,13 @@ Contract clauses:
 - `@post chamber is not modified`
 - `@pure`
 
-- **the stuffing model saturates at 8 g/L**
-  - `error: 'stuffing=8.1 must saturate at the 8 g/L value: [0][0].re: expected 0.655020468761945, got 0.6551495663863427 (tol 1e-12)' | code: 'ERR_ASSERTION' | expected: true | actual: false | operator: '=='`
+### the stuffing model saturates at 8 g/L
+
+`test/contract/src_engine_acoustics_js.test.mjs:767:1`
+
+```
+stuffing=8.1 must saturate at the 8 g/L value: [0][0].re: expected 0.655020468761945, got 0.6551495663863427 (tol 1e-12)
+```
 
 ## `computeMetrics` — 1 failing
 
@@ -128,15 +322,29 @@ Contract clauses:
 - `@post res and settings are not modified`
 - `@pure`
 
-- **fb appears only with two impedance peaks, fc only with one**
-  - `error: |- | code: 'ERR_ASSERTION' | expected: false | actual: true | operator: 'strictEqual'`
+### fb appears only with two impedance peaks, fc only with one
+
+`test/contract/src_engine_metrics_js.test.mjs:148:1`
+
+```
+Expected values to be strictly equal:
+
+true !== false
+expected: false
+actual:   true
+```
 
 ## `DEFAULT_SETTINGS` — 1 failing
 
-_No contract found under this name — the test may be misnamed._
+Declared in: `src/engine/project.js`
 
-- **power, voltage and impedance satisfy P = V²/Z**
-  - `error: 'expected P = V²/Z: P=2, V=2.83, Z=4' | code: 'ERR_ASSERTION' | expected: true | actual: false | operator: '=='`
+### power, voltage and impedance satisfy P = V²/Z
+
+`test/contract/src_engine_project_js.test.mjs:74:1`
+
+```
+expected P = V²/Z: P=2, V=2.83, Z=4
+```
 
 ## `dockToEdge` — 1 failing
 
@@ -146,8 +354,17 @@ Contract clauses:
 
 - `@sideEffect Consumes ids from `uid`.`
 
-- **joining an existing root split uses a quarter of the average weight**
-  - `error: |- | code: 'ERR_ASSERTION' | expected: 0.25 | actual: 0.5 | operator: 'strictEqual'`
+### joining an existing root split uses a quarter of the average weight
+
+`test/contract/src_layout_js.test.mjs:525:1`
+
+```
+Expected values to be strictly equal:
+
+0.5 !== 0.25
+expected: 0.25
+actual:   0.5
+```
 
 ## `setToolbar` — 1 failing
 
@@ -157,8 +374,34 @@ Contract clauses:
 
 - `@sideEffect Writes store state and LocalStorage. A quota failure is swallowed.`
 
-- **an arrangement of unknown ids falls back to the default**
-  - `error: |- | code: 'ERR_ASSERTION' | expected: | actual: | operator: 'deepStrictEqual'`
+### an arrangement of unknown ids falls back to the default
+
+`test/contract/src_store_js.test.mjs:840:1`
+
+```
+Expected values to be strictly deep-equal:
++ actual - expected
+
++ []
+- [
+-   'project',
+-   'undo',
+-   'voltage',
+-   'snapshot',
+-   'm_f3',
+-   'm_f10',
+-   'm_fb',
+-   'm_qtc',
+-   'm_zpeaks',
+-   'm_peakspl',
+-   'm_xfb',
+-   'm_xf3',
+-   'm_bw',
+-   'm_maxpower',
+-   'm_volume',
+-   'm_solve'
+- ]
+```
 
 ## `pushHistory` — 1 failing
 
@@ -168,8 +411,17 @@ Contract clauses:
 
 - `@sideEffect Writes store state. The history is capped at 80 entries, oldest discarded.`
 
-- **the history is capped at 80 entries**
-  - `error: |- | code: 'ERR_ASSERTION' | expected: 80 | actual: 81 | operator: 'strictEqual'`
+### the history is capped at 80 entries
+
+`test/contract/src_store_js.test.mjs:982:1`
+
+```
+the history is capped at 80 entries
+
+81 !== 80
+expected: 80
+actual:   81
+```
 
 ## `updateParams` — 1 failing
 
@@ -179,8 +431,19 @@ Contract clauses:
 
 - `@sideEffect Writes store state and schedules a resimulation.`
 
-- **an unknown id is a no-op**
-  - `error: |- | code: 'ERR_ASSERTION' | expected: | actual: | operator: 'deepStrictEqual'`
+### an unknown id is a no-op
+
+`test/contract/src_store_js.test.mjs:1162:1`
+
+```
+no observable state may be written for an unknown id
++ actual - expected
+
++ [
++   'nodes'
++ ]
+- []
+```
 
 ## `pasteClipboard` — 1 failing
 
@@ -190,6 +453,21 @@ Contract clauses:
 
 - `@sideEffect Records history, writes store state and schedules a resimulation. Does nothing when the clipboard is empty.`
 
-- **does nothing when the clipboard is empty**
-  - `error: |- | code: 'ERR_ASSERTION' | expected: | actual: | operator: 'deepStrictEqual'`
+### does nothing when the clipboard is empty
+
+`test/contract/src_store_js.test.mjs:1381:1`
+
+```
+Expected values to be strictly deep-equal:
++ actual - expected
+
++ [
++   'nodes',
++   'edges',
++   'selectedNodeId',
++   'history',
++   'future'
++ ]
+- []
+```
 

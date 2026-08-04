@@ -28,10 +28,17 @@ const api = JSON.parse(readFileSync(join(REPO, 'docs/api.json'), 'utf8'))
  */
 function indexContracts() {
   const idx = new Map()
+  const add = (name, entry) => {
+    if (!idx.has(name)) idx.set(name, [])
+    idx.get(name).push(entry)
+  }
   for (const mod of api.modules) {
-    for (const m of mod.methods) {
-      if (!idx.has(m.name)) idx.set(m.name, [])
-      idx.get(m.name).push({ file: mod.file, method: m })
+    for (const m of mod.methods) add(m.name, { file: mod.file, method: m })
+    // Exported constants are contracts too — the suite asserts their key sets
+    // and counts, and a failure there should name the module it came from
+    // rather than reporting the declaration as unknown.
+    for (const c of mod.constants || []) {
+      add(c.name, { file: mod.file, method: { contract: null, constant: c } })
     }
   }
   return idx
@@ -54,33 +61,61 @@ function runSuite() {
 }
 
 /**
- * Extract failing tests from TAP output.
+ * Extract failing tests from TAP output, with their full diagnostic block.
+ *
+ * Node emits each failure as a YAML block whose `error` may be a multi-line
+ * literal (`error: |-`) holding an assertion diff. Reading only the first line
+ * loses exactly the part that says what went wrong, so the block is parsed
+ * properly rather than scanned for keys.
  *
  * Test names follow the suite's convention `<method>: <clause>`, which is what
  * lets a failure be traced back to the contract it contradicts.
  *
  * @param {string} out - Raw runner output.
- * @returns {Array<{name: string, method: string, clause: string, detail: string}>} One entry per failure.
+ * @returns {Array<{name: string, method: string, clause: string, message: string, expected: string|null, actual: string|null, location: string|null}>} One entry per failure.
  * @pure
  */
 function parseFailures(out) {
   const fails = []
   const lines = out.split('\n')
+
   for (let i = 0; i < lines.length; i++) {
-    const m = lines[i].match(/^not ok \d+ - (.+)$/)
-    if (!m) continue
-    const name = m[1].trim()
-    const detail = []
-    for (let j = i + 1; j < lines.length && !/^(not )?ok \d+ /.test(lines[j]); j++) {
-      const t = lines[j].trim()
-      if (/^(expected|actual|operator|code|error):/.test(t)) detail.push(t)
+    const hit = lines[i].match(/^\s*not ok \d+ - (.+)$/)
+    if (!hit) continue
+    const name = hit[1].trim()
+
+    // The YAML block runs from the `---` on the next line to the closing `...`.
+    let j = i + 1
+    while (j < lines.length && !/^\s*---\s*$/.test(lines[j])) j++
+    const body = []
+    for (j += 1; j < lines.length && !/^\s*\.\.\.\s*$/.test(lines[j]); j++) body.push(lines[j])
+
+    const field = (key) => {
+      const at = body.findIndex((l) => new RegExp(`^\\s*${key}:`).test(l))
+      if (at < 0) return null
+      const inline = body[at].slice(body[at].indexOf(':') + 1).trim()
+      if (inline !== '|-' && inline !== '|') return inline.replace(/^['"]|['"]$/g, '')
+      // Literal block: everything indented further than the key itself.
+      const indent = body[at].search(/\S/)
+      const collected = []
+      for (let k = at + 1; k < body.length; k++) {
+        if (body[k].trim() && body[k].search(/\S/) <= indent) break
+        collected.push(body[k].trim())
+      }
+      return collected.join('\n').trim()
     }
+
     const [method, ...rest] = name.split(':')
+    const loc = field('location')
     fails.push({
       name,
       method: method.trim(),
       clause: rest.join(':').trim() || '(unnamed clause)',
-      detail: detail.join(' | ').slice(0, 400),
+      message: (field('error') || '').slice(0, 600),
+      expected: field('expected'),
+      actual: field('actual'),
+      // Strip the repo prefix so the path is clickable from the repo root.
+      location: loc ? loc.replace(REPO, '').replace(/^\/+/, '') : null,
     })
   }
   return fails
@@ -108,6 +143,15 @@ if (!fails.length) {
     byMethod.get(f.method).push(f)
   }
   R.push(`${fails.length} failing assertion(s) across ${byMethod.size} method(s).`, '')
+
+  // An index first, so the shape of the run is visible before the detail.
+  R.push('## Index', '')
+  R.push('| Method | Failing | Declared in |', '|---|---|---|')
+  for (const [method, list] of [...byMethod].sort((a, b) => b[1].length - a[1].length)) {
+    const where = (idx.get(method) || []).map((h) => `\`${h.file}\``).join(', ') || '_unknown_'
+    R.push(`| [\`${method}\`](#${method.toLowerCase()}--${list.length}-failing) | ${list.length} | ${where} |`)
+  }
+  R.push('')
   for (const [method, list] of [...byMethod].sort((a, b) => b[1].length - a[1].length)) {
     const hits = idx.get(method) || []
     R.push(`## \`${method}\` — ${list.length} failing`)
@@ -116,7 +160,7 @@ if (!fails.length) {
       R.push(`Declared in: ${hits.map((h) => `\`${h.file}\``).join(', ')}`)
       R.push('')
       const c = hits[0].method.contract
-      const clauses = [
+      const clauses = !c ? [] : [
         ...c.pre.map((x) => `@pre ${x}`),
         ...c.post.map((x) => `@post ${x}`),
         ...c.mutates.map((x) => `@mutates ${x}`),
@@ -134,10 +178,21 @@ if (!fails.length) {
       R.push('_No contract found under this name — the test may be misnamed._', '')
     }
     for (const f of list) {
-      R.push(`- **${f.clause}**`)
-      if (f.detail) R.push(`  - \`${f.detail}\``)
+      R.push(`### ${f.clause}`)
+      R.push('')
+      if (f.location) R.push(`\`${f.location}\``)
+      R.push('')
+      if (f.message) {
+        R.push('```')
+        R.push(f.message)
+        if (f.expected != null && !f.message.includes('expected')) {
+          R.push(`expected: ${f.expected}`)
+          R.push(`actual:   ${f.actual}`)
+        }
+        R.push('```')
+        R.push('')
+      }
     }
-    R.push('')
   }
 }
 
