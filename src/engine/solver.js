@@ -1,6 +1,20 @@
 // Graph → transfer-matrix chain solver.
 // Convention: ABCD matrices map [p_in; U_in] = M · [p_out; U_out] with
 // p = acoustic pressure (Pa), U = volume velocity (m^3/s).
+//
+// A node is `{ id, type, data: { params } }` and an edge is
+// `{ source, sourceHandle, target, targetHandle }`. Each node type exposes a
+// fixed set of named handles, and an edge must name one at each end:
+//
+//   driver      front (out), rear (out)  — both may fan out
+//   chamber     in (in), out (out)
+//   waveguide   throat (in), mouth (out)
+//   pr          in (in)
+//   radiation   in (in)
+//
+// Ports are directional: an output handle connects to an input handle. An
+// unconnected output is not an error — an open waveguide mouth radiates, and a
+// chamber with nothing on its outlet is sealed.
 import {
   C, ZERO, add, sub, mul, div, inv, abs, arg, jw, jwPow, parallel,
   zInFromMatrix, propagate,

@@ -69,6 +69,10 @@ stiffness.
 
 Format an axis value at a readable precision for its magnitude.
 
+Three bands, so a value keeps roughly three significant figures without an
+axis label ever running long: at or above 100 no decimals, at or above 10 one
+decimal, and below that three significant figures.
+
 **Parameters**
 
 - `v` — `number` — The value.

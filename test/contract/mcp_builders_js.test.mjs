@@ -503,9 +503,17 @@ test('portLengthGuess: never below 1 cm, and 1 signals an unreachable tuning', (
   assert.equal(typeof normal, 'number')
   assert.ok(Number.isFinite(normal))
   assert.ok(normal >= 1)
-  // A huge port on a tiny box: the end correction alone dominates.
-  const floored = portLengthGuess(80, 1, 2000)
-  assert.equal(floored, 1)
+  // A huge port on a tiny box: the end correction alone dominates, so the
+  // geometry cannot reach the tuning and the floor is reported.
+  assert.equal(portLengthGuess(80, 1, 2000), 1)
+  // Every input, however extreme, stays at or above the floor.
+  for (const [fb, v, a] of [
+    [200, 0.5, 5000],
+    [10, 500, 1],
+    [1, 1, 1],
+  ]) {
+    assert.ok(portLengthGuess(fb, v, a) >= 1, `floor breached for (${fb}, ${v}, ${a})`)
+  }
 })
 
 // CONTRACT: @pure
@@ -738,12 +746,11 @@ test('calibratePort: a null-returning simulation ends the search', () => {
 // optimizeProject
 // ===========================================================================
 
-// CONTRACT: "`{best: object, bestScore: number, evals: number, values:
-// number[]}` — The best project found, its score, how many evaluations it took,
-// and the winning value of each parameter in the order given." /
-// "cost is `rounds × params × gridN` evaluations" with defaults rounds 3,
+// CONTRACT: "how many evaluations it took — `1 + rounds × params × gridN`" /
+// "cost is one baseline evaluation of the starting design plus
+// `rounds × params × gridN` for the search itself" with defaults rounds 3,
 // gridN 9.
-test('optimizeProject: returns the documented shape and stays inside the evaluation budget', () => {
+test('optimizeProject: returns the documented shape and the documented evaluation count', () => {
   assert.ok(LEN_KEY)
   const built = buildPortedBox({ driver: SPEC_DRIVER, volume: 60, port_length: 30 })
   const portId = built.ports[0]
@@ -760,8 +767,8 @@ test('optimizeProject: returns the documented shape and stays inside the evaluat
   assert.ok(Array.isArray(out.values))
   assert.equal(out.values.length, 1)
   assert.equal(typeof out.values[0], 'number')
-  // rounds(3) × params(1) × gridN(9) = 27
-  assert.ok(out.evals <= 27, `evals=${out.evals} exceeds the documented 3 × 1 × 9 budget`)
+  // 1 baseline + rounds(3) × params(1) × gridN(9) = 28
+  assert.equal(out.evals, 1 + 3 * 1 * 9, 'evals must be 1 + rounds × params × gridN')
   // "Starting project. Not modified."
   assert.deepEqual(built.project, before)
   // The winning value must be the one in the winning project.
@@ -785,8 +792,11 @@ test('optimizeProject: rounds and gridN control the evaluation budget', () => {
     optimizeProject(built.project, params, score, {}).evals,
     optimizeProject(built.project, params, score).evals,
   )
+  assert.equal(optimizeProject(built.project, params, score).evals, 1 + 3 * 1 * 9)
   const small = optimizeProject(built.project, params, score, { rounds: 1, gridN: 5 })
-  assert.ok(small.evals <= 5, `evals=${small.evals} exceeds 1 × 1 × 5`)
+  assert.equal(small.evals, 1 + 1 * 1 * 5, 'evals must track rounds and gridN')
+  const big = optimizeProject(built.project, params, score, { rounds: 2, gridN: 11 })
+  assert.equal(big.evals, 1 + 2 * 1 * 11)
 })
 
 // CONTRACT: "A parameter whose starting value is outside its own bounds is
@@ -824,9 +834,10 @@ test('optimizeProject: omitting node targets a sweep setting', () => {
   assert.ok(Math.abs(out.values[0] - 60) <= 5, `values[0]=${out.values[0]}`)
 })
 
-// CONTRACT: "cost is `rounds × params × gridN` evaluations rather than
-// `gridN ^ params`" — with two free parameters.
-test('optimizeProject: two free parameters cost rounds × params × gridN', () => {
+// CONTRACT: "cost is one baseline evaluation of the starting design plus
+// `rounds × params × gridN` for the search itself, rather than `gridN ^
+// params`" — with two free parameters.
+test('optimizeProject: two free parameters cost 1 + rounds × params × gridN', () => {
   assert.ok(LEN_KEY)
   const built = buildPortedBox({ driver: SPEC_DRIVER, volume: 60, port_count: 2, port_length: 30 })
   const [p0, p1] = built.ports
@@ -841,7 +852,7 @@ test('optimizeProject: two free parameters cost rounds × params × gridN', () =
     score,
   )
   assert.equal(out.values.length, 2)
-  assert.ok(out.evals <= 54, `evals=${out.evals} exceeds 3 × 2 × 9`)
+  assert.equal(out.evals, 1 + 3 * 2 * 9, 'evals must be 1 + rounds × params × gridN')
 })
 
 // ===========================================================================

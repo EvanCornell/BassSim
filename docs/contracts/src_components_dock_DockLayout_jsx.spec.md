@@ -58,13 +58,13 @@ panel's own drop handler has already read the flag before it is cleared.
 
 Whether a drag event is a panel tab drag.
 
-The payload decides what a drag means, never the store flag alone: a
-palette element carries its own type and must reach the canvas untouched,
-even if a previous tab drag left `draggingPanel` set.
+The payload decides what a drag means, never the store flag alone: a palette
+element carries `application/acousim-node` and must reach the canvas
+untouched, even if a previous tab drag left `draggingPanel` set.
 
 **Parameters**
 
-- `e` — `React.DragEvent` — The drag event.
+- `e` — `React.DragEvent` — The drag event. A panel tab drag is identified by `application/acousim-panel` appearing in `dataTransfer.types`.
 
 **Returns**
 

@@ -171,12 +171,12 @@ as the current result.
 
 **Parameters**
 
-- `snapshots` — `Array<object>` — Stored snapshots.
+- `snapshots` — `Array<object>` — Stored snapshots, each carrying `label` and `color`.
 - `key` — `string` — Quantity key to overlay.
 
 **Returns**
 
-- `Array<object>` — Line descriptors for `BaseChart`.
+- `Array<object>` — One descriptor per snapshot, in the order given, each `{dataKey, name, color, width, dash}` — `dataKey` is `snap<index>_<key>`, `name` prefixes the snapshot's label with ⧉, and `width`/`dash` are the thinner dashed styling that keeps an overlay from reading as the live trace.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 

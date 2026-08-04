@@ -508,11 +508,22 @@ export function scanFile(relPath) {
   const shapeOf = (node) => {
     if (!node) return null
     if (node.type === 'ObjectExpression') {
-      const keys = node.properties
+      const props = node.properties
         .filter((pr) => (pr.type === 'ObjectProperty' || pr.type === 'ObjectMethod') && !pr.computed)
-        .map((pr) => pr.key?.name ?? pr.key?.value)
-        .filter((k) => k != null)
-      return { kind: 'object', keys }
+      const keys = props.map((pr) => pr.key?.name ?? pr.key?.value).filter((k) => k != null)
+      // One level of nesting, because for a registry keyed by kind — node types
+      // to their parameters, panels to their metadata — the inner names are the
+      // vocabulary, and the outer ones alone say almost nothing.
+      const nested = {}
+      for (const pr of props) {
+        if (pr.value?.type !== 'ObjectExpression') continue
+        const inner = pr.value.properties
+          .filter((q) => (q.type === 'ObjectProperty' || q.type === 'ObjectMethod') && !q.computed)
+          .map((q) => q.key?.name ?? q.key?.value)
+          .filter((k) => k != null)
+        if (inner.length) nested[pr.key?.name ?? pr.key?.value] = inner
+      }
+      return Object.keys(nested).length ? { kind: 'object', keys, nested } : { kind: 'object', keys }
     }
     if (node.type === 'ArrayExpression') {
       const lit = node.elements.filter((e) => e && (e.type === 'StringLiteral' || e.type === 'NumericLiteral'))

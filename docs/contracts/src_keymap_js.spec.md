@@ -37,6 +37,28 @@ modifier when matching, so a single default set fits both platforms.
 
 Keys: `edit.undo`, `edit.redo`, `edit.cut`, `edit.copy`, `edit.paste`, `edit.duplicate`, `edit.selectAll`, `edit.delete`, `drive.up`, `drive.down`, `drive.upFine`, `drive.downFine`, `project.new`, `project.save`, `project.open`, `sim.snapshot`, `sim.mask`, `sim.recompute`, `view.settings`, `view.maximize`, `view.popout`
 
+- `edit.undo` holds: `label`, `group`, `scope`, `run`
+- `edit.redo` holds: `label`, `group`, `scope`, `run`
+- `edit.cut` holds: `label`, `group`, `scope`, `run`
+- `edit.copy` holds: `label`, `group`, `scope`, `run`
+- `edit.paste` holds: `label`, `group`, `scope`, `run`
+- `edit.duplicate` holds: `label`, `group`, `scope`, `run`
+- `edit.selectAll` holds: `label`, `group`, `scope`, `run`
+- `edit.delete` holds: `label`, `group`, `scope`, `run`
+- `drive.up` holds: `label`, `group`, `scope`, `run`
+- `drive.down` holds: `label`, `group`, `scope`, `run`
+- `drive.upFine` holds: `label`, `group`, `scope`, `run`
+- `drive.downFine` holds: `label`, `group`, `scope`, `run`
+- `project.new` holds: `label`, `group`, `scope`, `run`
+- `project.save` holds: `label`, `group`, `scope`, `run`
+- `project.open` holds: `label`, `group`, `scope`, `run`
+- `sim.snapshot` holds: `label`, `group`, `scope`, `run`
+- `sim.mask` holds: `label`, `group`, `scope`, `run`
+- `sim.recompute` holds: `label`, `group`, `scope`, `run`
+- `view.settings` holds: `label`, `group`, `scope`, `run`
+- `view.maximize` holds: `label`, `group`, `scope`, `run`
+- `view.popout` holds: `label`, `group`, `scope`, `run`
+
 ### `COMMAND_IDS`
 
 Every command id, in declaration order. The iteration order for lookups and the rebinding UI.

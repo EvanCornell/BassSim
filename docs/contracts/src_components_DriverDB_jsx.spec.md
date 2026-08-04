@@ -55,7 +55,7 @@ Load the user's saved custom drivers.
 
 **Side effects**
 
-- Reads LocalStorage.
+- Reads LocalStorage key `acousim:customDrivers`. Anything that is not parseable JSON, and anything that parses to a falsy value, yields an empty list rather than throwing.
 
 ## UNREACHABLE (5)
 

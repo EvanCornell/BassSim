@@ -59,7 +59,7 @@ resistance.
 
 **Returns**
 
-- `object` — The complete T/S set in display units.
+- `{Fs: number, Vas: number, Qes: number, Qms: number, Qts: number, Re: number, Sd: number, Cms: number, Mms: number, Bl: number, Rms: number}` — The complete T/S set in display units — the six inputs echoed back plus Cms mm/N, Mms g, Bl T·m and Rms N·s/m.
 
 **Preconditions (caller must guarantee)**
 
@@ -110,7 +110,8 @@ are still recoverable, and the motor figures are simply left undefined.
 Derive the T/S set from the resonance shift in a box of known volume.
 
 Sealing the driver in a known volume raises its resonance, and the size of
-that rise gives Vas — after which this is the datasheet method.
+that rise gives Vas as `Vb·((Fc/Fs)² − 1)` — after which this delegates to
+`solveDatasheet`, so equivalent inputs give identical results.
 
 **Parameters**
 
@@ -125,7 +126,7 @@ that rise gives Vas — after which this is the datasheet method.
 
 **Returns**
 
-- `object` — The complete T/S set in display units.
+- `{Fs: number, Vas: number, Qes: number, Qms: number, Qts: number, Re: number, Sd: number, Cms: number, Mms: number, Bl: number, Rms: number}` — The complete T/S set in display units, identical to what `solveDatasheet` returns for the derived Vas.
 
 **Throws**
 

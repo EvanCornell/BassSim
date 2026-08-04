@@ -181,6 +181,10 @@ function renderModule(mod) {
       if (sh?.kind === 'object' && sh.keys?.length) {
         L.push(`Keys: ${sh.keys.map((k) => `\`${k}\``).join(', ')}`)
         L.push('')
+        for (const [outer, inner] of Object.entries(sh.nested || {})) {
+          L.push(`- \`${outer}\` holds: ${inner.map((k) => `\`${k}\``).join(', ')}`)
+        }
+        if (sh.nested) L.push('')
       } else if ((sh?.kind === 'array' || sh?.kind === 'set') && sh.values?.length) {
         L.push(`Values: ${sh.values.map((v) => `\`${v}\``).join(', ')}`)
         L.push('')

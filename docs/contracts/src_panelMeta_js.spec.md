@@ -32,6 +32,20 @@ from referencing a panel that no longer exists.
 
 Keys: `palette`, `canvas`, `params`, `nllab`, `spl`, `zin`, `exc`, `vel`, `int`, `pow`, `eff`, `pe`, `ph`
 
+- `palette` holds: `title`, `group`, `closable`, `dock`
+- `canvas` holds: `title`, `group`, `closable`, `dock`
+- `params` holds: `title`, `group`, `closable`, `dock`
+- `nllab` holds: `title`, `group`, `closable`, `dock`, `requires`
+- `spl` holds: `title`, `group`
+- `zin` holds: `title`, `group`
+- `exc` holds: `title`, `group`
+- `vel` holds: `title`, `group`
+- `int` holds: `title`, `group`
+- `pow` holds: `title`, `group`
+- `eff` holds: `title`, `group`
+- `pe` holds: `title`, `group`
+- `ph` holds: `title`, `group`
+
 ### `PANEL_IDS`
 
 Every known panel id. The allow-list `layout.sanitize` filters a saved layout against.

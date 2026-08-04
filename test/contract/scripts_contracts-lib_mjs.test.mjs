@@ -5,6 +5,11 @@ import fs from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { parse } from '@babel/parser'
 import {
+  REPO,
+  ROOTS,
+  IGNORE_FILES,
+  IGNORE_DIRS_REL,
+  TAGS,
   normalizeTag,
   sourceFiles,
   parseJsdoc,

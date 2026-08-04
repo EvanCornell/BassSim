@@ -20,6 +20,15 @@ const { sig, labelOf, resolveNode, run, downsample, metricsSummary, summarize, j
 //   createServer > bandIndices
 //   createServer > makeScore
 
+// CONTRACT: "### `__internals` — Keys: `sig`, `labelOf`, `resolveNode`, `run`,
+// `downsample`, `metricsSummary`, `summarize`, `jsonResult`, `errResult`"
+test('__internals: publishes exactly the documented internal helpers', () => {
+  assert.deepEqual(
+    Object.keys(__internals).sort(),
+    ['downsample', 'errResult', 'jsonResult', 'labelOf', 'metricsSummary', 'resolveNode', 'run', 'sig', 'summarize'],
+  )
+})
+
 // ===========================================================================
 // sig
 // ===========================================================================
@@ -63,26 +72,25 @@ test('sig: @pure — equal inputs give equal output', () => {
 // labelOf
 // ===========================================================================
 
-// AMBIGUITY: the spec says "Hydrated graph nodes" but does not say where a
-// node's label lives. `driverParams` documents `label` as a *node param*
-// ("Params ready for a driver node"), so that is the reading used here.
+// CONTRACT: "`nodes` — Hydrated graph nodes, each shaped `{id, type, data:
+// {params}}` — the label lives at `node.data.params.label`."
 
 // CONTRACT: "Describe a node as `label (id)`, or just its id when it has no
 // label." / "an agent reads \"Port (waveguide_3)\""
 test('labelOf: formats a labelled node as "label (id)"', () => {
-  const nodes = [{ id: 'waveguide_3', type: 'waveguide', params: { label: 'Port' } }]
+  const nodes = [{ id: 'waveguide_3', type: 'waveguide', data: { params: { label: 'Port' } } }]
   assert.equal(labelOf(nodes, 'waveguide_3'), 'Port (waveguide_3)')
 })
 
 // CONTRACT: "or just its id when it has no label"
 test('labelOf: an unlabelled node is described by its id alone', () => {
-  const nodes = [{ id: 'waveguide_3', type: 'waveguide', params: {} }]
+  const nodes = [{ id: 'waveguide_3', type: 'waveguide', data: { params: {} } }]
   assert.equal(labelOf(nodes, 'waveguide_3'), 'waveguide_3')
 })
 
 // CONTRACT: @pure
 test('labelOf: @pure — arguments unmodified, equal results', () => {
-  const nodes = [{ id: 'a', type: 'chamber', params: { label: 'Box' } }]
+  const nodes = [{ id: 'a', type: 'chamber', data: { params: { label: 'Box' } } }]
   const snapshot = structuredClone(nodes)
   assert.equal(labelOf(structuredClone(nodes), 'a'), labelOf(structuredClone(nodes), 'a'))
   assert.deepEqual(nodes, snapshot)
@@ -92,10 +100,12 @@ test('labelOf: @pure — arguments unmodified, equal results', () => {
 // resolveNode
 // ===========================================================================
 
+// CONTRACT: "`nodes` — Hydrated graph nodes, each shaped `{id, type, data:
+// {params}}` — labels are matched against `node.data.params.label`."
 const NODES = [
-  { id: 'waveguide_3', type: 'waveguide', params: { label: 'Port' } },
-  { id: 'chamber_1', type: 'chamber', params: { label: 'Rear Chamber' } },
-  { id: 'driver_2', type: 'driver', params: { label: 'Woofer' } },
+  { id: 'waveguide_3', type: 'waveguide', data: { params: { label: 'Port' } } },
+  { id: 'chamber_1', type: 'chamber', data: { params: { label: 'Rear Chamber' } } },
+  { id: 'driver_2', type: 'driver', data: { params: { label: 'Woofer' } } },
 ]
 
 // CONTRACT: "Resolve a node reference, which may be an id or a label. ... Ids
@@ -111,8 +121,8 @@ test('resolveNode: resolves by id and by label, case-insensitively', () => {
 // CONTRACT: "Ids are matched first, then labels case-insensitively."
 test('resolveNode: an id match wins over a label match', () => {
   const nodes = [
-    { id: 'Port', type: 'chamber', params: { label: 'Something Else' } },
-    { id: 'waveguide_3', type: 'waveguide', params: { label: 'Port' } },
+    { id: 'Port', type: 'chamber', data: { params: { label: 'Something Else' } } },
+    { id: 'waveguide_3', type: 'waveguide', data: { params: { label: 'Port' } } },
   ]
   assert.equal(resolveNode(nodes, 'Port').id, 'Port')
 })
@@ -285,9 +295,9 @@ test('metricsSummary: null metrics summarize to null', () => {
   assert.equal(metricsSummary(null), null)
 })
 
-// CONTRACT: "Reduce computed metrics to a labelled, unit-carrying object for
-// JSON output." / "A flat object of formatted metrics"
-test('metricsSummary: real metrics reduce to a flat, unit-carrying object', () => {
+// CONTRACT: "Formatted metrics keyed by name ... Values are strings or numbers
+// except `impedance_peaks`, which is an array of one formatted string per peak."
+test('metricsSummary: values are strings or numbers, except impedance_peaks', () => {
   const c = ctx()
   assert.notEqual(c.metrics, null, 'the sealed-box reference project must simulate')
   const s = metricsSummary(c.metrics)
@@ -295,8 +305,15 @@ test('metricsSummary: real metrics reduce to a flat, unit-carrying object', () =
   assert.notEqual(s, null)
   assert.ok(Object.keys(s).length > 0)
   for (const [k, v] of Object.entries(s)) {
-    // flat: no nesting
-    assert.ok(typeof v !== 'object' || v === null, `${k} is nested`)
+    if (k === 'impedance_peaks') {
+      assert.ok(Array.isArray(v), 'impedance_peaks must be an array')
+      for (const peak of v) assert.equal(typeof peak, 'string', 'each peak is a formatted string')
+    } else {
+      assert.ok(
+        typeof v === 'string' || typeof v === 'number',
+        `${k} is ${Array.isArray(v) ? 'an array' : typeof v}, not a string or number`,
+      )
+    }
   }
 })
 

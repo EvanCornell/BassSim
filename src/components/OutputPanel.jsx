@@ -550,9 +550,9 @@ function nearestIdx(arr, f) {
  * Drawn dashed and thinner than the live trace, so an overlay never reads
  * as the current result.
  *
- * @param {Array<object>} snapshots - Stored snapshots.
+ * @param {Array<object>} snapshots - Stored snapshots, each carrying `label` and `color`.
  * @param {string} key - Quantity key to overlay.
- * @returns {Array<object>} Line descriptors for `BaseChart`.
+ * @returns {Array<object>} One descriptor per snapshot, in the order given, each `{dataKey, name, color, width, dash}` — `dataKey` is `snap<index>_<key>`, `name` prefixes the snapshot's label with ⧉, and `width`/`dash` are the thinner dashed styling that keeps an overlay from reading as the live trace.
  * @pure
  */
 function snapLines(snapshots, key) {

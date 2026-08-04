@@ -276,9 +276,10 @@ test('saveBindings: persists only the differences and removes the key when nothi
   const modified = { ...clone(defaults), [id]: ['mod+alt+shift+f9'] }
 
   saveBindings(modified)
-  const keys = storageKeys()
-  assert.equal(keys.length, 1, 'saving a difference must write exactly one LocalStorage key')
-  const KEY = keys[0]
+  // CONTRACT (constants): "`KEYMAP_KEY` — LocalStorage key holding the user's binding
+  // overrides. Value: `"acousim:keymap"`"
+  assert.deepEqual(storageKeys(), [KEYMAP_KEY], 'the overrides must live under the documented key')
+  const KEY = KEYMAP_KEY
 
   const stored = JSON.parse(localStorage.getItem(KEY))
   assert.deepEqual(stored, { [id]: ['mod+alt+shift+f9'] }, 'only the differing command may be persisted')
@@ -299,8 +300,7 @@ test('loadBindings: corrupt stored values are filtered to strings and every comm
   localStorage.clear()
   const defaults = loadBindings()
   const id = COMMAND_IDS[0]
-  saveBindings({ ...clone(defaults), [id]: ['mod+alt+shift+f9'] })
-  const KEY = storageKeys()[0]
+  const KEY = KEYMAP_KEY
 
   localStorage.setItem(KEY, JSON.stringify({ [id]: ['a', 5, null, {}, ['x'], 'b'], 'not-a-command': ['q'] }))
   const b = loadBindings()
@@ -315,9 +315,7 @@ test('loadBindings: corrupt stored values are filtered to strings and every comm
 test('loadBindings: unparseable storage falls back to the defaults', () => {
   localStorage.clear()
   const defaults = loadBindings()
-  const id = COMMAND_IDS[0]
-  saveBindings({ ...clone(defaults), [id]: ['mod+alt+shift+f9'] })
-  const KEY = storageKeys()[0]
+  const KEY = KEYMAP_KEY
 
   for (const junk of ['not json at all', '[1,2,3]', 'null', '"a string"', '42']) {
     localStorage.setItem(KEY, junk)
@@ -480,59 +478,16 @@ test('resolve: is pure', () => {
   assert.deepEqual(bindings, before, 'resolve must not modify its arguments')
 })
 
+
 // ---------------------------------------------------------------------------
 // COMMANDS['<id>'].run(storeState)
 //
-// AMBIGUITY: the contract renders every command as `run(s)` and its "Obtain via" line as
-// COMMANDS['<id>'] — the actual ids are never given, so a command cannot be addressed by name.
-// These tests therefore drive every command with a recording stub store and assert the
-// delegation each contract claims across the whole command set.
+// The command ids are now documented, so every command is addressed by name and
+// checked against the store action its own contract names. The store action
+// names come from the src/store.js contract's STORE ACTION list.
 // ---------------------------------------------------------------------------
 
-// Store actions named by the command contracts, cross-referenced with the
-// src/store.js contract's STORE ACTION list:
-//   "Step back one entry in the undo history."                  -> undo
-//   "Step forward one entry in the undo history."               -> redo
-//   "Copy the selected nodes to the clipboard and delete them." -> cutSelection
-//   "Copy the selected nodes and the edges wholly inside ..."   -> copySelection
-//   "Paste the clipboard as new nodes ..."                      -> pasteClipboard
-//   "Copy and immediately paste the selection in one step."     -> duplicateSelected
-//   "Select every node on the canvas."                          -> selectAll
-//   "Delete the selected nodes and any edges attached to them." -> deleteSelected
-//   "Add a node of this command's type at the pointer."         -> addNodeAtCursor
-//   "Raise/Lower the drive voltage by 1 V / 0.1 V."             -> nudgeVoltage
-//   "Discard the current graph and start an empty project."     -> newProject
-//   "Download the project as an `.acousim.json` file."          -> saveProjectJSON
-//   "Open the saved-project browser."                           -> setShowProjectManager
-//   "Freeze the current result as a labelled reference overlay." -> takeSnapshot
-//   "Toggle chambers between distributed lines and lumped ..."  -> updateSettings
-//   "Force a resimulation without changing anything."           -> recomputeNow
-//   "Open the settings window."                                 -> setShowSettings
-//   "Maximize the focused panel, or restore ..."                -> toggleMaximize
-//   "Pop the focused panel out into its own browser tab."       -> popOutPanel
-const EXPECTED_ACTIONS = [
-  'undo',
-  'redo',
-  'cutSelection',
-  'copySelection',
-  'pasteClipboard',
-  'duplicateSelected',
-  'selectAll',
-  'deleteSelected',
-  'addNodeAtCursor',
-  'nudgeVoltage',
-  'newProject',
-  'saveProjectJSON',
-  'setShowProjectManager',
-  'takeSnapshot',
-  'updateSettings',
-  'recomputeNow',
-  'setShowSettings',
-  'toggleMaximize',
-  'popOutPanel',
-]
-
-function makeStub() {
+function makeStub(over = {}) {
   const calls = []
   const data = {
     nodes: [],
@@ -541,11 +496,12 @@ function makeStub() {
     clipboard: null,
     snapshots: [],
     settings: { masking: false, drive: 2.83 },
-    focusedPanel: 'a-panel',
+    focusedPanel: 'canvas',
     maximized: null,
     history: [],
     future: [],
     projectName: 'test',
+    ...over,
   }
   const fns = new Map()
   const state = new Proxy(data, {
@@ -560,123 +516,196 @@ function makeStub() {
   return { state, calls }
 }
 
-function runAll() {
-  const perCommand = []
-  for (const [id, cmd] of Object.entries(COMMANDS)) {
-    if (typeof cmd.run !== 'function') continue
-    const { state, calls } = makeStub()
-    cmd.run(state)
-    perCommand.push({ id, calls })
-  }
-  return perCommand
+function runCommand(id, over) {
+  const cmd = COMMANDS[id]
+  assert.ok(cmd, `COMMANDS has no entry for ${id}`)
+  assert.equal(typeof cmd.run, 'function', `COMMANDS['${id}'].run must be a function`)
+  const { state, calls } = makeStub(over)
+  const returned = cmd.run(state)
+  return { calls, returned }
 }
 
-// CONTRACT: the spec documents 22 COMMAND-reachable `run(s)` methods, each obtained via
-// "COMMANDS['<id>'].run(storeState)".
-test('COMMANDS: exposes 22 runnable commands, each taking the store state', () => {
-  const runnable = Object.values(COMMANDS).filter((c) => c && typeof c.run === 'function')
-  assert.equal(runnable.length, 22)
+// Assert the command delegated to exactly the named store action, with the given arguments
+// when `args` is supplied.
+function assertDelegates(id, action, args, over) {
+  const { calls } = runCommand(id, over)
+  assert.ok(calls.length > 0, `${id} delegated nothing to the store`)
+  const hit = calls.filter((c) => c.name === action)
+  assert.ok(
+    hit.length > 0,
+    `${id} did not delegate to ${action} (called ${JSON.stringify(calls.map((c) => c.name))})`,
+  )
+  if (args !== undefined) {
+    assert.deepEqual(hit[0].args, args, `${id} called ${action} with the wrong arguments`)
+  }
+}
+
+// CONTRACT (constants): the documented keys of COMMANDS, plus the DEFAULT_BINDINGS keys, which
+// the module says are the same set: "Adding a command means one entry in COMMANDS and one
+// default in DEFAULT_BINDINGS — nothing else needs to change."
+test('COMMANDS: holds exactly the documented command ids, each with a run handler', () => {
+  for (const id of LISTED_COMMAND_KEYS) {
+    assert.ok(Object.prototype.hasOwnProperty.call(COMMANDS, id), `COMMANDS is missing ${id}`)
+  }
+  for (const id of DEFAULT_BINDING_KEYS) {
+    assert.ok(
+      Object.prototype.hasOwnProperty.call(COMMANDS, id),
+      `${id} has a default binding but no COMMANDS entry`,
+    )
+    assert.equal(typeof COMMANDS[id].run, 'function', `COMMANDS['${id}'].run must be a function`)
+  }
+  assert.deepEqual(Object.keys(COMMANDS).slice().sort(), DEFAULT_BINDING_KEYS.slice().sort())
+})
+
+// CONTRACT: "`edit.undo > run(s)` — Step back one entry in the undo history."
+test("COMMANDS: edit.undo steps back one entry in the undo history", () => {
+  assertDelegates('edit.undo', 'undo')
+})
+
+// CONTRACT: "`edit.redo > run(s)` — Step forward one entry in the undo history."
+test('COMMANDS: edit.redo steps forward one entry in the undo history', () => {
+  assertDelegates('edit.redo', 'redo')
+})
+
+// CONTRACT: "`edit.cut > run(s)` — Copy the selected nodes to the clipboard and delete them."
+test('COMMANDS: edit.cut cuts the selection', () => {
+  assertDelegates('edit.cut', 'cutSelection')
+})
+
+// CONTRACT: "`edit.copy > run(s)` — Copy the selected nodes and the edges wholly inside the selection."
+test('COMMANDS: edit.copy copies the selection', () => {
+  assertDelegates('edit.copy', 'copySelection')
+})
+
+// CONTRACT: "`edit.paste > run(s)` — Paste the clipboard as new nodes, offset from the originals."
+test('COMMANDS: edit.paste pastes the clipboard', () => {
+  assertDelegates('edit.paste', 'pasteClipboard')
+})
+
+// CONTRACT: "`edit.duplicate > run(s)` — Copy and immediately paste the selection in one step."
+test('COMMANDS: edit.duplicate duplicates the selection', () => {
+  assertDelegates('edit.duplicate', 'duplicateSelected')
+})
+
+// CONTRACT: "`edit.selectAll > run(s)` — Select every node on the canvas."
+test('COMMANDS: edit.selectAll selects every node', () => {
+  assertDelegates('edit.selectAll', 'selectAll')
+})
+
+// CONTRACT: "`edit.delete > run(s)` — Delete the selected nodes and any edges attached to them."
+test('COMMANDS: edit.delete deletes the selection', () => {
+  assertDelegates('edit.delete', 'deleteSelected')
+})
+
+// CONTRACT: "Add a node of this command's type at the pointer." + "Reads external mutable state:
+// The captured `type` from the enclosing NODE_TYPES entry."
+// (src/components/nodes.jsx constants: "`nodeTypes` — Keys: `driver`, `chamber`, `waveguide`,
+// `pr`, `radiation`" — the same suffixes the add.* command ids carry.)
+test('COMMANDS: each add.* command adds a node of its own type at the cursor', () => {
+  for (const id of ADD_COMMAND_IDS) {
+    assertDelegates(id, 'addNodeAtCursor', [id.slice('add.'.length)])
+  }
+})
+
+// CONTRACT: "`drive.up > run(s)` — Raise the drive voltage by 1 V."
+// (src/store.js: "nudgeVoltage(delta) — Change the drive voltage by a fixed step, for the
+// keyboard shortcuts. `delta` — Change in volts; negative lowers.")
+test('COMMANDS: drive.up raises the drive voltage by 1 V', () => {
+  assertDelegates('drive.up', 'nudgeVoltage', [1])
+})
+
+// CONTRACT: "`drive.down > run(s)` — Lower the drive voltage by 1 V."
+test('COMMANDS: drive.down lowers the drive voltage by 1 V', () => {
+  assertDelegates('drive.down', 'nudgeVoltage', [-1])
+})
+
+// CONTRACT: "`drive.upFine > run(s)` — Raise the drive voltage by 0.1 V."
+test('COMMANDS: drive.upFine raises the drive voltage by 0.1 V', () => {
+  assertDelegates('drive.upFine', 'nudgeVoltage', [0.1])
+})
+
+// CONTRACT: "`drive.downFine > run(s)` — Lower the drive voltage by 0.1 V."
+test('COMMANDS: drive.downFine lowers the drive voltage by 0.1 V', () => {
+  assertDelegates('drive.downFine', 'nudgeVoltage', [-0.1])
+})
+
+// CONTRACT: "`project.new > run(s)` — Discard the current graph and start an empty project."
+test('COMMANDS: project.new starts an empty project', () => {
+  assertDelegates('project.new', 'newProject')
+})
+
+// CONTRACT: "`project.save > run(s)` — Download the project as an `.acousim.json` file."
+test('COMMANDS: project.save downloads the project', () => {
+  assertDelegates('project.save', 'saveProjectJSON')
+})
+
+// CONTRACT: "`project.open > run(s)` — Open the saved-project browser."
+// (src/store.js: "setShowProjectManager(v)")
+test('COMMANDS: project.open opens the saved-project browser', () => {
+  const { calls } = runCommand('project.open')
+  const hit = calls.find((c) => c.name === 'setShowProjectManager')
+  assert.ok(hit, `project.open did not open the browser (called ${JSON.stringify(calls.map((c) => c.name))})`)
+  assert.equal(hit.args[0], true, 'project.open must show the browser, not hide it')
+})
+
+// CONTRACT: "`sim.snapshot > run(s)` — Freeze the current result as a labelled reference overlay."
+test('COMMANDS: sim.snapshot takes a snapshot', () => {
+  assertDelegates('sim.snapshot', 'takeSnapshot')
+})
+
+// CONTRACT: "`sim.mask > run(s)` — Toggle chambers between distributed lines and lumped
+// compliances." + "Reads external mutable state: The current `settings.masking` value, which it
+// inverts." (src/store.js: "updateSettings(patch)")
+test('COMMANDS: sim.mask inverts the current masking setting', () => {
+  for (const start of [false, true]) {
+    const { calls } = runCommand('sim.mask', { settings: { masking: start, drive: 2.83 } })
+    const hit = calls.find((c) => c.name === 'updateSettings')
+    assert.ok(hit, `sim.mask did not update the settings (called ${JSON.stringify(calls.map((c) => c.name))})`)
+    assert.equal(hit.args[0].masking, !start, `masking must be inverted from ${start}`)
+  }
+})
+
+// CONTRACT: "`sim.recompute > run(s)` — Force a resimulation without changing anything."
+test('COMMANDS: sim.recompute forces a resimulation', () => {
+  assertDelegates('sim.recompute', 'recomputeNow')
+})
+
+// CONTRACT: "`view.settings > run(s)` — Open the settings window."
+// (src/store.js: "setShowSettings(v, section) — `v` — Whether to show the window.")
+test('COMMANDS: view.settings opens the settings window', () => {
+  const { calls } = runCommand('view.settings')
+  const hit = calls.find((c) => c.name === 'setShowSettings')
+  assert.ok(hit, `view.settings did not open the window (called ${JSON.stringify(calls.map((c) => c.name))})`)
+  assert.equal(hit.args[0], true, 'view.settings must show the window, not hide it')
+})
+
+// CONTRACT: "`view.maximize > run(s)` — Maximize the focused panel, or restore the one already
+// maximized." + "Reads external mutable state: `maximized` and `focusedPanel`, so the same key
+// both maximizes and restores." (src/store.js: "toggleMaximize(id)")
+test('COMMANDS: view.maximize toggles the focused panel', () => {
+  assertDelegates('view.maximize', 'toggleMaximize', ['spl'], { focusedPanel: 'spl', maximized: null })
+})
+
+// CONTRACT: "Maximize the focused panel, or restore the one already maximized." — the same key
+// restores when a panel is already maximized.
+test('COMMANDS: view.maximize restores the panel that is already maximized', () => {
+  const { calls } = runCommand('view.maximize', { focusedPanel: 'spl', maximized: 'spl' })
+  const hit = calls.find((c) => c.name === 'toggleMaximize')
+  assert.ok(hit, 'view.maximize must still delegate when a panel is maximized')
+  assert.equal(hit.args[0], 'spl')
+})
+
+// CONTRACT: "`view.popout > run(s)` — Pop the focused panel out into its own browser tab." +
+// "Reads external mutable state: `focusedPanel` to decide what to pop out."
+// (src/store.js: "popOutPanel(id)")
+test('COMMANDS: view.popout pops out the focused panel', () => {
+  assertDelegates('view.popout', 'popOutPanel', ['zin'], { focusedPanel: 'zin' })
 })
 
 // CONTRACT: "Delegates to the store, mutating application state." (every command)
 test('COMMANDS: every command delegates at least one call to the store state it is given', () => {
-  for (const { id, calls } of runAll()) {
+  for (const id of DEFAULT_BINDING_KEYS) {
+    const { calls } = runCommand(id)
     assert.ok(calls.length > 0, `command ${id} delegated nothing to the store`)
   }
-})
-
-// CONTRACT: each command's documented behaviour names a store action (see the mapping above).
-test('COMMANDS: the command set delegates to every action its contracts name', () => {
-  const called = new Set()
-  for (const { calls } of runAll()) calls.forEach((c) => called.add(c.name))
-  for (const action of EXPECTED_ACTIONS) {
-    assert.ok(called.has(action), `no command delegated to ${action}`)
-  }
-})
-
-// CONTRACT: "Raise the drive voltage by 1 V." / "Lower the drive voltage by 1 V." /
-// "Raise the drive voltage by 0.1 V." / "Lower the drive voltage by 0.1 V."
-// (src/store.js: "nudgeVoltage(delta) — Change the drive voltage by a fixed step, for the
-// keyboard shortcuts. delta — Change in volts; negative lowers.")
-test('COMMANDS: the four drive commands nudge by +1, -1, +0.1 and -0.1 volts', () => {
-  const deltas = []
-  for (const { calls } of runAll()) {
-    calls.filter((c) => c.name === 'nudgeVoltage').forEach((c) => deltas.push(c.args[0]))
-  }
-  for (const d of [1, -1, 0.1, -0.1]) {
-    assert.ok(deltas.includes(d), `no command nudged the drive by ${d} V (saw ${JSON.stringify(deltas)})`)
-  }
-})
-
-// CONTRACT: "Toggle chambers between distributed lines and lumped compliances." +
-// "Reads external mutable state: The current `settings.masking` value, which it inverts."
-test('COMMANDS: the masking command inverts the current settings.masking value', () => {
-  for (const start of [false, true]) {
-    let seen = null
-    for (const [, cmd] of Object.entries(COMMANDS)) {
-      if (typeof cmd.run !== 'function') continue
-      const { state, calls } = makeStub()
-      state.settings.masking = start
-      cmd.run(state)
-      const call = calls.find((c) => c.name === 'updateSettings' && c.args[0] && 'masking' in c.args[0])
-      if (call) seen = call.args[0].masking
-    }
-    assert.equal(seen, !start, `masking should have been inverted from ${start}`)
-  }
-})
-
-// CONTRACT: "Maximize the focused panel, or restore the one already maximized." +
-// "Reads external mutable state: `maximized` and `focusedPanel`"
-test('COMMANDS: the maximize command toggles using the focused panel', () => {
-  let seen
-  for (const [, cmd] of Object.entries(COMMANDS)) {
-    if (typeof cmd.run !== 'function') continue
-    const { state, calls } = makeStub()
-    cmd.run(state)
-    const call = calls.find((c) => c.name === 'toggleMaximize')
-    if (call) seen = call.args[0]
-  }
-  assert.equal(seen, 'a-panel', 'toggleMaximize must be passed the focused panel id')
-})
-
-// CONTRACT: "Pop the focused panel out into its own browser tab." +
-// "Reads external mutable state: `focusedPanel` to decide what to pop out."
-test('COMMANDS: the pop-out command pops out the focused panel', () => {
-  let seen
-  for (const [, cmd] of Object.entries(COMMANDS)) {
-    if (typeof cmd.run !== 'function') continue
-    const { state, calls } = makeStub()
-    cmd.run(state)
-    const call = calls.find((c) => c.name === 'popOutPanel')
-    if (call) seen = call.args[0]
-  }
-  assert.equal(seen, 'a-panel', 'popOutPanel must be passed the focused panel id')
-})
-
-// CONTRACT: "Open the settings window." / "Open the saved-project browser."
-// (src/store.js: setShowSettings(v, section) — "v — Whether to show the window.";
-//  setShowProjectManager(v))
-test('COMMANDS: the window-opening commands ask for the window to be shown', () => {
-  const shows = { setShowSettings: [], setShowProjectManager: [] }
-  for (const { calls } of runAll()) {
-    calls.forEach((c) => {
-      if (c.name in shows) shows[c.name].push(c.args[0])
-    })
-  }
-  assert.ok(shows.setShowSettings.includes(true), 'the settings command must open, not close, the window')
-  assert.ok(shows.setShowProjectManager.includes(true), 'the project browser command must open the browser')
-})
-
-// CONTRACT: "Add a node of this command's type at the pointer." +
-// "Reads external mutable state: The captured `type` from the enclosing NODE_TYPES entry."
-test('COMMANDS: the add-node commands pass a node type', () => {
-  const types = []
-  for (const { calls } of runAll()) {
-    calls.filter((c) => c.name === 'addNodeAtCursor').forEach((c) => types.push(c.args[0]))
-  }
-  assert.ok(types.length > 0, 'no command added a node at the cursor')
-  types.forEach((t) => {
-    assert.equal(typeof t, 'string')
-    assert.ok(t.length > 0)
-  })
 })

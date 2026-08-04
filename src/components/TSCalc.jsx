@@ -34,7 +34,7 @@ const FORMULAS = {
  * @param {number} m.Qms - Mechanical Q.
  * @param {number} m.Re - DC resistance, ohms.
  * @param {number} m.Sd - Effective cone area, cm².
- * @returns {object} The complete T/S set in display units.
+ * @returns {{Fs: number, Vas: number, Qes: number, Qms: number, Qts: number, Re: number, Sd: number, Cms: number, Mms: number, Bl: number, Rms: number}} The complete T/S set in display units — the six inputs echoed back plus Cms mm/N, Mms g, Bl T·m and Rms N·s/m.
  * @pre Every input is positive; a zero Qes or Qms divides by zero.
  * @pure
  */
@@ -89,7 +89,8 @@ function solveAddedMass({ Fs, FsPrime, mAdd, Qes, Qms, Re, Sd }) {
  * Derive the T/S set from the resonance shift in a box of known volume.
  *
  * Sealing the driver in a known volume raises its resonance, and the size of
- * that rise gives Vas — after which this is the datasheet method.
+ * that rise gives Vas as `Vb·((Fc/Fs)² − 1)` — after which this delegates to
+ * `solveDatasheet`, so equivalent inputs give identical results.
  *
  * @param {object} m - Measurements.
  * @param {number} m.Fs - Free-air resonance, Hz.
@@ -99,7 +100,7 @@ function solveAddedMass({ Fs, FsPrime, mAdd, Qes, Qms, Re, Sd }) {
  * @param {number} m.Qms - Mechanical Q.
  * @param {number} m.Re - DC resistance, ohms.
  * @param {number} m.Sd - Effective cone area, cm².
- * @returns {object} The complete T/S set in display units.
+ * @returns {{Fs: number, Vas: number, Qes: number, Qms: number, Qts: number, Re: number, Sd: number, Cms: number, Mms: number, Bl: number, Rms: number}} The complete T/S set in display units, identical to what `solveDatasheet` returns for the derived Vas.
  * @throws {Error} When the in-box resonance is not above the free-air one, which means the measurements are swapped or the box is leaking.
  * @pure
  */

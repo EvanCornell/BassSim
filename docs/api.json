@@ -3436,7 +3436,7 @@
         },
         {
           "name": "__internals",
-          "line": 682,
+          "line": 693,
           "shape": {
             "kind": "object",
             "keys": [
@@ -4037,7 +4037,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 544,
+          "line": 555,
           "signature": [
             "node"
           ],
@@ -4078,7 +4078,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 675,
+          "line": 686,
           "signature": [],
           "documented": true,
           "summary": "Scan every source file in scope.",
@@ -7110,7 +7110,7 @@
             "invariant": [],
             "mutates": [],
             "sideEffect": [
-              "Reads LocalStorage."
+              "Reads LocalStorage key `acousim:customDrivers`. Anything that is not parseable JSON, and anything that parses to a falsy value, yields an empty list rather than throwing."
             ],
             "reads": [],
             "pure": false
@@ -8633,7 +8633,7 @@
       "constants": [
         {
           "name": "__internals",
-          "line": 647,
+          "line": 651,
           "shape": {
             "kind": "object",
             "keys": [
@@ -8701,13 +8701,13 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 52,
+          "line": 56,
           "signature": [
             "v"
           ],
           "documented": true,
           "summary": "Format an axis value at a readable precision for its magnitude.",
-          "description": "Format an axis value at a readable precision for its magnitude.",
+          "description": "Format an axis value at a readable precision for its magnitude.\n\nThree bands, so a value keeps roughly three significant figures without an\naxis label ever running long: at or above 100 no decimals, at or above 10 one\ndecimal, and below that three significant figures.",
           "params": [
             {
               "name": "v",
@@ -8740,7 +8740,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 71,
+          "line": 75,
           "signature": [
             "lo",
             "hi",
@@ -8795,7 +8795,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 108,
+          "line": 112,
           "signature": [
             "arg0"
           ],
@@ -8885,7 +8885,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 128,
+          "line": 132,
           "signature": [
             "x",
             "r"
@@ -8934,7 +8934,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 140,
+          "line": 144,
           "signature": [
             "px",
             "py"
@@ -8983,7 +8983,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 162,
+          "line": 166,
           "signature": [
             "patch"
           ],
@@ -9024,7 +9024,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 180,
+          "line": 184,
           "signature": [
             "px",
             "py",
@@ -9081,7 +9081,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 207,
+          "line": 211,
           "signature": [
             "e"
           ],
@@ -9122,7 +9122,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 237,
+          "line": 241,
           "signature": [
             "e"
           ],
@@ -9163,7 +9163,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 248,
+          "line": 252,
           "signature": [
             "ev"
           ],
@@ -9204,7 +9204,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 261,
+          "line": 265,
           "signature": [],
           "documented": true,
           "summary": "End the pan and remove its listeners.",
@@ -9235,7 +9235,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 279,
+          "line": 283,
           "signature": [
             "e"
           ],
@@ -9276,7 +9276,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 297,
+          "line": 301,
           "signature": [
             "e"
           ],
@@ -9317,7 +9317,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 315,
+          "line": 319,
           "signature": [
             "idx",
             "e"
@@ -9366,7 +9366,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 327,
+          "line": 331,
           "signature": [
             "ev"
           ],
@@ -9407,7 +9407,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 347,
+          "line": 351,
           "signature": [],
           "documented": true,
           "summary": "End the point drag and remove its listeners.",
@@ -9438,7 +9438,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 359,
+          "line": 363,
           "signature": [
             "idx"
           ],
@@ -9479,7 +9479,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 372,
+          "line": 376,
           "signature": [
             "e"
           ],
@@ -9520,7 +9520,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 496,
+          "line": 500,
           "signature": [],
           "documented": true,
           "summary": "The Nonlinear Lab: edit a driver's large-signal curves and see their effect.",
@@ -9551,7 +9551,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 548,
+          "line": 552,
           "signature": [
             "patch"
           ],
@@ -9592,7 +9592,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 557,
+          "line": 561,
           "signature": [
             "e"
           ],
@@ -9633,7 +9633,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 570,
+          "line": 574,
           "signature": [],
           "documented": true,
           "summary": "Parse the loaded CSV and install it as this curve's table.",
@@ -10632,7 +10632,7 @@
               "type": "Array<object>",
               "optional": false,
               "default": null,
-              "desc": "Stored snapshots."
+              "desc": "Stored snapshots, each carrying `label` and `color`."
             },
             {
               "name": "key",
@@ -10644,7 +10644,7 @@
           ],
           "returns": {
             "type": "Array<object>",
-            "desc": "Line descriptors for `BaseChart`."
+            "desc": "One descriptor per snapshot, in the order given, each `{dataKey, name, color, width, dash}` — `dataKey` is `snap<index>_<key>`, `name` prefixes the snapshot's label with ⧉, and `width`/`dash` are the thinner dashed styling that keeps an overlay from reading as the live trace."
           },
           "throws": [],
           "contract": {
@@ -13291,7 +13291,7 @@
       "constants": [
         {
           "name": "__internals",
-          "line": 250,
+          "line": 251,
           "shape": {
             "kind": "object",
             "keys": [
@@ -13371,8 +13371,8 @@
             }
           ],
           "returns": {
-            "type": "object",
-            "desc": "The complete T/S set in display units."
+            "type": "{Fs: number, Vas: number, Qes: number, Qms: number, Qts: number, Re: number, Sd: number, Cms: number, Mms: number, Bl: number, Rms: number}",
+            "desc": "The complete T/S set in display units — the six inputs echoed back plus Cms mm/N, Mms g, Bl T·m and Rms N·s/m."
           },
           "throws": [],
           "contract": {
@@ -13488,13 +13488,13 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 106,
+          "line": 107,
           "signature": [
             "arg0"
           ],
           "documented": true,
           "summary": "Derive the T/S set from the resonance shift in a box of known volume.",
-          "description": "Derive the T/S set from the resonance shift in a box of known volume.\n\nSealing the driver in a known volume raises its resonance, and the size of\nthat rise gives Vas — after which this is the datasheet method.",
+          "description": "Derive the T/S set from the resonance shift in a box of known volume.\n\nSealing the driver in a known volume raises its resonance, and the size of\nthat rise gives Vas as `Vb·((Fc/Fs)² − 1)` — after which this delegates to\n`solveDatasheet`, so equivalent inputs give identical results.",
           "params": [
             {
               "name": "m",
@@ -13554,8 +13554,8 @@
             }
           ],
           "returns": {
-            "type": "object",
-            "desc": "The complete T/S set in display units."
+            "type": "{Fs: number, Vas: number, Qes: number, Qms: number, Qts: number, Re: number, Sd: number, Cms: number, Mms: number, Bl: number, Rms: number}",
+            "desc": "The complete T/S set in display units, identical to what `solveDatasheet` returns for the derived Vas."
           },
           "throws": [
             {
@@ -13581,7 +13581,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 128,
+          "line": 129,
           "signature": [],
           "documented": true,
           "summary": "The Thiele/Small solver: derive a full parameter set from measurements.",
@@ -13612,7 +13612,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 164,
+          "line": 165,
           "signature": [],
           "documented": true,
           "summary": "Write the derived parameters into the selected driver node.",
@@ -13643,7 +13643,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 185,
+          "line": 186,
           "signature": [
             "arg0"
           ],
@@ -14048,14 +14048,14 @@
           ],
           "documented": true,
           "summary": "Whether a drag event is a panel tab drag.",
-          "description": "Whether a drag event is a panel tab drag.\n\nThe payload decides what a drag means, never the store flag alone: a\npalette element carries its own type and must reach the canvas untouched,\neven if a previous tab drag left `draggingPanel` set.",
+          "description": "Whether a drag event is a panel tab drag.\n\nThe payload decides what a drag means, never the store flag alone: a palette\nelement carries `application/acousim-node` and must reach the canvas\nuntouched, even if a previous tab drag left `draggingPanel` set.",
           "params": [
             {
               "name": "e",
               "type": "React.DragEvent",
               "optional": false,
               "default": null,
-              "desc": "The drag event."
+              "desc": "The drag event. A panel tab drag is identified by `application/acousim-panel` appearing in `dataTransfer.types`."
             }
           ],
           "returns": {
@@ -17995,7 +17995,66 @@
               "waveguide",
               "pr",
               "radiation"
-            ]
+            ],
+            "nested": {
+              "driver": [
+                "Fs",
+                "Qts",
+                "Qes",
+                "Qms",
+                "Vas",
+                "Re",
+                "Bl",
+                "Mms",
+                "Cms",
+                "Sd",
+                "Le",
+                "LeExp",
+                "Xmax",
+                "Rms",
+                "count",
+                "wiring",
+                "Q",
+                "lossless",
+                "label"
+              ],
+              "chamber": [
+                "volume",
+                "length",
+                "shape",
+                "stuffing",
+                "Q",
+                "lossless",
+                "probe",
+                "probePos",
+                "label"
+              ],
+              "waveguide": [
+                "S1",
+                "S2",
+                "length",
+                "flare",
+                "ecFactor",
+                "Q",
+                "lossless",
+                "label"
+              ],
+              "pr": [
+                "Mmd",
+                "Cms",
+                "Rms",
+                "Sd",
+                "addedMass",
+                "Q",
+                "lossless",
+                "space",
+                "label"
+              ],
+              "radiation": [
+                "space",
+                "label"
+              ]
+            }
           },
           "summary": "Default params for each node type, in display units.",
           "description": "Default params for each node type, in display units.\n\nDoubles as the schema: `hydrateProject` treats a type absent from this map as\nunknown, and every saved node is merged over its entry so a project written by\nan older build gains any parameter added since."
@@ -18098,12 +18157,12 @@
       "file": "src/engine/solver.js",
       "module": {
         "summary": "Graph → transfer-matrix chain solver. Convention: ABCD matrices map [p_in; U_in] = M · [p_out; U_out] with p = acoustic pressure (Pa), U = volume velocity (m^3/s).",
-        "description": "Graph → transfer-matrix chain solver.\nConvention: ABCD matrices map [p_in; U_in] = M · [p_out; U_out] with\np = acoustic pressure (Pa), U = volume velocity (m^3/s)."
+        "description": "Graph → transfer-matrix chain solver.\nConvention: ABCD matrices map [p_in; U_in] = M · [p_out; U_out] with\np = acoustic pressure (Pa), U = volume velocity (m^3/s).\n\nA node is `{ id, type, data: { params } }` and an edge is\n`{ source, sourceHandle, target, targetHandle }`. Each node type exposes a\nfixed set of named handles, and an edge must name one at each end:\n\n  driver      front (out), rear (out)  — both may fan out\n  chamber     in (in), out (out)\n  waveguide   throat (in), mouth (out)\n  pr          in (in)\n  radiation   in (in)\n\nPorts are directional: an output handle connects to an input handle. An\nunconnected output is not an error — an open waveguide mouth radiates, and a\nchamber with nothing on its outlet is sealed."
       },
       "constants": [
         {
           "name": "__internals",
-          "line": 752,
+          "line": 766,
           "shape": {
             "kind": "object",
             "keys": [
@@ -18124,7 +18183,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 38,
+          "line": 52,
           "signature": [
             "p"
           ],
@@ -18166,7 +18225,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 84,
+          "line": 98,
           "signature": [
             "p"
           ],
@@ -18221,7 +18280,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 108,
+          "line": 122,
           "signature": [
             "d",
             "Rg",
@@ -18278,7 +18337,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 138,
+          "line": 152,
           "signature": [
             "nodes",
             "edges"
@@ -18327,7 +18386,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 172,
+          "line": 186,
           "signature": [
             "nodes",
             "edges"
@@ -18376,7 +18435,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 183,
+          "line": 197,
           "signature": [
             "id",
             "h"
@@ -18425,7 +18484,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 258,
+          "line": 272,
           "signature": [
             "nodes",
             "edges",
@@ -18536,7 +18595,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 334,
+          "line": 348,
           "signature": [
             "id",
             "i"
@@ -18585,7 +18644,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 385,
+          "line": 399,
           "signature": [
             "node",
             "Sup"
@@ -18636,7 +18695,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 434,
+          "line": 448,
           "signature": [
             "node",
             "fromHandle",
@@ -18705,7 +18764,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 520,
+          "line": 534,
           "signature": [
             "node",
             "fromHandle",
@@ -18824,7 +18883,135 @@
               "view.settings",
               "view.maximize",
               "view.popout"
-            ]
+            ],
+            "nested": {
+              "edit.undo": [
+                "label",
+                "group",
+                "scope",
+                "run"
+              ],
+              "edit.redo": [
+                "label",
+                "group",
+                "scope",
+                "run"
+              ],
+              "edit.cut": [
+                "label",
+                "group",
+                "scope",
+                "run"
+              ],
+              "edit.copy": [
+                "label",
+                "group",
+                "scope",
+                "run"
+              ],
+              "edit.paste": [
+                "label",
+                "group",
+                "scope",
+                "run"
+              ],
+              "edit.duplicate": [
+                "label",
+                "group",
+                "scope",
+                "run"
+              ],
+              "edit.selectAll": [
+                "label",
+                "group",
+                "scope",
+                "run"
+              ],
+              "edit.delete": [
+                "label",
+                "group",
+                "scope",
+                "run"
+              ],
+              "drive.up": [
+                "label",
+                "group",
+                "scope",
+                "run"
+              ],
+              "drive.down": [
+                "label",
+                "group",
+                "scope",
+                "run"
+              ],
+              "drive.upFine": [
+                "label",
+                "group",
+                "scope",
+                "run"
+              ],
+              "drive.downFine": [
+                "label",
+                "group",
+                "scope",
+                "run"
+              ],
+              "project.new": [
+                "label",
+                "group",
+                "scope",
+                "run"
+              ],
+              "project.save": [
+                "label",
+                "group",
+                "scope",
+                "run"
+              ],
+              "project.open": [
+                "label",
+                "group",
+                "scope",
+                "run"
+              ],
+              "sim.snapshot": [
+                "label",
+                "group",
+                "scope",
+                "run"
+              ],
+              "sim.mask": [
+                "label",
+                "group",
+                "scope",
+                "run"
+              ],
+              "sim.recompute": [
+                "label",
+                "group",
+                "scope",
+                "run"
+              ],
+              "view.settings": [
+                "label",
+                "group",
+                "scope",
+                "run"
+              ],
+              "view.maximize": [
+                "label",
+                "group",
+                "scope",
+                "run"
+              ],
+              "view.popout": [
+                "label",
+                "group",
+                "scope",
+                "run"
+              ]
+            }
           },
           "summary": null,
           "description": null
@@ -21310,7 +21497,70 @@
               "eff",
               "pe",
               "ph"
-            ]
+            ],
+            "nested": {
+              "palette": [
+                "title",
+                "group",
+                "closable",
+                "dock"
+              ],
+              "canvas": [
+                "title",
+                "group",
+                "closable",
+                "dock"
+              ],
+              "params": [
+                "title",
+                "group",
+                "closable",
+                "dock"
+              ],
+              "nllab": [
+                "title",
+                "group",
+                "closable",
+                "dock",
+                "requires"
+              ],
+              "spl": [
+                "title",
+                "group"
+              ],
+              "zin": [
+                "title",
+                "group"
+              ],
+              "exc": [
+                "title",
+                "group"
+              ],
+              "vel": [
+                "title",
+                "group"
+              ],
+              "int": [
+                "title",
+                "group"
+              ],
+              "pow": [
+                "title",
+                "group"
+              ],
+              "eff": [
+                "title",
+                "group"
+              ],
+              "pe": [
+                "title",
+                "group"
+              ],
+              "ph": [
+                "title",
+                "group"
+              ]
+            }
           },
           "summary": "Metadata for every panel the workspace knows how to render.",
           "description": "Metadata for every panel the workspace knows how to render.\n\nDoubles as the panel registry: `layout.sanitize` treats an id absent from\nthis map as unknown and drops it, which is what keeps an old saved layout\nfrom referencing a panel that no longer exists."
@@ -24750,7 +25000,81 @@
               "m_maxpower",
               "m_volume",
               "m_solve"
-            ]
+            ],
+            "nested": {
+              "project": [
+                "label",
+                "group"
+              ],
+              "undo": [
+                "label",
+                "group"
+              ],
+              "voltage": [
+                "label",
+                "group"
+              ],
+              "sweep": [
+                "label",
+                "group"
+              ],
+              "masking": [
+                "label",
+                "group"
+              ],
+              "snapshot": [
+                "label",
+                "group"
+              ],
+              "m_f3": [
+                "label",
+                "group"
+              ],
+              "m_f10": [
+                "label",
+                "group"
+              ],
+              "m_fb": [
+                "label",
+                "group"
+              ],
+              "m_qtc": [
+                "label",
+                "group"
+              ],
+              "m_zpeaks": [
+                "label",
+                "group"
+              ],
+              "m_peakspl": [
+                "label",
+                "group"
+              ],
+              "m_xfb": [
+                "label",
+                "group"
+              ],
+              "m_xf3": [
+                "label",
+                "group"
+              ],
+              "m_bw": [
+                "label",
+                "group"
+              ],
+              "m_maxpower": [
+                "label",
+                "group"
+              ],
+              "m_volume": [
+                "label",
+                "group"
+              ],
+              "m_solve": [
+                "label",
+                "group"
+              ]
+            }
           },
           "summary": "Every widget the quick bar can show, keyed by id.",
           "description": "Every widget the quick bar can show, keyed by id.\n\n`controls` are interactive and need a matching case in Toolbar.jsx's\nrenderer; `metrics` are read-only and need nothing else, because\n`metricValue` is the single place that knows how to compute and format them."

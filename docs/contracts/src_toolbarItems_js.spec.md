@@ -33,6 +33,25 @@ renderer; `metrics` are read-only and need nothing else, because
 
 Keys: `project`, `undo`, `voltage`, `sweep`, `masking`, `snapshot`, `m_f3`, `m_f10`, `m_fb`, `m_qtc`, `m_zpeaks`, `m_peakspl`, `m_xfb`, `m_xf3`, `m_bw`, `m_maxpower`, `m_volume`, `m_solve`
 
+- `project` holds: `label`, `group`
+- `undo` holds: `label`, `group`
+- `voltage` holds: `label`, `group`
+- `sweep` holds: `label`, `group`
+- `masking` holds: `label`, `group`
+- `snapshot` holds: `label`, `group`
+- `m_f3` holds: `label`, `group`
+- `m_f10` holds: `label`, `group`
+- `m_fb` holds: `label`, `group`
+- `m_qtc` holds: `label`, `group`
+- `m_zpeaks` holds: `label`, `group`
+- `m_peakspl` holds: `label`, `group`
+- `m_xfb` holds: `label`, `group`
+- `m_xf3` holds: `label`, `group`
+- `m_bw` holds: `label`, `group`
+- `m_maxpower` holds: `label`, `group`
+- `m_volume` holds: `label`, `group`
+- `m_solve` holds: `label`, `group`
+
 ### `TOOLBAR_GROUPS`
 
 Quick-bar groups as `[id, heading]`, in the order Settings lists them.

@@ -33,6 +33,12 @@ an older build gains any parameter added since.
 
 Keys: `driver`, `chamber`, `waveguide`, `pr`, `radiation`
 
+- `driver` holds: `Fs`, `Qts`, `Qes`, `Qms`, `Vas`, `Re`, `Bl`, `Mms`, `Cms`, `Sd`, `Le`, `LeExp`, `Xmax`, `Rms`, `count`, `wiring`, `Q`, `lossless`, `label`
+- `chamber` holds: `volume`, `length`, `shape`, `stuffing`, `Q`, `lossless`, `probe`, `probePos`, `label`
+- `waveguide` holds: `S1`, `S2`, `length`, `flare`, `ecFactor`, `Q`, `lossless`, `label`
+- `pr` holds: `Mmd`, `Cms`, `Rms`, `Sd`, `addedMass`, `Q`, `lossless`, `space`, `label`
+- `radiation` holds: `space`, `label`
+
 ### `DEFAULT_SETTINGS`
 
 Default sweep and display settings for a new project.
