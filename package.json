@@ -10,6 +10,8 @@
     "mcp": "node mcp/server.js",
     "test:mcp": "node mcp/test-client.mjs",
     "test:drivers": "node test/drivers.mjs",
+    "test:contracts": "node test/contracts.mjs",
+    "docs:api": "node scripts/extract-contracts.mjs",
     "import:catalog": "node scripts/import-catalog.mjs",
     "mcp:http": "node mcp/http.js",
     "test:http": "node mcp/test-http.mjs",
@@ -32,6 +34,7 @@
     "zustand": "^4.5.4"
   },
   "devDependencies": {
+    "@babel/parser": "^7.29.7",
     "@vitejs/plugin-react": "^4.3.1",
     "playwright-core": "^1.61.1",
     "vite": "^5.3.3"
