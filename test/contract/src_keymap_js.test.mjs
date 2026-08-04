@@ -223,14 +223,12 @@ test('formatCombo: always returns a string', () => {
 // ---------------------------------------------------------------------------
 // loadBindings / saveBindings
 //
-// AMBIGUITY: the LocalStorage key is never named in the contract, so it is
-// discovered here by observing which key saveBindings writes.
-// AMBIGUITY: `COMMAND_IDS` is named in the contract but is not listed as an
-// export. The module section says "Adding a command means one entry in COMMANDS
-// and one default in DEFAULT_BINDINGS", so the id set is taken from `COMMANDS`.
+// CONTRACT (constants): "`COMMAND_IDS` — Every command id, in declaration order."
+// The ids themselves are now documented, so the binding set is checked against the
+// documented vocabulary rather than against whatever the module happens to hold.
 // ---------------------------------------------------------------------------
 
-const COMMAND_IDS = Object.keys(COMMANDS)
+const COMMAND_IDS = DEFAULT_BINDING_KEYS
 
 // CONTRACT: "`Object<string, string[]>` — Combos for every command id in `COMMAND_IDS`."
 // CONTRACT: "Every command is given an entry whether or not it was stored"
@@ -401,6 +399,22 @@ test('findConflict: a reported conflict is always another command that holds the
   assert.deepEqual(Object.keys(bindings).sort(), COMMAND_IDS.slice().sort())
 })
 
+// CONTRACT: "Two commands can share a combo when their scopes can never both be active — but a
+// canvas-scoped binding and a global one *would* both want the key while the canvas has focus,
+// so that counts as a conflict."
+// CONTRACT (constants, DEFAULT_BINDINGS): "Bare letters are safe here because canvas-scoped
+// commands never fire while a text field has focus, and they make placing a chain of elements
+// fast." — the add.* commands are the canvas-scoped, bare-letter family, so two of them always
+// share a scope and must therefore conflict.
+test('findConflict: two commands of the same scope sharing a combo conflict with each other', () => {
+  localStorage.clear()
+  const defaults = loadBindings()
+  const [a, b] = ADD_COMMAND_IDS
+  const shared = { ...clone(defaults), [a]: ['mod+alt+shift+f14'], [b]: ['mod+alt+shift+f14'] }
+  assert.equal(findConflict(shared, 'mod+alt+shift+f14', a), b)
+  assert.equal(findConflict(shared, 'mod+alt+shift+f14', b), a)
+})
+
 // CONTRACT: "@pure"
 test('findConflict: is pure', () => {
   localStorage.clear()
@@ -449,10 +463,57 @@ test('resolve: an unbound combo resolves to null whatever has focus', () => {
 
 // CONTRACT: "The more specific scope wins: a canvas-scoped binding takes the key while the Node
 // Editor has focus, and the global command bound to the same combo runs everywhere else."
-// AMBIGUITY: neither the panel id of the Node Editor nor the scope of any command is documented
-// — the regenerated module section adds the combo format and the `mod` convention but no scope
-// vocabulary — so this asserts the weaker consequence that focus can only ever change the answer
-// to another command that holds the same combo.
+// CONTRACT (src/panelMeta.js constants): "`PANEL_META` — Keys: `palette`, `canvas`, …" and
+// (src/components/FlowCanvas.jsx) "The Node Editor panel" — the Node Editor's panel id is `canvas`.
+// CONTRACT (constants, DEFAULT_BINDINGS): "canvas-scoped commands never fire while a text field
+// has focus" — the bare-letter add.* family is the canvas-scoped one.
+test('resolve: a canvas-scoped command takes its combo while the Node Editor has focus', () => {
+  localStorage.clear()
+  const bindings = loadBindings()
+  for (const id of ADD_COMMAND_IDS) {
+    for (const combo of bindings[id]) {
+      assert.equal(
+        resolve(bindings, combo, 'canvas'),
+        id,
+        `${combo} should run ${id} while the Node Editor has focus`,
+      )
+    }
+  }
+})
+
+// CONTRACT: "a canvas-scoped binding takes the key while the Node Editor has focus, and the
+// global command bound to the same combo runs everywhere else. This is what lets `Ctrl+C` copy
+// nodes on the canvas without stealing copy from the rest of the app."
+test('resolve: a canvas-scoped command does not fire while another panel has focus', () => {
+  localStorage.clear()
+  const bindings = loadBindings()
+  for (const id of ADD_COMMAND_IDS) {
+    for (const combo of bindings[id]) {
+      for (const focus of ['spl', 'params', 'zin', null]) {
+        assert.notEqual(
+          resolve(bindings, combo, focus),
+          id,
+          `${id} must not fire while ${String(focus)} has focus`,
+        )
+      }
+    }
+  }
+})
+
+// CONTRACT: "The more specific scope wins" — with the Node Editor focused both the canvas-scoped
+// and the global bindings are live, so every bound combo must resolve to something.
+test('resolve: every bound combo resolves while the Node Editor has focus', () => {
+  localStorage.clear()
+  const bindings = loadBindings()
+  for (const id of COMMAND_IDS) {
+    for (const combo of bindings[id]) {
+      assert.notEqual(resolve(bindings, combo, 'canvas'), null, `${combo} (${id}) resolved to nothing`)
+    }
+  }
+})
+
+// CONTRACT: "The more specific scope wins: a canvas-scoped binding takes the key while the Node
+// Editor has focus, and the global command bound to the same combo runs everywhere else."
 test('resolve: focus only ever swaps in another holder of the same combo', () => {
   localStorage.clear()
   const bindings = loadBindings()

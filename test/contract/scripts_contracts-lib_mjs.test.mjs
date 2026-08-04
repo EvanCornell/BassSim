@@ -59,25 +59,92 @@ function* walkAst(node, parent = null, parents = []) {
 }
 
 // ===========================================================================
+// Exported constants
+// ===========================================================================
+
+// CONTRACT: "### `REPO` — Repository root, so scanned paths can be reported
+// repo-relative."
+test('REPO: is the repository root', () => {
+  assert.equal(typeof REPO, 'string')
+  assert.ok(path.isAbsolute(REPO))
+  assert.equal(path.resolve(REPO), REPO_ROOT)
+})
+
+// CONTRACT: "### `ROOTS` — Directories walked for documentable source. Values:
+// `src`, `mcp`, `server`, `scripts`, `test`"
+test('ROOTS: names exactly the documented directories', () => {
+  assert.deepEqual([...ROOTS].sort(), ['mcp', 'scripts', 'server', 'src', 'test'])
+})
+
+// CONTRACT: "### `IGNORE_FILES` — Values: `src/data/drivers.bc.js`,
+// `src/data/drivers.legacy.js`, `test/support/env.mjs`"
+test('IGNORE_FILES: names exactly the documented files', () => {
+  assert.deepEqual(
+    [...IGNORE_FILES].sort(),
+    ['src/data/drivers.bc.js', 'src/data/drivers.legacy.js', 'test/support/env.mjs'],
+  )
+})
+
+// CONTRACT: "### `IGNORE_DIRS_REL` — Values: `test/contract/`"
+test('IGNORE_DIRS_REL: names exactly the documented directories', () => {
+  assert.deepEqual([...IGNORE_DIRS_REL], ['test/contract/'])
+})
+
+// CONTRACT: "### `TAGS` — The contract vocabulary, as data so the test can
+// reject anything outside it. ... Keys: `param`, `returns`, `throws`,
+// `yields`, `type`, `typedef`, `property`, `template`, `callback`, `example`,
+// `see`, `deprecated`, `pre`, `post`, `invariant`, `mutates`, `sideEffect`,
+// `reads`, `pure`"
+test('TAGS: is exactly the documented contract vocabulary', () => {
+  assert.deepEqual(
+    Object.keys(TAGS).sort(),
+    [
+      'callback', 'deprecated', 'example', 'invariant', 'mutates', 'param', 'post', 'pre',
+      'property', 'pure', 'reads', 'returns', 'see', 'sideEffect', 'template', 'throws',
+      'type', 'typedef', 'yields',
+    ].sort(),
+  )
+})
+
+// CONTRACT: "### `__internals` — Keys: `walkDir`, `takeType`, `takeName`,
+// `stripDash`, `paramNames`, `returnsValue`, `classify`, `anchorStart`"
+test('__internals: publishes exactly the documented internal helpers', () => {
+  assert.deepEqual(
+    Object.keys(__internals).sort(),
+    ['anchorStart', 'classify', 'paramNames', 'returnsValue', 'stripDash', 'takeName', 'takeType', 'walkDir'],
+  )
+})
+
+// ===========================================================================
 // normalizeTag
 // ===========================================================================
 
 // CONTRACT: "Resolve a tag alias to its canonical name." / "The canonical tag
-// name, unchanged when it is not an alias."
-// AMBIGUITY: the contract does not enumerate the alias table, so only the
-// documented invariants can be asserted: a non-alias passes through untouched,
-// and a canonical name is a fixed point of the resolution.
-test('normalizeTag: a tag that is not an alias comes back unchanged', () => {
-  assert.equal(normalizeTag('zzz_not_a_tag'), 'zzz_not_a_tag')
-  assert.equal(normalizeTag('param'), 'param')
+// name, unchanged when it is not an alias." — with `TAGS` now published, the
+// canonical set is known: every TAGS key is its own canonical name.
+// AMBIGUITY (remaining): the alias table itself is still not enumerated, so
+// which spellings map onto those canonical names cannot be asserted directly.
+test('normalizeTag: every TAGS key is its own canonical name', () => {
+  for (const t of Object.keys(TAGS)) {
+    assert.equal(normalizeTag(t), t, `@${t} is a canonical tag and must not be rewritten`)
+  }
 })
 
-// CONTRACT: "The canonical tag name" — the canonical name of a canonical name
-// is itself, so resolution is idempotent.
+// CONTRACT: "unchanged when it is not an alias" / "A typo like `@sideeffect`
+// would otherwise parse cleanly and then silently vanish from the generated
+// docs" — so `sideeffect` is a typo to be rejected, not an alias to absorb.
+test('normalizeTag: a tag that is not an alias comes back unchanged', () => {
+  assert.equal(normalizeTag('zzz_not_a_tag'), 'zzz_not_a_tag')
+  assert.equal(normalizeTag('sideeffect'), 'sideeffect')
+  assert.equal(Object.keys(TAGS).includes(normalizeTag('sideeffect')), false)
+})
+
+// CONTRACT: "The canonical tag name" — resolution lands in TAGS and is a fixed
+// point there, so applying it twice changes nothing.
 test('normalizeTag: resolution is idempotent', () => {
-  for (const t of ['param', 'returns', 'throws', 'pure', 'pre', 'post', 'return', 'arg', 'exception']) {
-    assert.equal(normalizeTag(normalizeTag(t)), normalizeTag(t), `not idempotent for @${t}`)
+  for (const t of [...Object.keys(TAGS), 'return', 'arg', 'argument', 'exception', 'zzz_not_a_tag']) {
     assert.equal(typeof normalizeTag(t), 'string')
+    assert.equal(normalizeTag(normalizeTag(t)), normalizeTag(t), `not idempotent for @${t}`)
   }
 })
 
@@ -109,6 +176,29 @@ test('sourceFiles: returns repo-relative paths in ascending order', () => {
   assert.deepEqual(sourceFiles(), files)
   // No duplicates, or the "no diff" guarantee would not hold.
   assert.equal(new Set(files).size, files.length)
+})
+
+// CONTRACT: "Every source file in scope" — scope being `ROOTS`, less
+// `IGNORE_FILES` and `IGNORE_DIRS_REL`.
+test('sourceFiles: covers exactly the documented scope', () => {
+  const files = sourceFiles()
+  const roots = [...ROOTS]
+  const ignoreFiles = new Set([...IGNORE_FILES])
+  for (const f of files) {
+    assert.ok(
+      roots.some((r) => f === r || f.startsWith(`${r}/`)),
+      `${f} lies outside ROOTS`,
+    )
+    assert.equal(ignoreFiles.has(f), false, `${f} is in IGNORE_FILES but was scanned`)
+    for (const d of IGNORE_DIRS_REL) {
+      assert.equal(f.startsWith(d), false, `${f} lies under the ignored directory ${d}`)
+    }
+  }
+  // Each root that exists on disk contributes at least one file.
+  for (const r of roots) {
+    if (!fs.existsSync(path.join(REPO_ROOT, r))) continue
+    assert.ok(files.some((f) => f.startsWith(`${r}/`)), `root ${r} contributed nothing`)
+  }
 })
 
 // ===========================================================================
@@ -215,7 +305,14 @@ test('parseJsdoc: @pure — equal inputs give equal output', () => {
 test('scanFile: returns the file, its module doc and every method', () => {
   const r = scanFile('mcp/builders.js')
   assert.equal(r.file, 'mcp/builders.js')
-  assert.ok(r.moduleDoc === null || typeof r.moduleDoc === 'object')
+  // The module header is captured, not dropped.
+  assert.notEqual(r.moduleDoc, null, 'mcp/builders.js has a module header')
+  assert.equal(typeof r.moduleDoc, 'object')
+  assert.equal(
+    r.moduleDoc.summary,
+    'Phase-2 helpers for the MCP server: driver lookup, self-calibrating',
+    'the module summary is the header\'s first line',
+  )
   assert.ok(Array.isArray(r.methods))
   const names = r.methods.map((m) => m.name)
   // Documented exports of that module, per its own contract spec.

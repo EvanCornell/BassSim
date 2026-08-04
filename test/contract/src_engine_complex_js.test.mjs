@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import {
   C, add, sub, mul, div, inv, neg, abs, arg, cosh, sinh, jw, jwPow,
   matMul, matIdentity, zInFromMatrix, propagate, parallel,
+  ZERO, ONE,
 } from '../../src/engine/complex.js'
 
 // ---------------------------------------------------------------------------
