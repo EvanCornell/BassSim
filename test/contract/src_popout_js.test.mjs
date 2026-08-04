@@ -78,13 +78,33 @@ test('popoutPanelId: the main window with no query is not a panel window', () =>
   })
 })
 
-// CONTRACT: "The panel id this window was opened to show, if it is a popped-out tab."
-// AMBIGUITY: the contract never states what path marks a popout, so the only assertable
-// property here is the type of the answer for a popout-looking URL.
+// CONTRACT (module): "The tab loads the same app at /panel?id=<panel> and renders that one
+// panel full-window."
+// CONTRACT (src/panelMeta.js constants): "`PANEL_META` — Keys: `palette`, `canvas`, `params`,
+// `nllab`, `spl`, `zin`, `exc`, `vel`, `int`, `pow`, `eff`, `pe`, `ph`"
+test('popoutPanelId: reads the panel id out of the documented /panel?id= URL', () => {
+  for (const id of ['spl', 'canvas', 'zin', 'params']) {
+    const { win } = makeWindow('/panel', `?id=${id}`)
+    withWindow(win, () => {
+      assert.equal(popoutPanelId(), id)
+    })
+  }
+})
+
+// CONTRACT: "Checked against the path as well as the query string" — the path alone is not enough
+test('popoutPanelId: the popout path without an id names no panel', () => {
+  const { win } = makeWindow('/panel', '')
+  withWindow(win, () => {
+    assert.equal(popoutPanelId(), null)
+  })
+})
+
+// CONTRACT: "`string|null` — The panel id" — the answer is a string or null for any URL shape
 test('popoutPanelId: always answers with a string or null', () => {
   for (const [path, search] of [
-    ['/popout', '?id=spl'],
-    ['/popout/spl', ''],
+    ['/panel', '?id=spl'],
+    ['/panel', '?id='],
+    ['/panel/spl', ''],
     ['/index.html', '?id=spl'],
     ['/', '?id='],
     ['/', '?other=1'],
@@ -101,13 +121,22 @@ test('popoutPanelId: always answers with a string or null', () => {
 // isPopout
 // ---------------------------------------------------------------------------
 
+// CONTRACT: "`boolean` — True in a panel tab."
+// CONTRACT (module): "The tab loads the same app at /panel?id=<panel>"
+test('isPopout: true in a panel tab', () => {
+  const { win } = makeWindow('/panel', '?id=spl')
+  withWindow(win, () => {
+    assert.equal(isPopout(), true)
+  })
+})
+
 // CONTRACT: "`boolean` — True in a panel tab." + "Reads `window.location` via `popoutPanelId`."
 test('isPopout: is exactly the boolean form of popoutPanelId', () => {
   for (const [path, search] of [
     ['/', ''],
     ['/', '?id=spl'],
-    ['/popout', '?id=spl'],
-    ['/popout/spl', ''],
+    ['/panel', '?id=spl'],
+    ['/panel', ''],
     ['/index.html', '?id=spl'],
   ]) {
     const { win } = makeWindow(path, search)
@@ -171,13 +200,38 @@ test('openPanelWindow: the window name is keyed on the panel id', () => {
   assert.ok(opened[2].name.includes('impedance'), 'the name must be keyed on the panel id')
 })
 
-// CONTRACT: "Open — or focus — the browser tab showing one panel." — the URL must identify the panel
-test('openPanelWindow: the opened URL names the panel', () => {
+// CONTRACT (module): "The tab loads the same app at /panel?id=<panel> and renders that one panel
+// full-window."
+test('openPanelWindow: opens the documented /panel?id= URL', () => {
   const fake = { focus: () => {} }
   const { win, opened } = makeWindow('/', '', () => fake)
   withWindow(win, () => {
     openPanelWindow('spl')
+    openPanelWindow('canvas')
   })
   assert.equal(typeof opened[0].url, 'string')
-  assert.ok(opened[0].url.includes('spl'), `the URL must carry the panel id, got ${opened[0].url}`)
+  assert.ok(
+    opened[0].url.includes('/panel?id=spl'),
+    `the URL must be the documented /panel?id=<panel>, got ${opened[0].url}`,
+  )
+  assert.ok(
+    opened[1].url.includes('/panel?id=canvas'),
+    `the URL must be the documented /panel?id=<panel>, got ${opened[1].url}`,
+  )
+})
+
+// CONTRACT (module): the popped-out tab is recognised by the URL it was opened with, so the URL
+// openPanelWindow produces must be one popoutPanelId reads back as that panel.
+test('openPanelWindow: the URL it opens round-trips through popoutPanelId', () => {
+  const fake = { focus: () => {} }
+  const { win, opened } = makeWindow('/', '', () => fake)
+  withWindow(win, () => {
+    openPanelWindow('zin')
+  })
+  const url = new URL(opened[0].url, 'http://localhost/')
+  const { win: tab } = makeWindow(url.pathname, url.search)
+  withWindow(tab, () => {
+    assert.equal(popoutPanelId(), 'zin')
+    assert.equal(isPopout(), true)
+  })
 })

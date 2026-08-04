@@ -116,11 +116,11 @@ Complex division.
 
 **Returns**
 
-- `Complex` — `a / b`, as a new instance.
+- `Complex` — `a / b`, as a new instance. Division by zero yields Infinity or NaN components rather than throwing, so a degenerate network produces a visibly broken curve instead of aborting the sweep.
 
 **Preconditions (caller must guarantee)**
 
-- b is non-zero; division by zero yields Infinity/NaN components rather than throwing
+- b is non-zero for the result to be meaningful
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
@@ -283,7 +283,7 @@ impedance rise more slowly than 6 dB/octave. Exponent n is the driver's
 
 **Preconditions (caller must guarantee)**
 
-- w >= 0
+- w > 0 — the principal branch goes through log(jω), which is undefined at zero. The sweep is logarithmic and never reaches it.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 

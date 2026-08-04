@@ -35,6 +35,52 @@ function nearC(actual, re, im, tol = TOL, msg = '') {
 }
 
 // ---------------------------------------------------------------------------
+// Exported constants
+
+// CONTRACT: "`ZERO` — Complex additive identity, `0 + 0j`. Shared instance —
+// never mutate it."
+test('ZERO: is the complex additive identity 0 + 0j', () => {
+  assert.equal(ZERO.re, 0)
+  assert.equal(ZERO.im, 0)
+  // Additive identity: a + ZERO = a, and the shared instance survives it.
+  const a = C(3, -4)
+  nearC(add(a, ZERO), 3, -4)
+  assert.equal(ZERO.re, 0, 'ZERO must not be mutated by use')
+  assert.equal(ZERO.im, 0, 'ZERO must not be mutated by use')
+})
+
+// CONTRACT: "`ONE` — Complex multiplicative identity, `1 + 0j`. Shared instance
+// — never mutate it."
+test('ONE: is the complex multiplicative identity 1 + 0j', () => {
+  assert.equal(ONE.re, 1)
+  assert.equal(ONE.im, 0)
+  const a = C(3, -4)
+  nearC(mul(a, ONE), 3, -4)
+  assert.equal(ONE.re, 1, 'ONE must not be mutated by use')
+  assert.equal(ONE.im, 0, 'ONE must not be mutated by use')
+})
+
+// CONTRACT (module): "Every operation here returns a new Complex; none mutate
+// their arguments. That is what makes the whole module `@pure` and lets the
+// solver reuse operand instances across the 512-point frequency sweep without
+// defensive copying."
+test('module: no operation mutates its arguments or returns an operand', () => {
+  const a = C(1.25, -2.5)
+  const b = C(0.75, 3)
+  const a0 = snap(a)
+  const b0 = snap(b)
+  const results = [
+    add(a, b), sub(a, b), mul(a, b), div(a, b), inv(a), neg(a), cosh(a), sinh(a),
+  ]
+  for (const r of results) {
+    assert.notEqual(r, a, 'no operation may return an operand instance')
+    assert.notEqual(r, b, 'no operation may return an operand instance')
+  }
+  assert.deepEqual(snap(a), a0, 'a must be unmodified after every operation')
+  assert.deepEqual(snap(b), b0, 'b must be unmodified after every operation')
+})
+
+// ---------------------------------------------------------------------------
 // C(re, im)
 
 // CONTRACT: "Construct a complex number." / "`re` — `number` — Real part."
@@ -495,12 +541,15 @@ test('matIdentity: newly allocated matrix sharing the ZERO/ONE constants', () =>
   assert.notEqual(a, b, 'outer array must be freshly allocated')
   assert.notEqual(a[0], b[0], 'row 0 must be freshly allocated')
   assert.notEqual(a[1], b[1], 'row 1 must be freshly allocated')
-  // "sharing the ZERO/ONE constants": the entries themselves are the shared
-  // constant Complex values, so they are reference-identical across calls.
-  assert.equal(a[0][0], b[0][0], 'ONE constant must be shared')
-  assert.equal(a[1][1], b[1][1], 'ONE constant must be shared')
-  assert.equal(a[0][1], b[0][1], 'ZERO constant must be shared')
-  assert.equal(a[1][0], b[1][0], 'ZERO constant must be shared')
+  // "sharing the ZERO/ONE constants": the entries are the module's exported
+  // shared instances, so they are reference-identical to ZERO and ONE and to
+  // each other across calls.
+  assert.equal(a[0][0], ONE, 'A must be the shared ONE constant')
+  assert.equal(a[1][1], ONE, 'D must be the shared ONE constant')
+  assert.equal(a[0][1], ZERO, 'B must be the shared ZERO constant')
+  assert.equal(a[1][0], ZERO, 'C must be the shared ZERO constant')
+  assert.equal(a[0][0], b[0][0], 'ONE constant must be shared across calls')
+  assert.equal(a[0][1], b[0][1], 'ZERO constant must be shared across calls')
 })
 
 // CONTRACT: "The identity two-port, representing a lossless connection of zero

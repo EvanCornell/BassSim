@@ -68,7 +68,8 @@ export const TOL = { Qes: 0.15, Qts: 0.12, Vas: 0.35 }
  *
  * Three identities are checked, each only when every value it needs is present
  * and positive: Qes against ωs·Mms·Re/Bl², Qts against Qes ∥ Qms, and Vas
- * against ρc²·Sd²·Cms. Fields are read in the database's own display units —
+ * against ρc²·Sd²·Cms, taking ρ = 1.204 kg/m³ and c = 343.2 m/s. Fields are
+ * read in the database's own display units —
  * Mms in grams, Cms in mm/N, Sd in cm², Vas in litres — and converted
  * internally. The tolerances live in `TOL` and are relative, not absolute.
  *

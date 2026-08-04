@@ -72,8 +72,8 @@ export const mul = (a, b) => a.mul(b)
  *
  * @param {Complex} a - Dividend.
  * @param {Complex} b - Divisor.
- * @returns {Complex} `a / b`, as a new instance.
- * @pre b is non-zero; division by zero yields Infinity/NaN components rather than throwing
+ * @returns {Complex} `a / b`, as a new instance. Division by zero yields Infinity or NaN components rather than throwing, so a degenerate network produces a visibly broken curve instead of aborting the sweep.
+ * @pre b is non-zero for the result to be meaningful
  * @pure
  */
 export const div = (a, b) => a.div(b)
@@ -160,7 +160,7 @@ export const jw = (w) => C(0, w)
  * @param {number} w - Angular frequency ω, rad/s.
  * @param {number} n - Semi-inductance exponent, typically 0.5–1.
  * @returns {Complex} `(jω)ⁿ` on the principal branch.
- * @pre w >= 0
+ * @pre w > 0 — the principal branch goes through log(jω), which is undefined at zero. The sweep is logarithmic and never reaches it.
  * @pure
  */
 export const jwPow = (w, n) => C(0, w).pow(n)

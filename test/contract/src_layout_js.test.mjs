@@ -723,12 +723,22 @@ test('resizeChildren: works at the last valid pair index', () => {
 // sanitize
 // ---------------------------------------------------------------------------
 
-const KNOWN = ['pA', 'pB', 'pC']
+// CONTRACT (src/panelMeta.js constants): "`PANEL_META` — ... Doubles as the panel registry:
+// `layout.sanitize` treats an id absent from this map as unknown and drops it. Keys: `palette`,
+// `canvas`, `params`, `nllab`, `spl`, `zin`, `exc`, `vel`, `int`, `pow`, `eff`, `pe`, `ph`"
+// The sanitize fixtures therefore use real panel ids, so a survivor is renderable under both
+// the `knownPanels` argument and the registry it comes from.
+const pA = 'canvas'
+const pB = 'spl'
+const pC = 'zin'
+const KNOWN = [pA, pB, pC]
+// A real panel id that this build's caller did NOT pass in `knownPanels`.
+const NOT_ALLOWED = 'nllab'
 
 // Persisted-shaped fixtures, following the module section's node kinds:
 //   { id, type: 'stack', size, panels, active }
 //   { id, type: 'split', dir, size, children }
-const rawStack = (o = {}) => ({ type: 'stack', id: 's1', size: 1, panels: ['pA'], active: 'pA', ...o })
+const rawStack = (o = {}) => ({ type: 'stack', id: 's1', size: 1, panels: [pA], active: pA, ...o })
 const rawSplit = (o = {}) => ({ type: 'split', id: 'd1', size: 1, dir: 'row', children: [], ...o })
 
 // Full postcondition check: "Every returned node has a valid id, a positive numeric size,
@@ -764,15 +774,25 @@ test('sanitize: non-objects sanitize to null', () => {
 // CONTRACT: "an old or corrupt layout can never wedge the workspace — at worst it sanitizes to `null`"
 test('sanitize: an array is not a layout node', () => {
   assert.equal(sanitize([], KNOWN), null)
-  assert.equal(sanitize(['pA'], KNOWN), null)
+  assert.equal(sanitize([pA], KNOWN), null)
 })
 
 // CONTRACT: "`knownPanels` — Panel ids this build knows how to render. Anything else is dropped."
 test('sanitize: unknown panel ids are dropped', () => {
-  const out = sanitize(rawStack({ panels: ['pA', 'ghost', 'pB'], active: 'pA' }), KNOWN)
+  const out = sanitize(rawStack({ panels: [pA, 'ghost', pB], active: pA }), KNOWN)
   assert.notEqual(out, null, 'a renderable panel survived, so the result must not be null')
-  assert.deepEqual(out.panels, ['pA', 'pB'])
+  assert.deepEqual(out.panels, [pA, pB])
   assertSane(out, KNOWN)
+})
+
+// CONTRACT: "`knownPanels` — Panel ids this build knows how to render. Anything else is dropped."
+// A panel the registry knows but the caller did not allow is still "anything else".
+test('sanitize: a panel absent from knownPanels is dropped even when the registry knows it', () => {
+  const out = sanitize(rawStack({ panels: [pA, NOT_ALLOWED], active: NOT_ALLOWED }), KNOWN)
+  assert.notEqual(out, null)
+  assert.deepEqual(out.panels, [pA])
+  assertSane(out, KNOWN)
+  assert.equal(sanitize(rawStack({ panels: [NOT_ALLOWED], active: NOT_ALLOWED }), KNOWN), null)
 })
 
 // CONTRACT: "`null` when nothing renderable survived."
@@ -793,7 +813,7 @@ test('sanitize: negative, zero and non-numeric sizes are re-derived as positive 
 // CONTRACT postcondition: "for stacks — an `active` panel drawn from its own list"
 test('sanitize: an active panel outside its own list is replaced', () => {
   for (const active of ['not-in-list', 'ghost', null, undefined, 7, {}]) {
-    const out = sanitize(rawStack({ panels: ['pA', 'pB'], active }), KNOWN)
+    const out = sanitize(rawStack({ panels: [pA, pB], active }), KNOWN)
     assert.notEqual(out, null)
     assertSane(out, KNOWN, `active ${String(active)}`)
   }
@@ -801,10 +821,10 @@ test('sanitize: an active panel outside its own list is replaced', () => {
 
 // CONTRACT: "an `active` panel drawn from its own list" — including when active names a dropped panel
 test('sanitize: an active panel that was itself dropped is replaced by a surviving one', () => {
-  const out = sanitize(rawStack({ panels: ['ghost', 'pB'], active: 'ghost' }), KNOWN)
+  const out = sanitize(rawStack({ panels: ['ghost', pB], active: 'ghost' }), KNOWN)
   assert.notEqual(out, null)
-  assert.deepEqual(out.panels, ['pB'])
-  assert.equal(out.active, 'pB')
+  assert.deepEqual(out.panels, [pB])
+  assert.equal(out.active, pB)
 })
 
 // CONTRACT postcondition: "Every returned node has a valid id"
@@ -823,7 +843,7 @@ test('sanitize: a split left with one usable child does not stay a split', () =>
   const out = sanitize(rawSplit({ children: [rawStack()] }), KNOWN)
   assert.notEqual(out, null)
   assertSane(out, KNOWN)
-  assert.deepEqual(openPanels(out, []), ['pA'])
+  assert.deepEqual(openPanels(out, []), [pA])
 })
 
 // CONTRACT: "both structural invariants are re-established on the way back up"
@@ -854,12 +874,12 @@ test('sanitize: survives hostile children and hostile field types', () => {
       5,
       'nope',
       [],
-      rawStack({ id: 's1', size: -2, panels: ['pA', 7, null, 'ghost'], active: 42 }),
-      rawStack({ id: 's2', panels: 'pB', active: 'pB' }),
+      rawStack({ id: 's1', size: -2, panels: [pA, 7, null, 'ghost'], active: 42 }),
+      rawStack({ id: 's2', panels: pB, active: pB }),
       rawSplit({ id: 'd2', dir: 'col', children: 'not-an-array' }),
-      rawStack({ id: 's3', panels: ['pB', 'pC'], active: 'pC' }),
-      { id: 's4', size: 1, panels: ['pA'], active: 'pA' }, // no `type` field at all
-      { type: 'wat', id: 's5', size: 1, panels: ['pB'], active: 'pB' }, // unknown kind
+      rawStack({ id: 's3', panels: [pB, pC], active: pC }),
+      { id: 's4', size: 1, panels: [pA], active: pA }, // no `type` field at all
+      { type: 'wat', id: 's5', size: 1, panels: [pB], active: pB }, // unknown kind
     ],
   })
   const before = clone(hostile)
@@ -873,8 +893,8 @@ test('sanitize: survives hostile children and hostile field types', () => {
 test('sanitize: a valid tree keeps its panels and structure', () => {
   const tree = rawSplit({
     children: [
-      rawStack({ id: 's1', size: 2, panels: ['pA', 'pB'], active: 'pB' }),
-      rawStack({ id: 's2', panels: ['pC'], active: 'pC' }),
+      rawStack({ id: 's1', size: 2, panels: [pA, pB], active: pB }),
+      rawStack({ id: 's2', panels: [pC], active: pC }),
     ],
   })
   const out = sanitize(clone(tree), KNOWN)
@@ -882,8 +902,8 @@ test('sanitize: a valid tree keeps its panels and structure', () => {
   assert.equal(out.type, 'split')
   assert.equal(out.dir, 'row')
   assert.equal(out.children.length, 2)
-  assert.deepEqual(openPanels(out, []), ['pA', 'pB', 'pC'])
-  assert.equal(findPanelStack(out, 'pB').active, 'pB')
+  assert.deepEqual(openPanels(out, []), [pA, pB, pC])
+  assert.equal(findPanelStack(out, pB).active, pB)
 })
 
 // CONTRACT: "The trust boundary for LocalStorage." — a real default layout must survive it

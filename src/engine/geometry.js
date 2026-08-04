@@ -144,7 +144,9 @@ export function waveguideVolume(flare, S1, S2, L, N = 200) {
  *
  * Conical and parabolic horns have no true cutoff — they load progressively
  * rather than sharply — and a segment that does not expand is a duct, so both
- * return `null` instead of a misleading number.
+ * return `null` instead of a misleading number. The exponential family is
+ * everything else: `exponential`, `hypex`, `tractrix` and `lecleach`, the last
+ * two being hypex approximations and so sharing its cutoff behaviour.
  *
  * @param {'conical'|'parabolic'|'exponential'|'hypex'|'tractrix'|'lecleach'} flare - Expansion law.
  * @param {number} S1 - Throat area, m².
@@ -168,11 +170,16 @@ export function flareCutoff(flare, S1, S2, L) {
  * as if it were longer than its physical length. Ports are tuned with this
  * included; omitting it puts the predicted tuning several Hz high.
  *
+ * The correction is `factor · a`, where `a` is the radius of the equivalent
+ * circular opening — so it scales with the square root of area, and doubling
+ * the coefficient doubles the correction.
+ *
  * @param {number} S - Area of the opening, m².
  * @param {number} factor - End-correction coefficient: ≈0.85 flanged, ≈0.61 free, 0.732 for the typical two-flanged port.
- * @returns {number} Added effective length, m.
+ * @returns {number} Added effective length in m, equal to `factor · sqrt(S/π)`.
  * @pre S >= 0
  * @post result >= 0 when factor >= 0
+ * @post result is 0 when S is 0, and strictly increasing in both S and factor otherwise
  * @pure
  */
 export function endCorrectionLength(S, factor) {

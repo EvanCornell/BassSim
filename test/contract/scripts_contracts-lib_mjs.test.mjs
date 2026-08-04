@@ -306,12 +306,15 @@ test('scanFile: returns the file, its module doc and every method', () => {
   const r = scanFile('mcp/builders.js')
   assert.equal(r.file, 'mcp/builders.js')
   // The module header is captured, not dropped.
+  // AMBIGUITY: the contract does not say whether a wrapped opening paragraph
+  // lands wholly in `summary` or spills into `description`, so the whole
+  // header text is checked rather than one field.
   assert.notEqual(r.moduleDoc, null, 'mcp/builders.js has a module header')
   assert.equal(typeof r.moduleDoc, 'object')
-  assert.equal(
-    r.moduleDoc.summary,
-    'Phase-2 helpers for the MCP server: driver lookup, self-calibrating',
-    'the module summary is the header\'s first line',
+  const header = `${r.moduleDoc.summary || ''} ${r.moduleDoc.description || ''}`.replace(/\s+/g, ' ')
+  assert.ok(
+    header.includes('Phase-2 helpers for the MCP server: driver lookup, self-calibrating enclosure builders, an optimizer, and comparison scoring.'),
+    `module header not captured: ${header}`,
   )
   assert.ok(Array.isArray(r.methods))
   const names = r.methods.map((m) => m.name)
@@ -390,6 +393,13 @@ test('scanRepo: one entry per source file, in sorted path order', () => {
   for (const e of all) {
     assert.ok(e.moduleDoc === null || typeof e.moduleDoc === 'object')
     assert.ok(Array.isArray(e.methods))
+  }
+  // Module headers are captured, not dropped: these modules all carry one
+  // according to the contract pack.
+  for (const f of ['mcp/builders.js', 'mcp/acousim.js', 'scripts/contracts-lib.mjs', 'src/data/driver-fields.js']) {
+    const e = all.find((x) => x.file === f)
+    assert.ok(e, `${f} was not scanned`)
+    assert.notEqual(e.moduleDoc, null, `${f} has a documented module header that was dropped`)
   }
 })
 

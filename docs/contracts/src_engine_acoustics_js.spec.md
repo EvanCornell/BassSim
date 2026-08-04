@@ -47,7 +47,7 @@ itself, and much faster than a series evaluation in the frequency loop.
 
 **Postconditions (must hold on return)**
 
-- result === -J1(-x) — the function is odd
+- result equals -J1(-x) to within floating-point rounding — the function is odd, and |x| is taken before the polynomial is evaluated, so the two differ by at most a sign flip
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
@@ -71,7 +71,7 @@ an input to `struveH1`.
 
 **Postconditions (must hold on return)**
 
-- result === J0(-x) — the function is even
+- result equals J0(-x) exactly — |x| is taken before the polynomial is evaluated, so the two arguments follow an identical path
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
@@ -85,6 +85,11 @@ Struve function H₁, via the Aarts & Janssen (2003) approximation.
 Supplies the reactive (mass-loading) half of the piston radiation impedance.
 The approximation is a closed form in J₀, sin and cos, so it costs a handful
 of flops per frequency point instead of a series summation.
+
+Materially looser than the Bessel routines beside it — roughly 1e-3 relative
+over the usable range rather than 1e-8. That is well inside the error of the
+rigid-piston assumption it feeds, but it is not a drop-in general-purpose
+Struve function.
 
 **Parameters**
 
@@ -111,7 +116,9 @@ is behind it. The interpolation is smooth rather than a switch, so the
 transition introduces no step in the SPL curve.
 
 Two pseudo-terminations short-circuit the piston model entirely: `rigid`
-returns a near-infinite impedance (a closed wall passes no volume velocity)
+returns a fixed 1e12 Pa·s/m³ — large enough that the volume velocity through
+it is numerically zero against any real acoustic impedance, without being
+`Infinity`, which would propagate NaN through the matrix arithmetic
 and `anechoic` returns the real characteristic impedance ρc/S (a perfectly
 absorbing end with no reflection).
 

@@ -527,9 +527,15 @@ export function scanFile(relPath) {
     }
     if (node.type === 'ArrayExpression') {
       const lit = node.elements.filter((e) => e && (e.type === 'StringLiteral' || e.type === 'NumericLiteral'))
-      const out = { kind: 'array', length: node.elements.length }
-      if (lit.length === node.elements.length && node.elements.length) out.values = lit.map((e) => e.value)
-      return out
+      // Only claim a length when every element is a literal. A spread or a
+      // computed element counts as one node in the AST but expands to any
+      // number at runtime, and reporting the source count as the length is
+      // simply wrong — `[...new Set(xs)]` is not an array of one.
+      if (lit.length === node.elements.length && node.elements.length) {
+        return { kind: 'array', length: node.elements.length, values: lit.map((e) => e.value) }
+      }
+      const computed = node.elements.some((e) => e && (e.type === 'SpreadElement' || e.type === 'CallExpression'))
+      return computed ? { kind: 'array' } : { kind: 'array', length: node.elements.length }
     }
     if (node.type === 'StringLiteral' || node.type === 'NumericLiteral' || node.type === 'BooleanLiteral') {
       return { kind: 'literal', value: node.value }

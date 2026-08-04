@@ -28,6 +28,10 @@ Catalog and hand-transcribed entries are merged into one list deliberately:
 consumers filter on `source` when provenance matters rather than choosing
 between two arrays.
 
+Sorted by brand then model using `localeCompare`, so ordering follows the
+runtime's collation rather than code-unit order — the two disagree on real
+brand names. Same-brand rows are therefore contiguous.
+
 ### `DRIVER_BRANDS`
 
 Distinct brand names in the library, sorted, for populating filter menus.

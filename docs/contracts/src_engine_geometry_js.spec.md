@@ -116,7 +116,9 @@ collapses, so it is the practical low-frequency limit of the design.
 
 Conical and parabolic horns have no true cutoff — they load progressively
 rather than sharply — and a segment that does not expand is a duct, so both
-return `null` instead of a misleading number.
+return `null` instead of a misleading number. The exponential family is
+everything else: `exponential`, `hypex`, `tractrix` and `lecleach`, the last
+two being hypex approximations and so sharing its cutoff behaviour.
 
 **Parameters**
 
@@ -146,6 +148,10 @@ Air just outside a port moves with the column inside it, so the duct behaves
 as if it were longer than its physical length. Ports are tuned with this
 included; omitting it puts the predicted tuning several Hz high.
 
+The correction is `factor · a`, where `a` is the radius of the equivalent
+circular opening — so it scales with the square root of area, and doubling
+the coefficient doubles the correction.
+
 **Parameters**
 
 - `S` — `number` — Area of the opening, m².
@@ -153,7 +159,7 @@ included; omitting it puts the predicted tuning several Hz high.
 
 **Returns**
 
-- `number` — Added effective length, m.
+- `number` — Added effective length in m, equal to `factor · sqrt(S/π)`.
 
 **Preconditions (caller must guarantee)**
 
@@ -162,5 +168,6 @@ included; omitting it puts the predicted tuning several Hz high.
 **Postconditions (must hold on return)**
 
 - result >= 0 when factor >= 0
+- result is 0 when S is 0, and strictly increasing in both S and factor otherwise
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.

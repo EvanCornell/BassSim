@@ -18,7 +18,7 @@ export { RHO, C_AIR, areaProfile, waveguideVolume, flareCutoff, endCorrectionLen
  *
  * @param {number} x - Argument, dimensionless (here 2ka).
  * @returns {number} J₁(x).
- * @post result === -J1(-x) — the function is odd
+ * @post result equals -J1(-x) to within floating-point rounding — the function is odd, and |x| is taken before the polynomial is evaluated, so the two differ by at most a sign flip
  * @pure
  */
 export function besselJ1(x) {
@@ -49,7 +49,7 @@ export function besselJ1(x) {
  *
  * @param {number} x - Argument, dimensionless.
  * @returns {number} J₀(x).
- * @post result === J0(-x) — the function is even
+ * @post result equals J0(-x) exactly — |x| is taken before the polynomial is evaluated, so the two arguments follow an identical path
  * @pure
  */
 export function besselJ0(x) {
@@ -75,6 +75,11 @@ export function besselJ0(x) {
  * The approximation is a closed form in J₀, sin and cos, so it costs a handful
  * of flops per frequency point instead of a series summation.
  *
+ * Materially looser than the Bessel routines beside it — roughly 1e-3 relative
+ * over the usable range rather than 1e-8. That is well inside the error of the
+ * rigid-piston assumption it feeds, but it is not a drop-in general-purpose
+ * Struve function.
+ *
  * @param {number} x - Argument, dimensionless (here 2ka).
  * @returns {number} H₁(x); exactly 0 at x = 0, which the series form cannot evaluate directly.
  * @pure
@@ -98,7 +103,9 @@ export function struveH1(x) {
  * transition introduces no step in the SPL curve.
  *
  * Two pseudo-terminations short-circuit the piston model entirely: `rigid`
- * returns a near-infinite impedance (a closed wall passes no volume velocity)
+ * returns a fixed 1e12 Pa·s/m³ — large enough that the volume velocity through
+ * it is numerically zero against any real acoustic impedance, without being
+ * `Infinity`, which would propagate NaN through the matrix arithmetic
  * and `anechoic` returns the real characteristic impedance ρc/S (a perfectly
  * absorbing end with no reflection).
  *
