@@ -14,6 +14,24 @@ import { formatCombo } from '../keymap'
 
 // ---------- dropdown primitives ----------
 
+/**
+ * One dropdown row: a command, a separator, or a submenu parent.
+ *
+ * A label of `-` renders a separator instead of an item. Clicking a submenu
+ * parent is swallowed rather than treated as a command, since the submenu
+ * opens on hover and a click there means "I am on my way to the child".
+ *
+ * @param {object} props - Component props.
+ * @param {string} props.label - Display text, or `-` for a separator.
+ * @param {string} [props.hint] - Shortcut hint shown on the right.
+ * @param {Function} [props.onClick] - Command to run.
+ * @param {boolean} [props.disabled] - Render inert.
+ * @param {boolean} [props.checked] - Show a check mark.
+ * @param {boolean} [props.danger] - Style as destructive.
+ * @param {Array<object>} [props.submenu] - Child items; makes this a submenu parent.
+ * @returns {React.ReactElement} The menu row.
+ * @pure
+ */
 function Item({ label, hint, onClick, disabled, checked, danger, submenu }) {
   const [openSub, setOpenSub] = useState(false)
   if (label === '-') return <div className="menu-sep" />
@@ -41,6 +59,21 @@ function Item({ label, hint, onClick, disabled, checked, danger, submenu }) {
   )
 }
 
+/**
+ * One menu title with its dropdown.
+ *
+ * `onHover` is what gives the bar its native feel: once any menu is open,
+ * moving across a title switches to it without a second click.
+ *
+ * @param {object} props - Component props.
+ * @param {string} props.title - Menu title.
+ * @param {Array<object>} props.items - Dropdown items.
+ * @param {boolean} props.open - Whether this dropdown is showing.
+ * @param {Function} props.onOpen - Called when the title is clicked.
+ * @param {Function} props.onHover - Called when the pointer enters the title.
+ * @returns {React.ReactElement} The menu.
+ * @pure
+ */
 function Menu({ title, items, open, onOpen, onHover }) {
   return (
     <div className="menu-root">
@@ -60,6 +93,20 @@ function Menu({ title, items, open, onOpen, onHover }) {
 
 // ---------- the bar ----------
 
+/**
+ * The application menu bar.
+ *
+ * Follows the native pattern: click a title to open, then hover any other
+ * title to switch without clicking again; Escape or a click anywhere else
+ * closes.
+ *
+ * Subscribes to the whole store rather than a slice — the menus read most
+ * of it, and the enabled/checked state of nearly every item depends on
+ * current state.
+ *
+ * @returns {React.ReactElement} The menu bar.
+ * @sideEffect Subscribes to the store. Registers window mousedown and keydown listeners while a menu is open.
+ */
 export default function MenuBar() {
   const store = useStore()
   const [open, setOpen] = useState(null)
@@ -68,35 +115,91 @@ export default function MenuBar() {
   const barRef = useRef(null)
   const { settings, updateSettings, layout, layoutOps, layoutPresets, snapshots, poppedOut, bindings } = store
 
-  // Menu hints read the live bindings, so rebinding a command in Settings
-  // updates every menu that mentions it.
+  /**
+   * The display hint for a command's first binding.
+   *
+   * Read live rather than baked in, so rebinding a command in Settings
+   * updates every menu that mentions it.
+   *
+   * @param {string} id - Command id.
+   * @returns {string} The formatted combo, or `''` when unbound.
+   * @reads the current bindings from the store.
+   */
   const key = (id) => formatCombo(bindings[id]?.[0])
 
-  // A popped-out panel is neither open in the dock nor closed — say so, and
-  // let the menu item bring its tab back to the front.
+  /**
+   * Build the View-menu entry for one panel.
+   *
+   * A popped-out panel is neither open in the dock nor closed, so it is shown
+   * checked with an "in a tab" hint, and clicking it brings that tab to the
+   * front rather than toggling the dock.
+   *
+   * @param {string} id - Panel id.
+   * @returns {object} A menu item descriptor.
+   * @reads the current layout, popped-out list and settings.
+   */
   const panelItem = (id) => ({
     label: PANEL_META[id].title,
     checked: isOpen(layout, id) || poppedOut.includes(id),
     hint: poppedOut.includes(id) ? 'in a tab' : '',
     disabled: PANEL_META[id].closable === false
       || (PANEL_META[id].requires && !settings[PANEL_META[id].requires]),
+    /**
+     * Bring a popped-out panel's tab to the front, or toggle a docked one.
+     *
+     * @returns {*} Whatever the action returns; the menu ignores it.
+     * @sideEffect Focuses a browser tab, or opens/closes the panel in the dock.
+     */
     onClick: () => (poppedOut.includes(id) ? store.popOutPanel(id) : layoutOps.toggle(id)),
   })
 
-  // click-away and Escape close the open menu
   useEffect(() => {
     if (!open) return
+    /**
+     * Close the menu when the pointer goes down outside the bar.
+     *
+     * @param {MouseEvent} e - The mousedown event.
+     * @returns {void}
+     * @sideEffect Closes the open menu.
+     */
     const away = (e) => { if (!barRef.current?.contains(e.target)) setOpen(null) }
+    /**
+     * Close the menu on Escape.
+     *
+     * @param {KeyboardEvent} e - The keydown event.
+     * @returns {void}
+     * @sideEffect Closes the open menu.
+     */
     const esc = (e) => { if (e.key === 'Escape') setOpen(null) }
     window.addEventListener('mousedown', away)
     window.addEventListener('keydown', esc)
     return () => { window.removeEventListener('mousedown', away); window.removeEventListener('keydown', esc) }
   }, [open])
 
+  /**
+   * Import a project from a chosen file.
+   *
+   * A schema-version mismatch asks before loading rather than refusing —
+   * older files usually still open, since every param falls back to its
+   * default.
+   *
+   * The input's value is cleared afterwards so choosing the same file twice
+   * in a row fires a change event the second time.
+   *
+   * @param {React.ChangeEvent} e - The file input change event.
+   * @returns {void}
+   * @sideEffect Reads the file, may show a confirmation, replaces the project, and alerts on unparseable input.
+   */
   const onLoadFile = (e) => {
     const file = e.target.files?.[0]
     if (!file) return
     const reader = new FileReader()
+    /**
+     * Parse the loaded file and replace the current project with it.
+     *
+     * @returns {void}
+     * @sideEffect Replaces the project, or alerts when the file is not valid project JSON.
+     */
     reader.onload = () => {
       try {
         const proj = JSON.parse(reader.result)
@@ -112,6 +215,12 @@ export default function MenuBar() {
     e.target.value = ''
   }
 
+  /**
+   * Save the current window arrangement under a prompted name.
+   *
+   * @returns {void}
+   * @sideEffect Prompts for a name, then stores the preset. Does nothing if cancelled or blank.
+   */
   const savePreset = () => {
     const name = prompt('Save the current window arrangement as:', `Layout ${layoutPresets.length + 1}`)
     if (name?.trim()) store.saveLayoutPreset(name.trim())
@@ -122,17 +231,62 @@ export default function MenuBar() {
   const MENUS = [
     ['File', [
       { label: 'New Project', hint: key('project.new'), onClick: store.newProject },
-      { label: 'Open Project…', onClick: () => store.setShowProjectManager(true) },
+      {
+        label: 'Open Project…',
+        /**
+         * Open the saved-project browser.
+         *
+         * @returns {*} Whatever the action returns; the menu ignores it.
+         * @sideEffect Shows a modal.
+         */
+        onClick: () => store.setShowProjectManager(true),
+      },
       { label: '-' },
       { label: 'Save Project As JSON…', hint: key('project.save'), onClick: store.saveProjectJSON },
-      { label: 'Import Project JSON…', onClick: () => fileRef.current?.click() },
+      {
+        label: 'Import Project JSON…',
+        /**
+         * Open the file picker to import a project.
+         *
+         * @returns {*} Whatever the action returns; the menu ignores it.
+         * @sideEffect Clicks the hidden file input.
+         */
+        onClick: () => fileRef.current?.click(),
+      },
       { label: '-' },
       {
         label: 'Export',
         submenu: [
-          { label: 'Response data (CSV)', onClick: () => exportCSV(store.results, store.nodes, store.projectName) },
-          { label: 'Schematic (PNG)', onClick: () => exportSchematicPNG(store.projectName) },
-          { label: 'Metrics summary (TXT)', onClick: () => exportMetricsTxt(store.metrics, settings, store.projectName) },
+          {
+            label: 'Response data (CSV)',
+            /**
+             * Download every result series as a CSV.
+             *
+             * @returns {*} Whatever the action returns; the menu ignores it.
+             * @sideEffect Triggers a browser download.
+             */
+            onClick: () => exportCSV(store.results, store.nodes, store.projectName),
+          },
+          {
+            label: 'Schematic (PNG)',
+            /**
+             * Download a PNG of the node canvas.
+             *
+             * @returns {*} Whatever the action returns; the menu ignores it.
+             * @sideEffect Rasterizes the live canvas and triggers a browser download.
+             */
+            onClick: () => exportSchematicPNG(store.projectName),
+          },
+          {
+            label: 'Metrics summary (TXT)',
+            /**
+             * Download a plain-text metrics summary.
+             *
+             * @returns {*} Whatever the action returns; the menu ignores it.
+             * @sideEffect Triggers a browser download.
+             */
+            onClick: () => exportMetricsTxt(store.metrics, settings, store.projectName),
+          },
         ],
       },
     ]],
@@ -154,6 +308,12 @@ export default function MenuBar() {
       {
         label: 'Open Focused Panel in New Tab',
         hint: key('view.popout'),
+        /**
+         * Pop the focused panel out into its own browser tab.
+         *
+         * @returns {*} Whatever the action returns; the menu ignores it.
+         * @sideEffect Opens a browser window and removes the panel from the dock.
+         */
         onClick: () => store.popOutPanel(store.focusedPanel),
       },
       {
@@ -163,6 +323,12 @@ export default function MenuBar() {
           .map((id) => ({
             label: PANEL_META[id].title,
             checked: poppedOut.includes(id),
+            /**
+             * Pop this specific panel out into its own browser tab.
+             *
+             * @returns {*} Whatever the action returns; the menu ignores it.
+             * @sideEffect Opens a browser window and removes the panel from the dock.
+             */
             onClick: () => store.popOutPanel(id),
           })),
       },
@@ -170,23 +336,57 @@ export default function MenuBar() {
       {
         label: store.maximized ? 'Restore Panel Sizes' : 'Maximize Focused Panel',
         hint: key('view.maximize'),
+        /**
+         * Maximize the focused panel, or restore the one already maximized.
+         *
+         * @returns {*} Whatever the action returns; the menu ignores it.
+         * @sideEffect Changes the dock layout.
+         */
         onClick: () => store.toggleMaximize(store.maximized ? store.maximized : store.focusedPanel),
       },
       { label: '-' },
-      { label: 'Reset Layout', onClick: () => layoutOps.reset() },
+      {
+        label: 'Reset Layout',
+        /**
+         * Restore the default workspace arrangement.
+         *
+         * @returns {*} Whatever the action returns; the menu ignores it.
+         * @sideEffect Replaces and persists the layout.
+         */
+        onClick: () => layoutOps.reset(),
+      },
       { label: 'Save Layout As…', onClick: savePreset },
       {
         label: 'Apply Saved Layout',
         disabled: !layoutPresets.length,
         submenu: layoutPresets.length
-          ? layoutPresets.map((p) => ({ label: p.name, onClick: () => store.applyLayoutPreset(p.name) }))
+          ? layoutPresets.map((p) => ({
+            label: p.name,
+            /**
+             * Apply this saved arrangement.
+             *
+             * @returns {*} Whatever the action returns; the menu ignores it.
+             * @sideEffect Replaces and persists the layout.
+             */
+            onClick: () => store.applyLayoutPreset(p.name),
+          }))
           : [{ label: '(none saved)', disabled: true }],
       },
       {
         label: 'Delete Saved Layout',
         disabled: !layoutPresets.length,
         submenu: layoutPresets.length
-          ? layoutPresets.map((p) => ({ label: p.name, danger: true, onClick: () => store.deleteLayoutPreset(p.name) }))
+          ? layoutPresets.map((p) => ({
+            label: p.name,
+            danger: true,
+            /**
+             * Delete this saved arrangement.
+             *
+             * @returns {*} Whatever the action returns; the menu ignores it.
+             * @sideEffect Removes the preset and persists the change.
+             */
+            onClick: () => store.deleteLayoutPreset(p.name),
+          }))
           : [{ label: '(none saved)', disabled: true }],
       },
     ]],
@@ -195,11 +395,23 @@ export default function MenuBar() {
       {
         label: 'Mask chamber resonances',
         checked: settings.masking,
+        /**
+         * Toggle resonance masking, which lumps chambers to hide standing-wave artifacts.
+         *
+         * @returns {*} Whatever the action returns; the menu ignores it.
+         * @sideEffect Changes a sweep setting, which triggers a resimulation.
+         */
         onClick: () => updateSettings({ masking: !settings.masking }),
       },
       {
         label: 'Unwrap phase',
         checked: settings.unwrapPhase,
+        /**
+         * Toggle phase unwrapping on the phase chart.
+         *
+         * @returns {*} Whatever the action returns; the menu ignores it.
+         * @sideEffect Changes a display setting.
+         */
         onClick: () => updateSettings({ unwrapPhase: !settings.unwrapPhase }),
       },
       { label: '-' },
@@ -212,6 +424,12 @@ export default function MenuBar() {
       {
         label: 'Clear All Snapshots',
         disabled: !snapshots.length,
+        /**
+         * Discard every reference overlay.
+         *
+         * @returns {*} Whatever the action returns; the menu ignores it.
+         * @sideEffect Clears the snapshot list, which redraws every chart.
+         */
         onClick: () => snapshots.forEach((s) => store.removeSnapshot(s.id)),
       },
       { label: '-' },
@@ -219,18 +437,52 @@ export default function MenuBar() {
     ]],
 
     ['Tools', [
-      { label: 'Driver Database…', onClick: () => store.setShowDriverDB(true) },
-      { label: 'T/S Parameter Solver…', onClick: () => store.setShowTSCalc(true) },
+      {
+        label: 'Driver Database…',
+        /**
+         * Open the driver library browser.
+         *
+         * @returns {*} Whatever the action returns; the menu ignores it.
+         * @sideEffect Shows a modal.
+         */
+        onClick: () => store.setShowDriverDB(true),
+      },
+      {
+        label: 'T/S Parameter Solver…',
+        /**
+         * Open the Thiele/Small parameter solver.
+         *
+         * @returns {*} Whatever the action returns; the menu ignores it.
+         * @sideEffect Shows a modal.
+         */
+        onClick: () => store.setShowTSCalc(true),
+      },
       { label: '-' },
       {
         label: 'Nonlinear Lab',
         disabled: nlLocked,
         hint: nlLocked ? 'experimental' : '',
+        /**
+         * Open the Nonlinear Lab panel.
+         *
+         * @returns {*} Whatever the action returns; the menu ignores it.
+         * @sideEffect Changes and persists the layout.
+         */
         onClick: () => layoutOps.open('nllab'),
       },
       {
         label: 'Experimental features',
         checked: !!settings.nlEnabled,
+        /**
+         * Turn experimental features on or off.
+         *
+         * Turning them off also closes the Nonlinear Lab, which would
+         * otherwise stay docked with nothing to show. Turning them on shows a
+         * warning first rather than enabling immediately.
+         *
+         * @returns {void}
+         * @sideEffect Either changes a setting and closes a panel, or opens the warning dialog.
+         */
         onClick: () => {
           if (settings.nlEnabled) {
             updateSettings({ nlEnabled: false })
@@ -244,10 +496,22 @@ export default function MenuBar() {
       {
         label: 'Keyboard Shortcuts…',
         hint: key('view.settings'),
+        /**
+         * Open Settings at the keyboard section.
+         *
+         * @returns {*} Whatever the action returns; the menu ignores it.
+         * @sideEffect Shows the settings window.
+         */
         onClick: () => store.setShowSettings(true, 'keyboard'),
       },
       {
         label: 'About AcouSim',
+        /**
+         * Show the about dialog.
+         *
+         * @returns {*} Whatever `alert` returns; the menu ignores it.
+         * @sideEffect Shows a browser dialog.
+         */
         onClick: () => alert(
           'AcouSim — node-based acoustic circuit simulator.\n\n'
           + 'A 1-D electro-acoustic analogous circuit solved by the transfer-matrix\n'

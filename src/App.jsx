@@ -11,7 +11,12 @@ import PopoutView from './components/PopoutView'
 import { isPopout } from './popout'
 import { COMMANDS, comboFromEvent, resolve } from './keymap'
 
-// Starter example: a ported box (driver front → radiation, rear → chamber → port → radiation)
+/**
+ * The starter project loaded on first run.
+ *
+ * A ported box, which exercises every element type worth seeing on arrival:
+ * driver front to radiation, rear through a chamber and a port.
+ */
 const DEMO = {
   schemaVersion: SCHEMA_VERSION,
   name: 'Ported box example',
@@ -30,6 +35,12 @@ const DEMO = {
   ],
 }
 
+/**
+ * Offer to restore the previous session's auto-saved project.
+ *
+ * @returns {React.ReactElement|null} The banner, or `null` when there is nothing to restore.
+ * @sideEffect Subscribes to the store; the buttons replace the project or dismiss the prompt.
+ */
 function RestoreBanner() {
   const restorePrompt = useStore((s) => s.restorePrompt)
   const setRestorePrompt = useStore((s) => s.setRestorePrompt)
@@ -44,20 +55,52 @@ function RestoreBanner() {
   )
 }
 
-// Server-side simulation unreachable — a whole-app condition now that the
-// charts are separate panels, any of which may be closed.
+/**
+ * Report that the server-side simulation service is unreachable.
+ *
+ * An app-level banner rather than a per-chart message, because the charts
+ * are separate panels and any of them may be closed — the user would
+ * otherwise get no indication at all.
+ *
+ * @returns {React.ReactElement|null} The banner, or `null` when the service is reachable.
+ * @sideEffect Subscribes to the store.
+ */
 function SimErrorBanner() {
   const simError = useStore((s) => s.simError)
   if (!simError) return null
   return <div className="err-banner">{simError}</div>
 }
 
+/**
+ * Report graph errors that prevent the simulation from running.
+ *
+ * @returns {React.ReactElement|null} The banner, or `null` when the graph is valid.
+ * @sideEffect Subscribes to the store.
+ */
 function ErrorBanner() {
   const errors = useStore((s) => s.results?.validation?.errors)
   if (!errors || !errors.length) return null
   return <div className="err-banner">{errors.join(' · ')}</div>
 }
 
+/**
+ * The application root.
+ *
+ * Routes before rendering anything: the password-reset page and a
+ * popped-out panel are whole-page modes that share none of the workspace
+ * chrome.
+ *
+ * Two effects run once on mount. The first loads the demo project and, if a
+ * different auto-save exists, offers to restore it — skipped entirely in a
+ * popped-out tab, which owns no project and would otherwise broadcast one
+ * over whatever the main window has open. The second installs the global
+ * key handler, which resolves every combo through `src/keymap.js` so the
+ * menus, the rebinding UI and this handler can never disagree, and which
+ * ignores keys while a text field has focus.
+ *
+ * @returns {React.ReactElement} The workspace, or a whole-page route.
+ * @sideEffect Subscribes to the store, reads LocalStorage and `window.location`, and registers a window keydown listener that is removed on unmount.
+ */
 export default function App() {
   const loadSerialized = useStore((s) => s.loadSerialized)
   const setRestorePrompt = useStore((s) => s.setRestorePrompt)
@@ -80,8 +123,17 @@ export default function App() {
   // Keyboard commands. Every binding is resolved through src/keymap.js, so
   // the menus, Settings ▸ Keyboard and this handler can never disagree.
   useEffect(() => {
+    /**
+     * Global keydown handler: resolve the combo and run its command.
+     *
+     * Text fields keep their own keys — including the editing shortcuts — so
+     * typing in a parameter box never triggers a canvas command.
+     *
+     * @param {KeyboardEvent} e - The event.
+     * @returns {void}
+     * @sideEffect Reads current store state and runs a command, which mutates the graph or the workspace. Prevents the browser default only when a command actually matched.
+     */
     const onKey = (e) => {
-      // let text fields have their keys, including the editing shortcuts
       const el = e.target
       const tag = el?.tagName
       if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA' || el?.isContentEditable) return

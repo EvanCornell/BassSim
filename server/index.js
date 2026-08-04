@@ -37,11 +37,32 @@ const MIME = {
   '.ico': 'image/x-icon', '.woff2': 'font/woff2', '.map': 'application/json',
 }
 
+/**
+ * Send a JSON response.
+ *
+ * @param {import('node:http').ServerResponse} res - The response.
+ * @param {number} code - HTTP status.
+ * @param {any} body - Serializable payload.
+ * @returns {void}
+ * @sideEffect Writes the response head and ends it.
+ */
 const sendJson = (res, code, body) => {
   res.writeHead(code, { 'Content-Type': 'application/json' })
   res.end(JSON.stringify(body))
 }
 
+/**
+ * Read and parse a JSON request body.
+ *
+ * The size limit is checked as the body streams, so an oversized request is
+ * rejected before it is fully buffered.
+ *
+ * @param {import('node:http').IncomingMessage} req - The request.
+ * @param {number} [limit=4e6] - Maximum body size in bytes.
+ * @returns {Promise<object>} The parsed body, or `{}` when it was empty.
+ * @throws {Error} When the body exceeds the limit or is not valid JSON.
+ * @sideEffect Consumes the request stream.
+ */
 async function readBody(req, limit = 4e6) {
   let raw = ''
   for await (const chunk of req) {
@@ -51,7 +72,19 @@ async function readBody(req, limit = 4e6) {
   return raw ? JSON.parse(raw) : {}
 }
 
-// ---- simulation API ----
+/**
+ * Run a simulation for the `/api/simulate` endpoint.
+ *
+ * The browser bundle contains no engine code, so every result the app shows
+ * comes through here. Point count is capped regardless of what the request
+ * asks for, since this endpoint is unauthenticated in the default
+ * deployment and a large sweep is expensive.
+ *
+ * @param {object} body - A serialized project.
+ * @returns {{results: object, metrics: object|null}} The raw sweep result and its derived metrics, `metrics` being `null` when the simulation failed.
+ * @throws {Error} When the project is structurally invalid; the error carries `projectErrors` for the 422 response.
+ * @sideEffect Runs the solver.
+ */
 function handleSimulate(body) {
   const { nodes, edges, settings } = hydrateProject(body)
   settings.npts = Math.min(settings.npts || 512, MAX_NPTS)
@@ -63,7 +96,24 @@ function handleSimulate(body) {
   return { results, metrics }
 }
 
-// ---- static files with SPA fallback ----
+/**
+ * Serve a built asset, falling back to the SPA entry point.
+ *
+ * Two things matter here. The resolved path is checked to be inside `dist/`
+ * before anything is read, so a `../` in the URL cannot escape the served
+ * directory. And content-hashed assets get a one-year immutable cache while
+ * everything else is `no-cache` — the hash in the filename is what makes
+ * the long cache safe, since a changed file is a changed URL.
+ *
+ * Any path that is not a real file falls through to `index.html`, which is
+ * what lets client-side routes like `/panel` load on a hard refresh.
+ *
+ * @param {import('node:http').IncomingMessage} req - The request.
+ * @param {import('node:http').ServerResponse} res - The response.
+ * @param {string} pathname - Requested path.
+ * @returns {void}
+ * @sideEffect Reads from disk and streams the file to the response.
+ */
 function serveStatic(req, res, pathname) {
   let p = normalize(pathname).replace(/^([/\\])+/, '')
   if (!p || p === '.') p = 'index.html'
@@ -81,6 +131,20 @@ function serveStatic(req, res, pathname) {
   createReadStream(file).pipe(res)
 }
 
+/**
+ * Handle one request: health, auth, config, simulation, MCP, then static files.
+ *
+ * One process serves the built app, the simulation API and the MCP endpoint,
+ * which is what makes the production deployment a single container.
+ *
+ * Auth routes are handed the raw request because Better Auth parses its own
+ * bodies.
+ *
+ * @param {import('node:http').IncomingMessage} req - The request.
+ * @param {import('node:http').ServerResponse} res - The response.
+ * @returns {Promise<void>} Resolves once the response has been sent or handed off.
+ * @sideEffect Reads from disk, runs the solver, touches the auth database, and writes the response.
+ */
 const httpServer = createHttpServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`)
 

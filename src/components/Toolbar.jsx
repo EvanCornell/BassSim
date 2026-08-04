@@ -11,6 +11,12 @@ import { TOOLBAR_ITEMS, metricValue } from '../toolbarItems'
 
 // ---------- individual controls ----------
 
+/**
+ * Editable project name. Renaming moves the auto-save to the new name.
+ *
+ * @returns {React.ReactElement} The name input.
+ * @sideEffect Subscribes to the store.
+ */
 function ProjectName() {
   const projectName = useStore((s) => s.projectName)
   const setProjectName = useStore((s) => s.setProjectName)
@@ -21,6 +27,15 @@ function ProjectName() {
   )
 }
 
+/**
+ * Undo and redo buttons, disabled when their stacks are empty.
+ *
+ * Subscribes to the whole store rather than a slice, since it needs both
+ * history stacks and both actions.
+ *
+ * @returns {React.ReactElement} The button pair.
+ * @sideEffect Subscribes to the store.
+ */
 function UndoRedo() {
   const store = useStore()
   return (
@@ -31,8 +46,15 @@ function UndoRedo() {
   )
 }
 
-// Drive level, adjustable on the fly. Goes through setAmp so P = V²/Z stays
-// linked with the amplifier solver in the Parameters panel.
+/**
+ * Drive-level control, with the resulting wattage beside it.
+ *
+ * Goes through `setAmp` rather than `updateSettings` so P = V²/Z stays
+ * linked with the amplifier solver in the Parameters panel.
+ *
+ * @returns {React.ReactElement} The drive control.
+ * @sideEffect Subscribes to the store.
+ */
 function VoltageControl() {
   const settings = useStore((s) => s.settings)
   const setAmp = useStore((s) => s.setAmp)
@@ -49,6 +71,12 @@ function VoltageControl() {
   )
 }
 
+/**
+ * Sweep start and end frequency. Off by default — it is a set-once control.
+ *
+ * @returns {React.ReactElement} The sweep range control.
+ * @sideEffect Subscribes to the store.
+ */
 function SweepRange() {
   const settings = useStore((s) => s.settings)
   const updateSettings = useStore((s) => s.updateSettings)
@@ -65,6 +93,12 @@ function SweepRange() {
   )
 }
 
+/**
+ * Toggle resonance masking, which lumps chambers to hide standing-wave artifacts.
+ *
+ * @returns {React.ReactElement} The masking toggle.
+ * @sideEffect Subscribes to the store.
+ */
 function MaskingToggle() {
   const masking = useStore((s) => s.settings.masking)
   const updateSettings = useStore((s) => s.updateSettings)
@@ -76,6 +110,12 @@ function MaskingToggle() {
   )
 }
 
+/**
+ * Take a snapshot and manage the reference overlays already taken.
+ *
+ * @returns {React.ReactElement} The snapshot control.
+ * @sideEffect Subscribes to the store.
+ */
 function SnapshotControl() {
   const store = useStore()
   return (
@@ -104,6 +144,18 @@ const CONTROLS = {
 
 // ---------- metric readout ----------
 
+/**
+ * One read-only metric readout, flagged when it exceeds a limit.
+ *
+ * Entirely data-driven: `metricValue` decides the label, the text and
+ * whether it is out of range, which is why adding a metric needs no change
+ * here.
+ *
+ * @param {object} props - Component props.
+ * @param {string} props.id - Quick-bar metric item id.
+ * @returns {React.ReactElement|null} The readout, or `null` when the id is not a metric.
+ * @sideEffect Subscribes to the store.
+ */
 function Metric({ id }) {
   const metrics = useStore((s) => s.metrics)
   const results = useStore((s) => s.results)
@@ -120,11 +172,20 @@ function Metric({ id }) {
 
 // ---------- the bar ----------
 
+/**
+ * The quick-access bar under the menu.
+ *
+ * Contents and order come from `store.toolbar`, configured in Settings ▸
+ * Quick bar. Consecutive items of the same kind are collected into one
+ * block that wraps internally, so a long metrics readout does not push the
+ * controls onto a second row.
+ *
+ * @returns {React.ReactElement} The quick bar.
+ * @sideEffect Subscribes to the store.
+ */
 export default function Toolbar() {
   const toolbar = useStore((s) => s.toolbar)
 
-  // Consecutive metrics are collected into one block that wraps internally,
-  // so a long readout does not force the controls onto a second row.
   const runs = []
   for (const id of toolbar) {
     const group = TOOLBAR_ITEMS[id]?.group

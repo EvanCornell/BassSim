@@ -8,7 +8,19 @@ export { RHO, C_AIR, areaProfile, waveguideVolume, flareCutoff, endCorrectionLen
 
 // ---------- Bessel/Struve approximations for piston radiation ----------
 
-// J1(x) via Abramowitz & Stegun polynomial approximations
+/**
+ * Bessel function of the first kind, order 1.
+ *
+ * Abramowitz & Stegun rational approximations, split at |x| = 8 between the
+ * small-argument polynomial and the large-argument asymptotic form. Accurate
+ * to roughly 1e-8 — far below the modelling error of the piston assumption
+ * itself, and much faster than a series evaluation in the frequency loop.
+ *
+ * @param {number} x - Argument, dimensionless (here 2ka).
+ * @returns {number} J₁(x).
+ * @post result === -J1(-x) — the function is odd
+ * @pure
+ */
 export function besselJ1(x) {
   const ax = Math.abs(x)
   let ans
@@ -29,7 +41,17 @@ export function besselJ1(x) {
   return ans
 }
 
-// J0(x) via Abramowitz & Stegun polynomial approximations
+/**
+ * Bessel function of the first kind, order 0.
+ *
+ * Abramowitz & Stegun rational approximations, split at |x| = 8. Used only as
+ * an input to `struveH1`.
+ *
+ * @param {number} x - Argument, dimensionless.
+ * @returns {number} J₀(x).
+ * @post result === J0(-x) — the function is even
+ * @pure
+ */
 export function besselJ0(x) {
   const ax = Math.abs(x)
   if (ax < 8) {
@@ -46,7 +68,17 @@ export function besselJ0(x) {
   return Math.sqrt(0.636619772 / ax) * (Math.cos(xx) * p1 - z * Math.sin(xx) * p2)
 }
 
-// Struve H1(x), Aarts & Janssen (2003) approximation
+/**
+ * Struve function H₁, via the Aarts & Janssen (2003) approximation.
+ *
+ * Supplies the reactive (mass-loading) half of the piston radiation impedance.
+ * The approximation is a closed form in J₀, sin and cos, so it costs a handful
+ * of flops per frequency point instead of a series summation.
+ *
+ * @param {number} x - Argument, dimensionless (here 2ka).
+ * @returns {number} H₁(x); exactly 0 at x = 0, which the series form cannot evaluate directly.
+ * @pure
+ */
 export function struveH1(x) {
   if (x === 0) return 0
   const ax = Math.abs(x)
@@ -55,10 +87,30 @@ export function struveH1(x) {
     + (12 - 36 / Math.PI) * ((1 - Math.cos(ax)) / (ax * ax))
 }
 
-// Radiation impedance of a circular piston of area S (m^2) into a solid angle.
-// Baseline is the flanged piston (2π): Z = ρc/S (R1(2ka) + jX1(2ka)).
-// Smaller solid angles raise the low-frequency radiation resistance by
-// 2π/Ω while converging to ρc/S at high ka.
+/**
+ * Radiation impedance of a circular piston of area S into a solid angle.
+ *
+ * Baseline is the flanged piston (2π): `Z = ρc/S · (R1(2ka) + jX1(2ka))`.
+ * Smaller solid angles raise the low-frequency radiation resistance by 2π/Ω —
+ * this is the corner loading that makes a subwoofer louder in a room corner —
+ * while converging to ρc/S at high ka, where the piston no longer knows what
+ * is behind it. The interpolation is smooth rather than a switch, so the
+ * transition introduces no step in the SPL curve.
+ *
+ * Two pseudo-terminations short-circuit the piston model entirely: `rigid`
+ * returns a near-infinite impedance (a closed wall passes no volume velocity)
+ * and `anechoic` returns the real characteristic impedance ρc/S (a perfectly
+ * absorbing end with no reflection).
+ *
+ * @param {number} S - Piston area, m². Clamped to ≥1e-8 when deriving the radius, so a degenerate port cannot produce a NaN radius.
+ * @param {'free'|'half'|'quarter'|'eighth'|'rigid'|'anechoic'} solidAngle - Radiating space, or a pseudo-termination. Unrecognised values fall back to half space.
+ * @param {number} w - Angular frequency ω, rad/s.
+ * @returns {Complex} Acoustic radiation impedance, Pa·s/m³.
+ * @pre w >= 0
+ * @pre S > 0 — `anechoic` divides by S directly and does not clamp
+ * @post Re(result) >= 0 for every solid angle
+ * @pure
+ */
 export function radiationImpedance(S, solidAngle, w) {
   if (solidAngle === 'rigid') return C(1e12, 0)
   const a = Math.sqrt(Math.max(S, 1e-8) / Math.PI)
@@ -82,6 +134,12 @@ export function radiationImpedance(S, solidAngle, w) {
   return C(z0 * R, z0 * X)
 }
 
+/**
+ * Solid angle Ω in steradians for each named radiating space.
+ *
+ * `free` is a driver suspended in air, `half` a flush-mounted baffle, and each
+ * step down halves the space: baffle against a wall, then into a corner.
+ */
 export const SOLID_ANGLES = {
   free: 4 * Math.PI,
   half: 2 * Math.PI,
@@ -91,8 +149,28 @@ export const SOLID_ANGLES = {
 
 // ---------- Transmission line ----------
 
-// ABCD matrix of a uniform acoustic line: area S (m^2), length L (m),
-// Q loss factor (null/Infinity = lossless), speed of sound c.
+/**
+ * ABCD matrix of a uniform acoustic transmission line.
+ *
+ * The workhorse element: chambers, port slices and horn slices are all built
+ * from it. Because it is a true distributed line rather than a lumped
+ * compliance, standing waves at n·c/2L appear naturally in the response —
+ * which is exactly what resonance masking suppresses when it swaps chambers
+ * for lumped compliances.
+ *
+ * Loss enters as an attenuation constant α = k/2Q, so a given Q costs the same
+ * fraction of amplitude per wavelength at every frequency.
+ *
+ * @param {number} S - Cross-sectional area, m².
+ * @param {number} L - Length, m.
+ * @param {number} w - Angular frequency ω, rad/s.
+ * @param {number|null} Q - Loss factor. `null`, `Infinity` or ≤0 all mean lossless.
+ * @param {number} [c=C_AIR] - Speed of sound, m/s. Reduced inside stuffed chambers.
+ * @param {number} [extraAlpha=0] - Additional attenuation, nepers/m, added on top of the Q-derived term.
+ * @returns {ABCD} The two-port matrix for the line.
+ * @pre S > 0
+ * @pure
+ */
 export function tlineMatrix(S, L, w, Q, c = C_AIR, extraAlpha = 0) {
   const k = w / c
   const alpha = (Q && isFinite(Q) && Q > 0 ? k / (2 * Q) : 0) + extraAlpha
@@ -106,7 +184,18 @@ export function tlineMatrix(S, L, w, Q, c = C_AIR, extraAlpha = 0) {
   ]
 }
 
-// Series acoustic mass (end correction): [[1, jωM],[0,1]]
+/**
+ * ABCD matrix of a lumped series acoustic mass: `[[1, jωM], [0, 1]]`.
+ *
+ * Models the slug of air that moves with a port but sits outside its physical
+ * length — the end correction. Applied at a waveguide's throat and mouth by
+ * `waveguideMatrix`.
+ *
+ * @param {number} M - Acoustic mass, kg/m⁴ (ρ·ΔL/S).
+ * @param {number} w - Angular frequency ω, rad/s.
+ * @returns {ABCD} The two-port matrix for the mass.
+ * @pure
+ */
 export function seriesMassMatrix(M, w) {
   return [
     [ONE, C(0, w * M)],
@@ -114,8 +203,33 @@ export function seriesMassMatrix(M, w) {
   ]
 }
 
-// ABCD matrix of a waveguide segment, discretized into N short uniform
-// slices of the exact area profile. Converges well for smooth flares.
+/**
+ * ABCD matrix of a waveguide segment — port, duct or horn.
+ *
+ * The segment is discretized into N short uniform slices sampled at the
+ * midpoint of the exact area profile, then cascaded. Stepwise-constant area
+ * converges well for smooth flares because each slice is far shorter than a
+ * wavelength in the modelled band; 24 slices is the point past which the
+ * response stops visibly changing.
+ *
+ * End corrections are applied as series masses outside the sliced section, so
+ * they shift the tuning without adding length to the geometry the user drew.
+ *
+ * @param {object} seg - Segment geometry.
+ * @param {number} seg.S1 - Throat area, m².
+ * @param {number} seg.S2 - Mouth area, m².
+ * @param {number} seg.L - Axial length, m.
+ * @param {'conical'|'parabolic'|'exponential'|'hypex'|'tractrix'|'lecleach'} seg.flare - Expansion law.
+ * @param {number|null} seg.Q - Loss factor applied to every slice.
+ * @param {number} [seg.ecThroat=0] - Throat end-correction length, m. Skipped when ≤0.
+ * @param {number} [seg.ecMouth=0] - Mouth end-correction length, m. Skipped when ≤0.
+ * @param {number} w - Angular frequency ω, rad/s.
+ * @param {number} [N=24] - Number of slices.
+ * @returns {ABCD} The two-port matrix for the whole segment, throat to mouth.
+ * @pre N >= 1 && seg.L > 0 && seg.S1 > 0
+ * @post seg is not modified
+ * @pure
+ */
 export function waveguideMatrix({ S1, S2, L, flare, Q, ecThroat = 0, ecMouth = 0 }, w, N = 24) {
   const prof = areaProfile(flare, S1, S2, L)
   const dx = L / N
@@ -129,8 +243,30 @@ export function waveguideMatrix({ S1, S2, L, flare, Q, ecThroat = 0, ecMouth = 0
   return M
 }
 
-// Chamber as a finite transmission line. volume in m^3, length in m.
-// Stuffing (g/L) slows sound (adiabatic→isothermal) and adds resistive loss.
+/**
+ * ABCD matrix of a chamber, modelled as a finite transmission line.
+ *
+ * Treating a box as a line of area Volume/Length rather than a lumped
+ * compliance is what makes longitudinal standing waves at n·c/2L show up as
+ * real response features — the ripples a lumped model cannot produce.
+ *
+ * Stuffing does two things: it slows sound as the process shifts from
+ * adiabatic toward isothermal (up to −15.5% at 8 g/L, where the model
+ * saturates), and it adds resistive loss, combined with the node's own Q in
+ * parallel.
+ *
+ * @param {object} chamber - Chamber parameters.
+ * @param {number} chamber.volume - Internal volume, m³.
+ * @param {number} chamber.length - Acoustic path length, m. Floored at 1e-4 to keep the derived area finite.
+ * @param {number|null} chamber.Q - Wall-loss factor.
+ * @param {number} [chamber.stuffing=0] - Stuffing density, g/L. 0 is empty.
+ * @param {number} w - Angular frequency ω, rad/s.
+ * @param {boolean} [lumped=false] - When true, return a pure shunt compliance instead of a line, hiding standing-wave artifacts. This is the resonance-masking view.
+ * @returns {ABCD} The two-port matrix for the chamber.
+ * @pre chamber.volume > 0
+ * @post chamber is not modified
+ * @pure
+ */
 export function chamberMatrix({ volume, length, Q, stuffing = 0 }, w, lumped = false) {
   const S = Math.max(volume / Math.max(length, 1e-4), 1e-6)
   const stuffFrac = Math.min((stuffing || 0) / 8, 1)
@@ -152,6 +288,19 @@ export function chamberMatrix({ volume, length, Q, stuffing = 0 }, w, lumped = f
   return tlineMatrix(S, length, w, qEff, c)
 }
 
+/**
+ * Combine several loss factors into one.
+ *
+ * Losses add as reciprocals — `1/Q = Σ 1/Qᵢ` — because each mechanism
+ * dissipates independently, so the combined Q is always at most the lowest
+ * input. Values that are null, non-finite or ≤0 mean "this mechanism is
+ * lossless" and are skipped rather than treated as zero.
+ *
+ * @param {...(number|null|undefined)} qs - Individual loss factors.
+ * @returns {number} The combined Q, or `Infinity` when no argument contributes any loss.
+ * @post result <= every finite positive input
+ * @pure
+ */
 export function combineQ(...qs) {
   let invQ = 0
   for (const q of qs) {

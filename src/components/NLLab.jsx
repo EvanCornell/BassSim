@@ -8,6 +8,9 @@ import { NL_PARAMS, defaultNL, evalCurve, derivedRatios, parseCurveCSV, normaliz
 // shift-drag (or middle-drag) pans, Delete removes the selected point, and a
 // crosshair guide tracks the cursor along the curve.
 
+/**
+ * Per-parameter explanation shown beside its curve editor.
+ */
 const PARAM_INFO = {
   Bl: { hint: 'Motor force factor vs excursion. Typically droops toward ±Xmax; Xmax by the Klippel criterion is where Bl falls to 0.70.' },
   Cms: { hint: 'Suspension compliance vs excursion. Progressive suspensions get LESS compliant (curve drops) at high excursion, raising Fs and reducing output.' },
@@ -15,7 +18,21 @@ const PARAM_INFO = {
   Le: { hint: 'Voice-coil inductance vs excursion. Typically rises as the coil moves inward over the pole, falls moving outward (asymmetric — turn Symmetric off).' },
 }
 
-// small-signal reference value per parameter, for the actual-value y axis
+/**
+ * The small-signal reference value for a parameter, for the absolute-value axis.
+ *
+ * The editor works in ratios, but a ratio is hard to judge without knowing
+ * what it is a ratio *of* — this supplies the driver's own value so the
+ * second axis can show real units.
+ *
+ * Kms is derived as 1/Cms, since a driver stores compliance rather than
+ * stiffness.
+ *
+ * @param {'Bl'|'Cms'|'Kms'|'Le'} param - The parameter.
+ * @param {object} p - The driver node's params.
+ * @returns {{v: number, unit: string}} The reference value and its unit, defaulting to 1 when the driver does not specify it.
+ * @pure
+ */
 function refValue(param, p) {
   switch (param) {
     case 'Bl': return { v: p.Bl || 1, unit: 'T·m' }
@@ -25,9 +42,32 @@ function refValue(param, p) {
     default: return { v: 1, unit: '' }
   }
 }
+/**
+ * Format an axis value at a readable precision for its magnitude.
+ *
+ * @param {number} v - The value.
+ * @returns {string} The formatted value.
+ * @pure
+ */
 const fmtVal = (v) => (Math.abs(v) >= 100 ? v.toFixed(0) : Math.abs(v) >= 10 ? v.toFixed(1) : v.toPrecision(3))
+/**
+ * Plot padding in pixels, leaving room for both axes.
+ */
 const PAD = 46
 
+/**
+ * Axis tick positions at round intervals.
+ *
+ * Picks a 1, 2 or 5 times a power of ten step — the intervals people read
+ * without effort — landing near the requested tick count rather than
+ * exactly on it.
+ *
+ * @param {number} lo - Axis minimum.
+ * @param {number} hi - Axis maximum.
+ * @param {number} [target=8] - Desired tick count.
+ * @returns {number[]} Tick values, empty when the span is not positive.
+ * @pure
+ */
 function niceTicks(lo, hi, target = 8) {
   const span = hi - lo
   if (span <= 0) return []
@@ -39,6 +79,28 @@ function niceTicks(lo, hi, target = 8) {
   return ticks
 }
 
+/**
+ * Interactive editor for one nonlinear parameter curve.
+ *
+ * Parametric-EQ style: click the curve to add a control point, drag it to
+ * move and reshape it, tune width with the slider. Wheel zooms about the
+ * cursor, shift or middle drag pans, Delete removes the selected point.
+ *
+ * Dragging a point sets its gain relative to the curve *without* that point,
+ * so grabbing a point and moving it puts the curve where the cursor is
+ * rather than adding to what is already there.
+ *
+ * @param {object} props - Component props.
+ * @param {string} props.driverId - Driver node being edited.
+ * @param {'Bl'|'Cms'|'Kms'|'Le'} props.param - Which curve.
+ * @param {object} props.nl - The driver's full nonlinear parameter set.
+ * @param {number} props.xmax - The driver's Xmax, mm, which sets the default span.
+ * @param {number} props.width - Available width, px.
+ * @param {number} props.height - Available height, px.
+ * @param {{v: number, unit: string}} props.refv - Small-signal reference for the absolute-value axis.
+ * @returns {React.ReactElement} The editor.
+ * @sideEffect Subscribes to the store; edits update the driver's params, which triggers a resimulation. Registers a non-passive wheel listener and a window keydown listener.
+ */
 function CurveEditor({ driverId, param, nl, xmax, width, height, refv }) {
   const updateParams = useStore((s) => s.updateParams)
   const [selected, setSelected] = useState(-1)
@@ -51,10 +113,26 @@ function CurveEditor({ driverId, param, nl, xmax, width, height, refv }) {
   const W = Math.max(width, 400)
   const H = Math.max(height, 260)
 
+  /**
+   * Convert data coordinates to pixels.
+   *
+   * @param {number} x - Excursion, mm.
+   * @param {number} r - Ratio value.
+   * @returns {[number, number]} Pixel coordinates within the SVG.
+   * @reads the current view window.
+   */
   const toPx = (x, r) => [
     PAD + ((x - v.x0) / (v.x1 - v.x0)) * (W - 2 * PAD),
     H - PAD - ((r - v.y0) / (v.y1 - v.y0)) * (H - 2 * PAD),
   ]
+  /**
+   * Convert pixel coordinates back to data coordinates.
+   *
+   * @param {number} px - X in SVG pixels.
+   * @param {number} py - Y in SVG pixels.
+   * @returns {[number, number]} Excursion in mm and the ratio value.
+   * @reads the current view window.
+   */
   const fromPx = (px, py) => [
     v.x0 + ((px - PAD) / (W - 2 * PAD)) * (v.x1 - v.x0),
     v.y0 + ((H - PAD - py) / (H - 2 * PAD)) * (v.y1 - v.y0),
@@ -70,13 +148,31 @@ function CurveEditor({ driverId, param, nl, xmax, width, height, refv }) {
     return pts.join(' ')
   }, [curve, v.x0, v.x1, v.y0, v.y1, xmax, W, H])
 
+  /**
+   * Write a change to this curve back to the driver node.
+   *
+   * @param {object} patch - Fields to change on the curve.
+   * @returns {*} Whatever the store action returns; callers ignore it.
+   * @sideEffect Updates the driver's params, which triggers a resimulation.
+   */
   const commit = (patch) => updateParams(driverId, { nl: { ...nl, [param]: { ...curve, ...patch } } })
   const curveRef = useRef(curve)
   curveRef.current = curve
   const viewRef = useRef(v)
   viewRef.current = v
 
-  // ---- zoom / pan ----
+  /**
+   * Zoom the view about a pixel position.
+   *
+   * Refuses zoom levels outside a sane span in either axis, so the view
+   * cannot be lost by over-scrolling.
+   *
+   * @param {number} px - X in SVG pixels.
+   * @param {number} py - Y in SVG pixels.
+   * @param {number} factor - Scale factor; above 1 zooms out.
+   * @returns {void}
+   * @sideEffect Updates the view window.
+   */
   const zoomAt = (px, py, factor) => {
     const [cx, cy] = fromPx(px, py)
     const nv = {
@@ -89,16 +185,26 @@ function CurveEditor({ driverId, param, nl, xmax, width, height, refv }) {
     if (nv.y1 - nv.y0 < 0.1 || nv.y1 - nv.y0 > 1000) return
     setView(nv)
   }
-  // React onWheel is passive; attach non-passive listener to preventDefault
   useEffect(() => {
     const el = svgRef.current
     if (!el) return
+    /**
+     * Zoom about the cursor.
+     *
+     * Registered manually rather than through React's `onWheel` because that
+     * one is passive and cannot call `preventDefault`, so the page would scroll
+     * as well. The zoom maths is inlined against the latest view read from a
+     * ref, since this listener is registered once on mount.
+     *
+     * @param {WheelEvent} e - The wheel event.
+     * @returns {void}
+     * @sideEffect Prevents the page from scrolling and updates the view window.
+     */
     const onWheel = (e) => {
       e.preventDefault()
       const rect = el.getBoundingClientRect()
       const cur = viewRef.current
       const factor = Math.pow(1.18, e.deltaY / 100)
-      // inline zoomAt against latest view
       const px = e.clientX - rect.left, py = e.clientY - rect.top
       const cx = cur.x0 + ((px - PAD) / (el.clientWidth - 2 * PAD)) * (cur.x1 - cur.x0)
       const cy = cur.y0 + ((el.clientHeight - PAD - py) / (el.clientHeight - 2 * PAD)) * (cur.y1 - cur.y0)
@@ -117,10 +223,24 @@ function CurveEditor({ driverId, param, nl, xmax, width, height, refv }) {
   }, [])
 
   const panStart = useRef(null)
+  /**
+   * Begin a pan, on shift-drag or middle-drag.
+   *
+   * @param {React.PointerEvent} e - The pointerdown event.
+   * @returns {void}
+   * @sideEffect Registers window pointermove and pointerup listeners. Ignores plain clicks, which add a point instead.
+   */
   const onSvgPointerDown = (e) => {
     if (e.button === 1 || e.shiftKey) {
       e.preventDefault()
       panStart.current = { px: e.clientX, py: e.clientY, view: { ...v } }
+      /**
+       * Apply the in-progress pan.
+       *
+       * @param {PointerEvent} ev - The pointermove event.
+       * @returns {void}
+       * @sideEffect Updates the view window on every move.
+       */
       const move = (ev) => {
         const s = panStart.current
         if (!s) return
@@ -128,12 +248,30 @@ function CurveEditor({ driverId, param, nl, xmax, width, height, refv }) {
         const dy = ((ev.clientY - s.py) / (H - 2 * PAD)) * (s.view.y1 - s.view.y0)
         setView({ x0: s.view.x0 - dx, x1: s.view.x1 - dx, y0: s.view.y0 + dy, y1: s.view.y1 + dy })
       }
+      /**
+       * End the pan and remove its listeners.
+       *
+       * @returns {void}
+       * @sideEffect Clears the pan state and removes the window listeners.
+       */
       const up = () => { panStart.current = null; window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up) }
       window.addEventListener('pointermove', move)
       window.addEventListener('pointerup', up)
     }
   }
 
+  /**
+   * Add a control point where the curve was clicked.
+   *
+   * The new point's gain is the gap between the click and the current curve,
+   * so the curve passes through exactly where it was clicked rather than
+   * jumping. Clicks on an existing point, during a pan, or outside the plot
+   * are ignored.
+   *
+   * @param {React.MouseEvent} e - The click event.
+   * @returns {void}
+   * @sideEffect Adds a control point and selects it, which triggers a resimulation.
+   */
   const onSvgClick = (e) => {
     if (e.target.dataset.pt !== undefined || e.shiftKey || panStart.current) return
     const rect = svgRef.current.getBoundingClientRect()
@@ -145,17 +283,43 @@ function CurveEditor({ driverId, param, nl, xmax, width, height, refv }) {
     setSelected(points.length - 1)
   }
 
+  /**
+   * Track the cursor for the crosshair guide.
+   *
+   * @param {React.MouseEvent} e - The mousemove event.
+   * @returns {void}
+   * @sideEffect Updates the hover position, or clears it outside the plot.
+   */
   const onSvgMove = (e) => {
     const rect = svgRef.current.getBoundingClientRect()
     const [x] = fromPx(e.clientX - rect.left, e.clientY - rect.top)
     setHover(x >= v.x0 && x <= v.x1 ? x : null)
   }
 
+  /**
+   * Drag one control point.
+   *
+   * Gain is recomputed against the curve with this point removed, so the
+   * point follows the cursor exactly instead of compounding with its own
+   * contribution.
+   *
+   * @param {number} idx - Index of the point.
+   * @param {React.PointerEvent} e - The pointerdown event.
+   * @returns {void}
+   * @sideEffect Selects the point and registers window pointermove and pointerup listeners. Each move updates the driver's params.
+   */
   const onDragPoint = (idx, e) => {
     e.stopPropagation()
     e.preventDefault()
     setSelected(idx)
     const rect = svgRef.current.getBoundingClientRect()
+    /**
+     * Apply the in-progress point drag.
+     *
+     * @param {PointerEvent} ev - The pointermove event.
+     * @returns {void}
+     * @sideEffect Updates the driver's params on every move, which triggers a resimulation.
+     */
     const move = (ev) => {
       const [x, r] = fromPx(ev.clientX - rect.left, ev.clientY - rect.top)
       const cur = curveRef.current
@@ -170,20 +334,40 @@ function CurveEditor({ driverId, param, nl, xmax, width, height, refv }) {
       })
       commit({ points })
     }
+    /**
+     * End the point drag and remove its listeners.
+     *
+     * @returns {void}
+     * @sideEffect Removes the window listeners.
+     */
     const up = () => { window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up) }
     window.addEventListener('pointermove', move)
     window.addEventListener('pointerup', up)
   }
 
+  /**
+   * Delete one control point.
+   *
+   * @param {number} idx - Index of the point.
+   * @returns {void}
+   * @sideEffect Updates the driver's params and clears the selection.
+   */
   const removePoint = (idx) => { commit({ points: curve.points.filter((_, k) => k !== idx) }); setSelected(-1) }
 
-  // Delete / Backspace removes the selected point (Lab owns keys on this tab)
   useEffect(() => {
+    /**
+     * Delete the selected control point on Delete or Backspace.
+     *
+     * Only acts while the Lab holds focus: the Node Editor uses the same key to
+     * remove graph nodes, and both panels can be on screen at once.
+     *
+     * @param {KeyboardEvent} e - The keydown event.
+     * @returns {void}
+     * @sideEffect Removes the selected point, which triggers a resimulation. Ignored while a text field has focus or another panel is focused.
+     */
     const onKey = (e) => {
       const tag = e.target.tagName
       if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return
-      // the Lab only owns Delete while it holds focus — the Node Editor uses
-      // the same key to remove graph nodes
       if (useStore.getState().focusedPanel !== 'nllab') return
       if ((e.key === 'Delete' || e.key === 'Backspace') && selected >= 0 && curveRef.current.points?.[selected]) {
         e.preventDefault()
@@ -294,6 +478,17 @@ function CurveEditor({ driverId, param, nl, xmax, width, height, refv }) {
   )
 }
 
+/**
+ * The Nonlinear Lab: edit a driver's large-signal curves and see their effect.
+ *
+ * Experimental. Curves describe how Bl, Cms/Kms and Le vary with excursion;
+ * the solver then iterates a quasi-linear sweep against them, which captures
+ * power compression and resonance drift but produces no harmonic distortion
+ * — that needs a time-domain engine.
+ *
+ * @returns {React.ReactElement} The panel.
+ * @sideEffect Subscribes to the store; edits update the driver's params.
+ */
 export default function NLLab() {
   const nodes = useStore((s) => s.nodes)
   const layoutOps = useStore((s) => s.layoutOps)
@@ -339,12 +534,35 @@ export default function NLLab() {
   })()
   const der = xPk != null ? derivedRatios(nl, xPk, xmax) : null
 
+  /**
+   * Write a change to the selected curve back to the driver node.
+   *
+   * @param {object} patch - Fields to change on the curve.
+   * @returns {*} Whatever the store action returns; callers ignore it.
+   * @sideEffect Updates the driver's params, which triggers a resimulation.
+   */
   const setCurve = (patch) => updateParams(driver.id, { nl: { ...nl, [param]: { ...curve, ...patch } } })
 
+  /**
+   * Import a measured curve from a CSV file.
+   *
+   * @param {React.ChangeEvent} e - The file input change event.
+   * @returns {void}
+   * @sideEffect Reads the file and replaces the curve's table, or alerts when it cannot be parsed.
+   */
   const importCSV = (e) => {
     const file = e.target.files?.[0]
     if (!file) return
     const reader = new FileReader()
+    /**
+     * Parse the loaded CSV and install it as this curve's table.
+     *
+     * Normalized on the way in, since published curves are usually in absolute
+     * units while the engine works in ratios.
+     *
+     * @returns {void}
+     * @sideEffect Updates the driver's params, or alerts when the file is unusable.
+     */
     reader.onload = () => {
       try {
         const raw = parseCurveCSV(reader.result)

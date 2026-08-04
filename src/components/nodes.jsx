@@ -3,6 +3,9 @@ import { Handle, Position } from 'reactflow'
 import { useStore } from '../store'
 import { C_AIR, flareCutoff, endCorrectionLength, waveguideVolume } from '../engine/geometry'
 
+/**
+ * Accent colour per node type, shared by the canvas nodes and the minimap.
+ */
 const NODE_COLORS = {
   driver: 'var(--s1)',
   chamber: 'var(--s2)',
@@ -11,10 +14,27 @@ const NODE_COLORS = {
   radiation: 'var(--s5)',
 }
 
+/**
+ * Subscribe to the validation warnings for one node.
+ *
+ * @param {string} id - Node id.
+ * @returns {string[]|undefined} Warnings for that node, or `undefined` when it has none.
+ * @sideEffect Subscribes to the store.
+ */
 function useWarnings(id) {
   return useStore((s) => s.results?.validation?.warnings?.[id])
 }
 
+/**
+ * A node's title bar: colour dot, label, and a warning marker when it has warnings.
+ *
+ * @param {object} props - Component props.
+ * @param {string} props.type - Node type, which picks the colour.
+ * @param {string} props.label - Display label.
+ * @param {string[]|undefined} props.warn - Validation warnings, shown in the marker's tooltip.
+ * @returns {React.ReactElement} The node header.
+ * @pure
+ */
 function Head({ type, label, warn }) {
   return (
     <div className="node-head">
@@ -25,6 +45,16 @@ function Head({ type, label, warn }) {
   )
 }
 
+/**
+ * Canvas node for a driver: T/S summary, array count, and front/rear ports.
+ *
+ * @param {object} props - React Flow node props.
+ * @param {string} props.id - Node id.
+ * @param {{params: object}} props.data - Node data.
+ * @param {boolean} props.selected - Whether the node is selected.
+ * @returns {React.ReactElement} The node.
+ * @sideEffect Subscribes to the store.
+ */
 export function DriverNode({ id, data, selected }) {
   const warn = useWarnings(id)
   const p = data.params
@@ -44,6 +74,16 @@ export function DriverNode({ id, data, selected }) {
   )
 }
 
+/**
+ * Canvas node for a chamber: volume, path length, stuffing, and its inlet/outlet.
+ *
+ * @param {object} props - React Flow node props.
+ * @param {string} props.id - Node id.
+ * @param {{params: object}} props.data - Node data.
+ * @param {boolean} props.selected - Whether the node is selected.
+ * @returns {React.ReactElement} The node.
+ * @sideEffect Subscribes to the store.
+ */
 export function ChamberNode({ id, data, selected }) {
   const warn = useWarnings(id)
   const p = data.params
@@ -63,6 +103,19 @@ export function ChamberNode({ id, data, selected }) {
   )
 }
 
+/**
+ * Canvas node for a waveguide: geometry, flare cutoff, and a live velocity readout.
+ *
+ * The velocity figure is clickable and opens the detailed chart, because it
+ * is the number most likely to disqualify an otherwise good design.
+ *
+ * @param {object} props - React Flow node props.
+ * @param {string} props.id - Node id.
+ * @param {{params: object}} props.data - Node data.
+ * @param {boolean} props.selected - Whether the node is selected.
+ * @returns {React.ReactElement} The node.
+ * @sideEffect Subscribes to the store.
+ */
 export function WaveguideNode({ id, data, selected }) {
   const warn = useWarnings(id)
   const setVelocityPopup = useStore((s) => s.setVelocityPopup)
@@ -107,6 +160,16 @@ export function WaveguideNode({ id, data, selected }) {
   )
 }
 
+/**
+ * Canvas node for a passive radiator: moving mass, compliance and resulting Fs.
+ *
+ * @param {object} props - React Flow node props.
+ * @param {string} props.id - Node id.
+ * @param {{params: object}} props.data - Node data.
+ * @param {boolean} props.selected - Whether the node is selected.
+ * @returns {React.ReactElement} The node.
+ * @sideEffect Subscribes to the store.
+ */
 export function PRNode({ id, data, selected }) {
   const warn = useWarnings(id)
   const p = data.params
@@ -130,6 +193,16 @@ const SPACE_LABELS = {
   eighth: 'Eighth space (π/2)', rigid: 'Rigid wall', anechoic: 'Anechoic',
 }
 
+/**
+ * Canvas node for a radiation termination: the space it radiates into.
+ *
+ * @param {object} props - React Flow node props.
+ * @param {string} props.id - Node id.
+ * @param {{params: object}} props.data - Node data.
+ * @param {boolean} props.selected - Whether the node is selected.
+ * @returns {React.ReactElement} The node.
+ * @sideEffect Subscribes to the store.
+ */
 export function RadiationNode({ id, data, selected }) {
   const warn = useWarnings(id)
   const p = data.params

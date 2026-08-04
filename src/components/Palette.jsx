@@ -1,6 +1,9 @@
 import React from 'react'
 import { useStore } from '../store'
 
+/**
+ * The draggable node types, with the descriptions shown in the palette.
+ */
 const ITEMS = [
   { type: 'driver', color: 'var(--s1)', name: 'Driver', desc: 'Loudspeaker motor system with T/S parameters, amplifier coupling and array options.' },
   { type: 'chamber', color: 'var(--s2)', name: 'Chamber', desc: 'Enclosed air volume modeled as a transmission line — standing waves included.' },
@@ -9,8 +12,25 @@ const ITEMS = [
   { type: 'radiation', color: 'var(--s5)', name: 'Radiation Termination', desc: 'What an opening radiates into: 4π/2π/π/π⁄2 space, rigid wall, or anechoic.' },
 ]
 
+/**
+ * The node palette: draggable element types and the driver library button.
+ *
+ * @returns {React.ReactElement} The palette panel.
+ * @sideEffect Subscribes to the store.
+ */
 export default function Palette() {
   const setShowDriverDB = useStore((s) => s.setShowDriverDB)
+  /**
+   * Start a palette drag, tagging it with the node type to create.
+   *
+   * The canvas reads the `application/acousim-node` type on drop, which is
+   * what keeps a palette drag from being confused with any other drag.
+   *
+   * @param {React.DragEvent} e - The drag event.
+   * @param {string} type - Node type being dragged.
+   * @returns {void}
+   * @mutates Sets data and the allowed effect on the event's dataTransfer.
+   */
   const onDragStart = (e, type) => {
     e.dataTransfer.setData('application/acousim-node', type)
     e.dataTransfer.effectAllowed = 'move'

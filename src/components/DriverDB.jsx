@@ -4,14 +4,34 @@ import {
   BUILTIN_DRIVERS, DRIVER_BRANDS, EXT_FIELDS, EXT_GROUPS, driverToParams,
 } from '../data/drivers'
 
+/**
+ * LocalStorage key holding the user's own driver entries.
+ */
 const CUSTOM_KEY = 'acousim:customDrivers'
 
+/**
+ * Load the user's saved custom drivers.
+ *
+ * @returns {Array<object>} Custom driver records, or an empty list when absent or corrupt.
+ * @sideEffect Reads LocalStorage.
+ */
 function loadCustom() {
   try { return JSON.parse(localStorage.getItem(CUSTOM_KEY)) || [] } catch { return [] }
 }
 
-// Extended parameters, grouped for display. Groups with nothing in them are
-// dropped per driver, so a hand-transcribed row shows no empty scaffolding.
+/**
+ * The expanded extended-parameter view for one driver.
+ *
+ * Groups holding nothing are dropped per driver, so a hand-transcribed row
+ * shows no empty scaffolding — extended parameters are sparse, and rendering
+ * the full schema would imply the data is missing rather than never
+ * published.
+ *
+ * @param {object} props - Component props.
+ * @param {object} props.driver - The driver record, whose `ext` object is displayed.
+ * @returns {React.ReactElement} The grouped detail rows, or a note when the driver publishes none.
+ * @pure
+ */
 function ExtDetail({ driver }) {
   const groups = EXT_GROUPS
     .map((g) => [g, EXT_FIELDS.filter((f) => f.group === g && driver.ext[f.key] != null)])
@@ -43,6 +63,22 @@ function ExtDetail({ driver }) {
   )
 }
 
+/**
+ * The driver library browser.
+ *
+ * Filters by brand, search text, and Fs/Vas/Xmax thresholds. Clicking a row
+ * applies it to the selected Driver node, or creates one if there is none.
+ *
+ * Custom entries are listed ahead of the built-ins so the user's own
+ * drivers are easy to find, and only they can be deleted.
+ *
+ * The ⚠ marks a row whose published Q or Vas figures contradict the
+ * Bl/Re/Mms/Cms the solver actually runs on — the simulation follows the
+ * latter, so the headline Qts may not be what you get.
+ *
+ * @returns {React.ReactElement|null} The modal, or `null` when hidden.
+ * @sideEffect Subscribes to the store and reads LocalStorage for custom entries.
+ */
 export default function DriverDB() {
   const show = useStore((s) => s.showDriverDB)
   const setShow = useStore((s) => s.setShowDriverDB)
@@ -79,6 +115,16 @@ export default function DriverDB() {
 
   if (!show) return null
 
+  /**
+   * Apply a database row to the selected Driver node, or to a new one.
+   *
+   * Goes through `driverToParams`, so a record's provenance and construction
+   * detail can never reach a node's params.
+   *
+   * @param {object} d - The driver record.
+   * @returns {void}
+   * @sideEffect Updates or creates a node — which triggers a resimulation — and closes the modal.
+   */
   const apply = (d) => {
     const params = driverToParams(d)
     if (node && node.type === 'driver') updateParams(node.id, params)
@@ -86,6 +132,15 @@ export default function DriverDB() {
     setShow(false)
   }
 
+  /**
+   * Store the selected Driver node's parameters as a custom database entry.
+   *
+   * Only the core T/S fields are captured; a node has no extended parameters
+   * to save.
+   *
+   * @returns {void}
+   * @sideEffect Writes LocalStorage and updates component state. Alerts and does nothing when no driver node is selected.
+   */
   const saveCurrentAsCustom = () => {
     if (!node || node.type !== 'driver') { alert('Select a Driver node first.'); return }
     const p = node.data.params
@@ -98,12 +153,31 @@ export default function DriverDB() {
     localStorage.setItem(CUSTOM_KEY, JSON.stringify(next))
   }
 
+  /**
+   * Delete one custom entry.
+   *
+   * @param {number} i - Index into the custom list.
+   * @returns {void}
+   * @sideEffect Writes LocalStorage and updates component state.
+   */
   const removeCustom = (i) => {
     const next = custom.filter((_, k) => k !== i)
     setCustom(next)
     localStorage.setItem(CUSTOM_KEY, JSON.stringify(next))
   }
 
+  /**
+   * A stable React key for a table row.
+   *
+   * The index is included because the library legitimately holds two records
+   * with the same brand and model — a custom entry saved under a built-in's
+   * name — and duplicate keys would make React reuse the wrong row.
+   *
+   * @param {object} d - The driver record.
+   * @param {number} i - Row index.
+   * @returns {string} A unique row key.
+   * @pure
+   */
   const key = (d, i) => `${d.brand}|${d.model}|${i}`
 
   return (

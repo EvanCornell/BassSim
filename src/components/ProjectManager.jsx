@@ -1,7 +1,18 @@
 import React, { useState } from 'react'
 import { useStore, listSavedProjects } from '../store'
 
-// Tiny inline SVG preview of a project's node graph
+/**
+ * An inline SVG preview of a project's node graph.
+ *
+ * Scales the graph's bounding box to fit a fixed 90×54 thumbnail, using the
+ * smaller of the two axis scales so the layout keeps its proportions.
+ * Enough to recognise a saved project by shape without opening it.
+ *
+ * @param {object} props - Component props.
+ * @param {object} props.proj - The serialized project to preview.
+ * @returns {React.ReactElement} The thumbnail, blank for a project with no nodes.
+ * @pure
+ */
 function Thumb({ proj }) {
   const nodes = proj.nodes || []
   if (!nodes.length) return <div style={{ width: 90, height: 54 }} />
@@ -34,6 +45,15 @@ function Thumb({ proj }) {
   )
 }
 
+/**
+ * Browse, load, rename, duplicate and delete auto-saved projects.
+ *
+ * Projects are read straight from LocalStorage on each render rather than
+ * held in state, so the list reflects edits made in another tab.
+ *
+ * @returns {React.ReactElement|null} The modal, or `null` when hidden.
+ * @sideEffect Subscribes to the store. Reads LocalStorage on every render.
+ */
 export default function ProjectManager() {
   const show = useStore((s) => s.showProjectManager)
   const setShow = useStore((s) => s.setShowProjectManager)
@@ -41,8 +61,24 @@ export default function ProjectManager() {
   const [tick, setTick] = useState(0)
   if (!show) return null
   const projects = listSavedProjects()
+  /**
+   * Force a re-read of the saved project list after a change.
+   *
+   * The projects live in LocalStorage rather than in state, so nothing else
+   * would tell React that they changed.
+   *
+   * @returns {void}
+   * @sideEffect Bumps a counter to trigger a re-render.
+   */
   const refresh = () => setTick(tick + 1)
 
+  /**
+   * Rename a saved project, moving it to its new key.
+   *
+   * @param {object} p - The saved project entry.
+   * @returns {void}
+   * @sideEffect Prompts for a name, then writes the new LocalStorage key and removes the old one. Does nothing if cancelled or unchanged.
+   */
   const rename = (p) => {
     const name = prompt('New project name:', p.name)
     if (!name || name === p.name) return
@@ -51,11 +87,25 @@ export default function ProjectManager() {
     localStorage.removeItem(p.key)
     refresh()
   }
+  /**
+   * Copy a saved project under a "copy" name.
+   *
+   * @param {object} p - The saved project entry.
+   * @returns {void}
+   * @sideEffect Writes a new LocalStorage key with a fresh modification time. Silently overwrites an existing copy of the same name.
+   */
   const duplicate = (p) => {
     const name = `${p.name} copy`
     localStorage.setItem(`acousim:project:${name}`, JSON.stringify({ ...p.proj, name, modified: new Date().toISOString() }))
     refresh()
   }
+  /**
+   * Delete a saved project after confirming.
+   *
+   * @param {object} p - The saved project entry.
+   * @returns {void}
+   * @sideEffect Shows a confirmation dialog, then removes the LocalStorage key. Does nothing if declined.
+   */
   const remove = (p) => {
     if (!confirm(`Delete project "${p.name}"? This cannot be undone.`)) return
     localStorage.removeItem(p.key)

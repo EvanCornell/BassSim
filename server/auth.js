@@ -36,8 +36,29 @@ for (const p of PROVIDER_DEFS) {
   const secret = process.env[`${p.toUpperCase()}_CLIENT_SECRET`]
   if (id && secret) socialProviders[p] = { clientId: id, clientSecret: secret }
 }
+/**
+ * Social provider names that are configured and therefore offered in the UI.
+ *
+ * A provider appears automatically once both its client id and secret are
+ * present in the environment, so enabling one is a deployment change rather
+ * than a code change.
+ */
 export const enabledProviders = Object.keys(socialProviders)
 
+/**
+ * Send a transactional email, or log it when no SMTP host is configured.
+ *
+ * Falling back to the log rather than throwing keeps password reset usable
+ * in development: the reset link is printed to the server output instead of
+ * being delivered.
+ *
+ * @param {object} msg - The message.
+ * @param {string} msg.to - Recipient address.
+ * @param {string} msg.subject - Subject line.
+ * @param {string} msg.text - Plain-text body.
+ * @returns {Promise<void>} Resolves once the message is sent or logged.
+ * @sideEffect Sends mail over SMTP, or writes to the server log. Reads SMTP configuration from the environment.
+ */
 async function sendEmail({ to, subject, text }) {
   if (process.env.SMTP_HOST) {
     const { default: nodemailer } = await import('nodemailer')
@@ -61,6 +82,15 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
     minPasswordLength: 8,
+    /**
+     * Email a password-reset link.
+     *
+     * @param {object} req - Reset request from Better Auth.
+     * @param {object} req.user - The account requesting the reset.
+     * @param {string} req.url - The single-use reset link.
+     * @returns {Promise<void>} Resolves once the message is sent or logged.
+     * @sideEffect Sends an email.
+     */
     sendResetPassword: async ({ user, url }) => {
       await sendEmail({
         to: user.email,
@@ -84,6 +114,15 @@ export const auth = betterAuth({
 })
 
 // Create/upgrade the auth tables on startup (idempotent).
+/**
+ * Create or upgrade the auth tables.
+ *
+ * Idempotent, and run on every start, so a deployment never needs a
+ * separate migration step.
+ *
+ * @returns {Promise<void>} Resolves once the schema is current.
+ * @sideEffect Writes to the SQLite database.
+ */
 export async function migrateAuthDb() {
   const { runMigrations } = await getMigrations(auth.options)
   await runMigrations()

@@ -3,9 +3,13 @@ import { useForm } from 'react-hook-form'
 import { useStore } from '../store'
 import { RHO, C_AIR } from '../engine/geometry'
 
-// T/S parameter solver: derive the full parameter set from measurements.
-// Three methods: datasheet (Fs+Vas+Qes+Qms+Re+Sd), added mass, known box.
-
+/**
+ * The relations used by each solver, shown beside the results.
+ *
+ * Displayed rather than hidden so the user can check the derivation against
+ * their own reference — these are standard identities, and seeing which one
+ * produced a number is how you catch a mis-entered measurement.
+ */
 const FORMULAS = {
   Cms: 'Cms = Vas / (ρc²·Sd²)',
   Mms: 'Mms = 1 / ((2πFs)²·Cms)',
@@ -16,6 +20,24 @@ const FORMULAS = {
   VasBox: 'Vas = Vb·((Fc/Fs)² − 1)',
 }
 
+/**
+ * Derive the full T/S set from published datasheet figures.
+ *
+ * The canonical path: Vas gives compliance, compliance and Fs give moving
+ * mass, and mass with Qes and Qms gives motor strength and mechanical
+ * resistance.
+ *
+ * @param {object} m - Measurements.
+ * @param {number} m.Fs - Free-air resonance, Hz.
+ * @param {number} m.Vas - Equivalent compliance volume, litres.
+ * @param {number} m.Qes - Electrical Q.
+ * @param {number} m.Qms - Mechanical Q.
+ * @param {number} m.Re - DC resistance, ohms.
+ * @param {number} m.Sd - Effective cone area, cm².
+ * @returns {object} The complete T/S set in display units.
+ * @pre Every input is positive; a zero Qes or Qms divides by zero.
+ * @pure
+ */
 function solveDatasheet({ Fs, Vas, Qes, Qms, Re, Sd }) {
   const SdM = Sd * 1e-4
   const Cms = (Vas * 1e-3) / (RHO * C_AIR * C_AIR * SdM * SdM) // m/N
@@ -27,6 +49,28 @@ function solveDatasheet({ Fs, Vas, Qes, Qms, Re, Sd }) {
   return { Fs, Vas, Qes, Qms, Qts, Re, Sd, Cms: Cms * 1e3, Mms: Mms * 1e3, Bl, Rms }
 }
 
+/**
+ * Derive the T/S set from the added-mass measurement.
+ *
+ * Loading the cone with a known mass drops its resonance, and the size of
+ * that drop gives the moving mass directly — which is what makes this the
+ * practical method for a driver with no datasheet.
+ *
+ * Qes and Qms are optional here: without them the mass, compliance and Vas
+ * are still recoverable, and the motor figures are simply left undefined.
+ *
+ * @param {object} m - Measurements.
+ * @param {number} m.Fs - Free-air resonance, Hz.
+ * @param {number} m.FsPrime - Resonance with the added mass fitted, Hz.
+ * @param {number} m.mAdd - Added mass, grams.
+ * @param {number} [m.Qes] - Electrical Q, if known.
+ * @param {number} [m.Qms] - Mechanical Q, if known.
+ * @param {number} m.Re - DC resistance, ohms.
+ * @param {number} m.Sd - Effective cone area, cm².
+ * @returns {object} The T/S set in display units; `Bl`, `Rms` and `Qts` are `undefined` when the Q values were not supplied.
+ * @throws {Error} When the loaded resonance is not below the free-air one, which means the measurements are swapped or wrong.
+ * @pure
+ */
 function solveAddedMass({ Fs, FsPrime, mAdd, Qes, Qms, Re, Sd }) {
   const ratio = Math.pow(Fs / FsPrime, 2) - 1
   if (ratio <= 0) throw new Error('Fs with added mass must be lower than free-air Fs.')
@@ -41,6 +85,24 @@ function solveAddedMass({ Fs, FsPrime, mAdd, Qes, Qms, Re, Sd }) {
   return { Fs, Vas, Qes, Qms, Qts, Re, Sd, Cms: Cms * 1e3, Mms: Mms * 1e3, Bl, Rms }
 }
 
+/**
+ * Derive the T/S set from the resonance shift in a box of known volume.
+ *
+ * Sealing the driver in a known volume raises its resonance, and the size of
+ * that rise gives Vas — after which this is the datasheet method.
+ *
+ * @param {object} m - Measurements.
+ * @param {number} m.Fs - Free-air resonance, Hz.
+ * @param {number} m.Fc - Resonance in the test box, Hz.
+ * @param {number} m.Vb - Test box volume, litres.
+ * @param {number} m.Qes - Electrical Q.
+ * @param {number} m.Qms - Mechanical Q.
+ * @param {number} m.Re - DC resistance, ohms.
+ * @param {number} m.Sd - Effective cone area, cm².
+ * @returns {object} The complete T/S set in display units.
+ * @throws {Error} When the in-box resonance is not above the free-air one, which means the measurements are swapped or the box is leaking.
+ * @pure
+ */
 function solveKnownBox({ Fs, Fc, Vb, Qes, Qms, Re, Sd }) {
   const ratio = Math.pow(Fc / Fs, 2) - 1
   if (ratio <= 0) throw new Error('In-box resonance Fc must be higher than free-air Fs.')
@@ -48,8 +110,21 @@ function solveKnownBox({ Fs, Fc, Vb, Qes, Qms, Re, Sd }) {
   return solveDatasheet({ Fs, Vas, Qes, Qms, Re, Sd })
 }
 
+/**
+ * React Hook Form options coercing an input's value to a number.
+ */
 const num = { valueAsNumber: true }
 
+/**
+ * The Thiele/Small solver: derive a full parameter set from measurements.
+ *
+ * Three methods — datasheet, added mass and known box — sharing one result
+ * view, so the derived set can be applied to a driver node whichever way it
+ * was obtained.
+ *
+ * @returns {React.ReactElement|null} The modal, or `null` when hidden.
+ * @sideEffect Subscribes to the store.
+ */
 export default function TSCalc() {
   const show = useStore((s) => s.showTSCalc)
   const setShow = useStore((s) => s.setShowTSCalc)
@@ -77,6 +152,15 @@ export default function TSCalc() {
     }
   })
 
+  /**
+   * Write the derived parameters into the selected driver node.
+   *
+   * Rounded to three decimals, which is past the precision the measurements
+   * justify and keeps the parameter panel readable.
+   *
+   * @returns {void}
+   * @sideEffect Updates the node's params — which triggers a resimulation — and closes the modal. Alerts and does nothing when no driver node is selected.
+   */
   const applyToNode = () => {
     if (!result) return
     if (!node || node.type !== 'driver') { alert('Select a Driver node first.'); return }
@@ -88,6 +172,16 @@ export default function TSCalc() {
     setShow(false)
   }
 
+  /**
+   * One labelled numeric input row, registered with the form.
+   *
+   * @param {object} props - Component props.
+   * @param {string} props.name - Form field name.
+   * @param {string} props.label - Display label.
+   * @param {string} props.unit - Unit shown after the input.
+   * @returns {React.ReactElement} The input row.
+   * @reads the enclosing form's `register`.
+   */
   const F = ({ name, label, unit }) => (
     <div className="param-row">
       <label>{label}</label>

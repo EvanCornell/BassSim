@@ -2,7 +2,12 @@ import React, { useState } from 'react'
 import { useStore } from '../store'
 import { waveguideVolume } from '../engine/geometry'
 
-// Tooltip text: one-line physical explanation per parameter
+/**
+ * One-line physical explanation per parameter, shown as a label tooltip.
+ *
+ * Keyed by param name rather than by node type, since the same parameter
+ * means the same thing wherever it appears.
+ */
 const TIPS = {
   Fs: 'Free-air resonance frequency of the moving system.',
   Qts: 'Total Q at Fs combining mechanical and electrical damping.',
@@ -35,6 +40,25 @@ const TIPS = {
   label: 'Display name for this node.',
 }
 
+/**
+ * A labelled numeric parameter input bound to one node field.
+ *
+ * Empty and unparseable input is ignored rather than written, so clearing
+ * the box to retype a value does not momentarily push `NaN` into the graph
+ * and trigger a failed solve.
+ *
+ * @param {object} props - Component props.
+ * @param {string} props.id - Node id.
+ * @param {string} props.field - Parameter name; also selects the tooltip.
+ * @param {number|string|undefined} props.value - Current value.
+ * @param {string} props.unit - Unit shown after the input.
+ * @param {string} [props.label] - Display label; defaults to the field name.
+ * @param {string|number} [props.step] - Input step.
+ * @param {number} [props.min] - Minimum accepted value.
+ * @param {Function} [props.onCommit] - Called instead of the default update, for fields needing derived changes.
+ * @returns {React.ReactElement} The input row.
+ * @sideEffect Subscribes to the store. Editing updates the node's params, which triggers a resimulation.
+ */
 function NumField({ id, field, value, unit, label, step, min, onCommit }) {
   const updateParams = useStore((s) => s.updateParams)
   return (
@@ -57,6 +81,18 @@ function NumField({ id, field, value, unit, label, step, min, onCommit }) {
   )
 }
 
+/**
+ * A labelled dropdown parameter bound to one node field.
+ *
+ * @param {object} props - Component props.
+ * @param {string} props.id - Node id.
+ * @param {string} props.field - Parameter name; also selects the tooltip.
+ * @param {string} props.value - Current value.
+ * @param {string} [props.label] - Display label; defaults to the field name.
+ * @param {Array} props.options - Selectable options.
+ * @returns {React.ReactElement} The select row.
+ * @sideEffect Subscribes to the store. Changing it updates the node's params, which triggers a resimulation.
+ */
 function SelectField({ id, field, value, label, options }) {
   const updateParams = useStore((s) => s.updateParams)
   return (
@@ -70,6 +106,21 @@ function SelectField({ id, field, value, label, options }) {
   )
 }
 
+/**
+ * The per-node loss control: a Q value with a lossless override.
+ *
+ * Every node has an independent Q applied as a complex loss term — wall
+ * flexure on chambers, port turbulence on waveguides, surround loss on
+ * passive radiators. Ticking ∞ disables loss entirely and greys the input,
+ * rather than expecting the user to know that a very large Q means the same
+ * thing.
+ *
+ * @param {object} props - Component props.
+ * @param {string} props.id - Node id.
+ * @param {object} props.p - The node's params.
+ * @returns {React.ReactElement} The Q control.
+ * @sideEffect Subscribes to the store.
+ */
 function QSection({ id, p }) {
   const updateParams = useStore((s) => s.updateParams)
   return (
@@ -96,6 +147,15 @@ function QSection({ id, p }) {
   )
 }
 
+/**
+ * The node's display name, shown on the canvas and in exports.
+ *
+ * @param {object} props - Component props.
+ * @param {string} props.id - Node id.
+ * @param {object} props.p - The node's params.
+ * @returns {React.ReactElement} The label input.
+ * @sideEffect Subscribes to the store.
+ */
 function LabelField({ id, p }) {
   const updateParams = useStore((s) => s.updateParams)
   return (
@@ -107,10 +167,31 @@ function LabelField({ id, p }) {
   )
 }
 
+/**
+ * The amplifier section: voltage, impedance and power, linked by P = V²/Z.
+ *
+ * Editing any one derives the others, so the drive level can be set in
+ * whichever unit the user is thinking in.
+ *
+ * @returns {React.ReactElement} The amplifier section.
+ * @sideEffect Subscribes to the store.
+ */
 function AmpSolver() {
   const settings = useStore((s) => s.settings)
   const setAmp = useStore((s) => s.setAmp)
   const updateSettings = useStore((s) => s.updateSettings)
+  /**
+   * One linked amplifier field.
+   *
+   * Rejects zero and negative values: the relation divides by impedance, and
+   * a zero would propagate infinities through the settings.
+   *
+   * @param {'voltage'|'impedance'|'power'} field - Settings field to bind.
+   * @param {string} label - Display label.
+   * @param {string} unit - Unit shown after the input.
+   * @returns {React.ReactElement} The input row.
+   * @reads the enclosing `settings` and `setAmp`.
+   */
   const f = (field, label, unit) => (
     <div className="param-row">
       <label title="Voltage, impedance and power are linked by P = V²/Z — edit any one.">{label}</label>
@@ -141,8 +222,26 @@ function AmpSolver() {
   )
 }
 
+/**
+ * Round a settings value for display, leaving non-numbers alone.
+ *
+ * Derived amplifier figures otherwise show full float precision, which
+ * makes the boxes unreadable as you type.
+ *
+ * @param {any} v - The value.
+ * @returns {any} The value rounded to three decimals, or unchanged when it is not a number.
+ * @pure
+ */
 const round3 = (v) => (typeof v === 'number' ? Math.round(v * 1000) / 1000 : v)
 
+/**
+ * Parameter form for a driver, with links to the library and the T/S solver.
+ *
+ * @param {object} props - Component props.
+ * @param {object} props.node - The selected node.
+ * @returns {React.ReactElement} The form.
+ * @sideEffect Subscribes to the store.
+ */
 function DriverForm({ node }) {
   const p = node.data.params
   const id = node.id
@@ -188,6 +287,14 @@ function DriverForm({ node }) {
   )
 }
 
+/**
+ * Parameter form for a chamber: volume, path length, stuffing and the probe.
+ *
+ * @param {object} props - Component props.
+ * @param {object} props.node - The selected node.
+ * @returns {React.ReactElement} The form.
+ * @sideEffect Subscribes to the store.
+ */
 function ChamberForm({ node }) {
   const p = node.data.params
   const id = node.id
@@ -212,6 +319,19 @@ function ChamberForm({ node }) {
 // Interior SPL probe: a virtual microphone inside the chamber. Read-only —
 // it reports the pressure the solver already computes and never loads the
 // circuit. Position slides the mic along the chamber's acoustic length.
+/**
+ * The interior-SPL probe: a virtual microphone inside a chamber.
+ *
+ * Observational only — enabling it never changes the simulation. The
+ * position slider matters only near the axial standing-wave modes, where
+ * pressure actually varies along the box.
+ *
+ * @param {object} props - Component props.
+ * @param {string} props.id - Node id.
+ * @param {object} props.p - The node's params.
+ * @returns {React.ReactElement} The probe controls.
+ * @sideEffect Subscribes to the store.
+ */
 function ProbeSection({ id, p }) {
   const updateParams = useStore((s) => s.updateParams)
   return (
@@ -249,6 +369,14 @@ function ProbeSection({ id, p }) {
   )
 }
 
+/**
+ * Parameter form for a waveguide, with derived cutoff and volume readouts.
+ *
+ * @param {object} props - Component props.
+ * @param {object} props.node - The selected node.
+ * @returns {React.ReactElement} The form.
+ * @sideEffect Subscribes to the store.
+ */
 function WaveguideForm({ node }) {
   const p = node.data.params
   const id = node.id
@@ -275,6 +403,14 @@ function WaveguideForm({ node }) {
   )
 }
 
+/**
+ * Parameter form for a passive radiator, including the compliance calculator.
+ *
+ * @param {object} props - Component props.
+ * @param {object} props.node - The selected node.
+ * @returns {React.ReactElement} The form.
+ * @sideEffect Subscribes to the store.
+ */
 function PRForm({ node }) {
   const p = node.data.params
   const id = node.id
@@ -319,6 +455,14 @@ function PRForm({ node }) {
   )
 }
 
+/**
+ * Parameter form for a radiation termination: the space it radiates into.
+ *
+ * @param {object} props - Component props.
+ * @param {object} props.node - The selected node.
+ * @returns {React.ReactElement} The form.
+ * @sideEffect Subscribes to the store.
+ */
 function RadiationForm({ node }) {
   const p = node.data.params
   const id = node.id
@@ -341,6 +485,15 @@ function RadiationForm({ node }) {
 
 const FORMS = { driver: DriverForm, chamber: ChamberForm, waveguide: WaveguideForm, pr: PRForm, radiation: RadiationForm }
 
+/**
+ * The Parameters panel: the amplifier section plus the selected node's form.
+ *
+ * Which form is shown follows the selected node's type; with nothing
+ * selected it prompts rather than rendering an empty panel.
+ *
+ * @returns {React.ReactElement} The panel.
+ * @sideEffect Subscribes to the store.
+ */
 export default function ParamPanel() {
   const selectedNodeId = useStore((s) => s.selectedNodeId)
   const node = useStore((s) => s.nodes.find((n) => n.id === s.selectedNodeId))

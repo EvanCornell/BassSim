@@ -15,6 +15,26 @@ const P_REF = 20e-6
 
 // ---------- unit conversion: node params (display units) → SI ----------
 
+/**
+ * Convert a driver node's display-unit parameters into the SI set the solver runs on.
+ *
+ * This is also where a multi-driver node collapses into one equivalent driver.
+ * Series wiring multiplies Re, Le and Bl by the count; parallel wiring divides
+ * the electrical terms; series-parallel splits the count into a square grid
+ * when it is a perfect square and falls back to plain parallel when it is not.
+ * The mechanical side scales with cone count regardless of wiring: Sd, Mms and
+ * Rms multiply, Cms divides.
+ *
+ * Every field has a fallback, so a partially filled node still simulates rather
+ * than producing NaN. That is deliberate — the editor lets you drop a driver on
+ * the canvas before typing any numbers.
+ *
+ * @param {object} p - Driver node params in display units (Sd cm², Mms g, Cms mm/N, Le mH, Xmax mm).
+ * @returns {{n: number, s: number, par: number, Re: number, Le: number, LeExp: number, Bl: number, Sd: number, Mms: number, Cms: number, Rms: number, Fs: number, Xmax: number, Q: number}} The equivalent single driver in SI units, plus the resolved count and the series/parallel multipliers.
+ * @post result.n >= 1
+ * @post p is not modified
+ * @pure
+ */
 export function driverSI(p) {
   const n = Math.max(1, Math.round(p.count || 1))
   let s = 1, par = 1
@@ -43,6 +63,21 @@ export function driverSI(p) {
   }
 }
 
+/**
+ * Resolve a node's loss factor to a number the element builders can use.
+ *
+ * Collapses three ways of saying "lossless" — an explicit `lossless` flag, a
+ * missing Q, and a non-positive Q — onto `Infinity`, which is what
+ * `combineQ` and `tlineMatrix` expect. Without this, a Q of 0 read literally
+ * would divide by zero.
+ *
+ * @param {object} p - Any node's params.
+ * @param {boolean} [p.lossless] - When true, force `Infinity` regardless of Q.
+ * @param {number} [p.Q=50] - The node's loss factor.
+ * @returns {number} A positive Q, or `Infinity` for lossless.
+ * @post result > 0
+ * @pure
+ */
 function normQ(p) {
   if (p.lossless) return Infinity
   const q = p.Q ?? 50
@@ -51,6 +86,22 @@ function normQ(p) {
 
 // ---------- element impedance / matrix builders ----------
 
+/**
+ * Mechanical impedance of a driver acting as a passive load rather than a source.
+ *
+ * When a second driver sits on the same enclosure but is not the one being
+ * driven in this superposition pass, it still presents a load: its moving mass,
+ * suspension and — through the motor — its blocked electrical impedance
+ * reflected back as `Bl²/Ze`. Ignoring that term would let an unpowered cone
+ * behave as though its motor were disconnected.
+ *
+ * @param {object} d - An SI driver from `driverSI`.
+ * @param {number} Rg - Amplifier source resistance, Ω, in series with the coil.
+ * @param {number} w - Angular frequency ω, rad/s.
+ * @returns {Complex} Mechanical impedance, N·s/m, including the reflected electrical term.
+ * @pre w > 0 — the compliance term divides by ω
+ * @pure
+ */
 function driverPassiveMechZ(d, Rg, w) {
   // Blocked electrical impedance reflected into mechanical domain
   const Ze = add(C(Rg + d.Re, 0), mul(C(d.Le, 0), jwPow(w, d.LeExp)))
@@ -63,7 +114,24 @@ function driverPassiveMechZ(d, Rg, w) {
 
 // ---------- graph model ----------
 
-// Build adjacency: for each node+handle, list of connected {node, handle}
+/**
+ * Build an undirected adjacency index keyed by `nodeId:handle`.
+ *
+ * Each edge is registered from both ends, so a lookup on either side finds the
+ * other. That matters because the solver traverses in both directions: forward
+ * for pressure propagation, backward when a downstream element needs to know
+ * its load.
+ *
+ * Edges referencing a missing node are skipped rather than throwing — a project
+ * file edited by hand can carry a dangling edge, and it should not stop the
+ * whole sweep.
+ *
+ * @param {Array<{id: string, type: string, data: object}>} nodes - Graph nodes.
+ * @param {Array<{source: string, sourceHandle: string, target: string, targetHandle: string}>} edges - Graph edges.
+ * @returns {{byId: Map<string, object>, adj: Map<string, Array<{node: object, handle: string}>>}} Node lookup and the adjacency index.
+ * @post nodes and edges are not modified
+ * @pure
+ */
 function buildGraph(nodes, edges) {
   const byId = new Map(nodes.map((n) => [n.id, n]))
   const out = new Map() // `${id}:${handle}` -> [{node, handle}]
@@ -81,10 +149,34 @@ function buildGraph(nodes, edges) {
   return { byId, adj: out }
 }
 
+/**
+ * Check a graph for topology mistakes without simulating it.
+ *
+ * The distinction the return value draws is the important one: `errors` stop
+ * the sweep, `warnings` do not. Most topology problems are legitimate designs
+ * the model handles approximately — an unconnected mouth is a working port, not
+ * a mistake — so they are surfaced on the node and left alone.
+ *
+ * The one error is having no driver at all, since there would be nothing to
+ * excite the network.
+ *
+ * @param {Array<object>} nodes - Graph nodes.
+ * @param {Array<object>} edges - Graph edges.
+ * @returns {{warnings: Object<string, string[]>, errors: string[]}} Warnings keyed by node id, and graph-level errors that block simulation.
+ * @post nodes and edges are not modified
+ * @pure
+ */
 export function validateGraph(nodes, edges) {
   const { adj } = buildGraph(nodes, edges)
   const warnings = {}
   const errors = []
+  /**
+   * Whether a given port has at least one edge attached.
+   * @param {string} id - Node id.
+   * @param {string} h - Handle name.
+   * @returns {boolean} True when the port is connected.
+   * @reads the `adj` index built above
+   */
   const connected = (id, h) => (adj.get(`${id}:${h}`) || []).length > 0
   // Multiple edges INTO one input port do not form an acoustic junction —
   // branches must fan out from an output port (e.g. two edges leaving a
@@ -124,6 +216,42 @@ export function validateGraph(nodes, edges) {
 
 // ---------- solve ----------
 
+/**
+ * Solve the whole graph across the frequency sweep.
+ *
+ * The single entry point of the engine. For each of `npts` log-spaced
+ * frequencies it builds every element's ABCD matrix, walks the graph backward
+ * to find the load each driver sees, solves the coupled electro-mechanical
+ * equation for cone velocity, then walks forward again accumulating radiated
+ * pressure, port velocity and interior probe pressure.
+ *
+ * Multiple drivers are handled by **superposition**: each is solved as the sole
+ * source with the others present as passive mechanical loads, and the resulting
+ * pressures are summed coherently. Excursion is deliberately *not* summed —
+ * cones move independently, so `excursion` reports the worst single cone and
+ * `excursionRatio` the worst cone relative to its own Xmax.
+ *
+ * When `settings.nlEnabled` is set and at least one driver has nonlinear
+ * curves, the whole sweep runs four times, refining per-frequency Bl/Cms/Le
+ * scale factors from the previous pass's excursion by damped fixed-point
+ * iteration. This is experimental and roughly quadruples the solve time.
+ *
+ * @param {Array<object>} nodes - Graph nodes, each `{id, type, data: {params}}`.
+ * @param {Array<object>} edges - Graph edges.
+ * @param {object} settings - Sweep settings.
+ * @param {number} [settings.fmin=10] - Sweep start, Hz.
+ * @param {number} [settings.fmax=1000] - Sweep end, Hz.
+ * @param {number} [settings.npts=512] - Log-spaced frequency points.
+ * @param {number} [settings.voltage=2.83] - Drive voltage, V RMS at the amplifier.
+ * @param {number} [settings.rg=0] - Amplifier source resistance, Ω.
+ * @param {boolean} [settings.masking] - Replace chambers with lumped compliances, hiding standing-wave artifacts.
+ * @param {boolean} [settings.nlEnabled] - Enable the experimental large-signal mode.
+ * @returns {object} On success `{ok: true, validation, freqs, splCombined, splDriver, splPorts, splInterior, zinMag, zinPhase, excursion, excursionByDriver, excursionRatio, xmaxByDriver, velocity, power, peReal, peApparent, phase, phaseUnwrapped, groupDelay, nl, elapsedMs}`. On failure `{ok: false, validation, freqs: []}` — returned rather than thrown, because an incomplete graph is the normal state while the user is still wiring it up.
+ * @pre settings.npts >= 2 — the log spacing divides by npts - 1
+ * @pre settings.fmin > 0 — the sweep is logarithmic
+ * @sideEffect Reads `performance.now()` twice to report `elapsedMs`, so the result is not bit-identical across runs.
+ * @mutates Stashes solver scratch state on the caller's node objects (`node._Zl`) and on returned impedances (`Z._radS`). Harmless to the graph's meaning, but the input array is not left untouched.
+ */
 export function runSimulation(nodes, edges, settings) {
   const t0 = performance.now()
   const { byId, adj } = buildGraph(nodes, edges)
@@ -187,6 +315,19 @@ export function runSimulation(nodes, edges, settings) {
       le: new Float64Array(npts).fill(1),
     })
   }
+  /**
+   * The SI driver to use at one frequency point, with nonlinear scaling applied.
+   *
+   * In linear mode this is the cached `driverSI` result, returned by reference.
+   * In nonlinear mode it is a fresh object with Bl, Cms and Le scaled by the
+   * factors the previous sweep derived for this frequency, so callers must not
+   * rely on identity between calls.
+   *
+   * @param {string} id - Driver node id.
+   * @param {number} i - Frequency index into the sweep.
+   * @returns {object} The effective SI driver at that frequency.
+   * @reads `nlActive` and the `nlScales` table, which the outer iteration loop rewrites between passes — the same arguments give different results on a later pass.
+   */
   const effDriver = (id, i) => {
     const d = driverSIs.get(id)
     if (!nlActive) return d
@@ -223,6 +364,21 @@ export function runSimulation(nodes, edges, settings) {
 
     // memoized per-frequency element matrices
     const matCache = new Map()
+    /**
+     * ABCD matrix of a two-port node at the current frequency, memoized.
+     *
+     * The cache is per-frequency and is what keeps the cost linear: a chamber
+     * reached from three different branches is built once. Throat and mouth
+     * areas are stashed on the returned matrix as `S1`/`S2` because downstream
+     * radiation and velocity calculations need the geometry and would otherwise
+     * have to re-derive it from the params.
+     *
+     * @param {object} node - A `waveguide` or `chamber` node.
+     * @param {number} [Sup] - Upstream exit area, m². Accepted for signature symmetry with `inputZ`; the matrix depends only on the node's own geometry.
+     * @returns {ABCD|null} The node's matrix decorated with `S1` and `S2`, or `null` for node types that are not two-ports.
+     * @mutates Writes into the per-frequency `matCache`, and sets `S1`/`S2` on the matrix it returns.
+     * @reads the current frequency `w` and the `masking` setting from the enclosing scope.
+     */
     const getMatrix = (node, Sup) => {
       const key = node.id
       if (matCache.has(key)) return matCache.get(key)
@@ -249,6 +405,29 @@ export function runSimulation(nodes, edges, settings) {
 
     // Terminal impedance of a node reached from upstream with exit area Sup
     const zCache = new Map()
+    /**
+     * Acoustic impedance looking into a node, resolved recursively downstream.
+     *
+     * This is the backward walk. A two-port asks its downstream neighbours for
+     * their impedances, combines parallel branches in shunt, and transforms the
+     * result through its own matrix. Terminals answer directly: a radiation
+     * node from the piston model, a passive radiator from its own resonance
+     * plus radiation loading, and a driver from `driverPassiveMechZ` plus
+     * whatever loads its other side.
+     *
+     * `visited` guards against cycles in the user's graph, which the editor
+     * permits — a loop returns a near-infinite impedance so it reads as a
+     * blocked path rather than recursing forever.
+     *
+     * @param {object} node - The node being looked into.
+     * @param {string} fromHandle - The handle the caller arrived at, which decides the direction of travel.
+     * @param {number|null} Sup - Upstream exit area, m², used as the radiating area when a radiation node has no explicit override.
+     * @param {Set<string>} visited - Node ids already on the current path.
+     * @returns {Complex} Acoustic impedance, Pa·s/m³.
+     * @post `visited` is not modified — each level copies it before recursing.
+     * @mutates Writes into the per-frequency `zCache`, stashes the resolved load on `node._Zl`, and tags radiation impedances with `_radS` for the propagation pass.
+     * @reads the current frequency `w`, the adjacency index, and the nonlinear scale table via `effDriver`.
+     */
     const inputZ = (node, fromHandle, Sup, visited) => {
       const ck = `${node.id}:${fromHandle}`
       if (zCache.has(ck)) return zCache.get(ck)
@@ -309,6 +488,32 @@ export function runSimulation(nodes, edges, settings) {
     const emit = { pressures: [], driverP: ZERO, portP: {}, powers: 0 }
     const wgAcc = new Map() // waveguide id -> { Ut, Um } complex sums
     const probeAcc = new Map() // probed chamber id -> complex interior pressure sum
+    /**
+     * Push an acoustic state into a node and accumulate everything it radiates.
+     *
+     * The forward walk, and the counterpart to `inputZ`. Terminals convert
+     * volume velocity into far-field pressure at 1 m and add it to the running
+     * sums; two-ports carry the state through their matrix and recurse. At a
+     * junction the flow is split by admittance, `Uᵢ = p/Zᵢ`.
+     *
+     * Accumulation is complex, not magnitude, because a node can be reached
+     * from several sources — a cabin fed by both a driver's rear and a port —
+     * and the port velocity readout has to stay phase-coherent with the summed
+     * SPL rather than double-counting.
+     *
+     * A `rigid` radiation node returns immediately: a closed wall radiates
+     * nothing, though it still loaded the circuit during the backward walk.
+     *
+     * @param {object} node - The node receiving the state.
+     * @param {string} fromHandle - Handle the state enters through.
+     * @param {Complex} p - Pressure at the entry, Pa.
+     * @param {Complex} U - Volume velocity into the entry, m³/s.
+     * @param {Set<string>} visited - Node ids already on the current path; revisiting one returns without emitting.
+     * @param {boolean} viaFront - Whether this path originates at a driver's front port. Only front-fed radiation counts toward the driver-only SPL overlay.
+     * @returns {void}
+     * @mutates Accumulates into the enclosing `emit`, `wgAcc` and `probeAcc` collectors, and into the caches `inputZ` and `getMatrix` own.
+     * @reads the current frequency `w`, the adjacency index, and the `masking` setting.
+     */
     const propagateInto = (node, fromHandle, p, U, visited, viaFront) => {
       if (visited.has(node.id)) return
       const nv = new Set(visited); nv.add(node.id)

@@ -199,6 +199,46 @@ panel you are looking at.
 - **Projects**: auto-save to LocalStorage, restore prompt, project manager with thumbnails, JSON file export/import with schema versioning.
 - **Export**: CSV of all series, PNG schematic of the canvas, plain-text metrics summary.
 
+## Method contracts
+
+Every method in the codebase carries an explicit contract as a JSDoc block —
+524 of them, checked on every run of `npm run test:contracts`.
+
+The format is standard JSDoc for the machine-checkable part (`@param`,
+`@returns`, `@throws`) plus a small vocabulary for the parts a signature
+cannot express:
+
+| Tag | Meaning |
+|---|---|
+| `@pre` | The caller must guarantee this on entry |
+| `@post` | This holds on normal return |
+| `@invariant` | True before and after |
+| `@mutates` | An argument or module-level state is modified in place |
+| `@sideEffect` | I/O, storage, network, DOM, timers |
+| `@reads` | Depends on mutable state outside its arguments |
+| `@pure` | No effects, deterministic in its arguments |
+
+Every method discloses its effects: one of `@pure`, `@sideEffect`, `@mutates`
+or `@reads` is mandatory, and `@pure` may not be combined with the others. That
+is the rule worth keeping — it forces the question of whether a method is safe
+to call twice, which is exactly what this codebase's mix of pure solver maths
+and effectful store actions makes easy to get wrong.
+
+`npm run docs:api` regenerates [`docs/api.json`](docs/api.json), a
+machine-readable index of every method with its parameters, return type and
+contract fields. That file is the documentation feed — a doc site, a review
+script or an agent should read it rather than parsing the source, which needs a
+JSX-aware parser to make sense of. It is committed, and carries no timestamp, so
+regenerating without a source change produces no diff.
+
+`npm run test:contracts` is the ratchet. It checks only what a machine can know
+for certain: that every method has a contract, that `@param` names and arity
+match the real signature, that value-returning bodies declare `@returns`, that
+tags come from the known vocabulary, and that effects are disclosed. Whether a
+`@pre` is *true* stays a human question. A renamed parameter whose contract was
+not updated fails the build, which is the failure mode worth catching —
+confidently wrong documentation is worse than none.
+
 ## MCP server (AI agent access)
 
 The simulation engine is also exposed as an [MCP](https://modelcontextprotocol.io)
@@ -207,7 +247,8 @@ simulate, optimize against goals, and compare designs directly — see
 [`mcp/README.md`](mcp/README.md). Run it locally over stdio (`npm run mcp`,
 for Claude Desktop/Code) or as a hosted HTTP connector for claude.ai/ChatGPT
 (`npm run mcp:http`, also Dockerized). `npm run test:mcp`,
-`npm run test:http` and `npm run test:drivers` run the checks.
+`npm run test:http`, `npm run test:drivers` and `npm run test:contracts`
+run the checks.
 
 ## Stack
 

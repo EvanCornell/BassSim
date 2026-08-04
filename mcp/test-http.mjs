@@ -15,11 +15,32 @@ const proc = spawn('node', ['mcp/http.js'], {
 })
 
 let failures = 0
+/**
+ * Assert one condition and record the outcome.
+ *
+ * @param {string} name - Check description.
+ * @param {any} cond - Truthy to pass.
+ * @param {string} [info=''] - Extra detail appended to the result line.
+ * @returns {void}
+ * @mutates Bumps the module-level failure counter.
+ * @sideEffect Prints the result line.
+ */
 const check = (name, cond, info = '') => {
   console.log(`${cond ? 'PASS' : 'FAIL'}  ${name}${info ? ` — ${info}` : ''}`)
   if (!cond) failures++
 }
 
+/**
+ * Poll the health endpoint until the server under test answers.
+ *
+ * The server is spawned as a child process, so the test cannot know when it
+ * has bound its port; polling is what makes the suite deterministic rather
+ * than racing a fixed sleep.
+ *
+ * @param {number} [tries=40] - Attempts before giving up.
+ * @returns {Promise<boolean>} True once the server is healthy, false if it never became ready.
+ * @sideEffect Issues repeated HTTP requests and waits between them.
+ */
 async function waitForHealth(tries = 40) {
   for (let i = 0; i < tries; i++) {
     try {

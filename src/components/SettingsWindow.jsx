@@ -26,6 +26,15 @@ const errStyle = { color: '#ff8a80', fontSize: 12, margin: '4px 0 8px' }
 const okStyle = { color: '#7ee787', fontSize: 12, margin: '4px 0 8px' }
 const dim = { color: 'var(--text-3, #8b949e)', fontSize: 12, lineHeight: 1.5 }
 
+/**
+ * Fetch the server's capabilities: which social providers and whether mail is configured.
+ *
+ * Failures are swallowed and leave the defaults in place, so a server that
+ * cannot answer degrades to email-and-password rather than an error.
+ *
+ * @returns {{providers: string[], smtp: boolean}} The configuration, initially empty until the fetch resolves.
+ * @sideEffect Issues a GET to /api/config on mount.
+ */
 function useServerConfig() {
   const [cfg, setCfg] = useState({ providers: [], smtp: false })
   useEffect(() => {
@@ -34,6 +43,16 @@ function useServerConfig() {
   return cfg
 }
 
+/**
+ * A row of social provider buttons.
+ *
+ * @param {object} props - Component props.
+ * @param {string[]} props.providers - Provider ids to offer.
+ * @param {(provider: string) => void} props.action - Called with the chosen provider.
+ * @param {string} props.label - Verb prefixing each provider name, e.g. "Sign in with".
+ * @returns {React.ReactElement|null} The button row, or `null` when no providers are configured.
+ * @pure
+ */
 function SocialButtons({ providers, action, label }) {
   if (!providers.length) return null
   return (
@@ -49,6 +68,15 @@ function SocialButtons({ providers, action, label }) {
 
 // ---------- signed-out: sign in / sign up / forgot ----------
 
+/**
+ * The signed-out pane: sign in, create account, or request a password reset.
+ *
+ * One component for all three modes, since they share the same fields and
+ * differ only in which are shown and which call is made.
+ *
+ * @returns {React.ReactElement} The auth forms.
+ * @sideEffect Fetches server config, and its actions call the auth service.
+ */
 function AuthForms() {
   const cfg = useServerConfig()
   const [mode, setMode] = useState('signin') // signin | signup | forgot
@@ -59,6 +87,16 @@ function AuthForms() {
   const [ok, setOk] = useState(null)
   const [busy, setBusy] = useState(false)
 
+  /**
+   * Run the current mode's auth request and report the outcome.
+   *
+   * The reset path deliberately does not reveal whether the address is
+   * registered. Without a mail server it says so and points at the server
+   * log, rather than claiming a message was sent.
+   *
+   * @returns {Promise<void>} Resolves once the request has completed and the result is on screen.
+   * @sideEffect Calls the auth service, which may create a session, and updates component state.
+   */
   const submit = async () => {
     setErr(null); setOk(null); setBusy(true)
     try {
@@ -79,6 +117,13 @@ function AuthForms() {
     setBusy(false)
   }
 
+  /**
+   * Begin a social sign-in, returning here afterwards.
+   *
+   * @param {string} provider - Provider id.
+   * @returns {Promise<any>} The auth client's result; the redirect usually happens first.
+   * @sideEffect Navigates away to the provider's consent screen.
+   */
   const social = (provider) => authClient.signIn.social({ provider, callbackURL: window.location.origin })
 
   return (
@@ -132,9 +177,29 @@ function AuthForms() {
 
 // ---------- signed-in: profile, password, linked logins, danger zone ----------
 
+/**
+ * Manage which sign-in methods are attached to the account.
+ *
+ * The last remaining method cannot be unlinked — doing so would lock the
+ * user out of their own account — so its button is disabled and says why.
+ *
+ * @param {object} props - Component props.
+ * @param {string[]} props.providers - Provider ids the server has configured.
+ * @returns {React.ReactElement} The linked-accounts pane.
+ * @sideEffect Fetches the account list on mount, and its actions call the auth service.
+ */
 function LinkedAccounts({ providers }) {
   const [accounts, setAccounts] = useState(null)
   const [err, setErr] = useState(null)
+  /**
+   * Reload the linked account list.
+   *
+   * A failure resolves to an empty list rather than leaving the pane in its
+   * loading state forever.
+   *
+   * @returns {Promise<void>} Resolves once the list has been replaced.
+   * @sideEffect Calls the auth service and updates component state.
+   */
   const refresh = () => authClient.listAccounts().then(({ data }) => setAccounts(data || [])).catch(() => setAccounts([]))
   useEffect(() => { refresh() }, [])
 
@@ -142,6 +207,13 @@ function LinkedAccounts({ providers }) {
   const linked = new Set(accounts.map((a) => a.providerId ?? a.provider))
   const linkable = providers.filter((p) => !linked.has(p))
 
+  /**
+   * Detach one sign-in method from the account.
+   *
+   * @param {object} a - The linked account record.
+   * @returns {Promise<void>} Resolves once the list has been refreshed.
+   * @sideEffect Calls the auth service and refreshes the list.
+   */
   const unlink = async (a) => {
     setErr(null)
     const { error } = await authClient.unlinkAccount({
@@ -150,6 +222,13 @@ function LinkedAccounts({ providers }) {
     if (error) setErr(error.message)
     refresh()
   }
+  /**
+   * Attach an additional social sign-in method, returning here afterwards.
+   *
+   * @param {string} provider - Provider id.
+   * @returns {Promise<any>} The auth client's result; the redirect usually happens first.
+   * @sideEffect Navigates away to the provider's consent screen.
+   */
   const link = (provider) => authClient.linkSocial({ provider, callbackURL: window.location.origin })
 
   return (
@@ -184,11 +263,26 @@ function LinkedAccounts({ providers }) {
   )
 }
 
+/**
+ * Change the account password, signing out other sessions.
+ *
+ * Revoking other sessions is deliberate: a password change is often a
+ * response to suspecting one is compromised.
+ *
+ * @returns {React.ReactElement} The change-password form.
+ * @sideEffect Its action calls the auth service.
+ */
 function ChangePassword() {
   const [cur, setCur] = useState('')
   const [next, setNext] = useState('')
   const [msg, setMsg] = useState(null)
   const [err, setErr] = useState(null)
+  /**
+   * Submit the password change.
+   *
+   * @returns {Promise<void>} Resolves once the result is on screen.
+   * @sideEffect Calls the auth service, revoking other sessions on success.
+   */
   const submit = async () => {
     setMsg(null); setErr(null)
     const { error } = await authClient.changePassword({ currentPassword: cur, newPassword: next, revokeOtherSessions: true })
@@ -210,6 +304,14 @@ function ChangePassword() {
   )
 }
 
+/**
+ * The signed-in pane: profile, password, linked logins and account deletion.
+ *
+ * @param {object} props - Component props.
+ * @param {object} props.session - The active session.
+ * @returns {React.ReactElement} The account pane.
+ * @sideEffect Fetches server config, and its actions call the auth service.
+ */
 function AccountManage({ session }) {
   const cfg = useServerConfig()
   const user = session.user
@@ -268,6 +370,12 @@ function AccountManage({ session }) {
   )
 }
 
+/**
+ * The Account section: the auth forms or the account manager, by session state.
+ *
+ * @returns {React.ReactElement} The section.
+ * @sideEffect Subscribes to the auth session.
+ */
 function AccountSection() {
   const { data: session, isPending } = authClient.useSession()
   if (isPending) return <div style={dim}>Checking session…</div>
@@ -276,6 +384,12 @@ function AccountSection() {
 
 // ---------- application settings ----------
 
+/**
+ * The Application section: sweep range, display options and experimental features.
+ *
+ * @returns {React.ReactElement} The section.
+ * @sideEffect Subscribes to the store.
+ */
 function ApplicationSection() {
   const settings = useStore((s) => s.settings)
   const updateSettings = useStore((s) => s.updateSettings)
@@ -347,6 +461,12 @@ function ApplicationSection() {
 
 // ---------- quick bar layout ----------
 
+/**
+ * The Quick bar section: choose and reorder the items in the quick bar.
+ *
+ * @returns {React.ReactElement} The section.
+ * @sideEffect Subscribes to the store.
+ */
 function QuickBarSection() {
   const toolbar = useStore((s) => s.toolbar)
   const toggleToolbarItem = useStore((s) => s.toggleToolbarItem)
@@ -405,7 +525,16 @@ function QuickBarSection() {
 
 // ---------- keyboard ----------
 
-// A chip showing one combo; click it to re-record, or use its ✕ to drop it.
+/**
+ * One shortcut chip: click to re-record it, or use its ✕ to drop it.
+ *
+ * @param {object} props - Component props.
+ * @param {string} props.combo - The combo to display.
+ * @param {Function} props.onRemove - Called when the ✕ is clicked.
+ * @param {Function} props.onClick - Called when the chip itself is clicked.
+ * @returns {React.ReactElement} The chip.
+ * @pure
+ */
 function ComboChip({ combo, onRemove, onClick }) {
   return (
     <span className="key-chip" onClick={onClick} title="Click to replace this shortcut">
@@ -416,6 +545,20 @@ function ComboChip({ combo, onRemove, onClick }) {
   )
 }
 
+/**
+ * The Keyboard section: view and rebind every command's shortcuts.
+ *
+ * While recording, a capture-phase listener swallows every key, so the
+ * shortcut being captured cannot also fire the command it is bound to —
+ * without that, recording Ctrl+N over "New project" would start a new
+ * project. Escape cancels.
+ *
+ * Assigning a combo already in use takes it from the other command and says
+ * so, rather than silently leaving two commands on one key.
+ *
+ * @returns {React.ReactElement} The section.
+ * @sideEffect Subscribes to the store. Registers a capture-phase window keydown listener while recording.
+ */
 function KeyboardSection() {
   const bindings = useStore((s) => s.bindings)
   const assignBinding = useStore((s) => s.assignBinding)
@@ -424,10 +567,15 @@ function KeyboardSection() {
   const [recording, setRecording] = useState(null)   // { id, replacing }
   const [note, setNote] = useState(null)
 
-  // While recording, the window swallows every key so the shortcut being
-  // captured cannot also trigger the command it is bound to.
   useEffect(() => {
     if (!recording) return
+    /**
+     * Capture the next keypress as the shortcut being recorded.
+     *
+     * @param {KeyboardEvent} e - The keydown event.
+     * @returns {void}
+     * @sideEffect Swallows the key, then writes and persists the new binding. Escape cancels without changing anything.
+     */
     const onKey = (e) => {
       e.preventDefault()
       e.stopPropagation()
@@ -445,6 +593,13 @@ function KeyboardSection() {
     return () => window.removeEventListener('keydown', onKey, true)
   }, [recording, assignBinding, removeBinding])
 
+  /**
+   * Whether a command still carries exactly its default bindings.
+   *
+   * @param {string} id - Command id.
+   * @returns {boolean} True when the bindings match the defaults in both content and order.
+   * @reads the current bindings from the store.
+   */
   const isDefault = (id) => {
     const def = DEFAULT_BINDINGS[id] || []
     const cur = bindings[id] || []
@@ -518,6 +673,19 @@ const SECTIONS = [
   ['app', 'Application', ApplicationSection],
 ]
 
+/**
+ * The settings window: a floating, draggable panel rather than a dock panel.
+ *
+ * Deliberately not a panel — settings are modal to the whole workspace, and
+ * docking them would let the user tile settings beside the thing they are
+ * configuring and lose track of which is which.
+ *
+ * Re-centres each time it opens, so a window dragged off to one side is not
+ * lost the next time it is needed.
+ *
+ * @returns {React.ReactElement|null} The window, or `null` when hidden.
+ * @sideEffect Subscribes to the store. Registers a window keydown listener for Escape while open.
+ */
 export default function SettingsWindow() {
   const show = useStore((s) => s.showSettings)
   const setShow = useStore((s) => s.setShowSettings)
@@ -527,19 +695,47 @@ export default function SettingsWindow() {
 
   useEffect(() => {
     if (!show) return
+    /**
+     * Close the window on Escape.
+     *
+     * @param {KeyboardEvent} e - The keydown event.
+     * @returns {void}
+     * @sideEffect Closes the settings window.
+     */
     const esc = (e) => { if (e.key === 'Escape') setShow(false) }
     window.addEventListener('keydown', esc)
     return () => window.removeEventListener('keydown', esc)
   }, [show, setShow])
 
-  // re-centre each time the window is opened
   useEffect(() => { if (show) setDrag({ x: 0, y: 0 }) }, [show])
 
+  /**
+   * Begin dragging the window by its title bar.
+   *
+   * Clicks on the close button are ignored, so closing does not start a drag.
+   *
+   * @param {React.MouseEvent} e - The mousedown event.
+   * @returns {void}
+   * @sideEffect Registers window mousemove and mouseup listeners.
+   */
   const onTitleDown = (e) => {
     if (e.target.closest('button')) return
     const x0 = e.clientX - drag.x
     const y0 = e.clientY - drag.y
+    /**
+     * Apply the in-progress window drag.
+     *
+     * @param {MouseEvent} ev - The mousemove event.
+     * @returns {void}
+     * @sideEffect Updates the window offset on every move.
+     */
     const move = (ev) => setDrag({ x: ev.clientX - x0, y: ev.clientY - y0 })
+    /**
+     * End the window drag and remove its listeners.
+     *
+     * @returns {void}
+     * @sideEffect Removes the window listeners.
+     */
     const up = () => {
       window.removeEventListener('mousemove', move)
       window.removeEventListener('mouseup', up)
@@ -580,12 +776,27 @@ export default function SettingsWindow() {
 
 // ---------- /reset-password landing (linked from the reset email) ----------
 
+/**
+ * The `/reset-password` landing page, linked from the reset email.
+ *
+ * A whole-page route rather than part of the settings window: the user
+ * arriving here is signed out and following a link, not navigating the app.
+ *
+ * @returns {React.ReactElement} The page.
+ * @sideEffect Reads the reset token from `window.location`.
+ */
 export function ResetPasswordPage() {
   const token = new URLSearchParams(window.location.search).get('token')
   const [pw, setPw] = useState('')
   const [pw2, setPw2] = useState('')
   const [err, setErr] = useState(null)
   const [done, setDone] = useState(false)
+  /**
+   * Submit the new password.
+   *
+   * @returns {Promise<any>|void} The auth client's promise, or nothing when the two entries disagree.
+   * @sideEffect Calls the auth service, which signs the user in on success.
+   */
   const submit = async () => {
     setErr(null)
     if (pw !== pw2) return setErr('Passwords do not match.')
