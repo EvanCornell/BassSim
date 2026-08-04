@@ -30,7 +30,7 @@ current state.
 
 ## UNREACHABLE (30)
 
-### `Item(arg0)`
+### `Item(props)`
 
 - **Reachability:** UNREACHABLE
 - **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
@@ -58,7 +58,7 @@ opens on hover and a click there means "I am on my way to the child".
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
-### `Menu(arg0)`
+### `Menu(props)`
 
 - **Reachability:** UNREACHABLE
 - **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.

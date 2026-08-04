@@ -71,7 +71,7 @@ rather than waiting for an event that will not arrive.
 
 ## UNREACHABLE (11)
 
-### `PanelBody(arg0)`
+### `PanelBody(props)`
 
 - **Reachability:** UNREACHABLE
 - **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
@@ -89,7 +89,7 @@ Render one panel's component.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
-### `DockStack(arg0)`
+### `DockStack(props)`
 
 - **Reachability:** UNREACHABLE
 - **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
@@ -174,7 +174,7 @@ Dock the dragged panel into this stack at the cursor's zone.
 
 - Restructures and persists the layout, and clears the drag flag. Ignores drops that are not panel drags.
 
-### `Splitter(arg0)`
+### `Splitter(props)`
 
 - **Reachability:** UNREACHABLE
 - **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
@@ -235,7 +235,7 @@ End the splitter drag and remove its listeners.
 
 - Removes the window listeners and the body class.
 
-### `DockNode(arg0)`
+### `DockNode(props)`
 
 - **Reachability:** UNREACHABLE
 - **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.

@@ -151,7 +151,7 @@ as the current result.
 
 ## UNREACHABLE (28)
 
-### `BaseChart(arg0)`
+### `BaseChart(props)`
 
 - **Reachability:** UNREACHABLE
 - **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
@@ -681,7 +681,7 @@ Phase and group delay on separate axes.
 
 - Subscribes to the store.
 
-### `ChartPanel(arg0)`
+### `ChartPanel(props)`
 
 - **Reachability:** UNREACHABLE
 - **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.

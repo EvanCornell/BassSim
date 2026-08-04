@@ -47,7 +47,7 @@ makes the boxes unreadable as you type.
 
 ## UNREACHABLE (12)
 
-### `NumField(arg0)`
+### `NumField(props)`
 
 - **Reachability:** UNREACHABLE
 - **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
@@ -78,7 +78,7 @@ and trigger a failed solve.
 
 - Subscribes to the store. Editing updates the node's params, which triggers a resimulation.
 
-### `SelectField(arg0)`
+### `SelectField(props)`
 
 - **Reachability:** UNREACHABLE
 - **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
@@ -102,7 +102,7 @@ A labelled dropdown parameter bound to one node field.
 
 - Subscribes to the store. Changing it updates the node's params, which triggers a resimulation.
 
-### `QSection(arg0)`
+### `QSection(props)`
 
 - **Reachability:** UNREACHABLE
 - **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
@@ -129,7 +129,7 @@ thing.
 
 - Subscribes to the store.
 
-### `LabelField(arg0)`
+### `LabelField(props)`
 
 - **Reachability:** UNREACHABLE
 - **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
@@ -192,7 +192,7 @@ a zero would propagate infinities through the settings.
 
 - the enclosing `settings` and `setAmp`.
 
-### `DriverForm(arg0)`
+### `DriverForm(props)`
 
 - **Reachability:** UNREACHABLE
 - **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
@@ -212,7 +212,7 @@ Parameter form for a driver, with links to the library and the T/S solver.
 
 - Subscribes to the store.
 
-### `ChamberForm(arg0)`
+### `ChamberForm(props)`
 
 - **Reachability:** UNREACHABLE
 - **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
@@ -232,7 +232,7 @@ Parameter form for a chamber: volume, path length, stuffing and the probe.
 
 - Subscribes to the store.
 
-### `ProbeSection(arg0)`
+### `ProbeSection(props)`
 
 - **Reachability:** UNREACHABLE
 - **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
@@ -257,7 +257,7 @@ pressure actually varies along the box.
 
 - Subscribes to the store.
 
-### `WaveguideForm(arg0)`
+### `WaveguideForm(props)`
 
 - **Reachability:** UNREACHABLE
 - **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
@@ -277,7 +277,7 @@ Parameter form for a waveguide, with derived cutoff and volume readouts.
 
 - Subscribes to the store.
 
-### `PRForm(arg0)`
+### `PRForm(props)`
 
 - **Reachability:** UNREACHABLE
 - **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
@@ -297,7 +297,7 @@ Parameter form for a passive radiator, including the compliance calculator.
 
 - Subscribes to the store.
 
-### `RadiationForm(arg0)`
+### `RadiationForm(props)`
 
 - **Reachability:** UNREACHABLE
 - **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.

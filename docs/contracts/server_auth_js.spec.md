@@ -26,7 +26,7 @@ separate migration step.
 
 ## UNREACHABLE (2)
 
-### `sendEmail(arg0)`
+### `sendEmail(msg)`
 
 - **Reachability:** UNREACHABLE
 - **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
@@ -53,7 +53,7 @@ being delivered.
 
 - Sends mail over SMTP, or writes to the server log. Reads SMTP configuration from the environment.
 
-### `sendResetPassword(arg0)`
+### `sendResetPassword(req)`
 
 - **Reachability:** UNREACHABLE
 - **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.

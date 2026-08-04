@@ -94,7 +94,7 @@ exactly on it.
 
 ## UNREACHABLE (19)
 
-### `CurveEditor(arg0)`
+### `CurveEditor(props)`
 
 - **Reachability:** UNREACHABLE
 - **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.

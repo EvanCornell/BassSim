@@ -97,8 +97,15 @@ const CLAUSES = [
  */
 function renderMethod(mod, m) {
   const { reach, how } = reachability(mod, m)
+  // A destructured parameter has no name in the AST, so the extractor records
+  // it positionally as `arg0`. The contract does name it, and printing two
+  // different names for one parameter reads as a documentation error — so the
+  // documented name wins wherever there is one.
+  const named = m.params.filter((p) => !p.name.includes('.'))
+  const sig = m.signature.map((s, i) => (/^arg\d+$/.test(s) && named[i] ? named[i].name : s))
+
   const L = []
-  L.push(`### \`${m.qualified}(${m.signature.join(', ')})\``)
+  L.push(`### \`${m.qualified}(${sig.join(', ')})\``)
   L.push('')
   L.push(`- **Reachability:** ${reach}`)
   L.push(`- **Obtain via:** ${how}`)

@@ -30,7 +30,7 @@ volume rather than being treated as a straight duct.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
-### `metricValue(id, arg1)`
+### `metricValue(id, ctx)`
 
 - **Reachability:** EXPORTED
 - **Obtain via:** import { metricValue } from '../../src/toolbarItems.js'

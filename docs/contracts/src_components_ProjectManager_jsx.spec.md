@@ -25,7 +25,7 @@ held in state, so the list reflects edits made in another tab.
 
 ## UNREACHABLE (5)
 
-### `Thumb(arg0)`
+### `Thumb(props)`
 
 - **Reachability:** UNREACHABLE
 - **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.

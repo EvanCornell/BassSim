@@ -123,7 +123,7 @@ Take a snapshot and manage the reference overlays already taken.
 
 - Subscribes to the store.
 
-### `Metric(arg0)`
+### `Metric(props)`
 
 - **Reachability:** UNREACHABLE
 - **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.

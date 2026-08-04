@@ -49,7 +49,7 @@ Load the user's saved custom drivers.
 
 ## UNREACHABLE (5)
 
-### `ExtDetail(arg0)`
+### `ExtDetail(props)`
 
 - **Reachability:** UNREACHABLE
 - **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.

@@ -173,7 +173,7 @@ length — the end correction. Applied at a waveguide's throat and mouth by
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
-### `waveguideMatrix(arg0, w, N)`
+### `waveguideMatrix(seg, w, N)`
 
 - **Reachability:** EXPORTED
 - **Obtain via:** import { waveguideMatrix } from '../../src/engine/acoustics.js'
@@ -216,7 +216,7 @@ they shift the tuning without adding length to the geometry the user drew.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
-### `chamberMatrix(arg0, w, lumped)`
+### `chamberMatrix(chamber, w, lumped)`
 
 - **Reachability:** EXPORTED
 - **Obtain via:** import { chamberMatrix } from '../../src/engine/acoustics.js'

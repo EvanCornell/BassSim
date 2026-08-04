@@ -1564,7 +1564,7 @@ is showing.
 
 - The module-level `applyingRemote` and `muted` flags.
 
-### `channel.onmessage(arg0)`
+### `channel.onmessage(event)`
 
 - **Reachability:** UNREACHABLE
 - **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.

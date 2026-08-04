@@ -26,7 +26,7 @@ was obtained.
 
 ## INTERNAL (3)
 
-### `solveDatasheet(arg0)`
+### `solveDatasheet(m)`
 
 - **Reachability:** INTERNAL
 - **Obtain via:** import { __internals } from '../../src/components/TSCalc.jsx'  →  __internals.solveDatasheet
@@ -57,7 +57,7 @@ resistance.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
-### `solveAddedMass(arg0)`
+### `solveAddedMass(m)`
 
 - **Reachability:** INTERNAL
 - **Obtain via:** import { __internals } from '../../src/components/TSCalc.jsx'  →  __internals.solveAddedMass
@@ -92,7 +92,7 @@ are still recoverable, and the motor figures are simply left undefined.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
-### `solveKnownBox(arg0)`
+### `solveKnownBox(m)`
 
 - **Reachability:** INTERNAL
 - **Obtain via:** import { __internals } from '../../src/components/TSCalc.jsx'  →  __internals.solveKnownBox
@@ -143,7 +143,7 @@ justify and keeps the parameter panel readable.
 
 - Updates the node's params — which triggers a resimulation — and closes the modal. Alerts and does nothing when no driver node is selected.
 
-### `TSCalc > F(arg0)`
+### `TSCalc > F(props)`
 
 - **Reachability:** UNREACHABLE
 - **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.

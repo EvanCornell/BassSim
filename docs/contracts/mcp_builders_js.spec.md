@@ -5,7 +5,7 @@
 
 ## EXPORTED (10)
 
-### `searchDrivers(arg0)`
+### `searchDrivers(criteria)`
 
 - **Reachability:** EXPORTED
 - **Obtain via:** import { searchDrivers } from '../../mcp/builders.js'
@@ -181,7 +181,7 @@ ends the search at the current length rather than looping.
 
 - Runs the supplied simulation up to ~22 times, which dominates the cost of building a ported enclosure.
 
-### `buildSealedBox(arg0)`
+### `buildSealedBox(spec)`
 
 - **Reachability:** EXPORTED
 - **Obtain via:** import { buildSealedBox } from '../../mcp/builders.js'
@@ -211,7 +211,7 @@ front radiates into half space.
 
 - Consumes ids from the module counter, so two calls produce projects with different node ids.
 
-### `buildPortedBox(arg0)`
+### `buildPortedBox(spec)`
 
 - **Reachability:** EXPORTED
 - **Obtain via:** import { buildPortedBox } from '../../mcp/builders.js'
@@ -250,7 +250,7 @@ MCP server does.
 
 - Consumes ids from the module counter.
 
-### `buildBandpass4(arg0)`
+### `buildBandpass4(spec)`
 
 - **Reachability:** EXPORTED
 - **Obtain via:** import { buildBandpass4 } from '../../mcp/builders.js'
@@ -285,7 +285,7 @@ why the cone itself contributes nothing directly to the SPL.
 
 - Consumes ids from the module counter.
 
-### `buildBandpass6(arg0)`
+### `buildBandpass6(spec)`
 
 - **Reachability:** EXPORTED
 - **Obtain via:** import { buildBandpass6 } from '../../mcp/builders.js'
@@ -321,7 +321,7 @@ sensitivity to getting both tunings right.
 
 - Consumes ids from the module counter.
 
-### `optimizeProject(project, params, score, arg3)`
+### `optimizeProject(project, params, score, opts)`
 
 - **Reachability:** EXPORTED
 - **Obtain via:** import { optimizeProject } from '../../mcp/builders.js'

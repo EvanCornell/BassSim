@@ -65,7 +65,7 @@ cannot answer degrades to email-and-password rather than an error.
 
 - Issues a GET to /api/config on mount.
 
-### `SocialButtons(arg0)`
+### `SocialButtons(props)`
 
 - **Reachability:** UNREACHABLE
 - **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
@@ -142,7 +142,7 @@ Begin a social sign-in, returning here afterwards.
 
 - Navigates away to the provider's consent screen.
 
-### `LinkedAccounts(arg0)`
+### `LinkedAccounts(props)`
 
 - **Reachability:** UNREACHABLE
 - **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
@@ -256,7 +256,7 @@ Submit the password change.
 
 - Calls the auth service, revoking other sessions on success.
 
-### `AccountManage(arg0)`
+### `AccountManage(props)`
 
 - **Reachability:** UNREACHABLE
 - **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
@@ -321,7 +321,7 @@ The Quick bar section: choose and reorder the items in the quick bar.
 
 - Subscribes to the store.
 
-### `ComboChip(arg0)`
+### `ComboChip(props)`
 
 - **Reachability:** UNREACHABLE
 - **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.

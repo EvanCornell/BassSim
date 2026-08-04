@@ -5,7 +5,7 @@
 
 ## EXPORTED (5)
 
-### `DriverNode(arg0)`
+### `DriverNode(props)`
 
 - **Reachability:** EXPORTED
 - **Obtain via:** import { DriverNode } from '../../src/components/nodes.jsx'
@@ -27,7 +27,7 @@ Canvas node for a driver: T/S summary, array count, and front/rear ports.
 
 - Subscribes to the store.
 
-### `ChamberNode(arg0)`
+### `ChamberNode(props)`
 
 - **Reachability:** EXPORTED
 - **Obtain via:** import { ChamberNode } from '../../src/components/nodes.jsx'
@@ -49,7 +49,7 @@ Canvas node for a chamber: volume, path length, stuffing, and its inlet/outlet.
 
 - Subscribes to the store.
 
-### `WaveguideNode(arg0)`
+### `WaveguideNode(props)`
 
 - **Reachability:** EXPORTED
 - **Obtain via:** import { WaveguideNode } from '../../src/components/nodes.jsx'
@@ -74,7 +74,7 @@ is the number most likely to disqualify an otherwise good design.
 
 - Subscribes to the store.
 
-### `PRNode(arg0)`
+### `PRNode(props)`
 
 - **Reachability:** EXPORTED
 - **Obtain via:** import { PRNode } from '../../src/components/nodes.jsx'
@@ -96,7 +96,7 @@ Canvas node for a passive radiator: moving mass, compliance and resulting Fs.
 
 - Subscribes to the store.
 
-### `RadiationNode(arg0)`
+### `RadiationNode(props)`
 
 - **Reachability:** EXPORTED
 - **Obtain via:** import { RadiationNode } from '../../src/components/nodes.jsx'
@@ -139,7 +139,7 @@ Subscribe to the validation warnings for one node.
 
 - Subscribes to the store.
 
-### `Head(arg0)`
+### `Head(props)`
 
 - **Reachability:** UNREACHABLE
 - **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.

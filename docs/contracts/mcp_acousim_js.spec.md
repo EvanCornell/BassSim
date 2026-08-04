@@ -175,7 +175,7 @@ reads to an agent as a missing measurement rather than an inapplicable one.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
-### `summarize(arg0, points)`
+### `summarize(ctx, points)`
 
 - **Reachability:** INTERNAL
 - **Obtain via:** import { __internals } from '../../mcp/acousim.js'  →  __internals.summarize
@@ -588,7 +588,7 @@ Sweep indices falling inside a frequency band.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
-### `createServer > makeScore(arg0)`
+### `createServer > makeScore(spec)`
 
 - **Reachability:** UNREACHABLE
 - **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
