@@ -23,27 +23,30 @@ import {
 // ---------------------------------------------------------------------------
 // Shared helpers
 //
-// The spec states two structural invariants that every operation must
-// maintain (src/layout.js contract, `sanitize`: "both structural invariants
-// are re-established on the way back up"; `removeRec`: "a stack emptied by
-// the removal is dropped, and a split left with one child collapses into that
-// child"; `split` precondition: "children.length >= 2 — a lone child
-// collapses under the tree invariants"):
+// CONTRACT (module): "The workspace is a tree of two node kinds:
 //
-//   1. a stack always holds at least one panel
-//   2. a split always holds at least two children
+//   { id, type: 'split', dir: 'row'|'col', size, children: [node, …] }
+//   { id, type: 'stack', size, panels: ['canvas', …], active: 'canvas' }"
 //
-// AMBIGUITY: the spec never names the node fields. `stack(panels, opts)` and
-// `split(dir, children, size)` name their parameters `panels` and `children`,
-// and `sanitize` names `id`, `size` and `active`, so those names are used
-// here. A node carrying `children` is treated as a split, otherwise a stack.
+// CONTRACT (module): "Two invariants are maintained after each edit:
+//   - a stack always holds at least one panel (empty stacks are pruned)
+//   - a split always holds at least two children (a lone child replaces it)"
+//
+// CONTRACT (module): "Every operation here is pure: it returns a new tree,
+// never mutates."
 // ---------------------------------------------------------------------------
 
-const isSplit = (n) => n != null && typeof n === 'object' && Array.isArray(n.children)
+const isSplit = (n) => n != null && typeof n === 'object' && n.type === 'split'
 
 function checkInvariants(node, path = 'root') {
   assert.ok(node != null && typeof node === 'object', `${path}: node must be an object`)
-  if (isSplit(node)) {
+  assert.ok(
+    node.type === 'split' || node.type === 'stack',
+    `${path}: a node must be one of the two documented kinds, got ${JSON.stringify(node.type)}`,
+  )
+  if (node.type === 'split') {
+    assert.ok(node.dir === 'row' || node.dir === 'col', `${path}: a split needs dir 'row' or 'col'`)
+    assert.ok(Array.isArray(node.children), `${path}: a split must have a children array`)
     assert.ok(
       node.children.length >= 2,
       `${path}: a split must hold at least two children (had ${node.children.length})`,
@@ -114,6 +117,15 @@ test('stack: documented defaults — size 1, active is the first panel, ids in t
   assert.ok(s.id.length > 0)
 })
 
+// CONTRACT (module): "{ id, type: 'stack', size, panels: ['canvas', …], active: 'canvas' }"
+test('stack: builds exactly the documented stack node shape', () => {
+  const s = stack(['pA', 'pB'])
+  assert.equal(s.type, 'stack')
+  assert.deepEqual(Object.keys(s).sort(), ['active', 'id', 'panels', 'size', 'type'])
+  // CONTRACT: "`p` — Prefix identifying the node kind: 's' for stacks, 'd' for splits."
+  assert.ok(s.id.startsWith('s'), `a stack id should carry the 's' prefix, got ${s.id}`)
+})
+
 // CONTRACT: "Defaults to the first, or `null` for an empty stack."
 test('stack: an empty stack has a null active panel', () => {
   const s = stack([])
@@ -160,6 +172,15 @@ test('split: builds a node with the given direction, children and default size 1
   assert.equal(t.dir, 'col')
   assert.equal(t.size, 4)
   checkInvariants(t)
+})
+
+// CONTRACT (module): "{ id, type: 'split', dir: 'row'|'col', size, children: [node, …] }"
+test('split: builds exactly the documented split node shape', () => {
+  const s = split('col', [stack(['pA']), stack(['pB'])])
+  assert.equal(s.type, 'split')
+  assert.deepEqual(Object.keys(s).sort(), ['children', 'dir', 'id', 'size', 'type'])
+  // CONTRACT: "`p` — Prefix identifying the node kind: 's' for stacks, 'd' for splits."
+  assert.ok(s.id.startsWith('d'), `a split id should carry the 'd' prefix, got ${s.id}`)
 })
 
 // CONTRACT: "Consumes an id from `uid`."

@@ -630,8 +630,11 @@ test('rawEval: is not floored and may go negative', () => {
 })
 
 // CONTRACT: "Control points are gaussian bumps added onto the baseline"
-// Read strictly: at a point's centre the gaussian is at full height, so the raw
-// value there is the baseline (1, with no table) plus the point's gain.
+// CONTRACT (module): "A curve is a flat 1.0 baseline (or an imported table),
+//            deformed by parametric-EQ style control points: gaussian bumps
+//            {x mm, g gain, w width mm}."
+// The module section names `g` as the gain, so at a point's centre — where the
+// gaussian is at full height — the raw value is the baseline plus that gain.
 test('rawEval: at a control point centre the value is baseline plus its gain', () => {
   const c = { points: [{ x: 0, g: -5, w: 2 }], table: null }
   assert.ok(Math.abs(rawEval(c, 0) - (1 - 5)) < 1e-12, `rawEval gave ${rawEval(c, 0)}`)
@@ -649,6 +652,20 @@ test('rawEval: a control point decays back toward the baseline away from its cen
   assert.ok(Math.abs(far - 1) < 1e-6, `far value ${far} should return to the 1.0 baseline`)
 })
 
+// CONTRACT (module): "gaussian bumps {x mm, g gain, w width mm}"
+// `w` is the bump's width in mm, so a wider point deforms the curve further from
+// its centre while leaving the full-height value at the centre unchanged.
+test('rawEval: a control point\'s w is its width in mm', () => {
+  const narrow = { points: [{ x: 0, g: -0.5, w: 1 }], table: null }
+  const wide = { points: [{ x: 0, g: -0.5, w: 8 }], table: null }
+  // same gain at the centre
+  assert.ok(Math.abs(rawEval(narrow, 0) - rawEval(wide, 0)) < 1e-12)
+  // but the wide point still bites well away from the centre where the narrow
+  // one has decayed back to the baseline
+  assert.ok(rawEval(wide, 6) < rawEval(narrow, 6), `${rawEval(wide, 6)} !< ${rawEval(narrow, 6)}`)
+  assert.ok(Math.abs(rawEval(narrow, 6) - 1) < 1e-6, `narrow at 6 mm: ${rawEval(narrow, 6)}`)
+})
+
 // CONTRACT: "baseline plus control points" — with no points the raw value is the
 // baseline, and with no curve at all it is the flat 1.0 baseline.
 test('rawEval: with no control points the value is the baseline', () => {
@@ -661,8 +678,12 @@ test('rawEval: with no control points the value is the baseline', () => {
 // CONTRACT: "In symmetric mode each point is mirrored to the opposite stroke
 //            direction, which is how a motor with a symmetric gap is described
 //            with half the points."
-// AMBIGUITY: the spec names "symmetric mode" but never names the flag that turns
-// it on. `curve.symmetric` is the only spelling the prose supports.
+// AMBIGUITY (UNRESOLVED): the spec names "symmetric mode" but never names the
+// flag that turns it on. The regenerated module section describes a curve as
+// "a flat 1.0 baseline (or an imported table), deformed by parametric-EQ style
+// control points: gaussian bumps {x mm, g gain, w width mm}" — it names the
+// point fields but still no symmetric flag. `curve.symmetric` remains the only
+// spelling the prose supports; the gap is real and this test is left as written.
 test('rawEval: in symmetric mode each point is mirrored to the opposite stroke', () => {
   const c = { points: [{ x: 3, g: -0.5, w: 1 }], table: null, symmetric: true }
   assert.ok(Math.abs(rawEval(c, 3) - rawEval(c, -3)) < 1e-12,
