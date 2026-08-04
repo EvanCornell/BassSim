@@ -75,6 +75,20 @@ const SUCCESS_KEYS = [
 ]
 
 // ======================================================================
+// Exported constants
+// ======================================================================
+
+// CONTRACT (exported constants): "### `__internals`  Keys: `normQ`,
+//            `driverPassiveMechZ`, `buildGraph`"
+test('__internals: publishes exactly the documented keys', () => {
+  assert.deepEqual(Object.keys(__internals).sort(),
+    ['buildGraph', 'driverPassiveMechZ', 'normQ'])
+  for (const k of Object.keys(__internals)) {
+    assert.equal(typeof __internals[k], 'function', `${k} should be callable`)
+  }
+})
+
+// ======================================================================
 // driverSI(p)
 // ======================================================================
 
@@ -490,26 +504,28 @@ test('runSimulation: the result carries the validation report', () => {
 // __internals.normQ(p)
 // ======================================================================
 
-// CONTRACT: "Collapses three ways of saying 'lossless' — an explicit `lossless`
-//            flag, a missing Q, and a non-positive Q — onto `Infinity`"
+// CONTRACT: "Collapses two ways of saying 'lossless' — an explicit `lossless`
+//            flag and a non-positive Q — onto `Infinity`"
 test('normQ: an explicit lossless flag gives Infinity', () => {
   assert.equal(normQ({ lossless: true }), Infinity)
   assert.equal(normQ({ lossless: true, Q: 7 }), Infinity)
 })
 
-// CONTRACT: "a non-positive Q ... onto `Infinity`"
+// CONTRACT: "a non-positive Q — onto `Infinity`"
 test('normQ: a non-positive Q gives Infinity', () => {
   assert.equal(normQ({ Q: 0 }), Infinity)
   assert.equal(normQ({ Q: -5 }), Infinity)
 })
 
+// CONTRACT: "A *missing* Q is not lossless: it falls back to 50, the same
+//            moderate loss a new node is created with, so a node whose Q was
+//            never set behaves like one that was left at its default rather than
+//            like a lossless idealisation."
 // CONTRACT: "`p.Q` — `number` _(optional, default `50`)_ — The node's loss factor."
-// AMBIGUITY: the prose says a missing Q collapses onto Infinity while the
-// parameter block gives Q a default of 50. These cannot both hold. The prose is
-// the more specific claim about behaviour, so it is what is asserted; the two
-// clauses are self-contradictory.
-test('normQ: a missing Q gives Infinity', () => {
-  assert.equal(normQ({}), Infinity)
+test('normQ: a missing Q falls back to the documented default of 50', () => {
+  assert.equal(normQ({}), 50)
+  assert.equal(normQ({ lossless: false }), 50)
+  assert.equal(normQ({ Q: undefined }), 50)
 })
 
 // CONTRACT: "`number` — A positive Q, or `Infinity` for lossless."

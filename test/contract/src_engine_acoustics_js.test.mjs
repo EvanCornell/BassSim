@@ -3,7 +3,13 @@ import assert from 'node:assert/strict'
 import {
   besselJ1, besselJ0, struveH1, radiationImpedance,
   tlineMatrix, seriesMassMatrix, waveguideMatrix, chamberMatrix, combineQ,
+  SOLID_ANGLES,
 } from '../../src/engine/acoustics.js'
+// `C_AIR` is the documented default for `tlineMatrix`'s `c`, and ρc is the
+// characteristic impedance `radiationImpedance` returns for `anechoic`. Both
+// constants are published by src/engine/geometry.js, which is the only place
+// the spec pack gives them a value.
+import { RHO, C_AIR } from '../../src/engine/geometry.js'
 
 // ---------------------------------------------------------------------------
 // Helpers.

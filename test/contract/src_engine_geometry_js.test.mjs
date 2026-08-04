@@ -2,6 +2,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import {
   areaProfile, waveguideVolume, flareCutoff, endCorrectionLength,
+  RHO, C_AIR,
 } from '../../src/engine/geometry.js'
 
 // The six documented flare laws.
@@ -19,6 +20,32 @@ function near(actual, expected, tol = TOL, msg = '') {
   )
 }
 
+// "to within floating-point rounding": a square-root-and-back round trip loses
+// at most a couple of ulps, i.e. ~4e-16 relative. 1e-12 relative is three
+// orders of magnitude looser than that and still far tighter than any real
+// disagreement between S(0) and S1 could be.
+const ROUNDING_REL = 1e-12
+
+function relNear(actual, expected, rel, msg = '') {
+  assert.ok(
+    Math.abs(actual - expected) <= rel * Math.abs(expected),
+    `${msg} expected ~${expected}, got ${actual} (rel ${rel})`,
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Exported constants
+
+// CONTRACT: "`RHO` — Air density ρ, kg/m³, at 20 °C. Value: `1.184`"
+test('RHO: air density is 1.184 kg/m³', () => {
+  assert.equal(RHO, 1.184)
+})
+
+// CONTRACT: "`C_AIR` — Speed of sound c in air, m/s, at 20 °C. Value: `344`"
+test('C_AIR: speed of sound in air is 344 m/s', () => {
+  assert.equal(C_AIR, 344)
+})
+
 // ---------------------------------------------------------------------------
 // areaProfile(flare, S1, S2, L)
 
@@ -35,14 +62,20 @@ test('areaProfile: returns a function of x giving S(x) in m²', () => {
   }
 })
 
-// CONTRACT postcondition: "result(0) === S1 for every flare law"
-// Asserted with exact === as the contract states it, for all six named laws
-// and for an unrecognised law.
-test('areaProfile: result(0) === S1 for every flare law', () => {
+// CONTRACT postcondition: "result(0) equals S1 for every flare law, to within
+// floating-point rounding — the conical and hypex laws reach it through a
+// square root and back"
+test('areaProfile: result(0) equals S1 for every flare law', () => {
   const S1 = 0.0123
   for (const flare of [...FLARES, 'no-such-flare', undefined, '']) {
     const S = areaProfile(flare, S1, 0.2, 0.75)
-    assert.equal(S(0), S1, `flare=${String(flare)}: S(0) must be exactly S1`)
+    relNear(S(0), S1, ROUNDING_REL, `flare=${String(flare)}: S(0) vs S1:`)
+  }
+  // Across a wide range of throat areas, not just one.
+  for (const flare of FLARES) {
+    for (const s of [1e-8, 1e-3, 1, 250]) {
+      relNear(areaProfile(flare, s, s * 8, 1.5)(0), s, ROUNDING_REL, `${flare} S1=${s}:`)
+    }
   }
 })
 
@@ -63,7 +96,7 @@ test('areaProfile: correct across the S1 > 0 && L > 0 range', () => {
   for (const flare of FLARES) {
     for (const [S1, S2, L] of [[1e-8, 1e-6, 1e-6], [1, 4, 1000], [0.5, 0.5, 0.001]]) {
       const S = areaProfile(flare, S1, S2, L)
-      assert.equal(S(0), S1, `${flare}: S(0) must be exactly S1`)
+      relNear(S(0), S1, ROUNDING_REL, `${flare} S1=${S1}: S(0) vs S1:`)
       assert.ok(Number.isFinite(S(L / 2)), `${flare}: S(L/2) must be finite`)
       assert.ok(Number.isFinite(S(L)), `${flare}: S(L) must be finite`)
     }

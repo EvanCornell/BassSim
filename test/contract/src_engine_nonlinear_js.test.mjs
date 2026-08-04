@@ -11,6 +11,7 @@ import {
   derivedRatios,
   normalizeTable,
   parseCurveCSV,
+  NL_PARAMS,
   __internals,
 } from '../../src/engine/nonlinear.js'
 
@@ -675,22 +676,42 @@ test('rawEval: with no control points the value is the baseline', () => {
   assert.equal(rawEval(c, 0), baseValue(c, 0))
 })
 
-// CONTRACT: "In symmetric mode each point is mirrored to the opposite stroke
-//            direction, which is how a motor with a symmetric gap is described
-//            with half the points."
-// AMBIGUITY (UNRESOLVED): the spec names "symmetric mode" but never names the
-// flag that turns it on. The regenerated module section describes a curve as
-// "a flat 1.0 baseline (or an imported table), deformed by parametric-EQ style
-// control points: gaussian bumps {x mm, g gain, w width mm}" — it names the
-// point fields but still no symmetric flag. `curve.symmetric` remains the only
-// spelling the prose supports; the gap is real and this test is left as written.
-test('rawEval: in symmetric mode each point is mirrored to the opposite stroke', () => {
-  const c = { points: [{ x: 3, g: -0.5, w: 1 }], table: null, symmetric: true }
+// CONTRACT: "When the curve sets `sym`, each point is mirrored to the opposite
+//            stroke direction — a point at +3 mm also acts at −3 mm — which is
+//            how a motor with a symmetric gap is described with half the points."
+test('rawEval: when the curve sets sym each point is mirrored to the opposite stroke', () => {
+  const c = { points: [{ x: 3, g: -0.5, w: 1 }], table: null, sym: true }
   assert.ok(Math.abs(rawEval(c, 3) - rawEval(c, -3)) < 1e-12,
     `${rawEval(c, 3)} vs ${rawEval(c, -3)}`)
-  // and without it, the point is one-sided
+  // the mirrored copy really acts at −3 mm, not merely by coincidence of shape
+  assert.ok(rawEval(c, -3) < rawEval(c, -10), 'the mirror should deform the curve at -3 mm')
+  // and without `sym`, the point is one-sided
   const asym = { points: [{ x: 3, g: -0.5, w: 1 }], table: null }
   assert.notEqual(rawEval(asym, 3), rawEval(asym, -3))
+  assert.ok(Math.abs(rawEval(asym, -3) - 1) < 1e-6, 'unmirrored: -3 mm stays at baseline')
+})
+
+// CONTRACT: "Points within 0.01 mm of centre are not mirrored, since they
+//            already straddle it."
+test('rawEval: a point within 0.01 mm of centre is not mirrored', () => {
+  // At 0.005 mm the point is inside the no-mirror band, so its full-height
+  // deviation from the baseline is its own gain, applied once.
+  const near = { points: [{ x: 0.005, g: -0.5, w: 1 }], table: null, sym: true }
+  assert.ok(Math.abs((rawEval(near, 0.005) - 1) - (-0.5)) < 1e-9,
+    `deviation ${rawEval(near, 0.005) - 1} should be a single gain of -0.5`)
+
+  const atCentre = { points: [{ x: 0, g: -0.5, w: 1 }], table: null, sym: true }
+  assert.ok(Math.abs((rawEval(atCentre, 0) - 1) - (-0.5)) < 1e-9,
+    `deviation ${rawEval(atCentre, 0) - 1} should be a single gain of -0.5`)
+})
+
+// CONTRACT: "Points within 0.01 mm of centre are not mirrored" — just outside
+// that band the point IS mirrored, so its own contribution and its mirror's
+// almost coincide and the deviation at centre is close to twice the gain.
+test('rawEval: a point just outside the 0.01 mm band is mirrored', () => {
+  const outside = { points: [{ x: 0.02, g: -0.5, w: 1 }], table: null, sym: true }
+  const dev = rawEval(outside, 0.02) - 1
+  assert.ok(Math.abs(dev - (-1)) < 0.02, `deviation ${dev} should be close to twice -0.5`)
 })
 
 // CONTRACT: "@pure — ... deterministic in its arguments."
