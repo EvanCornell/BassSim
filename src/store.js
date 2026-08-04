@@ -241,7 +241,7 @@ export const useStore = create((rawSet, get) => {
    *
    * @param {string|null} id - Panel id, or `null` when the drag ends.
    * @returns {void}
-   * @sideEffect Writes store state, mirrored to other windows.
+   * @sideEffect Writes store state. The field is local to the window — `SHARED_KEYS` deliberately excludes it, so a popped-out panel keeps its own.
    */
   setDraggingPanel: (id) => set({ draggingPanel: id }),
   /**
@@ -252,7 +252,7 @@ export const useStore = create((rawSet, get) => {
    *
    * @param {string} id - Panel id.
    * @returns {void}
-   * @sideEffect Writes store state, mirrored to other windows.
+   * @sideEffect Writes store state. The field is local to the window — `SHARED_KEYS` deliberately excludes it, so a popped-out panel keeps its own.
    */
   focusPanel: (id) => { if (get().focusedPanel !== id) set({ focusedPanel: id }) },
   /**
@@ -260,7 +260,7 @@ export const useStore = create((rawSet, get) => {
    *
    * @param {string|null} id - Panel id to toggle.
    * @returns {void}
-   * @sideEffect Writes store state, mirrored to other windows.
+   * @sideEffect Writes store state. The field is local to the window — `SHARED_KEYS` deliberately excludes it, so a popped-out panel keeps its own.
    */
   toggleMaximize: (id) => set({ maximized: get().maximized === id ? null : id }),
   /**
@@ -269,7 +269,7 @@ export const useStore = create((rawSet, get) => {
    * @param {boolean} v - Whether to show the window.
    * @param {string} [section] - Section to select. The current section is kept when omitted.
    * @returns {void}
-   * @sideEffect Writes store state, mirrored to other windows.
+   * @sideEffect Writes store state. The field is local to the window — `SHARED_KEYS` deliberately excludes it, so a popped-out panel keeps its own.
    */
   setShowSettings: (v, section) => set({ showSettings: v, ...(section ? { settingsSection: section } : {}) }),
   /**
@@ -277,7 +277,7 @@ export const useStore = create((rawSet, get) => {
    *
    * @param {string} id - Section id.
    * @returns {void}
-   * @sideEffect Writes store state, mirrored to other windows.
+   * @sideEffect Writes store state. The field is local to the window — `SHARED_KEYS` deliberately excludes it, so a popped-out panel keeps its own.
    */
   setSettingsSection: (id) => set({ settingsSection: id }),
 
@@ -560,7 +560,7 @@ export const useStore = create((rawSet, get) => {
    * Restore the default quick-bar arrangement.
    *
    * @returns {void}
-   * @sideEffect Writes store state, mirrored to other windows.
+   * @sideEffect Writes store state and persists the toolbar, since it delegates to `setToolbar`. The toolbar is local to the window; `SHARED_KEYS` excludes it.
    */
   resetToolbar: () => get().setToolbar(DEFAULT_TOOLBAR),
 
@@ -1039,7 +1039,7 @@ export const useStore = create((rawSet, get) => {
    *
    * @param {boolean} v - Whether to show it.
    * @returns {void}
-   * @sideEffect Writes store state, mirrored to other windows.
+   * @sideEffect Writes store state. The field is local to the window — `SHARED_KEYS` deliberately excludes it, so a popped-out panel keeps its own.
    */
   setShowDriverDB: (v) => set({ showDriverDB: v }),
   /**
@@ -1047,7 +1047,7 @@ export const useStore = create((rawSet, get) => {
    *
    * @param {boolean} v - Whether to show it.
    * @returns {void}
-   * @sideEffect Writes store state, mirrored to other windows.
+   * @sideEffect Writes store state. The field is local to the window — `SHARED_KEYS` deliberately excludes it, so a popped-out panel keeps its own.
    */
   setShowProjectManager: (v) => set({ showProjectManager: v }),
   /**
@@ -1055,7 +1055,7 @@ export const useStore = create((rawSet, get) => {
    *
    * @param {boolean} v - Whether to show it.
    * @returns {void}
-   * @sideEffect Writes store state, mirrored to other windows.
+   * @sideEffect Writes store state. The field is local to the window — `SHARED_KEYS` deliberately excludes it, so a popped-out panel keeps its own.
    */
   setShowTSCalc: (v) => set({ showTSCalc: v }),
   /**
@@ -1063,7 +1063,7 @@ export const useStore = create((rawSet, get) => {
    *
    * @param {object|null} v - The candidate project, or `null` to dismiss.
    * @returns {void}
-   * @sideEffect Writes store state, mirrored to other windows.
+   * @sideEffect Writes store state. The field is local to the window — `SHARED_KEYS` deliberately excludes it, so a popped-out panel keeps its own.
    */
   setRestorePrompt: (v) => set({ restorePrompt: v }),
 

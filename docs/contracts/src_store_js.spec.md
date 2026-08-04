@@ -211,7 +211,7 @@ Record which panel is mid tab-drag, which drives the drop targets.
 
 **Side effects**
 
-- Writes store state, mirrored to other windows.
+- Writes store state. The field is local to the window — `SHARED_KEYS` deliberately excludes it, so a popped-out panel keeps its own.
 
 ### `focusPanel(id)`
 
@@ -233,7 +233,7 @@ an unchanged write would still broadcast.
 
 **Side effects**
 
-- Writes store state, mirrored to other windows.
+- Writes store state. The field is local to the window — `SHARED_KEYS` deliberately excludes it, so a popped-out panel keeps its own.
 
 ### `toggleMaximize(id)`
 
@@ -252,7 +252,7 @@ Maximize a panel full-bleed, or restore it if it is already maximized.
 
 **Side effects**
 
-- Writes store state, mirrored to other windows.
+- Writes store state. The field is local to the window — `SHARED_KEYS` deliberately excludes it, so a popped-out panel keeps its own.
 
 ### `setShowSettings(v, section)`
 
@@ -272,7 +272,7 @@ Open or close the settings window, optionally jumping to a section.
 
 **Side effects**
 
-- Writes store state, mirrored to other windows.
+- Writes store state. The field is local to the window — `SHARED_KEYS` deliberately excludes it, so a popped-out panel keeps its own.
 
 ### `setSettingsSection(id)`
 
@@ -291,7 +291,7 @@ Switch the settings window to a section.
 
 **Side effects**
 
-- Writes store state, mirrored to other windows.
+- Writes store state. The field is local to the window — `SHARED_KEYS` deliberately excludes it, so a popped-out panel keeps its own.
 
 ### `setBinding(id, combos)`
 
@@ -700,7 +700,7 @@ Restore the default quick-bar arrangement.
 
 **Side effects**
 
-- Writes store state, mirrored to other windows.
+- Writes store state and persists the toolbar, since it delegates to `setToolbar`. The toolbar is local to the window; `SHARED_KEYS` excludes it.
 
 ### `deleteLayoutPreset(name)`
 
@@ -1234,7 +1234,7 @@ Show or hide the driver database modal.
 
 **Side effects**
 
-- Writes store state, mirrored to other windows.
+- Writes store state. The field is local to the window — `SHARED_KEYS` deliberately excludes it, so a popped-out panel keeps its own.
 
 ### `setShowProjectManager(v)`
 
@@ -1253,7 +1253,7 @@ Show or hide the project manager modal.
 
 **Side effects**
 
-- Writes store state, mirrored to other windows.
+- Writes store state. The field is local to the window — `SHARED_KEYS` deliberately excludes it, so a popped-out panel keeps its own.
 
 ### `setShowTSCalc(v)`
 
@@ -1272,7 +1272,7 @@ Show or hide the Thiele/Small parameter solver.
 
 **Side effects**
 
-- Writes store state, mirrored to other windows.
+- Writes store state. The field is local to the window — `SHARED_KEYS` deliberately excludes it, so a popped-out panel keeps its own.
 
 ### `setRestorePrompt(v)`
 
@@ -1291,7 +1291,7 @@ Set the prompt offering to restore an auto-saved project.
 
 **Side effects**
 
-- Writes store state, mirrored to other windows.
+- Writes store state. The field is local to the window — `SHARED_KEYS` deliberately excludes it, so a popped-out panel keeps its own.
 
 ### `scheduleCompute()`
 

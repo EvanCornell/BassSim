@@ -22220,7 +22220,7 @@
             "invariant": [],
             "mutates": [],
             "sideEffect": [
-              "Writes store state, mirrored to other windows."
+              "Writes store state. The field is local to the window — `SHARED_KEYS` deliberately excludes it, so a popped-out panel keeps its own."
             ],
             "reads": [],
             "pure": false
@@ -22261,7 +22261,7 @@
             "invariant": [],
             "mutates": [],
             "sideEffect": [
-              "Writes store state, mirrored to other windows."
+              "Writes store state. The field is local to the window — `SHARED_KEYS` deliberately excludes it, so a popped-out panel keeps its own."
             ],
             "reads": [],
             "pure": false
@@ -22302,7 +22302,7 @@
             "invariant": [],
             "mutates": [],
             "sideEffect": [
-              "Writes store state, mirrored to other windows."
+              "Writes store state. The field is local to the window — `SHARED_KEYS` deliberately excludes it, so a popped-out panel keeps its own."
             ],
             "reads": [],
             "pure": false
@@ -22351,7 +22351,7 @@
             "invariant": [],
             "mutates": [],
             "sideEffect": [
-              "Writes store state, mirrored to other windows."
+              "Writes store state. The field is local to the window — `SHARED_KEYS` deliberately excludes it, so a popped-out panel keeps its own."
             ],
             "reads": [],
             "pure": false
@@ -22392,7 +22392,7 @@
             "invariant": [],
             "mutates": [],
             "sideEffect": [
-              "Writes store state, mirrored to other windows."
+              "Writes store state. The field is local to the window — `SHARED_KEYS` deliberately excludes it, so a popped-out panel keeps its own."
             ],
             "reads": [],
             "pure": false
@@ -23286,7 +23286,7 @@
             "invariant": [],
             "mutates": [],
             "sideEffect": [
-              "Writes store state, mirrored to other windows."
+              "Writes store state and persists the toolbar, since it delegates to `setToolbar`. The toolbar is local to the window; `SHARED_KEYS` excludes it."
             ],
             "reads": [],
             "pure": false
@@ -24323,7 +24323,7 @@
             "invariant": [],
             "mutates": [],
             "sideEffect": [
-              "Writes store state, mirrored to other windows."
+              "Writes store state. The field is local to the window — `SHARED_KEYS` deliberately excludes it, so a popped-out panel keeps its own."
             ],
             "reads": [],
             "pure": false
@@ -24364,7 +24364,7 @@
             "invariant": [],
             "mutates": [],
             "sideEffect": [
-              "Writes store state, mirrored to other windows."
+              "Writes store state. The field is local to the window — `SHARED_KEYS` deliberately excludes it, so a popped-out panel keeps its own."
             ],
             "reads": [],
             "pure": false
@@ -24405,7 +24405,7 @@
             "invariant": [],
             "mutates": [],
             "sideEffect": [
-              "Writes store state, mirrored to other windows."
+              "Writes store state. The field is local to the window — `SHARED_KEYS` deliberately excludes it, so a popped-out panel keeps its own."
             ],
             "reads": [],
             "pure": false
@@ -24446,7 +24446,7 @@
             "invariant": [],
             "mutates": [],
             "sideEffect": [
-              "Writes store state, mirrored to other windows."
+              "Writes store state. The field is local to the window — `SHARED_KEYS` deliberately excludes it, so a popped-out panel keeps its own."
             ],
             "reads": [],
             "pure": false

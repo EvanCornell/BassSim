@@ -1,29 +1,30 @@
 // Blind contract tests for `src/store.js`.
 //
-// Written from docs/contracts/src_store_js.spec.md alone. No implementation
-// file was read and no test was ever executed, so every assertion encodes what
-// the contract CLAIMS rather than what the code happens to do.
+// Written from docs/contracts/ alone. No implementation file was read and no
+// test was ever executed, so every assertion encodes what the contract CLAIMS
+// rather than what the code happens to do.
 //
-// Naming note: the spec documents the store's ACTIONS but never names the
-// state fields they write, so wherever a field name was not confirmed by some
-// contract in the pack, the test derives the key by diffing
-// `useStore.getState()` across the call instead of guessing. Field names that
-// ARE confirmed elsewhere in the pack and are therefore used directly:
-//   `focusedPanel`, `maximized`  (src/keymap.js spec)
-//   `bindings`                   (src/components/MenuBar.jsx spec)
-//   `draggingPanel`              (src/components/dock/DockLayout.jsx spec)
-//   `toolbar`                    (src/components/Toolbar.jsx spec: `store.toolbar`)
-//   `snapshots`                  (src/components/OutputPanel.jsx spec)
-//   `settings`                   (src/components/ParamPanel.jsx spec)
-//   `nodes` / `edges`, each node `{id, type, position, data: {params}}`
-//                                (src/engine/solver.js spec)
-//   `_flowApi`                   (src/components/FlowCanvas.jsx spec)
+// The spec's "## Module" section names the state fields directly, so these
+// tests read state back by name:
+//   project    nodes, edges, projectName, selectedNodeId, settings
+//   results    results, metrics, snapshots, simError
+//   history    history, future, clipboard
+//   workspace  layout, layoutPresets, maximized, focusedPanel, draggingPanel,
+//              poppedOut, toolbar, bindings, xZoom
+//   modals     showDriverDB, showProjectManager, showTSCalc, showSettings,
+//              settingsSection, restorePrompt, velocityPopupNodeId
+//
+// Underscore-prefixed fields (`_lastSig`, `_abort`, `_computeTimer`,
+// `_flowApi`, `_lastSavedName`, `_nameTimer`) are documented as solver and
+// persistence bookkeeping that is "not part of any action's observable
+// contract", so `snap()` below excludes them. Every "does nothing" clause is
+// still asserted as *zero* observable keys written, which is stronger than
+// naming one field.
 //
 // The nine dock-editing methods — activate, dock, dockEdge, resize, dropOnTab,
 // close, open, toggle, reset — live in the store's `layoutOps` namespace and
 // are reached as `useStore.getState().layoutOps.<name>(…)`, per their
-// "Obtain via" lines. Every call below, including the ones that only set up or
-// tear down a test, goes through that path.
+// "Obtain via" lines.
 
 import { test, beforeEach } from 'node:test'
 import assert from 'node:assert/strict'
@@ -33,37 +34,57 @@ import {
   stack, split, defaultLayout, findNode, findPanelStack, openPanels, isOpen,
 } from '../../src/layout.js'
 import { loadBindings, findConflict } from '../../src/keymap.js'
+import { PANEL_IDS } from '../../src/panelMeta.js'
+import { SCHEMA_VERSION, DEFAULT_PARAMS, DEFAULT_SETTINGS } from '../../src/engine/project.js'
+import { SHARED_KEYS } from '../../src/popout.js'
 
 const st = () => useStore.getState()
 
 // ---------------------------------------------------------------- helpers ---
 
-// Node types used below. The spec never enumerates them; `driver`, `chamber`
-// and `waveguide` are the three named across the contract pack (mcp/builders.js
-// speaks of "driver node", "chamber", and "a waveguide node with id portId").
+// Node types are the keys of DEFAULT_PARAMS: driver, chamber, waveguide, pr,
+// radiation. `addNode` documents that "its entry in `DEFAULT_PARAMS` supplies
+// the initial params".
 const T_DRIVER = 'driver'
 const T_CHAMBER = 'chamber'
 
-// The project shape the store itself produces, captured before any test runs so
-// that `blank()` always rebuilds the same known starting point.
-const BASE = st().serialize()
+// `closable: false` pins the canvas open — "the canvas is the workspace
+// itself" (src/panelMeta.js).
+const CANVAS = 'canvas'
+
+// LocalStorage keys, all prefixed `acousim:` per the spec's Module section.
+const LS_LAYOUT = 'acousim:layout'
+const LS_PRESETS = 'acousim:layoutPresets'
+const LS_TOOLBAR = 'acousim:toolbar'
+const LS_KEYMAP = 'acousim:keymap'
+const lsProject = (name) => `acousim:project:${name}`
+
+const ls = () => globalThis.localStorage
 
 function blank(over = {}) {
   return {
-    ...BASE,
+    schemaVersion: SCHEMA_VERSION,
+    app: 'acousim',
     name: 'contract-test',
-    settings: { ...BASE.settings },
+    modified: new Date().toISOString(),
+    settings: { ...DEFAULT_SETTINGS },
     nodes: [],
     edges: [],
     ...over,
   }
 }
 
-/** Snapshot of every non-function value in the store state. */
+/**
+ * Snapshot of every observable state value. Underscore-prefixed bookkeeping
+ * fields are excluded: the spec states they "are not part of any action's
+ * observable contract".
+ */
 function snap() {
   const out = {}
   for (const [k, v] of Object.entries(st())) {
-    if (typeof v !== 'function') out[k] = v
+    if (typeof v === 'function') continue
+    if (k.startsWith('_')) continue
+    out[k] = v
   }
   return out
 }
@@ -74,50 +95,19 @@ function changedKeys(before, after) {
   return [...keys].filter((k) => !Object.is(before[k], after[k]))
 }
 
-/** Run `fn`, return the list of state keys it changed. */
+/** Run `fn`, return the list of observable state keys it changed. */
 function keysWrittenBy(fn) {
   const before = snap()
   fn()
   return changedKeys(before, snap())
 }
 
-/** Snapshot of LocalStorage as a plain object. */
-function lsSnap() {
-  const ls = globalThis.localStorage
-  const out = {}
-  if (!ls) return out
-  if (typeof ls.length === 'number' && typeof ls.key === 'function') {
-    for (let i = 0; i < ls.length; i++) {
-      const k = ls.key(i)
-      out[k] = ls.getItem(k)
-    }
-  } else {
-    for (const k of Object.keys(ls)) out[k] = ls.getItem(k)
-  }
-  return out
-}
-
-function lsChangedKeys(before, after) {
-  const keys = new Set([...Object.keys(before), ...Object.keys(after)])
-  return [...keys].filter((k) => before[k] !== after[k])
-}
-
-/** The state key holding the dock layout tree, derived through `_commitLayout`. */
-let LAYOUT_KEY = null
-function layoutKey() {
-  if (LAYOUT_KEY) return LAYOUT_KEY
-  const panels = openPanels(defaultLayout())
-  const probe = split('row', [stack([panels[0]]), stack([panels[1]])])
-  const before = snap()
-  st()._commitLayout(probe)
-  const after = snap()
-  LAYOUT_KEY = changedKeys(before, after).find((k) => Object.is(after[k], probe))
-  assert.ok(LAYOUT_KEY, '_commitLayout must store the tree it was given in state')
-  st().layoutOps.reset()
-  return LAYOUT_KEY
-}
-
-const tree = () => st()[layoutKey()]
+const tree = () => st().layout
+const nodesOf = () => st().nodes
+const edgesOf = () => st().edges
+const nodeById = (id) => nodesOf().find((n) => n.id === id)
+const paramsOf = (id) => nodeById(id).data.params
+const selectedNodes = () => nodesOf().filter((n) => n.selected)
 
 /** Distinct stacks in a layout tree, via the documented layout helpers. */
 function stacksOf(t) {
@@ -133,29 +123,12 @@ function stackWithAtLeast(t, n) {
   return stacksOf(t).find((s) => s.panels.length >= n)
 }
 
-/** The state key holding the layout presets, derived through `saveLayoutPreset`. */
-let PRESET_KEY = null
-function presetKey() {
-  if (PRESET_KEY) return PRESET_KEY
-  const name = '__probe_preset__'
-  const before = snap()
-  st().saveLayoutPreset(name)
-  const after = snap()
-  PRESET_KEY = changedKeys(before, after).find(
-    (k) => Array.isArray(after[k]) && after[k].some((p) => p && p.name === name),
-  )
-  assert.ok(PRESET_KEY, 'saveLayoutPreset must record the preset by name in state')
-  st().deleteLayoutPreset(name)
-  return PRESET_KEY
+/** A panel in the default layout that is not the pinned-open canvas. */
+function closablePanel() {
+  const p = openPanels(defaultLayout()).find((x) => x !== CANVAS)
+  assert.ok(p, 'the default layout must contain a panel besides the canvas')
+  return p
 }
-
-const presets = () => st()[presetKey()]
-
-const nodesOf = () => st().nodes
-const edgesOf = () => st().edges
-const nodeById = (id) => nodesOf().find((n) => n.id === id)
-const paramsOf = (id) => nodeById(id).data.params
-const selectedNodes = () => nodesOf().filter((n) => n.selected)
 
 beforeEach(() => {
   st().loadSerialized(blank())
@@ -199,7 +172,7 @@ test('listSavedProjects: returns entries sorted by modified descending', () => {
 })
 
 // CONTRACT: "Array<{key: string, name: string, modified: string, nodeCount:
-// number, proj: object}>"
+// number, proj: object}>" — the key being `acousim:project:<name>`.
 test('listSavedProjects: every entry has the documented shape', () => {
   st().loadSerialized(blank({ name: 'ls-shape' }))
   st().addNode(T_DRIVER, { x: 1, y: 2 })
@@ -208,10 +181,9 @@ test('listSavedProjects: every entry has the documented shape', () => {
 
   const entry = listSavedProjects().find((e) => e.name === 'ls-shape')
   assert.ok(entry, 'an auto-saved project must be listed')
-  assert.equal(typeof entry.key, 'string')
+  assert.equal(entry.key, lsProject('ls-shape'), 'the documented LocalStorage key')
   assert.equal(typeof entry.name, 'string')
   assert.equal(typeof entry.modified, 'string')
-  assert.equal(typeof entry.nodeCount, 'number')
   assert.equal(entry.nodeCount, 2)
   assert.equal(typeof entry.proj, 'object')
   assert.notEqual(entry.proj, null)
@@ -222,28 +194,22 @@ test('listSavedProjects: every entry has the documented shape', () => {
 test('listSavedProjects: a corrupt record is skipped, the good ones survive', () => {
   st().loadSerialized(blank({ name: 'ls-corrupt' }))
   st().addNode(T_DRIVER, { x: 0, y: 0 })
-  const before = lsSnap()
   st().autoSave()
-  const written = lsChangedKeys(before, lsSnap())
-  assert.ok(written.length > 0, 'autoSave must write LocalStorage')
+  assert.ok(ls().getItem(lsProject('ls-corrupt')), 'precondition: the project was saved')
 
-  // A sibling key sharing the auto-save prefix, holding unparseable JSON.
-  const bad = written[0] + '-corrupt'
-  globalThis.localStorage.setItem(bad, '{ this is not json')
+  ls().setItem(lsProject('zz-corrupt'), '{ this is not json')
   try {
     const list = listSavedProjects()
     assert.ok(Array.isArray(list))
     assert.ok(list.some((e) => e.name === 'ls-corrupt'))
   } finally {
-    globalThis.localStorage.removeItem(bad)
+    ls().removeItem(lsProject('zz-corrupt'))
   }
 })
 
 // ============================================================== INTERNAL ====
 
-// CONTRACT: "`object` — A usable layout tree." / "The canvas check is the last
-// guard — a layout without the Node Editor would leave the workspace with
-// nothing to edit, so it is rejected even if it is otherwise valid."
+// CONTRACT: "`object` — A usable layout tree."
 test('loadLayout: returns a usable non-empty layout tree', () => {
   const t = __internals.loadLayout()
   assert.equal(typeof t, 'object')
@@ -255,21 +221,30 @@ test('loadLayout: returns a usable non-empty layout tree', () => {
 // panel this build no longer has, or corrupt JSON. All three land on the
 // default rather than throwing."
 test('loadLayout: corrupt stored JSON falls back to the default layout', () => {
-  st().layoutOps.reset()
-  const before = lsSnap()
-  st()._commitLayout(split('row', [
-    stack(openPanels(defaultLayout()).slice(0, 1)),
-    stack(openPanels(defaultLayout()).slice(1, 2)),
-  ]))
-  const key = lsChangedKeys(before, lsSnap())[0]
-  assert.ok(key, '_commitLayout must persist the layout to LocalStorage')
-
-  globalThis.localStorage.setItem(key, '{ not json at all')
+  ls().setItem(LS_LAYOUT, '{ not json at all')
   const t = __internals.loadLayout()
   assert.deepEqual(
     openPanels(t).slice().sort(),
     openPanels(defaultLayout()).slice().sort(),
     'corrupt JSON must land on the default layout',
+  )
+  st().layoutOps.reset()
+})
+
+// CONTRACT: "The canvas check is the last guard — a layout without the Node
+// Editor would leave the workspace with nothing to edit, so it is rejected even
+// if it is otherwise valid."
+test('loadLayout: a valid layout without the canvas is rejected for the default', () => {
+  // Persisted through the documented write path, so the stored format is
+  // whatever the store itself writes — only its content is canvas-free.
+  const others = PANEL_IDS.filter((p) => p !== CANVAS).slice(0, 2)
+  st()._commitLayout(split('row', [stack([others[0]]), stack([others[1]])]))
+  assert.ok(ls().getItem(LS_LAYOUT), 'precondition: it was persisted to acousim:layout')
+
+  const t = __internals.loadLayout()
+  assert.ok(
+    openPanels(t).includes(CANVAS),
+    'a layout without the canvas must be rejected in favour of the default',
   )
   st().layoutOps.reset()
 })
@@ -290,14 +265,9 @@ test('loadPresets: returns the saved presets as {name, tree} entries', () => {
 
 // CONTRACT: "Saved presets, or an empty list when absent or corrupt."
 test('loadPresets: corrupt storage yields an empty list', () => {
-  const name = '__loadPresets_corrupt__'
-  const before = lsSnap()
-  st().saveLayoutPreset(name)
-  const key = lsChangedKeys(before, lsSnap())[0]
-  assert.ok(key, 'saveLayoutPreset must write LocalStorage')
-  globalThis.localStorage.setItem(key, 'not json')
+  ls().setItem(LS_PRESETS, 'not json')
   assert.deepEqual(__internals.loadPresets(), [])
-  globalThis.localStorage.removeItem(key)
+  ls().removeItem(LS_PRESETS)
 })
 
 // CONTRACT: "`string[]` — Quick-bar item ids, falling back to the default
@@ -312,13 +282,7 @@ test('loadToolbar: returns an array of item id strings', () => {
 test('loadToolbar: corrupt storage falls back to the default arrangement', () => {
   st().resetToolbar()
   const defaults = st().toolbar.slice()
-
-  const before = lsSnap()
-  st().toggleToolbarItem(defaults[0]) // persists the toolbar
-  const key = lsChangedKeys(before, lsSnap())[0]
-  assert.ok(key, 'toggleToolbarItem must persist the toolbar to LocalStorage')
-
-  globalThis.localStorage.setItem(key, 'not json')
+  ls().setItem(LS_TOOLBAR, 'not json')
   assert.deepEqual(__internals.loadToolbar(), defaults)
   st().resetToolbar()
 })
@@ -371,9 +335,9 @@ test('freeSpotNear: is deterministic in its arguments', () => {
 // solved one."
 test('graphSignature: returns a JSON string', () => {
   const sig = __internals.graphSignature(
-    [{ id: 'a', type: T_DRIVER, data: { params: { Fs: 30 } } }],
+    [{ id: 'a', type: T_DRIVER, data: { params: { ...DEFAULT_PARAMS[T_DRIVER] } } }],
     [],
-    { ...BASE.settings },
+    { ...DEFAULT_SETTINGS },
   )
   assert.equal(typeof sig, 'string')
   JSON.parse(sig) // must be JSON, per "A JSON signature"
@@ -382,9 +346,9 @@ test('graphSignature: returns a JSON string', () => {
 // CONTRACT: "@pure — Calling it twice with equal inputs must produce equal
 // output"
 test('graphSignature: is deterministic in its arguments', () => {
-  const nodes = [{ id: 'a', type: T_DRIVER, data: { params: { Fs: 30 } } }]
+  const nodes = [{ id: 'a', type: T_DRIVER, data: { params: { ...DEFAULT_PARAMS[T_DRIVER] } } }]
   const edges = [{ id: 'e', source: 'a', sourceHandle: 'a1', target: 'a', targetHandle: 'a2' }]
-  const s = { ...BASE.settings }
+  const s = { ...DEFAULT_SETTINGS }
   assert.equal(
     __internals.graphSignature(nodes, edges, s),
     __internals.graphSignature(nodes, edges, s),
@@ -395,68 +359,89 @@ test('graphSignature: is deterministic in its arguments', () => {
 // positions, selection, labels — so dragging a node around the canvas does not
 // re-run the sweep."
 test('graphSignature: ignores node positions', () => {
-  const a = [{ id: 'a', type: T_DRIVER, position: { x: 0, y: 0 }, data: { params: { Fs: 30 } } }]
-  const b = [{ id: 'a', type: T_DRIVER, position: { x: 900, y: 900 }, data: { params: { Fs: 30 } } }]
+  const p = { ...DEFAULT_PARAMS[T_DRIVER] }
+  const a = [{ id: 'a', type: T_DRIVER, position: { x: 0, y: 0 }, data: { params: p } }]
+  const b = [{ id: 'a', type: T_DRIVER, position: { x: 900, y: 900 }, data: { params: p } }]
   assert.equal(
-    __internals.graphSignature(a, [], BASE.settings),
-    __internals.graphSignature(b, [], BASE.settings),
+    __internals.graphSignature(a, [], DEFAULT_SETTINGS),
+    __internals.graphSignature(b, [], DEFAULT_SETTINGS),
   )
 })
 
 // CONTRACT: "Deliberately excludes ... selection ..."
 test('graphSignature: ignores selection', () => {
-  const a = [{ id: 'a', type: T_DRIVER, selected: false, data: { params: { Fs: 30 } } }]
-  const b = [{ id: 'a', type: T_DRIVER, selected: true, data: { params: { Fs: 30 } } }]
+  const p = { ...DEFAULT_PARAMS[T_DRIVER] }
+  const a = [{ id: 'a', type: T_DRIVER, selected: false, data: { params: p } }]
+  const b = [{ id: 'a', type: T_DRIVER, selected: true, data: { params: p } }]
   assert.equal(
-    __internals.graphSignature(a, [], BASE.settings),
-    __internals.graphSignature(b, [], BASE.settings),
+    __internals.graphSignature(a, [], DEFAULT_SETTINGS),
+    __internals.graphSignature(b, [], DEFAULT_SETTINGS),
   )
 })
 
 // CONTRACT: "Deliberately excludes ... labels ..."
 test('graphSignature: ignores node labels', () => {
-  const a = [{ id: 'a', type: T_DRIVER, data: { label: 'One', params: { Fs: 30 } } }]
-  const b = [{ id: 'a', type: T_DRIVER, data: { label: 'Two', params: { Fs: 30 } } }]
+  const p = { ...DEFAULT_PARAMS[T_DRIVER] }
+  const a = [{ id: 'a', type: T_DRIVER, data: { label: 'One', params: p } }]
+  const b = [{ id: 'a', type: T_DRIVER, data: { label: 'Two', params: p } }]
   assert.equal(
-    __internals.graphSignature(a, [], BASE.settings),
-    __internals.graphSignature(b, [], BASE.settings),
+    __internals.graphSignature(a, [], DEFAULT_SETTINGS),
+    __internals.graphSignature(b, [], DEFAULT_SETTINGS),
   )
 })
 
 // CONTRACT: "A value that changes exactly when the simulation would produce a
 // different result."
-test('graphSignature: changes when a parameter changes', () => {
-  const a = [{ id: 'a', type: T_DRIVER, data: { params: { Fs: 30 } } }]
-  const b = [{ id: 'a', type: T_DRIVER, data: { params: { Fs: 31 } } }]
+test('graphSignature: changes when a node parameter changes', () => {
+  const key = Object.keys(DEFAULT_PARAMS[T_DRIVER])[0]
+  const base = { ...DEFAULT_PARAMS[T_DRIVER] }
+  const a = [{ id: 'a', type: T_DRIVER, data: { params: base } }]
+  const b = [{ id: 'a', type: T_DRIVER, data: { params: { ...base, [key]: 'changed' } } }]
   assert.notEqual(
-    __internals.graphSignature(a, [], BASE.settings),
-    __internals.graphSignature(b, [], BASE.settings),
+    __internals.graphSignature(a, [], DEFAULT_SETTINGS),
+    __internals.graphSignature(b, [], DEFAULT_SETTINGS),
   )
 })
 
 // CONTRACT: "A value that changes exactly when the simulation would produce a
-// different result." (settings are a simulation input)
-test('graphSignature: changes when the sweep settings change', () => {
-  const nodes = [{ id: 'a', type: T_DRIVER, data: { params: { Fs: 30 } } }]
-  assert.notEqual(
-    __internals.graphSignature(nodes, [], { ...BASE.settings, __probe: 1 }),
-    __internals.graphSignature(nodes, [], { ...BASE.settings, __probe: 2 }),
-  )
+// different result." — `voltage` and the sweep bounds are solver inputs.
+test('graphSignature: changes when a solver-read setting changes', () => {
+  const nodes = [{ id: 'a', type: T_DRIVER, data: { params: { ...DEFAULT_PARAMS[T_DRIVER] } } }]
+  const sig = (s) => __internals.graphSignature(nodes, [], s)
+  const base = { ...DEFAULT_SETTINGS }
+  assert.notEqual(sig(base), sig({ ...base, voltage: base.voltage + 1 }))
+  assert.notEqual(sig(base), sig({ ...base, fmin: base.fmin + 1 }))
+  assert.notEqual(sig(base), sig({ ...base, fmax: base.fmax + 1 }))
+  assert.notEqual(sig(base), sig({ ...base, npts: base.npts + 1 }))
+})
+
+// CONTRACT: "A value that changes *exactly* when the simulation would produce a
+// different result. ... Deliberately excludes everything the solver ignores",
+// combined with DEFAULT_SETTINGS: "`impedance` and `power` are UI conveniences
+// linked to `voltage` by P = V²/Z; the solver reads only `voltage`."
+// Changing either alone cannot change the result, so it must not change the
+// signature. This is the strictest reading of "exactly".
+test('graphSignature: ignores the UI-only impedance and power settings', () => {
+  const nodes = [{ id: 'a', type: T_DRIVER, data: { params: { ...DEFAULT_PARAMS[T_DRIVER] } } }]
+  const sig = (s) => __internals.graphSignature(nodes, [], s)
+  const base = { ...DEFAULT_SETTINGS }
+  assert.equal(sig(base), sig({ ...base, impedance: base.impedance * 2 }))
+  assert.equal(sig(base), sig({ ...base, power: base.power * 2 }))
 })
 
 // CONTRACT: "A value that changes exactly when the simulation would produce a
 // different result." (topology is a simulation input)
 test('graphSignature: changes when the edge list changes', () => {
   const nodes = [
-    { id: 'a', type: T_DRIVER, data: { params: {} } },
-    { id: 'b', type: T_CHAMBER, data: { params: {} } },
+    { id: 'a', type: T_DRIVER, data: { params: { ...DEFAULT_PARAMS[T_DRIVER] } } },
+    { id: 'b', type: T_CHAMBER, data: { params: { ...DEFAULT_PARAMS[T_CHAMBER] } } },
   ]
   assert.notEqual(
-    __internals.graphSignature(nodes, [], BASE.settings),
+    __internals.graphSignature(nodes, [], DEFAULT_SETTINGS),
     __internals.graphSignature(
       nodes,
       [{ id: 'e', source: 'a', sourceHandle: 'a1', target: 'b', targetHandle: 'b1' }],
-      BASE.settings,
+      DEFAULT_SETTINGS,
     ),
   )
 })
@@ -466,25 +451,25 @@ test('graphSignature: changes when the edge list changes', () => {
 // CONTRACT: "Record which panel is mid tab-drag" / "`id` — Panel id, or `null`
 // when the drag ends."
 test('setDraggingPanel: records the panel, and null clears it', () => {
-  st().setDraggingPanel('probe-panel')
-  assert.equal(st().draggingPanel, 'probe-panel')
+  st().setDraggingPanel(CANVAS)
+  assert.equal(st().draggingPanel, CANVAS)
   st().setDraggingPanel(null)
   assert.equal(st().draggingPanel, null)
 })
 
 // CONTRACT: "Give a panel keyboard focus" / "Writes store state"
 test('focusPanel: records the focused panel', () => {
-  st().focusPanel('panel-a')
-  assert.equal(st().focusedPanel, 'panel-a')
+  st().focusPanel(CANVAS)
+  assert.equal(st().focusedPanel, CANVAS)
 })
 
 // CONTRACT: "Guarded against redundant writes because focus changes on every
 // click and an unchanged write would still broadcast."
 test('focusPanel: a redundant focus performs no store write', () => {
-  st().focusPanel('panel-guard')
+  st().focusPanel(CANVAS)
   let writes = 0
   const unsub = useStore.subscribe(() => { writes++ })
-  st().focusPanel('panel-guard')
+  st().focusPanel(CANVAS)
   unsub()
   assert.equal(writes, 0, 'refocusing the already-focused panel must not write')
 })
@@ -492,24 +477,20 @@ test('focusPanel: a redundant focus performs no store write', () => {
 // CONTRACT: "Maximize a panel full-bleed, or restore it if it is already
 // maximized."
 test('toggleMaximize: maximizes, then restores on a second call', () => {
-  const p = openPanels(defaultLayout())[0]
   st().toggleMaximize(null)
-  st().toggleMaximize(p)
-  assert.equal(st().maximized, p)
-  st().toggleMaximize(p)
+  st().toggleMaximize(CANVAS)
+  assert.equal(st().maximized, CANVAS)
+  st().toggleMaximize(CANVAS)
   assert.ok(!st().maximized, 'a second toggle must restore')
 })
 
-// CONTRACT: "Open or close the settings window" / "`v` — Whether to show the
-// window." / "`section` — Section to select."
+// CONTRACT: "Open or close the settings window, optionally jumping to a
+// section." / "`v` — Whether to show the window."
 test('setShowSettings: writes the visibility flag and the requested section', () => {
   st().setShowSettings(false)
-  const keys = keysWrittenBy(() => st().setShowSettings(true, '__section_a__'))
-  assert.equal(keys.length, 2, 'exactly the visibility flag and the section change')
-  const after = snap()
-  const values = keys.map((k) => after[k])
-  assert.ok(values.includes(true), 'the window is shown')
-  assert.ok(values.includes('__section_a__'), 'the requested section is selected')
+  st().setShowSettings(true, '__section_a__')
+  assert.equal(st().showSettings, true)
+  assert.equal(st().settingsSection, '__section_a__')
 })
 
 // CONTRACT: "`section` — Section to select. The current section is kept when
@@ -517,17 +498,15 @@ test('setShowSettings: writes the visibility flag and the requested section', ()
 test('setShowSettings: keeps the current section when omitted', () => {
   st().setShowSettings(true, '__section_keep__')
   st().setShowSettings(false)
-  const keys = keysWrittenBy(() => st().setShowSettings(true))
-  assert.equal(keys.length, 1, 'only the visibility flag may change')
-  assert.equal(snap()[keys[0]], true)
+  st().setShowSettings(true)
+  assert.equal(st().showSettings, true)
+  assert.equal(st().settingsSection, '__section_keep__', 'the section must be kept')
 })
 
 // CONTRACT: "Switch the settings window to a section." / "`id` — Section id."
 test('setSettingsSection: writes the section id', () => {
-  st().setSettingsSection('__section_x__')
-  const keys = keysWrittenBy(() => st().setSettingsSection('__section_y__'))
-  assert.equal(keys.length, 1)
-  assert.equal(snap()[keys[0]], '__section_y__')
+  st().setSettingsSection('__section_y__')
+  assert.equal(st().settingsSection, '__section_y__')
 })
 
 // CONTRACT: "Replace a command's combos wholesale." / "`combos` — The command's
@@ -536,21 +515,17 @@ test('setBinding: replaces the command combos wholesale', () => {
   const id = Object.keys(st().bindings)[0]
   st().setBinding(id, ['mod+shift+f9'])
   assert.deepEqual(st().bindings[id], ['mod+shift+f9'])
+  st().resetBindings()
 })
 
 // CONTRACT: "Writes store state and persists the bindings to LocalStorage."
-test('setBinding: persists the bindings to LocalStorage', () => {
+test('setBinding: persists the bindings to acousim:keymap', () => {
   const id = Object.keys(st().bindings)[0]
   st().resetBindings()
-  const before = lsSnap()
   st().setBinding(id, ['mod+shift+f10'])
-  const after = lsSnap()
-  const written = lsChangedKeys(before, after)
-  assert.ok(written.length > 0, 'the binding change must reach LocalStorage')
-  assert.ok(
-    written.some((k) => String(after[k]).includes('mod+shift+f10')),
-    'the stored value must carry the new combo',
-  )
+  const stored = ls().getItem(LS_KEYMAP)
+  assert.ok(stored, 'the binding change must reach acousim:keymap')
+  assert.ok(stored.includes('mod+shift+f10'), 'the stored value must carry the new combo')
   st().resetBindings()
 })
 
@@ -604,29 +579,25 @@ test('resetBindings: restores the default combos for every command', () => {
 
 // CONTRACT: "persists the bindings to LocalStorage, which removes the stored
 // overrides entirely."
-test('resetBindings: removes the stored overrides from LocalStorage', () => {
+test('resetBindings: removes acousim:keymap entirely', () => {
   const id = Object.keys(st().bindings)[0]
   st().setBinding(id, ['mod+shift+f5'])
-  assert.ok(
-    Object.values(lsSnap()).some((v) => String(v).includes('mod+shift+f5')),
-    'precondition: the override was stored',
-  )
+  assert.ok(ls().getItem(LS_KEYMAP), 'precondition: the override was stored')
   st().resetBindings()
-  assert.ok(
-    !Object.values(lsSnap()).some((v) => String(v).includes('mod+shift+f5')),
-    'reset must remove the stored overrides entirely',
+  assert.equal(
+    ls().getItem(LS_KEYMAP), null,
+    'reset must remove the stored overrides entirely, not write an empty object',
   )
 })
 
 // CONTRACT: "Adopt a new layout tree and persist it." / "Writes store state and
 // LocalStorage."
-test('_commitLayout: adopts the tree and persists it', () => {
-  const panels = openPanels(defaultLayout())
-  const t = split('row', [stack([panels[0]]), stack([panels[1]])])
-  const before = lsSnap()
+test('_commitLayout: adopts the tree and persists it to acousim:layout', () => {
+  const t = split('row', [stack([CANVAS]), stack([closablePanel()])])
+  ls().removeItem(LS_LAYOUT)
   st()._commitLayout(t)
-  assert.equal(tree(), t, 'the committed tree becomes the layout')
-  assert.ok(lsChangedKeys(before, lsSnap()).length > 0, 'the layout must be persisted')
+  assert.equal(st().layout, t, 'the committed tree becomes the layout')
+  assert.ok(ls().getItem(LS_LAYOUT), 'the layout must be persisted to acousim:layout')
   st().layoutOps.reset()
 })
 
@@ -634,9 +605,9 @@ test('_commitLayout: adopts the tree and persists it', () => {
 // workspace — is ignored rather than applied."
 test('_commitLayout: a null tree is ignored', () => {
   st().layoutOps.reset()
-  const before = tree()
+  const before = st().layout
   const keys = keysWrittenBy(() => st()._commitLayout(null))
-  assert.equal(tree(), before, 'the layout must be untouched')
+  assert.equal(st().layout, before, 'the layout must be untouched')
   assert.deepEqual(keys, [], 'a null tree must not write state')
 })
 
@@ -719,24 +690,28 @@ test('layoutOps.dropOnTab: a drop on the panel\'s own current position does noth
 // CONTRACT: "Close a panel."
 test('layoutOps.close: removes the panel from the layout', () => {
   st().layoutOps.reset()
-  const target = openPanels(tree()).find((p) => {
-    st().layoutOps.reset()
-    st().layoutOps.close(p)
-    return !isOpen(tree(), p)
-  })
-  assert.ok(target, 'at least one panel must be closable')
-  assert.ok(!isOpen(tree(), target))
+  const p = closablePanel()
+  st().layoutOps.close(p)
+  assert.ok(!isOpen(tree(), p))
   st().layoutOps.reset()
 })
 
 // CONTRACT: "Panels marked `closable: false` — the canvas, which is the
-// workspace itself — are refused, as is a close that would empty the layout."
-test('layoutOps.close: refuses the non-closable canvas and never empties the layout', () => {
+// workspace itself — are refused"
+test('layoutOps.close: refuses to close the canvas', () => {
   st().layoutOps.reset()
-  const panels = openPanels(tree())
-  for (const p of panels) st().layoutOps.close(p)
+  const keys = keysWrittenBy(() => st().layoutOps.close(CANVAS))
+  assert.ok(isOpen(tree(), CANVAS), 'the canvas is pinned open')
+  assert.deepEqual(keys, [], 'a refused close must not write state')
+})
+
+// CONTRACT: "as is a close that would empty the layout."
+test('layoutOps.close: never empties the layout', () => {
+  st().layoutOps.reset()
+  for (const p of openPanels(tree())) st().layoutOps.close(p)
   const left = openPanels(tree())
   assert.ok(left.length > 0, 'closing everything must never empty the layout')
+  assert.ok(left.includes(CANVAS), 'the canvas is what survives')
   st().layoutOps.reset()
 })
 
@@ -744,13 +719,9 @@ test('layoutOps.close: refuses the non-closable canvas and never empties the lay
 // open."
 test('layoutOps.open: docks a closed panel and focuses it', () => {
   st().layoutOps.reset()
-  const panels = openPanels(tree())
-  const p = panels.find((x) => {
-    st().layoutOps.reset()
-    st().layoutOps.close(x)
-    return !isOpen(tree(), x)
-  })
-  assert.ok(p, 'need a closable panel')
+  const p = closablePanel()
+  st().layoutOps.close(p)
+  assert.ok(!isOpen(tree(), p), 'precondition: the panel is closed')
   st().layoutOps.open(p)
   assert.ok(isOpen(tree(), p), 'the panel must be docked again')
   assert.equal(st().focusedPanel, p, 'opening focuses the panel')
@@ -761,10 +732,9 @@ test('layoutOps.open: docks a closed panel and focuses it', () => {
 // would otherwise appear to do nothing."
 test('layoutOps.open: clears the maximized panel', () => {
   st().layoutOps.reset()
-  const panels = openPanels(tree())
-  st().toggleMaximize(panels[0])
-  assert.equal(st().maximized, panels[0], 'precondition: something is maximized')
-  st().layoutOps.open(panels[1])
+  st().toggleMaximize(CANVAS)
+  assert.equal(st().maximized, CANVAS, 'precondition: something is maximized')
+  st().layoutOps.open(closablePanel())
   assert.ok(!st().maximized, 'opening must un-maximize')
   st().layoutOps.reset()
 })
@@ -772,13 +742,7 @@ test('layoutOps.open: clears the maximized panel', () => {
 // CONTRACT: "Open a panel, or close it if it is already open."
 test('layoutOps.toggle: closes an open panel and reopens a closed one', () => {
   st().layoutOps.reset()
-  const p = openPanels(tree()).find((x) => {
-    st().layoutOps.reset()
-    st().layoutOps.close(x)
-    return !isOpen(tree(), x)
-  })
-  assert.ok(p, 'need a closable panel')
-  st().layoutOps.reset()
+  const p = closablePanel()
   st().layoutOps.toggle(p)
   assert.ok(!isOpen(tree(), p), 'toggling an open panel closes it')
   st().layoutOps.toggle(p)
@@ -788,8 +752,7 @@ test('layoutOps.toggle: closes an open panel and reopens a closed one', () => {
 
 // CONTRACT: "Restore the default workspace arrangement."
 test('layoutOps.reset: restores the default set of panels', () => {
-  const p = openPanels(defaultLayout())[0]
-  st().layoutOps.dockEdge(p, 'bottom')
+  st().layoutOps.dockEdge(closablePanel(), 'bottom')
   st().layoutOps.reset()
   assert.deepEqual(
     openPanels(tree()).slice().sort(),
@@ -805,10 +768,21 @@ test('saveLayoutPreset: saves under the name, replacing a preset of that name', 
   st().saveLayoutPreset(name)
   st().saveLayoutPreset(name)
   assert.equal(
-    presets().filter((p) => p.name === name).length,
+    st().layoutPresets.filter((p) => p.name === name).length,
     1,
     'a second save with the same name replaces rather than appends',
   )
+  st().deleteLayoutPreset(name)
+})
+
+// CONTRACT: "Writes store state and LocalStorage." (saveLayoutPreset)
+test('saveLayoutPreset: persists to acousim:layoutPresets', () => {
+  const name = '__preset_persist__'
+  st().layoutOps.reset()
+  st().saveLayoutPreset(name)
+  const stored = ls().getItem(LS_PRESETS)
+  assert.ok(stored, 'presets must be persisted to acousim:layoutPresets')
+  assert.ok(stored.includes(name))
   st().deleteLayoutPreset(name)
 })
 
@@ -816,8 +790,7 @@ test('saveLayoutPreset: saves under the name, replacing a preset of that name', 
 test('applyLayoutPreset: restores the arrangement that was saved', () => {
   const name = '__preset_apply__'
   st().layoutOps.reset()
-  const p = openPanels(tree())[openPanels(tree()).length - 1]
-  st().layoutOps.dockEdge(p, 'bottom')
+  st().layoutOps.dockEdge(closablePanel(), 'bottom')
   const wanted = openPanels(tree()).slice().sort()
   st().saveLayoutPreset(name)
   st().layoutOps.reset()
@@ -827,19 +800,19 @@ test('applyLayoutPreset: restores the arrangement that was saved', () => {
   st().layoutOps.reset()
 })
 
-// CONTRACT: "the canvas is docked back in if sanitizing removed it, so a stale
-// preset can never leave the workspace without its editor."
-test('applyLayoutPreset: a preset of unknown panels still leaves the canvas docked', () => {
+// CONTRACT: "The preset is sanitized before use — it may name panels a later
+// build dropped — and the canvas is docked back in if sanitizing removed it, so
+// a stale preset can never leave the workspace without its editor."
+test('applyLayoutPreset: a stale preset still leaves the canvas docked', () => {
   const name = '__preset_stale__'
   // Build — through the documented write path — a layout naming only panels
-  // this build does not have, and save it as a preset. Applying it must
-  // sanitize the unknowns away and dock the canvas back in.
+  // this build does not have, and save it as a preset.
   st()._commitLayout(split('row', [stack(['__gone_a__']), stack(['__gone_b__'])]))
   st().saveLayoutPreset(name)
   st().layoutOps.reset()
   st().applyLayoutPreset(name)
   assert.ok(
-    openPanels(tree()).length > 0,
+    openPanels(tree()).includes(CANVAS),
     'a stale preset can never leave the workspace without its editor',
   )
   st().deleteLayoutPreset(name)
@@ -880,6 +853,18 @@ test('toggleToolbarItem: removes a present item and re-adds it at the end', () =
   assert.ok(!st().toolbar.includes(id), 'toggling a present item removes it')
   st().toggleToolbarItem(id)
   assert.equal(st().toolbar[st().toolbar.length - 1], id, 'a re-added item goes to the end')
+  st().resetToolbar()
+})
+
+// CONTRACT: "Writes store state and persists the toolbar." (toggleToolbarItem)
+test('toggleToolbarItem: persists the toolbar to acousim:toolbar', () => {
+  st().resetToolbar()
+  ls().removeItem(LS_TOOLBAR)
+  const id = st().toolbar[0]
+  st().toggleToolbarItem(id)
+  const stored = ls().getItem(LS_TOOLBAR)
+  assert.ok(stored, 'the toolbar must be persisted to acousim:toolbar')
+  assert.ok(!JSON.parse(stored).includes(id), 'the stored bar reflects the removal')
   st().resetToolbar()
 })
 
@@ -927,35 +912,35 @@ test('resetToolbar: restores the default arrangement', () => {
 test('deleteLayoutPreset: removes the preset', () => {
   const name = '__preset_delete__'
   st().saveLayoutPreset(name)
-  assert.ok(presets().some((p) => p.name === name), 'precondition: the preset exists')
+  assert.ok(st().layoutPresets.some((p) => p.name === name), 'precondition: it exists')
   st().deleteLayoutPreset(name)
-  assert.ok(!presets().some((p) => p.name === name))
+  assert.ok(!st().layoutPresets.some((p) => p.name === name))
 })
 
 // CONTRACT: "Writes store state and LocalStorage." (deleteLayoutPreset)
-test('deleteLayoutPreset: the deletion reaches LocalStorage', () => {
+test('deleteLayoutPreset: the deletion reaches acousim:layoutPresets', () => {
   const name = '__preset_delete_ls__'
   st().saveLayoutPreset(name)
-  assert.ok(
-    Object.values(lsSnap()).some((v) => String(v).includes(name)),
-    'precondition: the preset was persisted',
-  )
+  assert.ok(ls().getItem(LS_PRESETS).includes(name), 'precondition: it was persisted')
   st().deleteLayoutPreset(name)
-  assert.ok(!Object.values(lsSnap()).some((v) => String(v).includes(name)))
+  assert.ok(!ls().getItem(LS_PRESETS).includes(name))
 })
 
-// CONTRACT: "Store one chart's X-axis zoom range" / "`range` — Frequency range,
-// or `null` to reset."
+// CONTRACT: "Store one chart's X-axis zoom range, set by drag-selecting on the
+// plot." / "`range` — Frequency range, or `null` to reset."
 test('setXZoom: stores the range under the chart id and null resets it', () => {
-  const before = snap()
-  st().setXZoom('__chart__', [20, 200])
-  const after = snap()
-  const keys = changedKeys(before, after)
-  assert.equal(keys.length, 1, 'exactly one state key holds the chart zooms')
-  assert.deepEqual(after[keys[0]]['__chart__'], [20, 200])
+  st().setXZoom('spl', [20, 200])
+  assert.deepEqual(st().xZoom.spl, [20, 200])
+  st().setXZoom('spl', null)
+  assert.ok(!st().xZoom.spl, 'null must reset the chart zoom')
+})
 
-  st().setXZoom('__chart__', null)
-  assert.ok(!st()[keys[0]]['__chart__'], 'null must reset the chart zoom')
+// CONTRACT: "Not persisted: zoom is a transient view of the current result."
+test('setXZoom: is not persisted to LocalStorage', () => {
+  const before = ls().getItem(LS_LAYOUT)
+  st().setXZoom('zin', [30, 300])
+  assert.equal(ls().getItem('acousim:xZoom'), null, 'zoom has no LocalStorage key')
+  assert.equal(ls().getItem(LS_LAYOUT), before, 'and it does not disturb the layout key')
 })
 
 // CONTRACT: "Record the current graph as an undo point. Called before a
@@ -972,10 +957,11 @@ test('pushHistory: the pushed entry is the state undo returns to', () => {
 // a later edit has since mutated."
 test('pushHistory: the recorded graph is a deep copy', () => {
   const a = st().addNode(T_DRIVER, { x: 0, y: 0 })
+  const key = Object.keys(DEFAULT_PARAMS[T_DRIVER])[0]
   const original = { ...paramsOf(a) }
   st().pushHistory()
-  st().updateParams(a, { __probe: 12345 })
-  assert.equal(paramsOf(a).__probe, 12345, 'precondition: the param was changed')
+  st().updateParams(a, { [key]: 'mutated' })
+  assert.equal(paramsOf(a)[key], 'mutated', 'precondition: the param was changed')
   st().undo()
   assert.deepEqual(paramsOf(a), original, 'undo must restore the pre-edit params')
 })
@@ -985,17 +971,18 @@ test('pushHistory: the recorded graph is a deep copy', () => {
 test('pushHistory: clears the redo stack', () => {
   st().addNode(T_DRIVER, { x: 0, y: 0 })
   st().undo()
-  assert.equal(nodesOf().length, 0, 'precondition: there is something to redo')
+  assert.equal(st().future.length, 1, 'precondition: there is something to redo')
   st().pushHistory()
+  assert.equal(st().future.length, 0, 'pushing must clear the redo stack')
   const keys = keysWrittenBy(() => st().redo())
-  assert.deepEqual(keys, [], 'redo must do nothing once the redo stack is cleared')
-  assert.equal(nodesOf().length, 0)
+  assert.deepEqual(keys, [], 'redo must then do nothing')
 })
 
 // CONTRACT: "The history is capped at 80 entries, oldest discarded."
 test('pushHistory: the history is capped at 80 entries', () => {
   for (let i = 0; i < 85; i++) st().addNode(T_DRIVER, { x: i, y: i })
   assert.equal(nodesOf().length, 85)
+  assert.equal(st().history.length, 80, 'the history is capped at 80 entries')
   for (let i = 0; i < 85; i++) st().undo()
   assert.equal(nodesOf().length, 5, 'only the last 80 additions can be undone')
 })
@@ -1011,6 +998,7 @@ test('undo: steps back one entry', () => {
 // CONTRACT: "Does nothing when the history is empty."
 test('undo: does nothing when the history is empty', () => {
   // loadSerialized (beforeEach) clears the history.
+  assert.equal(st().history.length, 0, 'precondition: the history is empty')
   const keys = keysWrittenBy(() => st().undo())
   assert.deepEqual(keys, [])
 })
@@ -1026,6 +1014,7 @@ test('redo: steps forward one entry', () => {
 
 // CONTRACT: "Does nothing when the redo stack is empty."
 test('redo: does nothing when the redo stack is empty', () => {
+  assert.equal(st().future.length, 0, 'precondition: the redo stack is empty')
   const keys = keysWrittenBy(() => st().redo())
   assert.deepEqual(keys, [])
 })
@@ -1058,12 +1047,10 @@ test('onNodesChange: applies a removal', () => {
 test('onNodesChange: does not push history', () => {
   st().loadSerialized(blank({
     nodes: [{ id: 'n1', type: T_DRIVER, position: { x: 0, y: 0 }, params: {} }],
-    edges: [],
   }))
   st().onNodesChange([{ id: 'n1', type: 'remove' }])
   assert.equal(nodesOf().length, 0)
-  st().undo()
-  assert.equal(nodesOf().length, 0, 'no history entry may have been recorded')
+  assert.equal(st().history.length, 0, 'no history entry may have been recorded')
 })
 
 // CONTRACT: "Removals push history and schedule a resimulation, since deleting
@@ -1078,8 +1065,9 @@ test('onEdgesChange: a removal records history so undo restores the edge', () =>
   }))
   st().onEdgesChange([{ id: 'e1', type: 'remove' }])
   assert.equal(edgesOf().length, 0)
+  assert.equal(st().history.length, 1, 'the removal must have been recorded')
   st().undo()
-  assert.equal(edgesOf().length, 1, 'the removal must have been recorded in history')
+  assert.equal(edgesOf().length, 1)
 })
 
 // CONTRACT: "Add an edge from a completed port-to-port drag."
@@ -1106,15 +1094,12 @@ test('onConnect: records history so undo removes the edge', () => {
 
 // CONTRACT: "Select a node, which drives what the Parameters panel edits." /
 // "`id` — Node id, or `null` to clear."
-test('setSelected: records the node id and null clears it', () => {
-  const before = snap()
-  st().setSelected('__node__')
-  const after = snap()
-  const keys = changedKeys(before, after)
-  assert.equal(keys.length, 1)
-  assert.equal(after[keys[0]], '__node__')
+test('setSelected: writes selectedNodeId and null clears it', () => {
+  const a = st().addNode(T_DRIVER, { x: 0, y: 0 })
+  st().setSelected(a)
+  assert.equal(st().selectedNodeId, a)
   st().setSelected(null)
-  assert.equal(st()[keys[0]], null)
+  assert.equal(st().selectedNodeId, null)
 })
 
 // CONTRACT: "`string` — The new node's id" / "Add a node of the given type at a
@@ -1129,23 +1114,34 @@ test('addNode: returns the new node id and places the node as asked', () => {
 })
 
 // CONTRACT: "its entry in `DEFAULT_PARAMS` supplies the initial params."
-test('addNode: the new node carries its type\'s default params', () => {
+test('addNode: the new node carries its type\'s DEFAULT_PARAMS entry', () => {
   const id = st().addNode(T_DRIVER, { x: 0, y: 0 })
   const p = paramsOf(id)
-  assert.equal(typeof p, 'object')
-  assert.ok(Object.keys(p).length > 0, 'defaults must supply the initial params')
+  for (const [k, v] of Object.entries(DEFAULT_PARAMS[T_DRIVER])) {
+    assert.deepEqual(p[k], v, `param ${k} must come from DEFAULT_PARAMS.driver`)
+  }
 })
 
-// CONTRACT: "The new node arrives selected — and alone in the selection"
+// CONTRACT: "The new node arrives selected — and alone in the selection — so it
+// can be copied, nudged or deleted straight away without clicking it first."
 test('addNode: the new node is selected, and alone in the selection', () => {
   st().addNode(T_CHAMBER, { x: 0, y: 0 })
   const id = st().addNode(T_DRIVER, { x: 60, y: 60 })
   assert.deepEqual(selectedNodes().map((n) => n.id), [id])
 })
 
+// CONTRACT: "The new node arrives selected ... so it can be copied, nudged or
+// deleted straight away without clicking it first." The Parameters panel edits
+// `selectedNodeId`, so arriving "selected" must set that pointer too.
+test('addNode: the new node becomes the selected node id', () => {
+  const id = st().addNode(T_DRIVER, { x: 0, y: 0 })
+  assert.equal(st().selectedNodeId, id)
+})
+
 // CONTRACT: "Records history, writes store state and schedules a resimulation."
 test('addNode: records history so undo removes the node', () => {
   st().addNode(T_DRIVER, { x: 0, y: 0 })
+  assert.equal(st().history.length, 1)
   st().undo()
   assert.equal(nodesOf().length, 0)
 })
@@ -1153,11 +1149,11 @@ test('addNode: records history so undo removes the node', () => {
 // CONTRACT: "Merge a patch into one node's parameters."
 test('updateParams: merges the patch over the existing params', () => {
   const id = st().addNode(T_DRIVER, { x: 0, y: 0 })
-  const keysBefore = Object.keys(paramsOf(id))
-  st().updateParams(id, { __probe: 7 })
+  const key = Object.keys(DEFAULT_PARAMS[T_DRIVER])[0]
+  st().updateParams(id, { [key]: 'patched' })
   const after = paramsOf(id)
-  assert.equal(after.__probe, 7)
-  for (const k of keysBefore) {
+  assert.equal(after[key], 'patched')
+  for (const k of Object.keys(DEFAULT_PARAMS[T_DRIVER])) {
     assert.ok(k in after, `existing param ${k} must survive the merge`)
   }
 })
@@ -1165,9 +1161,8 @@ test('updateParams: merges the patch over the existing params', () => {
 // CONTRACT: "`id` — Node id. An unknown id is a no-op."
 test('updateParams: an unknown id is a no-op', () => {
   st().addNode(T_DRIVER, { x: 0, y: 0 })
-  const before = nodesOf()
-  st().updateParams('__no_such_node__', { __probe: 1 })
-  assert.equal(nodesOf(), before, 'no state may be written for an unknown id')
+  const keys = keysWrittenBy(() => st().updateParams('__no_such_node__', { x: 1 }))
+  assert.deepEqual(keys, [], 'no observable state may be written for an unknown id')
 })
 
 // CONTRACT: "Delete the selected nodes and edges."
@@ -1216,8 +1211,10 @@ test('duplicateSelected: the duplicate\'s params are independent of the original
   const id = st().addNode(T_DRIVER, { x: 10, y: 10 })
   st().duplicateSelected()
   const copy = nodesOf().find((n) => n.id !== id)
-  st().updateParams(id, { __probe: 1 })
-  assert.equal(paramsOf(copy.id).__probe, undefined, 'the copy must not share params')
+  const key = Object.keys(DEFAULT_PARAMS[T_DRIVER])[0]
+  const was = paramsOf(copy.id)[key]
+  st().updateParams(id, { [key]: 'changed-on-original' })
+  assert.deepEqual(paramsOf(copy.id)[key], was, 'the copy must not share params')
 })
 
 // CONTRACT: "moves the selection to the copies"
@@ -1229,7 +1226,8 @@ test('duplicateSelected: the selection moves to the copies', () => {
   assert.notEqual(sel[0], id, 'the original is no longer selected')
 })
 
-// CONTRACT: "Edges are not duplicated"
+// CONTRACT: "Edges are not duplicated; `copySelection` and `pasteClipboard` are
+// the path that preserves them."
 test('duplicateSelected: edges are not duplicated', () => {
   const a = st().addNode(T_CHAMBER, { x: 0, y: 0 })
   const b = st().addNode(T_DRIVER, { x: 80, y: 0 })
@@ -1238,7 +1236,6 @@ test('duplicateSelected: edges are not duplicated', () => {
   st().duplicateSelected()
   assert.equal(edgesOf().length, 1, 'the edge count must be unchanged')
   assert.equal(nodesOf().length, 4, 'both nodes were duplicated')
-  assert.ok(a && b)
 })
 
 // CONTRACT: "Does nothing when the selection is empty."
@@ -1274,9 +1271,12 @@ test('copySelection: returns 0 for an empty selection', () => {
   assert.equal(st().copySelection(), 0)
 })
 
-// CONTRACT: "Only edges wholly inside the selection are taken — a dangling
+// CONTRACT: "Copy the selected nodes and their internal edges to the in-app
+// clipboard." / "Only edges wholly inside the selection are taken — a dangling
 // half-edge would have nothing to reconnect to on paste."
-test('copySelection: only edges wholly inside the selection are taken', () => {
+// The clipboard's `{nodes, edges}` shape is inferred from that sentence; the
+// spec names the field but not its layout.
+test('copySelection: the clipboard holds the nodes and only the internal edges', () => {
   const a = st().addNode(T_DRIVER, { x: 0, y: 0 })
   const b = st().addNode(T_CHAMBER, { x: 80, y: 0 })
   const c = st().addNode(T_CHAMBER, { x: 160, y: 0 })
@@ -1286,6 +1286,23 @@ test('copySelection: only edges wholly inside the selection are taken', () => {
   st().onNodesChange([{ id: c, type: 'select', selected: false }])
   assert.equal(st().copySelection(), 2)
 
+  assert.equal(st().clipboard.nodes.length, 2)
+  assert.equal(st().clipboard.edges.length, 1, 'only the a-b edge is wholly inside')
+  assert.equal(st().clipboard.edges[0].source, a)
+  assert.equal(st().clipboard.edges[0].target, b)
+})
+
+// CONTRACT: "Only edges wholly inside the selection are taken" — observed
+// through a paste, which is where the dangling edge would have shown up.
+test('copySelection: a half-selected edge is not pasted back', () => {
+  const a = st().addNode(T_DRIVER, { x: 0, y: 0 })
+  const b = st().addNode(T_CHAMBER, { x: 80, y: 0 })
+  const c = st().addNode(T_CHAMBER, { x: 160, y: 0 })
+  st().onConnect({ source: a, sourceHandle: 'h1', target: b, targetHandle: 'h2' })
+  st().onConnect({ source: b, sourceHandle: 'h3', target: c, targetHandle: 'h4' })
+  st().selectAll()
+  st().onNodesChange([{ id: c, type: 'select', selected: false }])
+  st().copySelection()
   st().pasteClipboard()
   assert.equal(nodesOf().length, 5, 'two nodes pasted')
   assert.equal(edgesOf().length, 3, 'only the a-b edge was inside the selection')
@@ -1298,8 +1315,9 @@ test('cutSelection: copies the selection and deletes it', () => {
   st().cutSelection()
   assert.ok(!nodesOf().some((n) => n.id === b), 'the cut node is gone')
   assert.equal(nodesOf().length, 1)
+  assert.equal(st().clipboard.nodes.length, 1, 'the cut selection is on the clipboard')
   st().pasteClipboard()
-  assert.equal(nodesOf().length, 2, 'the cut selection is on the clipboard')
+  assert.equal(nodesOf().length, 2)
 })
 
 // CONTRACT: "Deletes only if the copy found something, so an empty selection
@@ -1345,14 +1363,18 @@ test('pasteClipboard: copied edges are rewired onto the copies', () => {
 
 // CONTRACT: "Params are merged over the current defaults, so pasting into a
 // newer build fills in any parameter added since the copy was made."
-test('pasteClipboard: pasted params carry the copied values over the defaults', () => {
+test('pasteClipboard: pasted params are the copied values over the defaults', () => {
   const a = st().addNode(T_DRIVER, { x: 0, y: 0 })
-  st().updateParams(a, { __probe: 99 })
+  const key = Object.keys(DEFAULT_PARAMS[T_DRIVER])[0]
+  st().updateParams(a, { [key]: 'edited' })
   st().copySelection()
   st().pasteClipboard()
   const copy = nodesOf().find((n) => n.id !== a)
-  assert.equal(paramsOf(copy.id).__probe, 99)
-  assert.ok(Object.keys(paramsOf(copy.id)).length >= Object.keys(paramsOf(a)).length)
+  const p = paramsOf(copy.id)
+  assert.equal(p[key], 'edited', 'the copied value wins over the default')
+  for (const k of Object.keys(DEFAULT_PARAMS[T_DRIVER])) {
+    assert.ok(k in p, `default param ${k} must be filled in`)
+  }
 })
 
 // CONTRACT: "Does nothing when the clipboard is empty."
@@ -1384,9 +1406,11 @@ test('addNodeAtCursor: a second node does not land on top of the first', () => {
   assert.notDeepEqual(nodeById(a).position, nodeById(b).position)
 })
 
-// CONTRACT: "Records history, writes store state and schedules a resimulation."
+// CONTRACT: "Reads the live React Flow viewport, records history, writes store
+// state and schedules a resimulation."
 test('addNodeAtCursor: records history so undo removes the node', () => {
   st().addNodeAtCursor(T_DRIVER)
+  assert.equal(st().history.length, 1)
   st().undo()
   assert.equal(nodesOf().length, 0)
 })
@@ -1394,62 +1418,50 @@ test('addNodeAtCursor: records history so undo removes the node', () => {
 // CONTRACT: "Change the drive voltage by a fixed step" / "`delta` — Change in
 // volts; negative lowers."
 test('nudgeVoltage: moves the drive voltage by the delta', () => {
-  const before = { ...st().settings }
+  const before = st().settings.voltage
   st().nudgeVoltage(0.5)
-  const after = st().settings
-  const moved = Object.keys(before).filter(
-    (k) => typeof before[k] === 'number' && after[k] === Number((before[k] + 0.5).toFixed(2)),
-  )
-  assert.ok(moved.length > 0, 'a settings field must have risen by exactly the delta')
+  assert.equal(st().settings.voltage, Number((before + 0.5).toFixed(2)))
+  st().nudgeVoltage(-0.5)
+  assert.equal(st().settings.voltage, Number(before.toFixed(2)))
 })
 
 // CONTRACT: "Clamped at zero"
 test('nudgeVoltage: is clamped at zero', () => {
-  const before = { ...st().settings }
-  st().nudgeVoltage(0.5)
-  const after1 = st().settings
-  const field = Object.keys(before).find(
-    (k) => typeof before[k] === 'number' && after1[k] === Number((before[k] + 0.5).toFixed(2)),
-  )
-  assert.ok(field, 'precondition: the voltage field was identified')
   st().nudgeVoltage(-1e6)
-  assert.equal(st().settings[field], 0)
+  assert.equal(st().settings.voltage, 0)
 })
 
 // CONTRACT: "rounded to two decimals so repeated nudges do not accumulate
 // floating-point drift into the displayed value."
 test('nudgeVoltage: the result is rounded to two decimals', () => {
-  const before = { ...st().settings }
-  st().nudgeVoltage(0.1)
-  const after1 = st().settings
-  const field = Object.keys(before).find(
-    (k) => typeof before[k] === 'number' && after1[k] === Number((before[k] + 0.1).toFixed(2)),
-  )
-  assert.ok(field, 'precondition: the voltage field was identified')
-  for (let i = 0; i < 7; i++) st().nudgeVoltage(0.1)
-  const v = st().settings[field]
+  for (let i = 0; i < 8; i++) st().nudgeVoltage(0.1)
+  const v = st().settings.voltage
   assert.equal(v, Number(v.toFixed(2)), 'the stored value must carry at most two decimals')
 })
 
-// CONTRACT: "Clears the cached graph signature, which is what normally
-// suppresses a redundant solve."
-test('recomputeNow: leaves no cached signature matching the current graph', () => {
-  st().addNode(T_DRIVER, { x: 0, y: 0 })
+// CONTRACT: "Force a resimulation even though nothing has changed."
+// The cached signature it clears is `_lastSig`, which the spec places outside
+// any action's observable contract, so what is asserted here is the other half:
+// forcing a resolve must not disturb the project itself.
+test('recomputeNow: forces a resolve without altering the project', () => {
+  const a = st().addNode(T_DRIVER, { x: 5, y: 5 })
+  const nodesBefore = nodesOf()
+  const edgesBefore = edgesOf()
+  const settingsBefore = st().settings
   st().recomputeNow()
-  const sig = __internals.graphSignature(nodesOf(), edgesOf(), st().settings)
-  for (const [k, v] of Object.entries(snap())) {
-    assert.notEqual(v, sig, `state key ${k} still holds the cached signature`)
-  }
+  assert.equal(nodesOf(), nodesBefore, 'nodes untouched')
+  assert.equal(edgesOf(), edgesBefore, 'edges untouched')
+  assert.equal(st().settings, settingsBefore, 'settings untouched')
+  assert.equal(st().history.length, 1, 'and it records no new undo point')
+  assert.ok(nodeById(a))
 })
 
 // CONTRACT: "Merge a patch into the sweep settings."
 test('updateSettings: merges the patch and keeps the other settings', () => {
-  const before = { ...st().settings }
-  st().updateSettings({ __probe: 5 })
-  const after = st().settings
-  assert.equal(after.__probe, 5)
-  for (const k of Object.keys(before)) {
-    assert.ok(k in after, `existing setting ${k} must survive the merge`)
+  st().updateSettings({ masking: !DEFAULT_SETTINGS.masking })
+  assert.equal(st().settings.masking, !DEFAULT_SETTINGS.masking)
+  for (const k of Object.keys(DEFAULT_SETTINGS)) {
+    assert.ok(k in st().settings, `existing setting ${k} must survive the merge`)
   }
 })
 
@@ -1490,6 +1502,7 @@ test('setAmp: P = V²/Z holds after editing each field', () => {
 // CONTRACT: "Does nothing without a successful result, or once three snapshots
 // exist."
 test('takeSnapshot: does nothing without a successful result', () => {
+  assert.ok(!st().results, 'precondition: there is no result under test')
   assert.deepEqual(st().snapshots, [], 'precondition: no snapshots after a fresh load')
   const keys = keysWrittenBy(() => st().takeSnapshot())
   assert.deepEqual(keys, [], 'with no result there is nothing to freeze')
@@ -1512,57 +1525,45 @@ test('renameSnapshot: an unknown id leaves the snapshot list alone', () => {
 
 // CONTRACT: "Open or close the port-velocity popup for a waveguide node." /
 // "`id` — Waveguide node id, or `null` to close."
-test('setVelocityPopup: records the node id and null closes it', () => {
-  const before = snap()
+test('setVelocityPopup: writes velocityPopupNodeId and null closes it', () => {
   st().setVelocityPopup('__wg__')
-  const after = snap()
-  const keys = changedKeys(before, after)
-  assert.equal(keys.length, 1)
-  assert.equal(after[keys[0]], '__wg__')
+  assert.equal(st().velocityPopupNodeId, '__wg__')
   st().setVelocityPopup(null)
-  assert.equal(st()[keys[0]], null)
+  assert.equal(st().velocityPopupNodeId, null)
 })
 
 // CONTRACT: "Show or hide the driver database modal."
-test('setShowDriverDB: writes the visibility flag', () => {
+test('setShowDriverDB: writes showDriverDB', () => {
+  st().setShowDriverDB(true)
+  assert.equal(st().showDriverDB, true)
   st().setShowDriverDB(false)
-  const keys = keysWrittenBy(() => st().setShowDriverDB(true))
-  assert.equal(keys.length, 1)
-  assert.equal(snap()[keys[0]], true)
-  st().setShowDriverDB(false)
-  assert.equal(st()[keys[0]], false)
+  assert.equal(st().showDriverDB, false)
 })
 
 // CONTRACT: "Show or hide the project manager modal."
-test('setShowProjectManager: writes the visibility flag', () => {
+test('setShowProjectManager: writes showProjectManager', () => {
+  st().setShowProjectManager(true)
+  assert.equal(st().showProjectManager, true)
   st().setShowProjectManager(false)
-  const keys = keysWrittenBy(() => st().setShowProjectManager(true))
-  assert.equal(keys.length, 1)
-  assert.equal(snap()[keys[0]], true)
-  st().setShowProjectManager(false)
-  assert.equal(st()[keys[0]], false)
+  assert.equal(st().showProjectManager, false)
 })
 
 // CONTRACT: "Show or hide the Thiele/Small parameter solver."
-test('setShowTSCalc: writes the visibility flag', () => {
+test('setShowTSCalc: writes showTSCalc', () => {
+  st().setShowTSCalc(true)
+  assert.equal(st().showTSCalc, true)
   st().setShowTSCalc(false)
-  const keys = keysWrittenBy(() => st().setShowTSCalc(true))
-  assert.equal(keys.length, 1)
-  assert.equal(snap()[keys[0]], true)
-  st().setShowTSCalc(false)
-  assert.equal(st()[keys[0]], false)
+  assert.equal(st().showTSCalc, false)
 })
 
 // CONTRACT: "Set the prompt offering to restore an auto-saved project." /
 // "`v` — The candidate project, or `null` to dismiss."
 test('setRestorePrompt: stores the candidate project and null dismisses it', () => {
   const candidate = { name: '__candidate__' }
+  st().setRestorePrompt(candidate)
+  assert.equal(st().restorePrompt, candidate)
   st().setRestorePrompt(null)
-  const keys = keysWrittenBy(() => st().setRestorePrompt(candidate))
-  assert.equal(keys.length, 1)
-  assert.equal(snap()[keys[0]], candidate)
-  st().setRestorePrompt(null)
-  assert.equal(st()[keys[0]], null)
+  assert.equal(st().restorePrompt, null)
 })
 
 // CONTRACT: "`object` — The serialized project: `{schemaVersion, app, name,
@@ -1573,15 +1574,17 @@ test('serialize: returns the documented project shape', () => {
     Object.keys(p).slice().sort(),
     ['app', 'edges', 'modified', 'name', 'nodes', 'schemaVersion', 'settings'].sort(),
   )
+  assert.equal(p.schemaVersion, SCHEMA_VERSION)
+  assert.equal(p.name, st().projectName, 'the project name is carried through')
   assert.ok(Array.isArray(p.nodes))
   assert.ok(Array.isArray(p.edges))
   assert.equal(typeof p.settings, 'object')
-  assert.equal(typeof p.name, 'string')
 })
 
 // CONTRACT: "Node positions are included — they are editor state, but losing
-// the layout of a saved graph would be worse than carrying it."
-test('serialize: node positions are included', () => {
+// the layout of a saved graph would be worse than carrying it." The
+// `.acousim.json` node shape is `{id, type, position, params}`.
+test('serialize: nodes carry id, type, position and params', () => {
   st().addNode(T_DRIVER, { x: 21, y: 43 })
   const p = st().serialize()
   assert.equal(p.nodes.length, 1)
@@ -1594,8 +1597,6 @@ test('serialize: node positions are included', () => {
 // CONTRACT: "Reads the current time for the `modified` stamp."
 test('serialize: the modified stamp is the current time', () => {
   const p = st().serialize()
-  // listSavedProjects documents `modified` as a string, and it is read from
-  // the current clock.
   assert.equal(typeof p.modified, 'string')
   const t = Date.parse(p.modified)
   assert.ok(Number.isFinite(t), `modified must be a parseable timestamp: ${p.modified}`)
@@ -1603,16 +1604,15 @@ test('serialize: the modified stamp is the current time', () => {
 })
 
 // CONTRACT: "Replace the current project with a deserialized one."
-test('loadSerialized: replaces nodes, edges and settings', () => {
+test('loadSerialized: replaces nodes, edges, settings and name', () => {
   st().addNode(T_DRIVER, { x: 0, y: 0 })
   st().loadSerialized(blank({
     name: 'loaded',
     nodes: [{ id: 'x1', type: T_CHAMBER, position: { x: 9, y: 9 }, params: {} }],
-    edges: [],
   }))
   assert.deepEqual(nodesOf().map((n) => n.id), ['x1'])
   assert.deepEqual(nodeById('x1').position, { x: 9, y: 9 })
-  assert.equal(st().serialize().name, 'loaded')
+  assert.equal(st().projectName, 'loaded')
 })
 
 // CONTRACT: "Params are merged over the current defaults, so a project saved by
@@ -1620,12 +1620,10 @@ test('loadSerialized: replaces nodes, edges and settings', () => {
 test('loadSerialized: params are merged over the current defaults', () => {
   st().loadSerialized(blank({
     nodes: [{ id: 'x1', type: T_DRIVER, position: { x: 0, y: 0 }, params: {} }],
-    edges: [],
   }))
-  assert.ok(
-    Object.keys(paramsOf('x1')).length > 0,
-    'an empty params object must be filled from the defaults',
-  )
+  for (const [k, v] of Object.entries(DEFAULT_PARAMS[T_DRIVER])) {
+    assert.deepEqual(paramsOf('x1')[k], v, `param ${k} must be filled from the defaults`)
+  }
 })
 
 // CONTRACT: "Edges missing an id get one, which hand-written and MCP-generated
@@ -1643,7 +1641,9 @@ test('loadSerialized: edges missing an id are given one', () => {
   assert.ok(edgesOf()[0].id.length > 0)
 })
 
-// CONTRACT: "History, redo, snapshots and selection are all cleared"
+// CONTRACT: "History, redo, snapshots and selection are all cleared: they
+// describe the project being replaced and would be meaningless against the new
+// one."
 test('loadSerialized: history, redo, snapshots and selection are cleared', () => {
   st().addNode(T_DRIVER, { x: 0, y: 0 })
   st().undo() // leaves something on the redo stack
@@ -1651,26 +1651,26 @@ test('loadSerialized: history, redo, snapshots and selection are cleared', () =>
 
   st().loadSerialized(blank({
     nodes: [{ id: 'x1', type: T_DRIVER, position: { x: 0, y: 0 }, params: {} }],
-    edges: [],
   }))
 
+  assert.deepEqual(st().history, [], 'history cleared')
+  assert.deepEqual(st().future, [], 'redo cleared')
   assert.deepEqual(st().snapshots, [], 'snapshots cleared')
-  assert.equal(selectedNodes().length, 0, 'selection cleared')
-  assert.deepEqual(keysWrittenBy(() => st().undo()), [], 'history cleared')
-  assert.deepEqual(keysWrittenBy(() => st().redo()), [], 'redo cleared')
+  assert.equal(st().selectedNodeId, null, 'selection cleared')
+  assert.equal(selectedNodes().length, 0, 'no node is left flagged selected')
 })
 
 // CONTRACT: "Rename the project" / "`name` — The new project name."
 test('setProjectName: renames the project', () => {
   st().setProjectName('a new name')
-  assert.equal(st().serialize().name, 'a new name')
+  assert.equal(st().projectName, 'a new name')
 })
 
-// CONTRACT: "Start an empty project" / "Shows a confirmation dialog, then
-// replaces store state" (confirm is stubbed true under test)
+// CONTRACT: "Start an empty project, confirming first if there is anything to
+// lose." (confirm is stubbed true under test)
 test('newProject: empties the graph', () => {
-  st().addNode(T_DRIVER, { x: 0, y: 0 })
-  st().onConnect({ source: nodesOf()[0].id, sourceHandle: 'h1', target: nodesOf()[0].id, targetHandle: 'h2' })
+  const a = st().addNode(T_DRIVER, { x: 0, y: 0 })
+  st().onConnect({ source: a, sourceHandle: 'h1', target: a, targetHandle: 'h2' })
   st().newProject()
   assert.deepEqual(nodesOf(), [])
   assert.deepEqual(edgesOf(), [])
@@ -1681,7 +1681,7 @@ test('newProject: empties the graph', () => {
 test('newProject: names the new project after the current time', () => {
   st().loadSerialized(blank({ name: 'the old one' }))
   st().newProject()
-  const name = st().serialize().name
+  const name = st().projectName
   assert.equal(typeof name, 'string')
   assert.notEqual(name, 'the old one')
   assert.ok(name.length > 0)
@@ -1693,27 +1693,25 @@ test('saveProjectJSON: auto-saves the project to LocalStorage first', () => {
   st().loadSerialized(blank({
     name: 'download-me',
     nodes: [{ id: 'x1', type: T_DRIVER, position: { x: 0, y: 0 }, params: {} }],
-    edges: [],
   }))
-  const before = lsSnap()
   st().saveProjectJSON()
-  const written = lsChangedKeys(before, lsSnap())
-  assert.ok(written.length > 0, 'the project must be auto-saved before download')
-  assert.ok(listSavedProjects().some((e) => e.name === 'download-me'))
+  assert.ok(
+    ls().getItem(lsProject('download-me')),
+    'the project must be auto-saved under acousim:project:<name> before download',
+  )
 })
 
 // CONTRACT: "Write the project to LocalStorage under its name."
-test('autoSave: writes the project under its name', () => {
+test('autoSave: writes the project under acousim:project:<name>', () => {
   st().loadSerialized(blank({
     name: 'autosave-name',
     nodes: [{ id: 'x1', type: T_DRIVER, position: { x: 0, y: 0 }, params: {} }],
-    edges: [],
   }))
-  const before = lsSnap()
+  ls().removeItem(lsProject('autosave-name'))
   st().autoSave()
-  const written = lsChangedKeys(before, lsSnap())
-  assert.ok(written.length > 0, 'autoSave must write LocalStorage')
-  assert.ok(written.some((k) => k.includes('autosave-name')), 'stored under its name')
+  const stored = ls().getItem(lsProject('autosave-name'))
+  assert.ok(stored, 'autoSave must write acousim:project:autosave-name')
+  assert.equal(JSON.parse(stored).name, 'autosave-name')
 })
 
 // CONTRACT: "Renaming *moves* the save rather than copying it: the previous key
@@ -1723,16 +1721,15 @@ test('autoSave: renaming moves the save rather than copying it', () => {
   st().loadSerialized(blank({
     name: 'move-me-from',
     nodes: [{ id: 'x1', type: T_DRIVER, position: { x: 0, y: 0 }, params: {} }],
-    edges: [],
   }))
   st().autoSave()
-  assert.ok(listSavedProjects().some((e) => e.name === 'move-me-from'))
+  assert.ok(ls().getItem(lsProject('move-me-from')), 'precondition: saved under the old name')
 
   st().setProjectName('move-me-to')
   st().autoSave()
-  assert.ok(listSavedProjects().some((e) => e.name === 'move-me-to'), 'the new name is saved')
-  assert.ok(
-    !listSavedProjects().some((e) => e.name === 'move-me-from'),
+  assert.ok(ls().getItem(lsProject('move-me-to')), 'the new name is saved')
+  assert.equal(
+    ls().getItem(lsProject('move-me-from')), null,
     'the old key must be removed, not left as a duplicate',
   )
 })
@@ -1740,39 +1737,35 @@ test('autoSave: renaming moves the save rather than copying it', () => {
 // CONTRACT: "Empty projects are skipped so an accidental new-project does not
 // overwrite a real save with nothing."
 test('autoSave: an empty project is skipped', () => {
-  st().loadSerialized(blank({ name: 'empty-skip', nodes: [], edges: [] }))
-  const before = lsSnap()
+  st().loadSerialized(blank({ name: 'empty-skip' }))
+  ls().removeItem(lsProject('empty-skip'))
   st().autoSave()
-  assert.deepEqual(lsChangedKeys(before, lsSnap()), [], 'an empty project must not be written')
+  assert.equal(
+    ls().getItem(lsProject('empty-skip')), null,
+    'an empty project must not be written',
+  )
 })
 
 // CONTRACT: "Send a panel to its own browser tab and remove it from the dock."
-test('popOutPanel: removes the panel from the dock', () => {
+test('popOutPanel: removes the panel from the dock and tracks it as popped out', () => {
   st().layoutOps.reset()
-  const p = openPanels(tree()).find((x) => {
-    st().layoutOps.reset()
-    st().layoutOps.close(x)
-    return !isOpen(tree(), x)
-  })
-  assert.ok(p, 'need a panel that can leave the dock')
-  st().layoutOps.reset()
+  const p = closablePanel()
   st().popOutPanel(p)
   assert.ok(!isOpen(tree(), p), 'a popped-out panel is no longer in the dock')
+  assert.ok(st().poppedOut.includes(p), 'and it is tracked as popped out')
+  st()._reattachPanel(p)
   st().layoutOps.reset()
 })
 
-// CONTRACT: "Mark a panel as popped out and close it in this window's dock."
-test('_detachPanel: closes the panel in this window\'s dock', () => {
+// CONTRACT: "Mark a panel as popped out and close it in this window's dock." /
+// "Tracking which panels are out keeps the View menu honest about what is
+// actually visible."
+test('_detachPanel: marks the panel popped out and closes it in the dock', () => {
   st().layoutOps.reset()
-  const p = openPanels(tree()).find((x) => {
-    st().layoutOps.reset()
-    st().layoutOps.close(x)
-    return !isOpen(tree(), x)
-  })
-  assert.ok(p)
-  st().layoutOps.reset()
+  const p = closablePanel()
   st()._detachPanel(p)
   assert.ok(!isOpen(tree(), p))
+  assert.ok(st().poppedOut.includes(p), 'the panel is tracked as popped out')
   st()._reattachPanel(p)
   st().layoutOps.reset()
 })
@@ -1780,16 +1773,11 @@ test('_detachPanel: closes the panel in this window\'s dock', () => {
 // CONTRACT: "Take a panel back into the dock when its tab closes."
 test('_reattachPanel: puts a popped-out panel back into the dock', () => {
   st().layoutOps.reset()
-  const p = openPanels(tree()).find((x) => {
-    st().layoutOps.reset()
-    st().layoutOps.close(x)
-    return !isOpen(tree(), x)
-  })
-  assert.ok(p)
-  st().layoutOps.reset()
+  const p = closablePanel()
   st()._detachPanel(p)
   st()._reattachPanel(p)
   assert.ok(isOpen(tree(), p), 'the panel returns to the dock')
+  assert.ok(!st().poppedOut.includes(p), 'and is no longer tracked as popped out')
   st().layoutOps.reset()
 })
 
@@ -1801,34 +1789,36 @@ test('_reattachPanel: is ignored when the panel was not popped out', () => {
 })
 
 // CONTRACT: "Apply state mirrored from another window without echoing it back."
+// `projectName` is in SHARED_KEYS, so it is a genuine shared-state delta.
 test('_applyRemote: applies the patch to store state', () => {
-  st()._applyRemote({ draggingPanel: '__remote__' })
-  assert.equal(st().draggingPanel, '__remote__')
-  st()._applyRemote({ draggingPanel: null })
+  st()._applyRemote({ projectName: '__from_other_window__' })
+  assert.equal(st().projectName, '__from_other_window__')
 })
 
 // CONTRACT: "The flag is cleared in a `finally` so a throwing subscriber cannot
 // leave sync permanently muted." — i.e. normal local writes still work after.
 test('_applyRemote: leaves local writes working afterwards', () => {
-  st()._applyRemote({ draggingPanel: '__remote2__' })
-  st().setDraggingPanel('__local__')
-  assert.equal(st().draggingPanel, '__local__')
-  st().setDraggingPanel(null)
+  st()._applyRemote({ projectName: '__remote2__' })
+  st().setProjectName('__local__')
+  assert.equal(st().projectName, '__local__')
 })
 
 // CONTRACT: "`object` — Every key in `SHARED_KEYS` with its current value."
-test('_sharedSnapshot: returns the shared keys with their current values', () => {
-  st().setDraggingPanel('__shared__')
+test('_sharedSnapshot: is exactly SHARED_KEYS with their current values', () => {
+  st().addNode(T_DRIVER, { x: 0, y: 0 })
+  st().setProjectName('__shared__')
   const shot = st()._sharedSnapshot()
   assert.equal(typeof shot, 'object')
   assert.notEqual(shot, null)
-  assert.ok(Object.keys(shot).length > 0, 'the shared slice must not be empty')
-  assert.equal(shot.draggingPanel, '__shared__', 'a mirrored key carries its current value')
+  assert.deepEqual(
+    Object.keys(shot).slice().sort(),
+    SHARED_KEYS.slice().sort(),
+    'the snapshot must be exactly the shared slice',
+  )
   const live = st()
-  for (const [k, v] of Object.entries(shot)) {
-    assert.equal(v, live[k], `shared key ${k} must be the store's current value`)
+  for (const k of SHARED_KEYS) {
+    assert.equal(shot[k], live[k], `shared key ${k} must be the store's current value`)
   }
-  st().setDraggingPanel(null)
 })
 
 // UNREACHABLE — not covered:
@@ -1839,4 +1829,4 @@ test('_sharedSnapshot: returns the shared keys with their current values', () =>
 // NOT TESTABLE HERE (see the report):
 //   scheduleCompute()  — the whole contract is the debounced POST to
 //     /api/simulate, which does not exist under test; it has no synchronous
-//     state change of its own that the contract names.
+//     observable state change of its own that the contract names.
