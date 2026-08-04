@@ -8,6 +8,25 @@
 Phase-2 helpers for the MCP server: driver lookup, self-calibrating
 enclosure builders, an optimizer, and comparison scoring.
 
+## Exported constants
+
+Names this module publishes that are not methods. The method contracts
+above and below refer to these by role — a command, a node type, a panel —
+so this is the vocabulary they assume.
+
+### `BUILDERS`
+
+Enclosure builders keyed by topology name.
+
+The dispatch table `build_enclosure` resolves its `topology` argument
+against.
+
+Keys: `sealed`, `ported`, `bandpass4`, `bandpass6`
+
+### `__internals`
+
+Keys: `nid`, `pos`, `baseProject`, `addNode`, `edge`
+
 ## EXPORTED (10)
 
 ### `searchDrivers(criteria)`
@@ -29,6 +48,9 @@ the schema, with no change here or in the tool definition.
 **Parameters**
 
 - `criteria` — `object` _(optional, default `{}`)_ — Filter criteria.
+The numeric filters read the record's own field names — `Fs`, `Xmax`, `Sd`,
+capitalised as the driver schema spells them — and a row missing the field
+being filtered on is excluded, exactly as for an extended parameter.
 - `criteria.query` — `string` _(optional)_ — Substring of "brand model".
 - `criteria.brand` — `string` _(optional)_ — Exact brand name.
 - `criteria.source` — `'official'|'datasheet'|'custom'` _(optional)_ — Provenance.
@@ -65,6 +87,10 @@ an enclosure around the wrong driver produces plausible numbers for the
 wrong thing. An exact match on the full name or the model alone breaks a
 tie, so "18SW115-4" resolves even though it is a substring of nothing
 else.
+
+Note that "exact" is exact, not longest: a model that is a strict substring of
+another model resolves only if it matches one of them exactly, so `SA-12` is
+fine while `SA-1` is ambiguous.
 
 **Parameters**
 
@@ -139,7 +165,7 @@ impedance minimum. Expect this to be several Hz optimistic on a real box.
 
 **Returns**
 
-- `number` — Port length in cm, floored at 1 cm — the end correction alone can exceed the required length for a large port on a small box, which would otherwise give a negative length.
+- `number` — Port length in cm. Never below 1: the end correction alone can exceed the required length for a large port on a small box, and a negative length is not a port. A returned 1 therefore means "this geometry cannot reach that tuning", not "1 cm will do it".
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
@@ -336,7 +362,8 @@ Search for the best parameter values by coordinate grid refinement.
 Each round sweeps every free parameter across its current range on a
 grid, keeps the best value found, then halves the range around it. This
 converges far faster than a full grid search over all parameters at once
-— cost is `rounds × params × gridN` evaluations rather than `gridN ^
+— cost is one baseline evaluation of the starting design plus
+`rounds × params × gridN` for the search itself, rather than `gridN ^
 params` — at the price of being able to miss a narrow optimum that only
 appears when two parameters move together.
 
@@ -360,7 +387,7 @@ design without the search starting from an invalid point.
 
 **Returns**
 
-- `{best: object, bestScore: number, evals: number, values: number[]}` — The best project found, its score, how many evaluations it took, and the winning value of each parameter in the order given.
+- `{best: object, bestScore: number, evals: number, values: number[]}` — The best project found, its score, how many evaluations it took — `1 + rounds × params × gridN` — and the winning value of each parameter in the order given.
 
 **Side effects**
 

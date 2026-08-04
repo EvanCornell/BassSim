@@ -20,6 +20,49 @@ Keys come from `event.code` (the physical key) rather than `event.key`, so a
 binding does not change meaning when Shift is held — `shift+1` stays
 `shift+1` instead of becoming `!`.
 
+## Exported constants
+
+Names this module publishes that are not methods. The method contracts
+above and below refer to these by role — a command, a node type, a panel —
+so this is the vocabulary they assume.
+
+### `IS_MAC`
+
+Whether this browser is running on an Apple platform.
+
+Decides only how combos are *displayed* — Ctrl and Command are treated as one
+modifier when matching, so a single default set fits both platforms.
+
+### `COMMANDS`
+
+Keys: `edit.undo`, `edit.redo`, `edit.cut`, `edit.copy`, `edit.paste`, `edit.duplicate`, `edit.selectAll`, `edit.delete`, `drive.up`, `drive.down`, `drive.upFine`, `drive.downFine`, `project.new`, `project.save`, `project.open`, `sim.snapshot`, `sim.mask`, `sim.recompute`, `view.settings`, `view.maximize`, `view.popout`
+
+### `COMMAND_IDS`
+
+Every command id, in declaration order. The iteration order for lookups and the rebinding UI.
+
+### `COMMAND_GROUPS`
+
+Commands bundled into their display groups, as `[groupName, commandIds]` pairs.
+
+Built by reduction rather than declared, so a new command joins its group
+automatically and groups appear in the order their first command does.
+
+### `DEFAULT_BINDINGS`
+
+The default combo (or combos) for each command.
+
+Bare letters are safe here because canvas-scoped commands never fire while a
+text field has focus, and they make placing a chain of elements fast.
+
+Keys: `edit.undo`, `edit.redo`, `edit.cut`, `edit.copy`, `edit.paste`, `edit.duplicate`, `edit.selectAll`, `edit.delete`, `add.driver`, `add.chamber`, `add.waveguide`, `add.pr`, `add.radiation`, `drive.up`, `drive.down`, `drive.upFine`, `drive.downFine`, `project.new`, `project.save`, `project.open`, `sim.snapshot`, `sim.mask`, `sim.recompute`, `view.settings`, `view.maximize`, `view.popout`
+
+### `KEYMAP_KEY`
+
+LocalStorage key holding the user's binding overrides.
+
+Value: `"acousim:keymap"`
+
 ## EXPORTED (7)
 
 ### `keyFromEvent(e)`

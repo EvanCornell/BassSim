@@ -9,6 +9,39 @@ Project (.acousim.json) schema helpers shared by the app and the MCP server.
 A project is plain JSON: { name, settings, nodes: [{id,type,position,params}],
 edges: [{source,sourceHandle,target,targetHandle}] }.
 
+## Exported constants
+
+Names this module publishes that are not methods. The method contracts
+above and below refer to these by role — a command, a node type, a panel —
+so this is the vocabulary they assume.
+
+### `SCHEMA_VERSION`
+
+Version of the `.acousim.json` project schema this build reads and writes.
+
+Bumped only for changes a loader cannot absorb by falling back to defaults.
+
+Value: `1`
+
+### `DEFAULT_PARAMS`
+
+Default params for each node type, in display units.
+
+Doubles as the schema: `hydrateProject` treats a type absent from this map as
+unknown, and every saved node is merged over its entry so a project written by
+an older build gains any parameter added since.
+
+Keys: `driver`, `chamber`, `waveguide`, `pr`, `radiation`
+
+### `DEFAULT_SETTINGS`
+
+Default sweep and display settings for a new project.
+
+`impedance` and `power` are UI conveniences linked to `voltage` by P = V²/Z;
+the solver reads only `voltage`.
+
+Keys: `fmin`, `fmax`, `npts`, `voltage`, `impedance`, `power`, `rg`, `vThreshold`, `masking`, `unwrapPhase`, `delayOffset`, `nlEnabled`
+
 ## EXPORTED (1)
 
 ### `hydrateProject(proj)`

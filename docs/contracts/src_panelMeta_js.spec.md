@@ -16,6 +16,34 @@ saved layout) without importing components that import the store back.
   dock     where View ▸ puts the panel when it isn't already visible
   requires a settings flag that must be truthy for the panel to be offered
 
+## Exported constants
+
+Names this module publishes that are not methods. The method contracts
+above and below refer to these by role — a command, a node type, a panel —
+so this is the vocabulary they assume.
+
+### `PANEL_META`
+
+Metadata for every panel the workspace knows how to render.
+
+Doubles as the panel registry: `layout.sanitize` treats an id absent from
+this map as unknown and drops it, which is what keeps an old saved layout
+from referencing a panel that no longer exists.
+
+Keys: `palette`, `canvas`, `params`, `nllab`, `spl`, `zin`, `exc`, `vel`, `int`, `pow`, `eff`, `pe`, `ph`
+
+### `PANEL_IDS`
+
+Every known panel id. The allow-list `layout.sanitize` filters a saved layout against.
+
+### `CHART_IDS`
+
+Panel ids for the plots, listed under View ▸ Charts.
+
+### `MAIN_IDS`
+
+Panel ids for the non-chart panels, listed directly under View.
+
 ## EXPORTED (1)
 
 ### `panelTitle(id)`

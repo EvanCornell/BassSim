@@ -3,6 +3,25 @@
 > Generated from method contracts. This file contains **no implementation code**.
 > Write tests against what is claimed here, not against what you expect the code to do.
 
+## Exported constants
+
+Names this module publishes that are not methods. The method contracts
+above and below refer to these by role — a command, a node type, a panel —
+so this is the vocabulary they assume.
+
+### `CHART_PANELS`
+
+Chart id to component.
+
+Keyed the same as the per-chart zoom state in the store, so a chart keeps
+its zoom when it is re-docked or tabbed away.
+
+Keys: `spl`, `zin`, `exc`, `vel`, `int`, `pow`, `eff`, `pe`, `ph`
+
+### `__internals`
+
+Keys: `fmt`, `round5`, `fitDb`, `fitLinear`, `nearestIdx`, `snapLines`
+
 ## EXPORTED (1)
 
 ### `chartPanelComponent(id)`
@@ -12,15 +31,22 @@
 
 Build the dockable panel component for one chart.
 
+A fresh component is built on every call, so two calls with the same id
+return distinct — though behaviourally identical — component types. Callers
+that mount the result should hold onto it rather than calling again on each
+render, or React will unmount and remount the panel.
+
 **Parameters**
 
 - `id` — `string` — Chart id.
 
 **Returns**
 
-- `React.ComponentType|null` — The wrapped panel component, or `null` for an unknown id.
+- `React.ComponentType|null` — A newly built panel component, or `null` for an unknown id.
 
-**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
+**Side effects**
+
+- None, but not `@pure`: the returned component is a new object each call, so results are never equal by identity.
 
 ## INTERNAL (6)
 
@@ -71,6 +97,11 @@ Anchoring to the peak rather than the data extent keeps deep nulls from
 compressing the whole trace into the top of the chart — a 60 dB null is
 real but says nothing about the passband.
 
+The upper bound is not the peak: it is the peak plus 4 dB of headroom, so the
+loudest trace does not sit flush against the top of the plot. Both bounds are
+then rounded outward to a multiple of 5, which is what puts the axis labels on
+round numbers.
+
 **Parameters**
 
 - `rows` — `Array<object>` — Chart rows.
@@ -79,7 +110,7 @@ real but says nothing about the passband.
 
 **Returns**
 
-- `[number, number]|null` — The domain, or `null` when no data is finite.
+- `[number, number]|null` — The domain as `[round5(peak − windowDb, down), round5(peak + 4, up)]`, or `null` when no data is finite.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
@@ -120,7 +151,7 @@ would make a full overlay O(n²).
 
 **Returns**
 
-- `number` — Index of the nearest sample.
+- `number` — Index of the nearest sample. When two samples are exactly equidistant the higher index wins, which keeps a resampled overlay from drifting low across a run of ties.
 
 **Preconditions (caller must guarantee)**
 

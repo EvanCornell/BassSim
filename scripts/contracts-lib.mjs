@@ -488,8 +488,51 @@ export function scanFile(relPath) {
     .map((c) => ({ start: c.start, end: c.end, value: c.value, used: false }))
 
   const found = []
+  const constants = []
   const parents = []
   const scope = []
+
+  /**
+   * Summarise a constant's value shape without reproducing its implementation.
+   *
+   * The keys of an exported object are vocabulary, not code: they are the
+   * command ids, node types and panel ids that method contracts refer to by
+   * role and never enumerate. Publishing them closes the single most-reported
+   * gap in the spec pack. Values are deliberately not published — only names,
+   * and the primitive value of a scalar.
+   *
+   * @param {object} node - The initialiser expression.
+   * @returns {{kind: string, keys?: string[], length?: number, values?: Array<string|number>, value?: any}|null} A shape summary, or `null` when there is nothing useful to say.
+   * @pure
+   */
+  const shapeOf = (node) => {
+    if (!node) return null
+    if (node.type === 'ObjectExpression') {
+      const keys = node.properties
+        .filter((pr) => (pr.type === 'ObjectProperty' || pr.type === 'ObjectMethod') && !pr.computed)
+        .map((pr) => pr.key?.name ?? pr.key?.value)
+        .filter((k) => k != null)
+      return { kind: 'object', keys }
+    }
+    if (node.type === 'ArrayExpression') {
+      const lit = node.elements.filter((e) => e && (e.type === 'StringLiteral' || e.type === 'NumericLiteral'))
+      const out = { kind: 'array', length: node.elements.length }
+      if (lit.length === node.elements.length && node.elements.length) out.values = lit.map((e) => e.value)
+      return out
+    }
+    if (node.type === 'StringLiteral' || node.type === 'NumericLiteral' || node.type === 'BooleanLiteral') {
+      return { kind: 'literal', value: node.value }
+    }
+    if (node.type === 'NewExpression' && node.callee.name === 'Set') {
+      const arg = node.arguments[0]
+      if (arg?.type === 'ArrayExpression') {
+        const lit = arg.elements.filter((e) => e?.type === 'StringLiteral')
+        return { kind: 'set', length: arg.elements.length, values: lit.length === arg.elements.length ? lit.map((e) => e.value) : undefined }
+      }
+      return { kind: 'set' }
+    }
+    return null
+  }
 
   /**
    * Walk the AST, recording every documentable method it finds.
@@ -505,6 +548,29 @@ export function scanFile(relPath) {
 
     const parent = parents[parents.length - 1] || null
     const hit = classify(node, parent)
+
+    // An exported binding that is not a function is a constant. It carries no
+    // method contract, so it is kept out of `methods` and never policed by the
+    // coverage ratchet — but its documentation and the names it defines are
+    // published.
+    if (!hit && node.type === 'VariableDeclarator' && node.id.type === 'Identifier'
+        && !scope.length && node.init && !FN_TYPES.has(node.init.type)
+        && parents[parents.length - 2]?.type === 'ExportNamedDeclaration') {
+      const start = anchorStart(node, parents)
+      let doc = null
+      for (let i = docs.length - 1; i >= 0; i--) {
+        const c = docs[i]
+        if (c.end > start) continue
+        if (source.slice(c.end, start).trim() === '') { doc = c; c.used = true }
+        break
+      }
+      constants.push({
+        name: node.id.name,
+        line: node.loc.start.line,
+        shape: shapeOf(node.init),
+        doc: doc ? parseJsdoc(doc.value) : null,
+      })
+    }
 
     if (hit) {
       const start = anchorStart(node, parents)
@@ -591,7 +657,12 @@ export function scanFile(relPath) {
     }
   }
 
-  return { file: relPath, moduleDoc, methods: found.sort((a, b) => a.line - b.line) }
+  return {
+    file: relPath,
+    moduleDoc,
+    methods: found.sort((a, b) => a.line - b.line),
+    constants: constants.sort((a, b) => a.line - b.line),
+  }
 }
 
 /**

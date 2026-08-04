@@ -16,6 +16,41 @@ one window redraws the chart in the other.
 The main window stays the authority for two things it makes no sense to do
 twice: running the simulation and writing the LocalStorage auto-save.
 
+## Exported constants
+
+Names this module publishes that are not methods. The method contracts
+above and below refer to these by role — a command, a node type, a panel —
+so this is the vocabulary they assume.
+
+### `SYNC_CHANNEL`
+
+BroadcastChannel name the windows use to mirror shared state.
+
+Value: `"acousim-sync"`
+
+### `SHARED_KEYS`
+
+Store keys mirrored between the main window and every popped-out tab.
+
+Anything absent from this list is local UI. The dock layout and the quick bar
+stay per-window on purpose: a popped-out tab shows one panel, not a copy of
+the workspace.
+
+Values: `nodes`, `edges`, `projectName`, `settings`, `results`, `metrics`, `snapshots`, `selectedNodeId`, `velocityPopupNodeId`, `simError`, `xZoom`, `clipboard`
+
+### `SIM_INPUT_KEYS`
+
+Shared keys whose change invalidates the current result and forces a resolve.
+
+Values: `nodes`, `edges`, `settings`
+
+### `channel`
+
+The shared BroadcastChannel, or `null` where the API is unavailable.
+
+Null-checked at every use rather than polyfilled: without it the app still
+works, it just cannot mirror state between windows.
+
 ## EXPORTED (3)
 
 ### `popoutPanelId()`

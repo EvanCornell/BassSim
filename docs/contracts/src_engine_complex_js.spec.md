@@ -14,6 +14,20 @@ That is what makes the whole module `@pure` and lets the solver reuse
 operand instances across the 512-point frequency sweep without defensive
 copying.
 
+## Exported constants
+
+Names this module publishes that are not methods. The method contracts
+above and below refer to these by role — a command, a node type, a panel —
+so this is the vocabulary they assume.
+
+### `ZERO`
+
+Complex additive identity, `0 + 0j`. Shared instance — never mutate it.
+
+### `ONE`
+
+Complex multiplicative identity, `1 + 0j`. Shared instance — never mutate it.
+
 ## EXPORTED (18)
 
 ### `C(re, im)`

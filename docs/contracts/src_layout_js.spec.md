@@ -23,6 +23,25 @@ invariants are maintained after each edit:
   - a stack always holds at least one panel (empty stacks are pruned)
   - a split always holds at least two children (a lone child replaces it)
 
+## Exported constants
+
+Names this module publishes that are not methods. The method contracts
+above and below refer to these by role — a command, a node type, a panel —
+so this is the vocabulary they assume.
+
+### `LAYOUT_VERSION`
+
+Version of the persisted layout tree.
+
+A saved layout whose version does not match is discarded rather than migrated
+— the workspace arrangement is cheap to rebuild and not worth a migration path.
+
+Value: `2`
+
+### `__internals`
+
+Keys: `mapStacks`, `removeRec`, `dirOf`, `isBefore`, `insertRec`
+
 ## EXPORTED (16)
 
 ### `uid(p)`

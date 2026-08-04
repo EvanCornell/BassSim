@@ -12,6 +12,20 @@ the dock layout, the View menu and the saved-layout sanitizer all read from
 those, so nothing else needs to learn about it. Chart panels are generated
 from the chart registry instead of listed one by one.
 
+## Exported constants
+
+Names this module publishes that are not methods. The method contracts
+above and below refer to these by role — a command, a node type, a panel —
+so this is the vocabulary they assume.
+
+### `PANELS`
+
+The panel registry: each panel's metadata paired with its component.
+
+Adding a panel means one entry in `PANEL_META` plus one line in
+`COMPONENTS` — the dock, the View menu and the saved-layout sanitizer all
+read from these, so nothing else needs to learn about it.
+
 ## UNREACHABLE (1)
 
 ### `CanvasPanel()`

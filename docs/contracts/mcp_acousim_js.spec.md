@@ -8,6 +8,16 @@
 AcouSim MCP server core: tool/resource registrations, transport-agnostic.
 Entry points: mcp/server.js (stdio) and mcp/http.js (streamable HTTP).
 
+## Exported constants
+
+Names this module publishes that are not methods. The method contracts
+above and below refer to these by role — a command, a node type, a panel —
+so this is the vocabulary they assume.
+
+### `__internals`
+
+Keys: `sig`, `labelOf`, `resolveNode`, `run`, `downsample`, `metricsSummary`, `summarize`, `jsonResult`, `errResult`
+
 ## EXPORTED (1)
 
 ### `createServer()`
@@ -65,7 +75,7 @@ rather than an opaque id.
 
 **Parameters**
 
-- `nodes` — `Array<object>` — Hydrated graph nodes.
+- `nodes` — `Array<object>` — Hydrated graph nodes, each shaped `{id, type, data: {params}}` — the label lives at `node.data.params.label`.
 - `id` — `string` — Node id.
 
 **Returns**
@@ -86,7 +96,7 @@ work. Ids are matched first, then labels case-insensitively.
 
 **Parameters**
 
-- `nodes` — `Array<object>` — Hydrated graph nodes.
+- `nodes` — `Array<object>` — Hydrated graph nodes, each shaped `{id, type, data: {params}}` — labels are matched against `node.data.params.label`.
 - `ref` — `string` — Node id or label.
 - `types` — `string[]|null` _(optional, default `null`)_ — Restrict to these node types. `null` searches every node.
 
@@ -176,7 +186,7 @@ reads to an agent as a missing measurement rather than an inapplicable one.
 
 **Returns**
 
-- `object|null` — A flat object of formatted metrics, or `null` when there were none.
+- `object|null` — Formatted metrics keyed by name, or `null` when there were none. Values are strings or numbers except `impedance_peaks`, which is an array of one formatted string per peak.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 

@@ -402,7 +402,7 @@ function useYScale(id, fitDomain) {
  * @returns {number} The rounded bound.
  * @pure
  */
-const round5 = (v, up) => (up ? Math.ceil(v / 5) * 5 : Math.floor(v / 5) * 5)
+const round5 = (v, up) => (up ? Math.ceil(v / 5) * 5 : Math.floor(v / 5) * 5) + 0
 /**
  * A useful Y range for a dB curve: a fixed window below the peak.
  *
@@ -410,10 +410,15 @@ const round5 = (v, up) => (up ? Math.ceil(v / 5) * 5 : Math.floor(v / 5) * 5)
  * compressing the whole trace into the top of the chart — a 60 dB null is
  * real but says nothing about the passband.
  *
+ * The upper bound is not the peak: it is the peak plus 4 dB of headroom, so the
+ * loudest trace does not sit flush against the top of the plot. Both bounds are
+ * then rounded outward to a multiple of 5, which is what puts the axis labels on
+ * round numbers.
+ *
  * @param {Array<object>} rows - Chart rows.
  * @param {string[]} keys - Series keys to consider.
  * @param {number} [windowDb=45] - How far below the peak to show.
- * @returns {[number, number]|null} The domain, or `null` when no data is finite.
+ * @returns {[number, number]|null} The domain as `[round5(peak − windowDb, down), round5(peak + 4, up)]`, or `null` when no data is finite.
  * @pure
  */
 function fitDb(rows, keys, windowDb = 45) {
@@ -526,7 +531,7 @@ function useChartData(keys) {
  *
  * @param {number[]} arr - Ascending frequency axis.
  * @param {number} f - Frequency to locate.
- * @returns {number} Index of the nearest sample.
+ * @returns {number} Index of the nearest sample. When two samples are exactly equidistant the higher index wins, which keeps a resampled overlay from drifting low across a run of ties.
  * @pre arr is sorted ascending and holds at least two samples
  * @pure
  */
@@ -939,9 +944,14 @@ export const CHART_PANELS = {
 /**
  * Build the dockable panel component for one chart.
  *
+ * A fresh component is built on every call, so two calls with the same id
+ * return distinct — though behaviourally identical — component types. Callers
+ * that mount the result should hold onto it rather than calling again on each
+ * render, or React will unmount and remount the panel.
+ *
  * @param {string} id - Chart id.
- * @returns {React.ComponentType|null} The wrapped panel component, or `null` for an unknown id.
- * @pure
+ * @returns {React.ComponentType|null} A newly built panel component, or `null` for an unknown id.
+ * @sideEffect None, but not `@pure`: the returned component is a new object each call, so results are never equal by identity.
  */
 export function chartPanelComponent(id) {
   const Chart = CHART_PANELS[id]

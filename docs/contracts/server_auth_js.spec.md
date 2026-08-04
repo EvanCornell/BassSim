@@ -19,6 +19,22 @@ Methods enabled:
 Reset emails go through SMTP when SMTP_HOST is configured; otherwise the
 reset link is printed to the server log (dev mode).
 
+## Exported constants
+
+Names this module publishes that are not methods. The method contracts
+above and below refer to these by role — a command, a node type, a panel —
+so this is the vocabulary they assume.
+
+### `enabledProviders`
+
+Social provider names that are configured and therefore offered in the UI.
+
+A provider appears automatically once both its client id and secret are
+present in the environment, so enabling one is a deployment change rather
+than a code change.
+
+### `auth`
+
 ## EXPORTED (1)
 
 ### `migrateAuthDb()`

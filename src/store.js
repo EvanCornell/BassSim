@@ -1,3 +1,28 @@
+// Application state: the project graph, the workspace, and everything the UI
+// reads. One Zustand store, deliberately flat.
+//
+// State fields, since the action contracts below name what changes rather than
+// where:
+//
+//   project    nodes, edges, projectName, selectedNodeId, settings
+//   results    results, metrics, snapshots, simError
+//   history    history, future, clipboard
+//   workspace  layout, layoutPresets, maximized, focusedPanel, draggingPanel,
+//              poppedOut, toolbar, bindings, xZoom
+//   modals     showDriverDB, showProjectManager, showTSCalc, showSettings,
+//              settingsSection, restorePrompt, velocityPopupNodeId
+//
+// Fields prefixed with an underscore are solver and persistence bookkeeping
+// (`_lastSig`, `_abort`, `_computeTimer`, `_flowApi`, `_lastSavedName`,
+// `_nameTimer`) and are not part of any action's observable contract.
+//
+// LocalStorage keys, all prefixed `acousim:` — `acousim:layout`,
+// `acousim:layoutPresets`, `acousim:toolbar`, `acousim:keymap`,
+// `acousim:project:<name>` and `acousim:lastProject`.
+//
+// A subset of the state is mirrored to popped-out panel windows over a
+// BroadcastChannel; see src/popout.js for which keys and why.
+
 import { create } from 'zustand'
 import { applyNodeChanges, applyEdgeChanges, addEdge } from 'reactflow'
 import { SCHEMA_VERSION, DEFAULT_PARAMS } from './engine/project'

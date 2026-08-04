@@ -12,6 +12,24 @@ only part of the engine shipped to the browser.
 Everything here is SI: areas in m², lengths in m, frequencies in Hz. The UI
 converts from cm² / cm at the parameter boundary, not here.
 
+## Exported constants
+
+Names this module publishes that are not methods. The method contracts
+above and below refer to these by role — a command, a node type, a panel —
+so this is the vocabulary they assume.
+
+### `RHO`
+
+Air density ρ, kg/m³, at 20 °C.
+
+Value: `1.184`
+
+### `C_AIR`
+
+Speed of sound c in air, m/s, at 20 °C.
+
+Value: `344`
+
 ## EXPORTED (4)
 
 ### `areaProfile(flare, S1, S2, L)`
@@ -48,7 +66,7 @@ than throwing, so a project saved by a newer version still simulates.
 
 **Postconditions (must hold on return)**
 
-- result(0) === S1 for every flare law
+- result(0) equals S1 for every flare law, to within floating-point rounding — the conical and hypex laws reach it through a square root and back
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 

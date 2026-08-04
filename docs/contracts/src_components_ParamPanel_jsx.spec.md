@@ -3,6 +3,16 @@
 > Generated from method contracts. This file contains **no implementation code**.
 > Write tests against what is claimed here, not against what you expect the code to do.
 
+## Exported constants
+
+Names this module publishes that are not methods. The method contracts
+above and below refer to these by role — a command, a node type, a panel —
+so this is the vocabulary they assume.
+
+### `__internals`
+
+Keys: `round3`
+
 ## EXPORTED (1)
 
 ### `ParamPanel()`

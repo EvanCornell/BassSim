@@ -17,6 +17,46 @@ Adding an item means one entry in TOOLBAR_ITEMS plus, for controls, one case
 in Toolbar.jsx's renderer. Metrics need nothing else: `metricValue` below is
 the single place that knows how to compute and format them.
 
+## Exported constants
+
+Names this module publishes that are not methods. The method contracts
+above and below refer to these by role — a command, a node type, a panel —
+so this is the vocabulary they assume.
+
+### `TOOLBAR_ITEMS`
+
+Every widget the quick bar can show, keyed by id.
+
+`controls` are interactive and need a matching case in Toolbar.jsx's
+renderer; `metrics` are read-only and need nothing else, because
+`metricValue` is the single place that knows how to compute and format them.
+
+Keys: `project`, `undo`, `voltage`, `sweep`, `masking`, `snapshot`, `m_f3`, `m_f10`, `m_fb`, `m_qtc`, `m_zpeaks`, `m_peakspl`, `m_xfb`, `m_xf3`, `m_bw`, `m_maxpower`, `m_volume`, `m_solve`
+
+### `TOOLBAR_GROUPS`
+
+Quick-bar groups as `[id, heading]`, in the order Settings lists them.
+
+An array of 2 entries.
+
+### `ALL_ITEM_IDS`
+
+Every quick-bar item id, used to offer the full list in Settings.
+
+### `DEFAULT_TOOLBAR`
+
+The quick bar as it ships.
+
+Sweep range and resonance masking are deliberately absent: both are set-once
+controls reachable from Settings ▸ Application and the Simulate menu, so they
+earn a permanent slot only for someone who actually tweaks them often.
+
+Values: `project`, `undo`, `voltage`, `snapshot`, `m_f3`, `m_f10`, `m_fb`, `m_qtc`, `m_zpeaks`, `m_peakspl`, `m_xfb`, `m_xf3`, `m_bw`, `m_maxpower`, `m_volume`, `m_solve`
+
+### `__internals`
+
+Keys: `fmt`
+
 ## EXPORTED (3)
 
 ### `systemVolume(nodes)`

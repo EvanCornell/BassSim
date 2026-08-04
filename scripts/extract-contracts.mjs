@@ -18,6 +18,16 @@ import { REPO, TAGS, scanRepo } from './contracts-lib.mjs'
 const modules = scanRepo().map((m) => ({
   file: m.file,
   module: m.moduleDoc ? { summary: m.moduleDoc.summary, description: m.moduleDoc.description } : null,
+  // Exported non-function bindings. These carry no method contract, but their
+  // names are the vocabulary the method contracts refer to by role — command
+  // ids, node types, panel ids — so they are published alongside.
+  constants: m.constants.map((c) => ({
+    name: c.name,
+    line: c.line,
+    shape: c.shape,
+    summary: c.doc?.summary ?? null,
+    description: c.doc?.description ?? null,
+  })),
   methods: m.methods.map((x) => ({
     name: x.name,
     qualified: x.qualified,

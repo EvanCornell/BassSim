@@ -8,6 +8,21 @@
 Acoustic element models: transmission lines, waveguides/horns, radiation
 impedance of a piston in various solid angles. SI units throughout.
 
+## Exported constants
+
+Names this module publishes that are not methods. The method contracts
+above and below refer to these by role — a command, a node type, a panel —
+so this is the vocabulary they assume.
+
+### `SOLID_ANGLES`
+
+Solid angle Ω in steradians for each named radiating space.
+
+`free` is a driver suspended in air, `half` a flush-mounted baffle, and each
+step down halves the space: baffle against a wall, then into a corner.
+
+Keys: `free`, `half`, `quarter`, `eighth`
+
 ## EXPORTED (9)
 
 ### `besselJ1(x)`
@@ -241,7 +256,7 @@ parallel.
 
 - `chamber` — `object` — Chamber parameters.
 - `chamber.volume` — `number` — Internal volume, m³.
-- `chamber.length` — `number` — Acoustic path length, m. Floored at 1e-4 to keep the derived area finite.
+- `chamber.length` — `number` — Acoustic path length, m. The floor of 1e-4 applies only to the Volume/Length division that derives the cross-section; the line itself is built at the length as given, so a length of 0 yields a zero-length line rather than a 1e-4 one.
 - `chamber.Q` — `number|null` — Wall-loss factor.
 - `chamber.stuffing` — `number` _(optional, default `0`)_ — Stuffing density, g/L. 0 is empty.
 - `w` — `number` — Angular frequency ω, rad/s.

@@ -3,6 +3,45 @@
 > Generated from method contracts. This file contains **no implementation code**.
 > Write tests against what is claimed here, not against what you expect the code to do.
 
+## Module
+
+Application state: the project graph, the workspace, and everything the UI
+reads. One Zustand store, deliberately flat.
+
+State fields, since the action contracts below name what changes rather than
+where:
+
+  project    nodes, edges, projectName, selectedNodeId, settings
+  results    results, metrics, snapshots, simError
+  history    history, future, clipboard
+  workspace  layout, layoutPresets, maximized, focusedPanel, draggingPanel,
+             poppedOut, toolbar, bindings, xZoom
+  modals     showDriverDB, showProjectManager, showTSCalc, showSettings,
+             settingsSection, restorePrompt, velocityPopupNodeId
+
+Fields prefixed with an underscore are solver and persistence bookkeeping
+(`_lastSig`, `_abort`, `_computeTimer`, `_flowApi`, `_lastSavedName`,
+`_nameTimer`) and are not part of any action's observable contract.
+
+LocalStorage keys, all prefixed `acousim:` — `acousim:layout`,
+`acousim:layoutPresets`, `acousim:toolbar`, `acousim:keymap`,
+`acousim:project:<name>` and `acousim:lastProject`.
+
+A subset of the state is mirrored to popped-out panel windows over a
+BroadcastChannel; see src/popout.js for which keys and why.
+
+## Exported constants
+
+Names this module publishes that are not methods. The method contracts
+above and below refer to these by role — a command, a node type, a panel —
+so this is the vocabulary they assume.
+
+### `useStore`
+
+### `__internals`
+
+Keys: `loadLayout`, `loadPresets`, `loadToolbar`, `freeSpotNear`, `graphSignature`
+
 ## EXPORTED (2)
 
 ### `nextId(type)`

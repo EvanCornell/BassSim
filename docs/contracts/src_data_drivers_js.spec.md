@@ -14,6 +14,32 @@ the core T/S only. Both share one record shape, described in
 driver-fields.js, so nothing downstream has to care which it got — beyond
 reading `source` when it wants to say how much to trust the numbers.
 
+## Exported constants
+
+Names this module publishes that are not methods. The method contracts
+above and below refer to these by role — a command, a node type, a panel —
+so this is the vocabulary they assume.
+
+### `BUILTIN_DRIVERS`
+
+Every built-in driver, normalized and sorted by brand then model.
+
+Catalog and hand-transcribed entries are merged into one list deliberately:
+consumers filter on `source` when provenance matters rather than choosing
+between two arrays.
+
+### `DRIVER_BRANDS`
+
+Distinct brand names in the library, sorted, for populating filter menus.
+
+### `POPULATED_EXT_KEYS`
+
+Extended field keys that at least one driver actually populates.
+
+Extended parameters are sparse, so filter UI built from the full `EXT_FIELDS`
+list would offer columns the library cannot fill. This is the subset worth
+showing.
+
 ## UNREACHABLE (1)
 
 ### `normalize(d)`

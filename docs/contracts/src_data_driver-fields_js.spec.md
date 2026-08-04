@@ -21,6 +21,55 @@ Enumerating the schema rather than hardcoding it lets the database browser,
 the CSV export and the MCP tools stay correct as fields are added, and gives
 an agent a machine-readable answer to "what can I filter on?".
 
+## Exported constants
+
+Names this module publishes that are not methods. The method contracts
+above and below refer to these by role — a command, a node type, a panel —
+so this is the vocabulary they assume.
+
+### `CORE_FIELDS`
+
+The flat, solver-facing T/S fields every driver record may carry.
+
+Units: Fs Hz · Vas L · Re Ω · Bl T·m · Mms g · Cms mm/N · Sd cm² · Le mH ·
+Xmax mm · Rms N·s/m.
+
+`solver: true` marks the eight the engine actually reads; the rest are
+published figures kept for display and for the consistency audit. Declared as
+data so the browser, the CSV export and the MCP tools enumerate fields
+generically instead of hardcoding a list that drifts.
+
+An array of 13 entries.
+
+### `EXT_FIELDS`
+
+Extended, manufacturer-specific parameters, grouped for display.
+
+Sparse by design — B&C publish flux density and winding depth, most brands
+publish a power rating and stop — so every field is optional and any consumer
+must tolerate `undefined`. Nothing here is required to simulate.
+
+An array of 28 entries.
+
+### `EXT_BY_KEY`
+
+Extended field descriptors indexed by key, for O(1) lookup during filtering.
+
+### `EXT_GROUPS`
+
+Display group names in declaration order, so the UI groups fields consistently.
+
+An array of 1 entries.
+
+### `SOURCE_LABELS`
+
+Human-readable provenance labels keyed by a record's `source`.
+
+Anything other than `official` is a hand transcription and should be checked
+against the datasheet before a build.
+
+Keys: `official`, `datasheet`, `custom`
+
 ## EXPORTED (2)
 
 ### `driverToParams(d)`

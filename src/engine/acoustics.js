@@ -118,7 +118,14 @@ export function radiationImpedance(S, solidAngle, w) {
   const k = w / C_AIR
   const x = 2 * k * a
   let R1, X1
-  if (x < 1e-6) {
+  // The series forms are used well beyond where they are merely convenient.
+  // `1 - 2·J₁(x)/x` is catastrophic cancellation at small x: the two terms agree
+  // to more digits than the Bessel polynomial carries, so the difference is
+  // noise — and ρc/S, of order 1e8 for a small opening, amplifies it into a
+  // visibly negative radiation resistance. Below x ≈ 1e-3 the leading terms
+  // x²/8 and 2x/3π are themselves accurate to far better than the polynomial,
+  // so switching early costs nothing and keeps Re ≥ 0 everywhere.
+  if (x < 1e-3) {
     R1 = x * x / 8
     X1 = (4 / (3 * Math.PI)) * x / 2
   } else {
@@ -257,7 +264,7 @@ export function waveguideMatrix({ S1, S2, L, flare, Q, ecThroat = 0, ecMouth = 0
  *
  * @param {object} chamber - Chamber parameters.
  * @param {number} chamber.volume - Internal volume, m³.
- * @param {number} chamber.length - Acoustic path length, m. Floored at 1e-4 to keep the derived area finite.
+ * @param {number} chamber.length - Acoustic path length, m. The floor of 1e-4 applies only to the Volume/Length division that derives the cross-section; the line itself is built at the length as given, so a length of 0 yields a zero-length line rather than a 1e-4 one.
  * @param {number|null} chamber.Q - Wall-loss factor.
  * @param {number} [chamber.stuffing=0] - Stuffing density, g/L. 0 is empty.
  * @param {number} w - Angular frequency ω, rad/s.

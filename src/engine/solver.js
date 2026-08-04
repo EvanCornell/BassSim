@@ -66,10 +66,13 @@ export function driverSI(p) {
 /**
  * Resolve a node's loss factor to a number the element builders can use.
  *
- * Collapses three ways of saying "lossless" — an explicit `lossless` flag, a
- * missing Q, and a non-positive Q — onto `Infinity`, which is what
- * `combineQ` and `tlineMatrix` expect. Without this, a Q of 0 read literally
- * would divide by zero.
+ * Collapses two ways of saying "lossless" — an explicit `lossless` flag and a
+ * non-positive Q — onto `Infinity`, which is what `combineQ` and `tlineMatrix`
+ * expect. Without this, a Q of 0 read literally would divide by zero.
+ *
+ * A *missing* Q is not lossless: it falls back to 50, the same moderate loss a
+ * new node is created with, so a node whose Q was never set behaves like one
+ * that was left at its default rather than like a lossless idealisation.
  *
  * @param {object} p - Any node's params.
  * @param {boolean} [p.lossless] - When true, force `Infinity` regardless of Q.

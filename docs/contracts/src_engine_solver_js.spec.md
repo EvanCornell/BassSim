@@ -9,6 +9,16 @@ Graph → transfer-matrix chain solver.
 Convention: ABCD matrices map [p_in; U_in] = M · [p_out; U_out] with
 p = acoustic pressure (Pa), U = volume velocity (m^3/s).
 
+## Exported constants
+
+Names this module publishes that are not methods. The method contracts
+above and below refer to these by role — a command, a node type, a panel —
+so this is the vocabulary they assume.
+
+### `__internals`
+
+Keys: `normQ`, `driverPassiveMechZ`, `buildGraph`
+
 ## EXPORTED (3)
 
 ### `driverSI(p)`
@@ -137,10 +147,13 @@ iteration. This is experimental and roughly quadruples the solve time.
 
 Resolve a node's loss factor to a number the element builders can use.
 
-Collapses three ways of saying "lossless" — an explicit `lossless` flag, a
-missing Q, and a non-positive Q — onto `Infinity`, which is what
-`combineQ` and `tlineMatrix` expect. Without this, a Q of 0 read literally
-would divide by zero.
+Collapses two ways of saying "lossless" — an explicit `lossless` flag and a
+non-positive Q — onto `Infinity`, which is what `combineQ` and `tlineMatrix`
+expect. Without this, a Q of 0 read literally would divide by zero.
+
+A *missing* Q is not lossless: it falls back to 50, the same moderate loss a
+new node is created with, so a node whose Q was never set behaves like one
+that was left at its default rather than like a lossless idealisation.
 
 **Parameters**
 

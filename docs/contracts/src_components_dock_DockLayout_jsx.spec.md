@@ -16,6 +16,16 @@ Panels stay mounted when their tab is inactive — hidden with display:none
 rather than unmounted — so React Flow keeps its viewport and the charts keep
 their zoom when you tab away and back.
 
+## Exported constants
+
+Names this module publishes that are not methods. The method contracts
+above and below refer to these by role — a command, a node type, a panel —
+so this is the vocabulary they assume.
+
+### `__internals`
+
+Keys: `isPanelDrag`, `endPanelDrag`
+
 ## EXPORTED (1)
 
 ### `DockLayout()`

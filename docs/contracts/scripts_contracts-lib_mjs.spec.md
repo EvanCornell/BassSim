@@ -23,6 +23,46 @@ JSX-heavy and arrow-dense: `onClick={(e) => …}` and `const apply = (d) => …`
 are indistinguishable to a line matcher but only the second is a method we
 expect a contract on.
 
+## Exported constants
+
+Names this module publishes that are not methods. The method contracts
+above and below refer to these by role — a command, a node type, a panel —
+so this is the vocabulary they assume.
+
+### `REPO`
+
+Repository root, so scanned paths can be reported repo-relative.
+
+### `ROOTS`
+
+Directories walked for documentable source.
+
+Values: `src`, `mcp`, `server`, `scripts`, `test`
+
+### `IGNORE_FILES`
+
+Values: `src/data/drivers.bc.js`, `src/data/drivers.legacy.js`, `test/support/env.mjs`
+
+### `IGNORE_DIRS_REL`
+
+Values: `test/contract/`
+
+### `TAGS`
+
+The contract vocabulary, as data so the test can reject anything outside it.
+
+A typo like `@sideeffect` would otherwise parse cleanly and then silently
+vanish from the generated docs.
+
+Payload kinds: `typed` expects a leading `{type}`, `text` takes free
+prose, and `flag` takes nothing.
+
+Keys: `param`, `returns`, `throws`, `yields`, `type`, `typedef`, `property`, `template`, `callback`, `example`, `see`, `deprecated`, `pre`, `post`, `invariant`, `mutates`, `sideEffect`, `reads`, `pure`
+
+### `__internals`
+
+Keys: `walkDir`, `takeType`, `takeName`, `stripDash`, `paramNames`, `returnsValue`, `classify`, `anchorStart`
+
 ## EXPORTED (5)
 
 ### `normalizeTag(t)`
@@ -302,7 +342,7 @@ start position.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
-## UNREACHABLE (2)
+## UNREACHABLE (3)
 
 ### `returnsValue > visit(n)`
 
@@ -322,6 +362,29 @@ Walk the body looking for a value-returning `return`.
 **Mutates**
 
 - The enclosing `found` flag and the visited set.
+
+### `scanFile > shapeOf(node)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+Summarise a constant's value shape without reproducing its implementation.
+
+The keys of an exported object are vocabulary, not code: they are the
+command ids, node types and panel ids that method contracts refer to by
+role and never enumerate. Publishing them closes the single most-reported
+gap in the spec pack. Values are deliberately not published — only names,
+and the primitive value of a scalar.
+
+**Parameters**
+
+- `node` — `object` — The initialiser expression.
+
+**Returns**
+
+- `{kind: string, keys?: string[], length?: number, values?: Array<string|number>, value?: any}|null` — A shape summary, or `null` when there is nothing useful to say.
+
+**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
 ### `scanFile > visit(node)`
 

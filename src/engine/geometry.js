@@ -32,7 +32,7 @@ export const C_AIR = 344
  * @returns {(x: number) => number} S(x) in m², valid for x in [0, L].
  * @pre S1 > 0 && L > 0
  * @pre S2 > 0 for the exponential and hypex families, which take log(S2/S1)
- * @post result(0) === S1 for every flare law
+ * @post result(0) equals S1 for every flare law, to within floating-point rounding — the conical and hypex laws reach it through a square root and back
  * @pure
  */
 export function areaProfile(flare, S1, S2, L) {

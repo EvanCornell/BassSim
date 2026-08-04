@@ -17,6 +17,25 @@ ratio at that excursion → scale Bl/Cms/Le → re-solve. Captures power
 compression and resonance drift; does NOT produce harmonic distortion
 products (that needs a time-domain engine).
 
+## Exported constants
+
+Names this module publishes that are not methods. The method contracts
+above and below refer to these by role — a command, a node type, a panel —
+so this is the vocabulary they assume.
+
+### `NL_PARAMS`
+
+The nonlinear parameter names a driver may carry curves for.
+
+`Cms` and `Kms` are two descriptions of the same suspension, so a driver
+normally has one or the other rather than both.
+
+Values: `Bl`, `Cms`, `Kms`, `Le`
+
+### `__internals`
+
+Keys: `baseValue`, `rawEval`
+
 ## EXPORTED (10)
 
 ### `emptyCurve()`
@@ -286,9 +305,10 @@ flat 1.0.
 Evaluate a curve at displacement x, baseline plus control points, unclamped.
 
 Control points are gaussian bumps added onto the baseline, in the manner of a
-parametric EQ. In symmetric mode each point is mirrored to the opposite
-stroke direction, which is how a motor with a symmetric gap is described with
-half the points.
+parametric EQ. When the curve sets `sym`, each point is mirrored to the
+opposite stroke direction — a point at +3 mm also acts at −3 mm — which is how
+a motor with a symmetric gap is described with half the points. Points within
+0.01 mm of centre are not mirrored, since they already straddle it.
 
 The result is deliberately not floored here: `evalCurve` needs the raw slope
 to extrapolate beyond Xmax.

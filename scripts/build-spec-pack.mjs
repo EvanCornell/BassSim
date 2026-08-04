@@ -166,6 +166,34 @@ function renderModule(mod) {
   L.push('')
   if (mod.module?.description) { L.push('## Module'); L.push(''); L.push(mod.module.description); L.push('') }
 
+  if (mod.constants?.length) {
+    L.push('## Exported constants')
+    L.push('')
+    L.push('Names this module publishes that are not methods. The method contracts')
+    L.push('above and below refer to these by role — a command, a node type, a panel —')
+    L.push('so this is the vocabulary they assume.')
+    L.push('')
+    for (const c of mod.constants) {
+      L.push(`### \`${c.name}\``)
+      L.push('')
+      if (c.description) { L.push(c.description); L.push('') }
+      const sh = c.shape
+      if (sh?.kind === 'object' && sh.keys?.length) {
+        L.push(`Keys: ${sh.keys.map((k) => `\`${k}\``).join(', ')}`)
+        L.push('')
+      } else if ((sh?.kind === 'array' || sh?.kind === 'set') && sh.values?.length) {
+        L.push(`Values: ${sh.values.map((v) => `\`${v}\``).join(', ')}`)
+        L.push('')
+      } else if (sh?.kind === 'array') {
+        L.push(`An array of ${sh.length} entries.`)
+        L.push('')
+      } else if (sh?.kind === 'literal') {
+        L.push(`Value: \`${JSON.stringify(sh.value)}\``)
+        L.push('')
+      }
+    }
+  }
+
   const groups = { EXPORTED: [], INTERNAL: [], 'STORE ACTION': [], COMMAND: [], UNREACHABLE: [] }
   for (const m of mod.methods) groups[reachability(mod, m).reach].push(m)
 

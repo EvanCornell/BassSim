@@ -74,8 +74,12 @@ function niceTicks(lo, hi, target = 8) {
   const raw = span / target
   const mag = Math.pow(10, Math.floor(Math.log10(raw)))
   const step = [1, 2, 5, 10].map((m) => m * mag).find((s) => span / s <= target) || 10 * mag
+  // Round to the step's own precision, not a fixed three decimals: a step of
+  // 0.0005 rounded to 3 dp collapses every adjacent pair into the same value,
+  // so a narrow axis came out with every tick duplicated.
+  const dp = Math.max(0, Math.min(15, -Math.floor(Math.log10(step)) + 1))
   const ticks = []
-  for (let v = Math.ceil(lo / step) * step; v <= hi + 1e-9; v += step) ticks.push(Math.round(v * 1000) / 1000)
+  for (let v = Math.ceil(lo / step) * step; v <= hi + step * 1e-9; v += step) ticks.push(Number(v.toFixed(dp)))
   return ticks
 }
 
