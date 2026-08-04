@@ -16,7 +16,7 @@
 //
 // Run: npm run docs:spec
 
-import { readFileSync, writeFileSync, mkdirSync, rmSync } from 'node:fs'
+import { readFileSync, writeFileSync, mkdirSync, rmSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { REPO } from './contracts-lib.mjs'
 
@@ -178,8 +178,13 @@ function renderModule(mod) {
 }
 
 const outDir = join(REPO, 'docs/contracts')
+// AMBIGUITIES.md is hand-written — the findings a blind author raised about the
+// contracts themselves — so it is preserved across a regeneration.
+const keep = 'AMBIGUITIES.md'
+const kept = existsSync(join(outDir, keep)) ? readFileSync(join(outDir, keep), 'utf8') : null
 rmSync(outDir, { recursive: true, force: true })
 mkdirSync(outDir, { recursive: true })
+if (kept) writeFileSync(join(outDir, keep), kept)
 
 const index = ['# Contract specification pack', '',
   'One file per module, generated from `docs/api.json`. Contains contracts only —',
