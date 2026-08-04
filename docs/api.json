@@ -24,9 +24,9 @@
     "pure": "flag"
   },
   "stats": {
-    "modules": 48,
-    "methods": 530,
-    "documented": 530
+    "modules": 50,
+    "methods": 533,
+    "documented": 533
   },
   "modules": [
     {
@@ -3275,7 +3275,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 98,
+          "line": 106,
           "signature": [
             "t"
           ],
@@ -3314,7 +3314,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 116,
+          "line": 124,
           "signature": [
             "dir",
             "out"
@@ -3365,7 +3365,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 138,
+          "line": 146,
           "signature": [],
           "documented": true,
           "summary": "Every source file in scope, repo-relative and sorted.",
@@ -3396,7 +3396,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 162,
+          "line": 170,
           "signature": [
             "s"
           ],
@@ -3435,7 +3435,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 185,
+          "line": 193,
           "signature": [
             "s"
           ],
@@ -3474,7 +3474,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 207,
+          "line": 215,
           "signature": [
             "s"
           ],
@@ -3513,7 +3513,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 219,
+          "line": 227,
           "signature": [
             "raw"
           ],
@@ -3552,7 +3552,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 307,
+          "line": 315,
           "signature": [
             "fn"
           ],
@@ -3591,7 +3591,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 331,
+          "line": 339,
           "signature": [
             "fn"
           ],
@@ -3630,7 +3630,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 342,
+          "line": 350,
           "signature": [
             "n"
           ],
@@ -3671,7 +3671,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 374,
+          "line": 382,
           "signature": [
             "node",
             "parent"
@@ -3718,7 +3718,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 424,
+          "line": 432,
           "signature": [
             "node",
             "parents"
@@ -3765,7 +3765,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 451,
+          "line": 459,
           "signature": [
             "relPath"
           ],
@@ -3811,7 +3811,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 477,
+          "line": 485,
           "signature": [
             "node"
           ],
@@ -3852,7 +3852,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 544,
+          "line": 552,
           "signature": [],
           "documented": true,
           "summary": "Scan every source file in scope.",
@@ -6108,6 +6108,111 @@
           "returns": {
             "type": "string",
             "desc": "The module source, ready to write."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        }
+      ]
+    },
+    {
+      "file": "scripts/triage-contracts.mjs",
+      "module": null,
+      "methods": [
+        {
+          "name": "indexContracts",
+          "qualified": "indexContracts",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 29,
+          "signature": [],
+          "documented": true,
+          "summary": "Index every method's contract by name, for looking up what a failure violates.",
+          "description": "Index every method's contract by name, for looking up what a failure violates.\n\nNames can collide across modules, so each entry keeps its module path and\nambiguous names are resolved by the test file that reported the failure.",
+          "params": [],
+          "returns": {
+            "type": "Map<string, Array<{file: string, method: object}>>",
+            "desc": "Methods keyed by bare name."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "runSuite",
+          "qualified": "runSuite",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 46,
+          "signature": [],
+          "documented": true,
+          "summary": "Run the contract suite and capture its TAP output.",
+          "description": "Run the contract suite and capture its TAP output.",
+          "params": [],
+          "returns": {
+            "type": "{code: number, out: string}",
+            "desc": "The runner's exit code and combined output."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Spawns the Node test runner, which imports and executes application code."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "parseFailures",
+          "qualified": "parseFailures",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 63,
+          "signature": [
+            "out"
+          ],
+          "documented": true,
+          "summary": "Extract failing tests from TAP output.",
+          "description": "Extract failing tests from TAP output.\n\nTest names follow the suite's convention `<method>: <clause>`, which is what\nlets a failure be traced back to the contract it contradicts.",
+          "params": [
+            {
+              "name": "out",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Raw runner output."
+            }
+          ],
+          "returns": {
+            "type": "Array<{name: string, method: string, clause: string, detail: string}>",
+            "desc": "One entry per failure."
           },
           "throws": [],
           "contract": {
@@ -24253,6 +24358,11 @@
           "other": []
         }
       ]
+    },
+    {
+      "file": "test/support/setup.mjs",
+      "module": null,
+      "methods": []
     }
   ]
 }

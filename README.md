@@ -239,6 +239,47 @@ tags come from the known vocabulary, and that effects are disclosed. Whether a
 not updated fails the build, which is the failure mode worth catching —
 confidently wrong documentation is worse than none.
 
+## Blind contract tests
+
+The behavioural test suite is written from the contracts alone, by an author
+that never sees the implementation. That is the point: a test written while
+looking at the code tends to encode what the code already does, so it can only
+catch regressions — never a defect that was there from the start. A test written
+from the contract encodes what the code is *supposed* to do, so the two can
+disagree, and a disagreement is information.
+
+The pipeline has three stages, and the separation between them is what makes it
+work:
+
+```bash
+npm run docs:api      # contracts  -> docs/api.json
+npm run docs:spec     # api.json   -> docs/contracts/   (the spec pack)
+npm run test:contract # run the suite
+npm run test:triage   # failures   -> test/contract/FINDINGS.md
+```
+
+`docs/contracts/` is generated from `docs/api.json`, which holds contracts and
+nothing else — no function bodies, no expressions, no line contents. An author
+given only that directory cannot see how anything is implemented. A leak check
+confirms no source line appears verbatim in the pack, and the author runs with
+no ability to execute anything, so it cannot iterate against observed behaviour
+either.
+
+Each spec entry carries a **reachability** line — how to import that method —
+because it is the one thing a blind author needs that a contract does not
+contain. Methods that are closures nested inside other functions, or React
+components needing a renderer, are labelled `UNREACHABLE` and listed in the
+tests rather than quietly dropped, so the gap stays visible.
+
+To make the module-private logic reachable, modules holding it export a marked
+`__internals` object. It is not part of any public API and nothing outside the
+test suite imports it.
+
+Failures are **never auto-fixed**. `npm run test:triage` groups them by the
+method whose contract they contradict and prints the clause beside the observed
+behaviour, because which side is wrong — the code or the contract — is a
+judgement call that needs both in view.
+
 ## MCP server (AI agent access)
 
 The simulation engine is also exposed as an [MCP](https://modelcontextprotocol.io)

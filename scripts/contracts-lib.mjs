@@ -45,6 +45,14 @@ export const IGNORE_FILES = new Set([
   'test/support/env.mjs',
 ])
 
+// Directories excluded wholesale.
+//
+// The blind contract suite consumes contracts rather than carrying them: its
+// files are generated from docs/contracts/ by an author that never sees this
+// codebase and could not know the convention. Holding assertion helpers to the
+// application's documentation standard would police the wrong surface.
+export const IGNORE_DIRS_REL = ['test/contract/']
+
 // ---------------------------------------------------------------------------
 // Tag vocabulary
 // ---------------------------------------------------------------------------
@@ -140,7 +148,7 @@ export function sourceFiles() {
   for (const root of ROOTS) walkDir(join(REPO, root), out)
   return out
     .map((f) => relative(REPO, f).split('\\').join('/'))
-    .filter((f) => !IGNORE_FILES.has(f))
+    .filter((f) => !IGNORE_FILES.has(f) && !IGNORE_DIRS_REL.some((d) => f.startsWith(d)))
     .sort()
 }
 
