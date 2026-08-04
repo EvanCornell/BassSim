@@ -199,7 +199,16 @@ function takeType(s) {
  */
 function takeName(s) {
   if (s.startsWith('[')) {
-    const close = s.indexOf(']')
+    // Depth scan rather than indexOf, because the default value may itself
+    // contain brackets — `[out=[]]` is a legal optional-array parameter, and
+    // stopping at the first ']' would report a default of '[' and leak the rest
+    // into the description.
+    let depth = 0
+    let close = -1
+    for (let i = 0; i < s.length; i++) {
+      if (s[i] === '[') depth++
+      else if (s[i] === ']') { depth--; if (depth === 0) { close = i; break } }
+    }
     if (close === -1) return [null, false, null, s]
     const inner = s.slice(1, close)
     const eq = inner.indexOf('=')

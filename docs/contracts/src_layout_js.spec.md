@@ -149,7 +149,7 @@ Collect the ids of every panel currently in the tree.
 **Parameters**
 
 - `tree` — `object|null` — Layout tree to walk.
-- `out` — `string[]` _(optional, default `[`)_ — ] - Accumulator, appended to in place. Callers normally omit it.
+- `out` — `string[]` _(optional, default `[]`)_ — Accumulator, appended to in place. Callers normally omit it.
 
 **Returns**
 

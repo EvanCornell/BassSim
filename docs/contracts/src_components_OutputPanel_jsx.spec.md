@@ -182,8 +182,8 @@ leaving it in Manual mode at the original bounds.
 - `props.yDomain` — `Array|undefined` — Left axis domain.
 - `props.y2Label` — `string` _(optional)_ — Right axis label.
 - `props.y2Domain` — `Array` _(optional)_ — Right axis domain.
-- `props.refLines` — `Array<React.ReactElement>` _(optional, default `[`)_ — ] - Reference lines to overlay.
-- `props.refAreas` — `Array<React.ReactElement>` _(optional, default `[`)_ — ] - Shaded regions to overlay.
+- `props.refLines` — `Array<React.ReactElement>` _(optional, default `[]`)_ — Reference lines to overlay.
+- `props.refAreas` — `Array<React.ReactElement>` _(optional, default `[]`)_ — Shaded regions to overlay.
 - `props.children` — `React.ReactNode` _(optional)_ — Extra toolbar content.
 
 **Returns**

@@ -3474,7 +3474,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 222,
+          "line": 231,
           "signature": [
             "s"
           ],
@@ -3513,7 +3513,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 234,
+          "line": 243,
           "signature": [
             "raw"
           ],
@@ -3552,7 +3552,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 322,
+          "line": 331,
           "signature": [
             "fn"
           ],
@@ -3591,7 +3591,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 346,
+          "line": 355,
           "signature": [
             "fn"
           ],
@@ -3630,7 +3630,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 357,
+          "line": 366,
           "signature": [
             "n"
           ],
@@ -3671,7 +3671,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 389,
+          "line": 398,
           "signature": [
             "node",
             "parent"
@@ -3718,7 +3718,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 439,
+          "line": 448,
           "signature": [
             "node",
             "parents"
@@ -3765,7 +3765,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 466,
+          "line": 475,
           "signature": [
             "relPath"
           ],
@@ -3811,7 +3811,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 492,
+          "line": 501,
           "signature": [
             "node"
           ],
@@ -3852,7 +3852,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 559,
+          "line": 568,
           "signature": [],
           "documented": true,
           "summary": "Scan every source file in scope.",
@@ -9447,15 +9447,15 @@
               "name": "props.refLines",
               "type": "Array<React.ReactElement>",
               "optional": true,
-              "default": "[",
-              "desc": "] - Reference lines to overlay."
+              "default": "[]",
+              "desc": "Reference lines to overlay."
             },
             {
               "name": "props.refAreas",
               "type": "Array<React.ReactElement>",
               "optional": true,
-              "default": "[",
-              "desc": "] - Shaded regions to overlay."
+              "default": "[]",
+              "desc": "Shaded regions to overlay."
             },
             {
               "name": "props.children",
@@ -19572,8 +19572,8 @@
               "name": "out",
               "type": "string[]",
               "optional": true,
-              "default": "[",
-              "desc": "] - Accumulator, appended to in place. Callers normally omit it."
+              "default": "[]",
+              "desc": "Accumulator, appended to in place. Callers normally omit it."
             }
           ],
           "returns": {
