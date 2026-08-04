@@ -534,12 +534,22 @@ export function scanFile(relPath) {
       scope.push(hit.name)
     }
 
+    // A property holding a plain object is a namespace, not a method — but its
+    // members belong to it. Without pushing it, `layoutOps: { reset() {} }`
+    // reports a bare `reset`, and anything deriving a call path from the
+    // qualified name emits `store.reset()` instead of `store.layoutOps.reset()`.
+    const namespace = node.type === 'ObjectProperty' && !node.computed
+      && (node.key.type === 'Identifier' || node.key.type === 'StringLiteral')
+      && node.value?.type === 'ObjectExpression'
+    if (namespace) scope.push(node.key.name ?? node.key.value)
+
     parents.push(node)
     for (const k of Object.keys(node)) {
       if (k === 'leadingComments' || k === 'trailingComments' || k === 'innerComments' || k === 'loc') continue
       visit(node[k])
     }
     parents.pop()
+    if (namespace) scope.pop()
     if (hit) scope.pop()
   }
 

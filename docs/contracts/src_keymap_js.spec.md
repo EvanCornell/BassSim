@@ -165,7 +165,7 @@ stealing copy from the rest of the app.
 
 ## COMMAND (22)
 
-### `run(s)`
+### `edit.undo > run(s)`
 
 - **Reachability:** COMMAND
 - **Obtain via:** import { COMMANDS } from '../../src/keymap.js'  →  COMMANDS['<id>'].run(storeState)
@@ -184,7 +184,7 @@ Step back one entry in the undo history.
 
 - Delegates to the store, mutating application state.
 
-### `run(s)`
+### `edit.redo > run(s)`
 
 - **Reachability:** COMMAND
 - **Obtain via:** import { COMMANDS } from '../../src/keymap.js'  →  COMMANDS['<id>'].run(storeState)
@@ -203,7 +203,7 @@ Step forward one entry in the undo history.
 
 - Delegates to the store, mutating application state.
 
-### `run(s)`
+### `edit.cut > run(s)`
 
 - **Reachability:** COMMAND
 - **Obtain via:** import { COMMANDS } from '../../src/keymap.js'  →  COMMANDS['<id>'].run(storeState)
@@ -222,7 +222,7 @@ Copy the selected nodes to the clipboard and delete them.
 
 - Delegates to the store, mutating application state.
 
-### `run(s)`
+### `edit.copy > run(s)`
 
 - **Reachability:** COMMAND
 - **Obtain via:** import { COMMANDS } from '../../src/keymap.js'  →  COMMANDS['<id>'].run(storeState)
@@ -241,7 +241,7 @@ Copy the selected nodes and the edges wholly inside the selection.
 
 - Delegates to the store, mutating application state.
 
-### `run(s)`
+### `edit.paste > run(s)`
 
 - **Reachability:** COMMAND
 - **Obtain via:** import { COMMANDS } from '../../src/keymap.js'  →  COMMANDS['<id>'].run(storeState)
@@ -260,7 +260,7 @@ Paste the clipboard as new nodes, offset from the originals.
 
 - Delegates to the store, mutating application state.
 
-### `run(s)`
+### `edit.duplicate > run(s)`
 
 - **Reachability:** COMMAND
 - **Obtain via:** import { COMMANDS } from '../../src/keymap.js'  →  COMMANDS['<id>'].run(storeState)
@@ -279,7 +279,7 @@ Copy and immediately paste the selection in one step.
 
 - Delegates to the store, mutating application state.
 
-### `run(s)`
+### `edit.selectAll > run(s)`
 
 - **Reachability:** COMMAND
 - **Obtain via:** import { COMMANDS } from '../../src/keymap.js'  →  COMMANDS['<id>'].run(storeState)
@@ -298,7 +298,7 @@ Select every node on the canvas.
 
 - Delegates to the store, mutating application state.
 
-### `run(s)`
+### `edit.delete > run(s)`
 
 - **Reachability:** COMMAND
 - **Obtain via:** import { COMMANDS } from '../../src/keymap.js'  →  COMMANDS['<id>'].run(storeState)
@@ -340,7 +340,7 @@ Add a node of this command's type at the pointer.
 
 - The captured `type` from the enclosing NODE_TYPES entry.
 
-### `run(s)`
+### `drive.up > run(s)`
 
 - **Reachability:** COMMAND
 - **Obtain via:** import { COMMANDS } from '../../src/keymap.js'  →  COMMANDS['<id>'].run(storeState)
@@ -359,7 +359,7 @@ Raise the drive voltage by 1 V.
 
 - Changes the drive setting, which triggers a resimulation.
 
-### `run(s)`
+### `drive.down > run(s)`
 
 - **Reachability:** COMMAND
 - **Obtain via:** import { COMMANDS } from '../../src/keymap.js'  →  COMMANDS['<id>'].run(storeState)
@@ -378,7 +378,7 @@ Lower the drive voltage by 1 V.
 
 - Changes the drive setting, which triggers a resimulation.
 
-### `run(s)`
+### `drive.upFine > run(s)`
 
 - **Reachability:** COMMAND
 - **Obtain via:** import { COMMANDS } from '../../src/keymap.js'  →  COMMANDS['<id>'].run(storeState)
@@ -397,7 +397,7 @@ Raise the drive voltage by 0.1 V.
 
 - Changes the drive setting, which triggers a resimulation.
 
-### `run(s)`
+### `drive.downFine > run(s)`
 
 - **Reachability:** COMMAND
 - **Obtain via:** import { COMMANDS } from '../../src/keymap.js'  →  COMMANDS['<id>'].run(storeState)
@@ -416,7 +416,7 @@ Lower the drive voltage by 0.1 V.
 
 - Changes the drive setting, which triggers a resimulation.
 
-### `run(s)`
+### `project.new > run(s)`
 
 - **Reachability:** COMMAND
 - **Obtain via:** import { COMMANDS } from '../../src/keymap.js'  →  COMMANDS['<id>'].run(storeState)
@@ -435,7 +435,7 @@ Discard the current graph and start an empty project.
 
 - Replaces the whole project state and clears the undo history.
 
-### `run(s)`
+### `project.save > run(s)`
 
 - **Reachability:** COMMAND
 - **Obtain via:** import { COMMANDS } from '../../src/keymap.js'  →  COMMANDS['<id>'].run(storeState)
@@ -454,7 +454,7 @@ Download the project as an `.acousim.json` file.
 
 - Triggers a browser download.
 
-### `run(s)`
+### `project.open > run(s)`
 
 - **Reachability:** COMMAND
 - **Obtain via:** import { COMMANDS } from '../../src/keymap.js'  →  COMMANDS['<id>'].run(storeState)
@@ -473,7 +473,7 @@ Open the saved-project browser.
 
 - Shows a modal.
 
-### `run(s)`
+### `sim.snapshot > run(s)`
 
 - **Reachability:** COMMAND
 - **Obtain via:** import { COMMANDS } from '../../src/keymap.js'  →  COMMANDS['<id>'].run(storeState)
@@ -492,7 +492,7 @@ Freeze the current result as a labelled reference overlay.
 
 - Appends to the snapshot list, which redraws every chart.
 
-### `run(s)`
+### `sim.mask > run(s)`
 
 - **Reachability:** COMMAND
 - **Obtain via:** import { COMMANDS } from '../../src/keymap.js'  →  COMMANDS['<id>'].run(storeState)
@@ -515,7 +515,7 @@ Toggle chambers between distributed lines and lumped compliances.
 
 - The current `settings.masking` value, which it inverts.
 
-### `run(s)`
+### `sim.recompute > run(s)`
 
 - **Reachability:** COMMAND
 - **Obtain via:** import { COMMANDS } from '../../src/keymap.js'  →  COMMANDS['<id>'].run(storeState)
@@ -534,7 +534,7 @@ Force a resimulation without changing anything.
 
 - Runs the solver.
 
-### `run(s)`
+### `view.settings > run(s)`
 
 - **Reachability:** COMMAND
 - **Obtain via:** import { COMMANDS } from '../../src/keymap.js'  →  COMMANDS['<id>'].run(storeState)
@@ -553,7 +553,7 @@ Open the settings window.
 
 - Shows a floating window.
 
-### `run(s)`
+### `view.maximize > run(s)`
 
 - **Reachability:** COMMAND
 - **Obtain via:** import { COMMANDS } from '../../src/keymap.js'  →  COMMANDS['<id>'].run(storeState)
@@ -576,7 +576,7 @@ Maximize the focused panel, or restore the one already maximized.
 
 - `maximized` and `focusedPanel`, so the same key both maximizes and restores.
 
-### `run(s)`
+### `view.popout > run(s)`
 
 - **Reachability:** COMMAND
 - **Obtain via:** import { COMMANDS } from '../../src/keymap.js'  →  COMMANDS['<id>'].run(storeState)

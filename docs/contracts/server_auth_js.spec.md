@@ -53,7 +53,7 @@ being delivered.
 
 - Sends mail over SMTP, or writes to the server log. Reads SMTP configuration from the environment.
 
-### `sendResetPassword(req)`
+### `emailAndPassword > sendResetPassword(req)`
 
 - **Reachability:** UNREACHABLE
 - **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.

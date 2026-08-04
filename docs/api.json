@@ -308,7 +308,7 @@
         },
         {
           "name": "get",
-          "qualified": "get",
+          "qualified": "spl > get",
           "kind": "method",
           "exported": false,
           "async": false,
@@ -347,7 +347,7 @@
         },
         {
           "name": "get",
-          "qualified": "get",
+          "qualified": "spl_driver > get",
           "kind": "method",
           "exported": false,
           "async": false,
@@ -386,7 +386,7 @@
         },
         {
           "name": "get",
-          "qualified": "get",
+          "qualified": "spl_port > get",
           "kind": "method",
           "exported": false,
           "async": false,
@@ -433,7 +433,7 @@
         },
         {
           "name": "get",
-          "qualified": "get",
+          "qualified": "impedance > get",
           "kind": "method",
           "exported": false,
           "async": false,
@@ -472,7 +472,7 @@
         },
         {
           "name": "get",
-          "qualified": "get",
+          "qualified": "impedance_phase > get",
           "kind": "method",
           "exported": false,
           "async": false,
@@ -511,7 +511,7 @@
         },
         {
           "name": "get",
-          "qualified": "get",
+          "qualified": "excursion > get",
           "kind": "method",
           "exported": false,
           "async": false,
@@ -550,7 +550,7 @@
         },
         {
           "name": "get",
-          "qualified": "get",
+          "qualified": "excursion_driver > get",
           "kind": "method",
           "exported": false,
           "async": false,
@@ -597,7 +597,7 @@
         },
         {
           "name": "get",
-          "qualified": "get",
+          "qualified": "velocity > get",
           "kind": "method",
           "exported": false,
           "async": false,
@@ -644,7 +644,7 @@
         },
         {
           "name": "get",
-          "qualified": "get",
+          "qualified": "spl_interior > get",
           "kind": "method",
           "exported": false,
           "async": false,
@@ -691,7 +691,7 @@
         },
         {
           "name": "get",
-          "qualified": "get",
+          "qualified": "acoustic_power > get",
           "kind": "method",
           "exported": false,
           "async": false,
@@ -730,7 +730,7 @@
         },
         {
           "name": "get",
-          "qualified": "get",
+          "qualified": "electrical_power > get",
           "kind": "method",
           "exported": false,
           "async": false,
@@ -769,7 +769,7 @@
         },
         {
           "name": "get",
-          "qualified": "get",
+          "qualified": "apparent_power > get",
           "kind": "method",
           "exported": false,
           "async": false,
@@ -808,7 +808,7 @@
         },
         {
           "name": "get",
-          "qualified": "get",
+          "qualified": "efficiency > get",
           "kind": "method",
           "exported": false,
           "async": false,
@@ -847,7 +847,7 @@
         },
         {
           "name": "get",
-          "qualified": "get",
+          "qualified": "phase > get",
           "kind": "method",
           "exported": false,
           "async": false,
@@ -886,7 +886,7 @@
         },
         {
           "name": "get",
-          "qualified": "get",
+          "qualified": "group_delay > get",
           "kind": "method",
           "exported": false,
           "async": false,
@@ -3183,7 +3183,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 98,
+          "line": 99,
           "signature": [
             "mod",
             "m"
@@ -3230,7 +3230,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 159,
+          "line": 160,
           "signature": [
             "mod"
           ],
@@ -3852,7 +3852,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 568,
+          "line": 578,
           "signature": [],
           "documented": true,
           "summary": "Scan every source file in scope.",
@@ -4143,7 +4143,7 @@
         },
         {
           "name": "model",
-          "qualified": "model",
+          "qualified": "bc > model",
           "kind": "method",
           "exported": false,
           "async": false,
@@ -4190,7 +4190,7 @@
         },
         {
           "name": "Fs",
-          "qualified": "Fs",
+          "qualified": "bc > map > Fs",
           "kind": "method",
           "exported": false,
           "async": false,
@@ -4237,7 +4237,7 @@
         },
         {
           "name": "Qts",
-          "qualified": "Qts",
+          "qualified": "bc > map > Qts",
           "kind": "method",
           "exported": false,
           "async": false,
@@ -4284,7 +4284,7 @@
         },
         {
           "name": "Qes",
-          "qualified": "Qes",
+          "qualified": "bc > map > Qes",
           "kind": "method",
           "exported": false,
           "async": false,
@@ -4331,7 +4331,7 @@
         },
         {
           "name": "Qms",
-          "qualified": "Qms",
+          "qualified": "bc > map > Qms",
           "kind": "method",
           "exported": false,
           "async": false,
@@ -4378,7 +4378,7 @@
         },
         {
           "name": "Vas",
-          "qualified": "Vas",
+          "qualified": "bc > map > Vas",
           "kind": "method",
           "exported": false,
           "async": false,
@@ -4425,7 +4425,7 @@
         },
         {
           "name": "Re",
-          "qualified": "Re",
+          "qualified": "bc > map > Re",
           "kind": "method",
           "exported": false,
           "async": false,
@@ -4472,7 +4472,7 @@
         },
         {
           "name": "Bl",
-          "qualified": "Bl",
+          "qualified": "bc > map > Bl",
           "kind": "method",
           "exported": false,
           "async": false,
@@ -4519,7 +4519,7 @@
         },
         {
           "name": "Mms",
-          "qualified": "Mms",
+          "qualified": "bc > map > Mms",
           "kind": "method",
           "exported": false,
           "async": false,
@@ -4566,7 +4566,7 @@
         },
         {
           "name": "Sd",
-          "qualified": "Sd",
+          "qualified": "bc > map > Sd",
           "kind": "method",
           "exported": false,
           "async": false,
@@ -4613,7 +4613,7 @@
         },
         {
           "name": "Le",
-          "qualified": "Le",
+          "qualified": "bc > map > Le",
           "kind": "method",
           "exported": false,
           "async": false,
@@ -4660,7 +4660,7 @@
         },
         {
           "name": "Xmax",
-          "qualified": "Xmax",
+          "qualified": "bc > map > Xmax",
           "kind": "method",
           "exported": false,
           "async": false,
@@ -4707,7 +4707,7 @@
         },
         {
           "name": "Xvar",
-          "qualified": "Xvar",
+          "qualified": "bc > ext > Xvar",
           "kind": "method",
           "exported": false,
           "async": false,
@@ -4754,7 +4754,7 @@
         },
         {
           "name": "eta0",
-          "qualified": "eta0",
+          "qualified": "bc > ext > eta0",
           "kind": "method",
           "exported": false,
           "async": false,
@@ -4801,7 +4801,7 @@
         },
         {
           "name": "EBP",
-          "qualified": "EBP",
+          "qualified": "bc > ext > EBP",
           "kind": "method",
           "exported": false,
           "async": false,
@@ -4848,7 +4848,7 @@
         },
         {
           "name": "dia",
-          "qualified": "dia",
+          "qualified": "bc > ext > dia",
           "kind": "method",
           "exported": false,
           "async": false,
@@ -4895,7 +4895,7 @@
         },
         {
           "name": "Znom",
-          "qualified": "Znom",
+          "qualified": "bc > ext > Znom",
           "kind": "method",
           "exported": false,
           "async": false,
@@ -4942,7 +4942,7 @@
         },
         {
           "name": "Zmin",
-          "qualified": "Zmin",
+          "qualified": "bc > ext > Zmin",
           "kind": "method",
           "exported": false,
           "async": false,
@@ -4989,7 +4989,7 @@
         },
         {
           "name": "pNom",
-          "qualified": "pNom",
+          "qualified": "bc > ext > pNom",
           "kind": "method",
           "exported": false,
           "async": false,
@@ -5036,7 +5036,7 @@
         },
         {
           "name": "pCont",
-          "qualified": "pCont",
+          "qualified": "bc > ext > pCont",
           "kind": "method",
           "exported": false,
           "async": false,
@@ -5083,7 +5083,7 @@
         },
         {
           "name": "sens",
-          "qualified": "sens",
+          "qualified": "bc > ext > sens",
           "kind": "method",
           "exported": false,
           "async": false,
@@ -5130,7 +5130,7 @@
         },
         {
           "name": "fLow",
-          "qualified": "fLow",
+          "qualified": "bc > ext > fLow",
           "kind": "method",
           "exported": false,
           "async": false,
@@ -5177,7 +5177,7 @@
         },
         {
           "name": "fHigh",
-          "qualified": "fHigh",
+          "qualified": "bc > ext > fHigh",
           "kind": "method",
           "exported": false,
           "async": false,
@@ -5224,7 +5224,7 @@
         },
         {
           "name": "vcDia",
-          "qualified": "vcDia",
+          "qualified": "bc > ext > vcDia",
           "kind": "method",
           "exported": false,
           "async": false,
@@ -5271,7 +5271,7 @@
         },
         {
           "name": "vcDepth",
-          "qualified": "vcDepth",
+          "qualified": "bc > ext > vcDepth",
           "kind": "method",
           "exported": false,
           "async": false,
@@ -5318,7 +5318,7 @@
         },
         {
           "name": "gapDepth",
-          "qualified": "gapDepth",
+          "qualified": "bc > ext > gapDepth",
           "kind": "method",
           "exported": false,
           "async": false,
@@ -5365,7 +5365,7 @@
         },
         {
           "name": "flux",
-          "qualified": "flux",
+          "qualified": "bc > ext > flux",
           "kind": "method",
           "exported": false,
           "async": false,
@@ -5412,7 +5412,7 @@
         },
         {
           "name": "vcWinding",
-          "qualified": "vcWinding",
+          "qualified": "bc > ext > vcWinding",
           "kind": "method",
           "exported": false,
           "async": false,
@@ -5459,7 +5459,7 @@
         },
         {
           "name": "vcFormer",
-          "qualified": "vcFormer",
+          "qualified": "bc > ext > vcFormer",
           "kind": "method",
           "exported": false,
           "async": false,
@@ -5506,7 +5506,7 @@
         },
         {
           "name": "magnet",
-          "qualified": "magnet",
+          "qualified": "bc > ext > magnet",
           "kind": "method",
           "exported": false,
           "async": false,
@@ -5553,7 +5553,7 @@
         },
         {
           "name": "pole",
-          "qualified": "pole",
+          "qualified": "bc > ext > pole",
           "kind": "method",
           "exported": false,
           "async": false,
@@ -5600,7 +5600,7 @@
         },
         {
           "name": "spider",
-          "qualified": "spider",
+          "qualified": "bc > ext > spider",
           "kind": "method",
           "exported": false,
           "async": false,
@@ -5647,7 +5647,7 @@
         },
         {
           "name": "surround",
-          "qualified": "surround",
+          "qualified": "bc > ext > surround",
           "kind": "method",
           "exported": false,
           "async": false,
@@ -5694,7 +5694,7 @@
         },
         {
           "name": "cone",
-          "qualified": "cone",
+          "qualified": "bc > ext > cone",
           "kind": "method",
           "exported": false,
           "async": false,
@@ -5741,7 +5741,7 @@
         },
         {
           "name": "vRec",
-          "qualified": "vRec",
+          "qualified": "bc > ext > vRec",
           "kind": "method",
           "exported": false,
           "async": false,
@@ -5788,7 +5788,7 @@
         },
         {
           "name": "fRec",
-          "qualified": "fRec",
+          "qualified": "bc > ext > fRec",
           "kind": "method",
           "exported": false,
           "async": false,
@@ -6296,7 +6296,7 @@
         },
         {
           "name": "sendResetPassword",
-          "qualified": "sendResetPassword",
+          "qualified": "emailAndPassword > sendResetPassword",
           "kind": "method",
           "exported": false,
           "async": true,
@@ -18031,7 +18031,7 @@
       "methods": [
         {
           "name": "run",
-          "qualified": "run",
+          "qualified": "edit.undo > run",
           "kind": "method",
           "exported": false,
           "async": false,
@@ -18072,7 +18072,7 @@
         },
         {
           "name": "run",
-          "qualified": "run",
+          "qualified": "edit.redo > run",
           "kind": "method",
           "exported": false,
           "async": false,
@@ -18113,7 +18113,7 @@
         },
         {
           "name": "run",
-          "qualified": "run",
+          "qualified": "edit.cut > run",
           "kind": "method",
           "exported": false,
           "async": false,
@@ -18154,7 +18154,7 @@
         },
         {
           "name": "run",
-          "qualified": "run",
+          "qualified": "edit.copy > run",
           "kind": "method",
           "exported": false,
           "async": false,
@@ -18195,7 +18195,7 @@
         },
         {
           "name": "run",
-          "qualified": "run",
+          "qualified": "edit.paste > run",
           "kind": "method",
           "exported": false,
           "async": false,
@@ -18236,7 +18236,7 @@
         },
         {
           "name": "run",
-          "qualified": "run",
+          "qualified": "edit.duplicate > run",
           "kind": "method",
           "exported": false,
           "async": false,
@@ -18277,7 +18277,7 @@
         },
         {
           "name": "run",
-          "qualified": "run",
+          "qualified": "edit.selectAll > run",
           "kind": "method",
           "exported": false,
           "async": false,
@@ -18318,7 +18318,7 @@
         },
         {
           "name": "run",
-          "qualified": "run",
+          "qualified": "edit.delete > run",
           "kind": "method",
           "exported": false,
           "async": false,
@@ -18402,7 +18402,7 @@
         },
         {
           "name": "run",
-          "qualified": "run",
+          "qualified": "drive.up > run",
           "kind": "method",
           "exported": false,
           "async": false,
@@ -18443,7 +18443,7 @@
         },
         {
           "name": "run",
-          "qualified": "run",
+          "qualified": "drive.down > run",
           "kind": "method",
           "exported": false,
           "async": false,
@@ -18484,7 +18484,7 @@
         },
         {
           "name": "run",
-          "qualified": "run",
+          "qualified": "drive.upFine > run",
           "kind": "method",
           "exported": false,
           "async": false,
@@ -18525,7 +18525,7 @@
         },
         {
           "name": "run",
-          "qualified": "run",
+          "qualified": "drive.downFine > run",
           "kind": "method",
           "exported": false,
           "async": false,
@@ -18566,7 +18566,7 @@
         },
         {
           "name": "run",
-          "qualified": "run",
+          "qualified": "project.new > run",
           "kind": "method",
           "exported": false,
           "async": false,
@@ -18607,7 +18607,7 @@
         },
         {
           "name": "run",
-          "qualified": "run",
+          "qualified": "project.save > run",
           "kind": "method",
           "exported": false,
           "async": false,
@@ -18648,7 +18648,7 @@
         },
         {
           "name": "run",
-          "qualified": "run",
+          "qualified": "project.open > run",
           "kind": "method",
           "exported": false,
           "async": false,
@@ -18689,7 +18689,7 @@
         },
         {
           "name": "run",
-          "qualified": "run",
+          "qualified": "sim.snapshot > run",
           "kind": "method",
           "exported": false,
           "async": false,
@@ -18730,7 +18730,7 @@
         },
         {
           "name": "run",
-          "qualified": "run",
+          "qualified": "sim.mask > run",
           "kind": "method",
           "exported": false,
           "async": false,
@@ -18773,7 +18773,7 @@
         },
         {
           "name": "run",
-          "qualified": "run",
+          "qualified": "sim.recompute > run",
           "kind": "method",
           "exported": false,
           "async": false,
@@ -18814,7 +18814,7 @@
         },
         {
           "name": "run",
-          "qualified": "run",
+          "qualified": "view.settings > run",
           "kind": "method",
           "exported": false,
           "async": false,
@@ -18855,7 +18855,7 @@
         },
         {
           "name": "run",
-          "qualified": "run",
+          "qualified": "view.maximize > run",
           "kind": "method",
           "exported": false,
           "async": false,
@@ -18898,7 +18898,7 @@
         },
         {
           "name": "run",
-          "qualified": "run",
+          "qualified": "view.popout > run",
           "kind": "method",
           "exported": false,
           "async": false,
@@ -21335,7 +21335,7 @@
         },
         {
           "name": "activate",
-          "qualified": "activate",
+          "qualified": "layoutOps > activate",
           "kind": "method",
           "exported": false,
           "async": false,
@@ -21384,7 +21384,7 @@
         },
         {
           "name": "dock",
-          "qualified": "dock",
+          "qualified": "layoutOps > dock",
           "kind": "method",
           "exported": false,
           "async": false,
@@ -21441,7 +21441,7 @@
         },
         {
           "name": "dockEdge",
-          "qualified": "dockEdge",
+          "qualified": "layoutOps > dockEdge",
           "kind": "method",
           "exported": false,
           "async": false,
@@ -21490,7 +21490,7 @@
         },
         {
           "name": "resize",
-          "qualified": "resize",
+          "qualified": "layoutOps > resize",
           "kind": "method",
           "exported": false,
           "async": false,
@@ -21555,7 +21555,7 @@
         },
         {
           "name": "dropOnTab",
-          "qualified": "dropOnTab",
+          "qualified": "layoutOps > dropOnTab",
           "kind": "method",
           "exported": false,
           "async": false,
@@ -21612,7 +21612,7 @@
         },
         {
           "name": "close",
-          "qualified": "close",
+          "qualified": "layoutOps > close",
           "kind": "method",
           "exported": false,
           "async": false,
@@ -21653,7 +21653,7 @@
         },
         {
           "name": "open",
-          "qualified": "open",
+          "qualified": "layoutOps > open",
           "kind": "method",
           "exported": false,
           "async": false,
@@ -21694,7 +21694,7 @@
         },
         {
           "name": "toggle",
-          "qualified": "toggle",
+          "qualified": "layoutOps > toggle",
           "kind": "method",
           "exported": false,
           "async": false,
@@ -21735,7 +21735,7 @@
         },
         {
           "name": "reset",
-          "qualified": "reset",
+          "qualified": "layoutOps > reset",
           "kind": "method",
           "exported": false,
           "async": false,

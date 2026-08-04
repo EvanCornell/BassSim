@@ -62,14 +62,15 @@ function reachability(mod, m) {
   if (!nested && (INTERNALS[mod.file] || []).includes(m.name)) {
     return { reach: 'INTERNAL', how: `import { __internals } from '${spec}'  →  __internals.${m.name}` }
   }
-  if (mod.file === 'src/store.js' && !nested && m.kind === 'method') {
-    return { reach: 'STORE ACTION', how: `import { useStore } from '../../src/store.js'  →  useStore.getState().${m.name}(…)` }
+  if (mod.file === 'src/store.js' && m.kind === 'method') {
+    // The qualified name carries any enclosing namespace object, so a member of
+    // `layoutOps` yields the path that actually resolves at runtime rather than
+    // a bare action name that does not exist on the store.
+    const path = m.qualified.split(' > ').join('.')
+    return { reach: 'STORE ACTION', how: `import { useStore } from '../../src/store.js'  →  useStore.getState().${path}(…)` }
   }
   if (mod.file === 'src/keymap.js' && m.name === 'run') {
     return { reach: 'COMMAND', how: `import { COMMANDS } from '../../src/keymap.js'  →  COMMANDS['<id>'].run(storeState)` }
-  }
-  if (mod.file === 'src/store.js' && nested && m.qualified.startsWith('layoutOps')) {
-    return { reach: 'STORE ACTION', how: `useStore.getState().layoutOps.${m.name}(…)` }
   }
   return {
     reach: 'UNREACHABLE',

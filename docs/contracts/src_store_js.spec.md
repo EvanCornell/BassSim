@@ -356,10 +356,10 @@ would have emptied the workspace — is ignored rather than applied.
 
 - Writes store state and LocalStorage. A quota failure is swallowed: the layout simply will not survive a reload.
 
-### `activate(stackId, panelId)`
+### `layoutOps > activate(stackId, panelId)`
 
 - **Reachability:** STORE ACTION
-- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().activate(…)
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().layoutOps.activate(…)
 
 Bring a panel to the front of its stack.
 
@@ -376,10 +376,10 @@ Bring a panel to the front of its stack.
 
 - Writes store state and persists the layout.
 
-### `dock(panelId, stackId, zone)`
+### `layoutOps > dock(panelId, stackId, zone)`
 
 - **Reachability:** STORE ACTION
-- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().dock(…)
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().layoutOps.dock(…)
 
 Move a panel onto a target stack.
 
@@ -397,10 +397,10 @@ Move a panel onto a target stack.
 
 - Writes store state and persists the layout.
 
-### `dockEdge(panelId, edge)`
+### `layoutOps > dockEdge(panelId, edge)`
 
 - **Reachability:** STORE ACTION
-- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().dockEdge(…)
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().layoutOps.dockEdge(…)
 
 Dock a panel against an outer edge of the workspace.
 
@@ -417,10 +417,10 @@ Dock a panel against an outer edge of the workspace.
 
 - Writes store state and persists the layout.
 
-### `resize(splitId, index, a, b)`
+### `layoutOps > resize(splitId, index, a, b)`
 
 - **Reachability:** STORE ACTION
-- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().resize(…)
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().layoutOps.resize(…)
 
 Apply a splitter drag, reweighting two adjacent children.
 
@@ -439,10 +439,10 @@ Apply a splitter drag, reweighting two adjacent children.
 
 - Writes store state and persists the layout.
 
-### `dropOnTab(panelId, stackId, index)`
+### `layoutOps > dropOnTab(panelId, stackId, index)`
 
 - **Reachability:** STORE ACTION
-- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().dropOnTab(…)
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().layoutOps.dropOnTab(…)
 
 Handle a tab dropped onto another tab.
 
@@ -464,10 +464,10 @@ own current position does nothing.
 
 - Writes store state and persists the layout.
 
-### `close(panelId)`
+### `layoutOps > close(panelId)`
 
 - **Reachability:** STORE ACTION
-- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().close(…)
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().layoutOps.close(…)
 
 Close a panel.
 
@@ -486,10 +486,10 @@ itself — are refused, as is a close that would empty the layout.
 
 - Writes store state and persists the layout.
 
-### `open(panelId)`
+### `layoutOps > open(panelId)`
 
 - **Reachability:** STORE ACTION
-- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().open(…)
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().layoutOps.open(…)
 
 Show a panel and give it focus, docking it if it is not already open.
 
@@ -508,10 +508,10 @@ otherwise appear to do nothing.
 
 - Writes store state and persists the layout.
 
-### `toggle(panelId)`
+### `layoutOps > toggle(panelId)`
 
 - **Reachability:** STORE ACTION
-- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().toggle(…)
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().layoutOps.toggle(…)
 
 Open a panel, or close it if it is already open. Drives the View menu's checkmarks.
 
@@ -527,10 +527,10 @@ Open a panel, or close it if it is already open. Drives the View menu's checkmar
 
 - Writes store state and persists the layout.
 
-### `reset()`
+### `layoutOps > reset()`
 
 - **Reachability:** STORE ACTION
-- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().reset(…)
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().layoutOps.reset(…)
 
 Restore the default workspace arrangement.
 
