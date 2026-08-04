@@ -3,6 +3,19 @@
 > Generated from method contracts. This file contains **no implementation code**.
 > Write tests against what is claimed here, not against what you expect the code to do.
 
+## Module
+
+Turn a contract-suite run into a triage report.
+
+The blind suite's failures are not ordinary test failures. Each one is a
+disagreement between a documented contract and the implementation, and which
+side is wrong is a judgement call — so this deliberately does not "fix"
+anything. It groups failures by the module and method whose contract they
+contradict, and prints the contract clause beside the observed behaviour, so
+the decision can be made with both in view.
+
+Run: npm run test:triage
+
 ## UNREACHABLE (3)
 
 ### `indexContracts()`

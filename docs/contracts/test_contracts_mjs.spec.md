@@ -3,6 +3,20 @@
 > Generated from method contracts. This file contains **no implementation code**.
 > Write tests against what is claimed here, not against what you expect the code to do.
 
+## Module
+
+Method-contract ratchet.
+
+Contracts rot the moment nothing checks them: a parameter gets renamed, the
+JSDoc keeps the old name, and the generated documentation is now confidently
+wrong — worse than absent. This test fails the build on that.
+
+It deliberately checks only what a machine can know for certain. Whether
+`@pre w >= 0` is *true* is a human question; whether the function documents
+a parameter it does not have is not.
+
+Mirrors test/drivers.mjs in shape and output so `npm test` reads uniformly.
+
 ## UNREACHABLE (2)
 
 ### `check(label, fn)`

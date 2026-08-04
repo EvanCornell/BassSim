@@ -3,6 +3,22 @@
 > Generated from method contracts. This file contains **no implementation code**.
 > Write tests against what is claimed here, not against what you expect the code to do.
 
+## Module
+
+Authentication: Better Auth on SQLite, mounted at /api/auth/* by index.js.
+
+Methods enabled:
+ - email + password (with password reset; change password when signed in)
+ - social sign-in for any provider whose credentials are present in env:
+     GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET
+     FACEBOOK_CLIENT_ID / FACEBOOK_CLIENT_SECRET
+     APPLE_CLIENT_ID / APPLE_CLIENT_SECRET
+     GITHUB_CLIENT_ID / GITHUB_CLIENT_SECRET
+ - account linking: a signed-in user can attach/detach social logins
+
+Reset emails go through SMTP when SMTP_HOST is configured; otherwise the
+reset link is printed to the server log (dev mode).
+
 ## EXPORTED (1)
 
 ### `migrateAuthDb()`

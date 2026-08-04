@@ -3,6 +3,16 @@
 > Generated from method contracts. This file contains **no implementation code**.
 > Write tests against what is claimed here, not against what you expect the code to do.
 
+## Module
+
+Quick-access bar under the menu bar.
+
+Contents are user-configurable (Settings ▸ Quick bar): `store.toolbar` is an
+ordered list of item ids from src/toolbarItems.js, and this renders them in
+that order. Metric items are data-driven and need no case here; controls get
+one each. Application-level switches (Settings, experimental features) belong
+to the menu bar, not here — this strip is for per-design adjustments.
+
 ## EXPORTED (1)
 
 ### `Toolbar()`

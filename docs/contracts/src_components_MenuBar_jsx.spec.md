@@ -3,6 +3,15 @@
 > Generated from method contracts. This file contains **no implementation code**.
 > Write tests against what is claimed here, not against what you expect the code to do.
 
+## Module
+
+Application menu bar — the Eclipse/Windows pattern: a thin strip of menu
+titles, each opening a dropdown of commands.
+
+Behaviour matches native menu bars: click a title to open, then *hover* any
+other title to switch to it without clicking again; Escape or a click
+anywhere else closes. Items carry shortcut hints, check marks and submenus.
+
 ## EXPORTED (1)
 
 ### `MenuBar()`

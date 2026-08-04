@@ -3,6 +3,17 @@
 > Generated from method contracts. This file contains **no implementation code**.
 > Write tests against what is claimed here, not against what you expect the code to do.
 
+## Module
+
+The built-in driver library.
+
+Entries arrive from two places. Catalog imports (drivers.<brand>.js) are
+generated from a manufacturer's own multi-driver data export and carry the
+full extended parameter set; hand transcriptions (drivers.legacy.js) carry
+the core T/S only. Both share one record shape, described in
+driver-fields.js, so nothing downstream has to care which it got — beyond
+reading `source` when it wants to say how much to trust the numbers.
+
 ## UNREACHABLE (1)
 
 ### `normalize(d)`

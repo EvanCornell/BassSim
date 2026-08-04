@@ -3,6 +3,25 @@
 > Generated from method contracts. This file contains **no implementation code**.
 > Write tests against what is claimed here, not against what you expect the code to do.
 
+## Module
+
+Generate docs/contracts/ — the specification pack the blind test suite is
+written from.
+
+This exists to make blindness structural rather than a promise. The pack is
+derived mechanically from docs/api.json, which holds contracts and nothing
+else: no function bodies, no expressions, no line contents. An agent given
+only this directory cannot see how a method is implemented, so the tests it
+writes can only encode what the contract claims — which is the entire point.
+If a test fails, that is a genuine disagreement between the contract and the
+code, not a test written to match whatever the code happened to do.
+
+Each method is also given a *reachability* line: how to import it. That is
+the one piece of information a blind author needs that a contract does not
+contain, and it is derived from the export structure rather than the source.
+
+Run: npm run docs:spec
+
 ## UNREACHABLE (4)
 
 ### `internalsByModule()`

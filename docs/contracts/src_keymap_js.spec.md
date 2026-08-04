@@ -3,6 +3,23 @@
 > Generated from method contracts. This file contains **no implementation code**.
 > Write tests against what is claimed here, not against what you expect the code to do.
 
+## Module
+
+Keyboard commands and their bindings.
+
+One registry drives everything: the global key handler, the shortcut hints
+in the menus, and the rebinding UI in Settings ▸ Keyboard. Adding a command
+means one entry in COMMANDS and one default in DEFAULT_BINDINGS — nothing
+else needs to change.
+
+A combo is a lowercase string like `mod+shift+z`. `mod` is Ctrl on
+Windows/Linux and Command on macOS; Ctrl and Command are treated as the same
+modifier so one default set fits both platforms.
+
+Keys come from `event.code` (the physical key) rather than `event.key`, so a
+binding does not change meaning when Shift is held — `shift+1` stays
+`shift+1` instead of becoming `!`.
+
 ## EXPORTED (7)
 
 ### `keyFromEvent(e)`

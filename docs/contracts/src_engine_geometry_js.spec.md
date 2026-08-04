@@ -3,6 +3,15 @@
 > Generated from method contracts. This file contains **no implementation code**.
 > Write tests against what is claimed here, not against what you expect the code to do.
 
+## Module
+
+Client-safe geometry helpers: area profiles, volumes, flare cutoff, end
+corrections, and physical constants. No solver code — this module is the
+only part of the engine shipped to the browser.
+
+Everything here is SI: areas in m², lengths in m, frequencies in Hz. The UI
+converts from cm² / cm at the parameter boundary, not here.
+
 ## EXPORTED (4)
 
 ### `areaProfile(flare, S1, S2, L)`

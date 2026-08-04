@@ -560,10 +560,36 @@ export function scanFile(relPath) {
   // the first declaration — which is the common case — would be read as the
   // module's description as well as that declaration's.
   const firstStmt = ast.program.body[0]?.start ?? Infinity
-  const moduleDoc = docs.length && docs[0].end < firstStmt && !docs[0].used
+  let moduleDoc = docs.length && docs[0].end < firstStmt && !docs[0].used
     && /\n\s*\n/.test(source.slice(docs[0].end, firstStmt))
     ? parseJsdoc(docs[0].value)
     : null
+
+  // Most modules here introduce themselves with a `//` header rather than a
+  // JSDoc block — and that header is where the shared vocabulary lives: the
+  // shape of a layout node, the ABCD matrix convention, the protocol between
+  // windows. Dropping it loses exactly the context a reader needs before any
+  // individual method makes sense, so a leading run of line comments counts as
+  // the module's documentation when there is no JSDoc block.
+  if (!moduleDoc) {
+    const header = []
+    for (const c of ast.comments || []) {
+      if (c.type !== 'CommentLine' || c.start >= firstStmt) break
+      // Stop at the first gap: a second, unrelated comment block further down
+      // is not part of the header.
+      if (header.length && /\n\s*\n/.test(source.slice(header[header.length - 1].end, c.start))) break
+      header.push(c)
+    }
+    if (header.length) {
+      const text = header.map((c) => c.value.replace(/^ /, '')).join('\n').trim()
+      if (text) {
+        moduleDoc = {
+          summary: text.split(/\n\s*\n/)[0].replace(/\s+/g, ' ').trim(),
+          description: text,
+        }
+      }
+    }
+  }
 
   return { file: relPath, moduleDoc, methods: found.sort((a, b) => a.line - b.line) }
 }

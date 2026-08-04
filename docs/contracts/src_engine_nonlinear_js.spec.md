@@ -3,6 +3,20 @@
 > Generated from method contracts. This file contains **no implementation code**.
 > Write tests against what is claimed here, not against what you expect the code to do.
 
+## Module
+
+EXPERIMENTAL: large-signal T/S nonlinearity (quasi-linear method).
+
+Each driver may carry three ratio curves — Bl(x), Cms(x), Le(x) — expressed
+relative to the small-signal value (1.0 = datasheet number). A curve is a
+flat 1.0 baseline (or an imported table), deformed by parametric-EQ style
+control points: gaussian bumps {x mm, g gain, w width mm}.
+
+The solver iterates: linear sweep → per-frequency excursion → cycle-averaged
+ratio at that excursion → scale Bl/Cms/Le → re-solve. Captures power
+compression and resonance drift; does NOT produce harmonic distortion
+products (that needs a time-domain engine).
+
 ## EXPORTED (10)
 
 ### `emptyCurve()`

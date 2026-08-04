@@ -3,6 +3,15 @@
 > Generated from method contracts. This file contains **no implementation code**.
 > Write tests against what is claimed here, not against what you expect the code to do.
 
+## Module
+
+The whole page when AcouSim is loaded at /panel?id=<panel>: one panel,
+full-window, for dragging onto a second monitor.
+
+No menu bar, no dock, no quick bar — those belong to the main window. State
+arrives over the BroadcastChannel wired up in store.js, so the panel behaves
+exactly as it does when docked.
+
 ## EXPORTED (1)
 
 ### `PopoutView()`

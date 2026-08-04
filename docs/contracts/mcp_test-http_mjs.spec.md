@@ -3,6 +3,12 @@
 > Generated from method contracts. This file contains **no implementation code**.
 > Write tests against what is claimed here, not against what you expect the code to do.
 
+## Module
+
+HTTP smoke test: boots mcp/http.js with a token, then exercises it with the
+real Streamable-HTTP MCP client plus raw fetch checks for auth/health/CORS.
+Run: node mcp/test-http.mjs
+
 ## UNREACHABLE (2)
 
 ### `check(name, cond, info)`

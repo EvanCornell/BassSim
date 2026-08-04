@@ -3,6 +3,26 @@
 > Generated from method contracts. This file contains **no implementation code**.
 > Write tests against what is claimed here, not against what you expect the code to do.
 
+## Module
+
+Dock layout model — the data behind the Eclipse-style workspace.
+
+The workspace is a tree of two node kinds:
+
+  { id, type: 'split', dir: 'row'|'col', size, children: [node, …] }
+  { id, type: 'stack', size, panels: ['canvas', …], active: 'canvas' }
+
+A *stack* is a tabbed panel group (one visible at a time); a *split* lays
+its children out horizontally or vertically. `size` is a flex weight shared
+among siblings — the absolute numbers are meaningless, only their ratios
+matter, which is what lets a splitter drag redistribute weight between two
+neighbours without touching the rest of the tree.
+
+Every operation here is pure: it returns a new tree, never mutates. Two
+invariants are maintained after each edit:
+  - a stack always holds at least one panel (empty stacks are pruned)
+  - a split always holds at least two children (a lone child replaces it)
+
 ## EXPORTED (16)
 
 ### `uid(p)`

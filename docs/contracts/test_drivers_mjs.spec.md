@@ -3,6 +3,20 @@
 > Generated from method contracts. This file contains **no implementation code**.
 > Write tests against what is claimed here, not against what you expect the code to do.
 
+## Module
+
+Driver-library integrity checks.
+
+The library is large enough now that a bad row would hide rather than
+announce itself, and a driver whose parameters disagree with each other
+produces a plausible-looking simulation of nothing real.
+
+Two tiers. Hard checks are identities the loader controls — the schema, and
+the Cms/Rms the importer derives — and must hold exactly. The audit tier
+covers published values that can legitimately disagree with each other in a
+real catalog; those rows are permitted, but only if they carry a `suspect`
+label, so the count can never grow silently.
+
 ## UNREACHABLE (2)
 
 ### `check(name, fn)`

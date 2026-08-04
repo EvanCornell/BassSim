@@ -3,6 +3,12 @@
 > Generated from method contracts. This file contains **no implementation code**.
 > Write tests against what is claimed here, not against what you expect the code to do.
 
+## Module
+
+Graph → transfer-matrix chain solver.
+Convention: ABCD matrices map [p_in; U_in] = M · [p_out; U_out] with
+p = acoustic pressure (Pa), U = volume velocity (m^3/s).
+
 ## EXPORTED (3)
 
 ### `driverSI(p)`

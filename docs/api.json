@@ -31,7 +31,10 @@
   "modules": [
     {
       "file": "mcp/acousim.js",
-      "module": null,
+      "module": {
+        "summary": "AcouSim MCP server core: tool/resource registrations, transport-agnostic. Entry points: mcp/server.js (stdio) and mcp/http.js (streamable HTTP).",
+        "description": "AcouSim MCP server core: tool/resource registrations, transport-agnostic.\nEntry points: mcp/server.js (stdio) and mcp/http.js (streamable HTTP)."
+      },
       "methods": [
         {
           "name": "sig",
@@ -1401,7 +1404,10 @@
     },
     {
       "file": "mcp/builders.js",
-      "module": null,
+      "module": {
+        "summary": "Phase-2 helpers for the MCP server: driver lookup, self-calibrating enclosure builders, an optimizer, and comparison scoring.",
+        "description": "Phase-2 helpers for the MCP server: driver lookup, self-calibrating\nenclosure builders, an optimizer, and comparison scoring."
+      },
       "methods": [
         {
           "name": "searchDrivers",
@@ -2699,7 +2705,10 @@
     },
     {
       "file": "mcp/http.js",
-      "module": null,
+      "module": {
+        "summary": "Streamable-HTTP entry point, for remote MCP clients (claude.ai custom connectors, ChatGPT, MCP inspector, or any HTTP MCP client).",
+        "description": "Streamable-HTTP entry point, for remote MCP clients (claude.ai custom\nconnectors, ChatGPT, MCP inspector, or any HTTP MCP client).\n\n  PORT=8787 ACOUSIM_TOKEN=secret node mcp/http.js\n\nStateless mode: every tool takes the full project JSON, so no session\nstate is kept — each POST gets a fresh server+transport pair, which also\nmakes horizontal scaling trivial. Auth is an optional static bearer token\n(ACOUSIM_TOKEN); unset = open, for local/trusted networks only."
+      },
       "methods": [
         {
           "name": "send",
@@ -2871,12 +2880,18 @@
     },
     {
       "file": "mcp/server.js",
-      "module": null,
+      "module": {
+        "summary": "Stdio entry point: node mcp/server.js (Claude Desktop / Claude Code / local MCP clients)",
+        "description": "Stdio entry point: node mcp/server.js  (Claude Desktop / Claude Code / local MCP clients)"
+      },
       "methods": []
     },
     {
       "file": "mcp/test-client.mjs",
-      "module": null,
+      "module": {
+        "summary": "Smoke test: spawns the MCP server over stdio and exercises every tool. Run: node mcp/test-client.mjs",
+        "description": "Smoke test: spawns the MCP server over stdio and exercises every tool.\nRun: node mcp/test-client.mjs"
+      },
       "methods": [
         {
           "name": "check",
@@ -2990,7 +3005,10 @@
     },
     {
       "file": "mcp/test-http.mjs",
-      "module": null,
+      "module": {
+        "summary": "HTTP smoke test: boots mcp/http.js with a token, then exercises it with the real Streamable-HTTP MCP client plus raw fetch checks for auth/health/CORS. Run: node mcp/test-http.mjs",
+        "description": "HTTP smoke test: boots mcp/http.js with a token, then exercises it with the\nreal Streamable-HTTP MCP client plus raw fetch checks for auth/health/CORS.\nRun: node mcp/test-http.mjs"
+      },
       "methods": [
         {
           "name": "check",
@@ -3096,7 +3114,10 @@
     },
     {
       "file": "scripts/build-spec-pack.mjs",
-      "module": null,
+      "module": {
+        "summary": "Generate docs/contracts/ — the specification pack the blind test suite is written from.",
+        "description": "Generate docs/contracts/ — the specification pack the blind test suite is\nwritten from.\n\nThis exists to make blindness structural rather than a promise. The pack is\nderived mechanically from docs/api.json, which holds contracts and nothing\nelse: no function bodies, no expressions, no line contents. An agent given\nonly this directory cannot see how a method is implemented, so the tests it\nwrites can only encode what the contract claims — which is the entire point.\nIf a test fails, that is a genuine disagreement between the contract and the\ncode, not a test written to match whatever the code happened to do.\n\nEach method is also given a *reachability* line: how to import it. That is\nthe one piece of information a blind author needs that a contract does not\ncontain, and it is derived from the export structure rather than the source.\n\nRun: npm run docs:spec"
+      },
       "methods": [
         {
           "name": "internalsByModule",
@@ -3266,7 +3287,10 @@
     },
     {
       "file": "scripts/contracts-lib.mjs",
-      "module": null,
+      "module": {
+        "summary": "Shared machinery for the method-contract toolchain.",
+        "description": "Shared machinery for the method-contract toolchain.\n\nTwo consumers sit on top of this module and must agree exactly, or the\ncoverage test would police a different set of methods than the extractor\npublishes:\n\n  scripts/extract-contracts.mjs → docs/api.json   (documentation feed)\n  test/contracts.mjs            → npm run test:contracts (the ratchet)\n\nEverything they disagree about would be a silent documentation hole, so the\ndefinition of \"a method\", the tag vocabulary and the JSDoc parser all live\nhere once.\n\nThe AST comes from @babel/parser rather than a regex because the codebase is\nJSX-heavy and arrow-dense: `onClick={(e) => …}` and `const apply = (d) => …`\nare indistinguishable to a line matcher but only the second is a method we\nexpect a contract on."
+      },
       "methods": [
         {
           "name": "normalizeTag",
@@ -3852,7 +3876,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 578,
+          "line": 604,
           "signature": [],
           "documented": true,
           "summary": "Scan every source file in scope.",
@@ -3885,12 +3909,18 @@
     },
     {
       "file": "scripts/extract-contracts.mjs",
-      "module": null,
+      "module": {
+        "summary": "Generate docs/api.json — a machine-readable index of every method contract.",
+        "description": "Generate docs/api.json — a machine-readable index of every method contract.\n\nThis is the documentation feed. A doc site, an LLM tool or a review script\nshould read the JSON, never the source: the JSON is stable, flat and\nself-describing, whereas the source needs a JSX-aware parser to make sense\nof. `npm run docs:api` regenerates it; the file is committed so consumers do\nnot need to run a build to see the current API.\n\nThe tag vocabulary travels inside the output under `vocabulary`, so a\nconsumer can render contract fields it has never seen without being updated\nin lockstep with this repo."
+      },
       "methods": []
     },
     {
       "file": "scripts/import-catalog.mjs",
-      "module": null,
+      "module": {
+        "summary": "Turn a manufacturer catalog export into a generated driver-database module.",
+        "description": "Turn a manufacturer catalog export into a generated driver-database module.\n\n  node scripts/import-catalog.mjs bc\n\nEach profile below names the source file, how to read a row, and how its\ncolumns map onto our schema. Adding a brand means adding a profile, not\ntouching the emitter — so a second catalog lands as data, not as code.\n\nCms and Rms are derived rather than transcribed: catalogs publish Fs, Mms\nand Qms, and the solver runs on Mms/Cms/Rms. Deriving them from the same\nthree numbers guarantees the modeled driver resonates at the published Fs\nwith the published mechanical Q, which transcribing a rounded Cms does not.\nPublished values (Vas, Qts, …) are always copied verbatim, never recomputed."
+      },
       "methods": [
         {
           "name": "readSpreadsheetML",
@@ -6125,7 +6155,10 @@
     },
     {
       "file": "scripts/triage-contracts.mjs",
-      "module": null,
+      "module": {
+        "summary": "Turn a contract-suite run into a triage report.",
+        "description": "Turn a contract-suite run into a triage report.\n\nThe blind suite's failures are not ordinary test failures. Each one is a\ndisagreement between a documented contract and the implementation, and which\nside is wrong is a judgement call — so this deliberately does not \"fix\"\nanything. It groups failures by the module and method whose contract they\ncontradict, and prints the contract clause beside the observed behaviour, so\nthe decision can be made with both in view.\n\nRun: npm run test:triage"
+      },
       "methods": [
         {
           "name": "indexContracts",
@@ -6230,7 +6263,10 @@
     },
     {
       "file": "server/auth.js",
-      "module": null,
+      "module": {
+        "summary": "Authentication: Better Auth on SQLite, mounted at /api/auth/* by index.js.",
+        "description": "Authentication: Better Auth on SQLite, mounted at /api/auth/* by index.js.\n\nMethods enabled:\n - email + password (with password reset; change password when signed in)\n - social sign-in for any provider whose credentials are present in env:\n     GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET\n     FACEBOOK_CLIENT_ID / FACEBOOK_CLIENT_SECRET\n     APPLE_CLIENT_ID / APPLE_CLIENT_SECRET\n     GITHUB_CLIENT_ID / GITHUB_CLIENT_SECRET\n - account linking: a signed-in user can attach/detach social logins\n\nReset emails go through SMTP when SMTP_HOST is configured; otherwise the\nreset link is printed to the server log (dev mode)."
+      },
       "methods": [
         {
           "name": "sendEmail",
@@ -6384,7 +6420,10 @@
     },
     {
       "file": "server/index.js",
-      "module": null,
+      "module": {
+        "summary": "AcouSim production server: one process serving / the built web app (dist/) /api/simulate the simulation engine (POST project → results + metrics) /mcp the MCP endpoint for AI agents (streamable HTTP) /healthz liveness probe",
+        "description": "AcouSim production server: one process serving\n  /               the built web app (dist/)\n  /api/simulate   the simulation engine (POST project → results + metrics)\n  /mcp            the MCP endpoint for AI agents (streamable HTTP)\n  /healthz        liveness probe\n\nThe engine runs ONLY here — the browser bundle contains no solver code.\n  PORT=8788 ACOUSIM_TOKEN=secret node server/index.js"
+      },
       "methods": [
         {
           "name": "sendJson",
@@ -6775,7 +6814,10 @@
     },
     {
       "file": "src/auth.js",
-      "module": null,
+      "module": {
+        "summary": "Better Auth client: session hook + sign-in/up/out, password flows, and social account linking. Same-origin /api/auth (vite proxies in dev).",
+        "description": "Better Auth client: session hook + sign-in/up/out, password flows, and\nsocial account linking. Same-origin /api/auth (vite proxies in dev)."
+      },
       "methods": []
     },
     {
@@ -7190,7 +7232,10 @@
     },
     {
       "file": "src/components/MenuBar.jsx",
-      "module": null,
+      "module": {
+        "summary": "Application menu bar — the Eclipse/Windows pattern: a thin strip of menu titles, each opening a dropdown of commands.",
+        "description": "Application menu bar — the Eclipse/Windows pattern: a thin strip of menu\ntitles, each opening a dropdown of commands.\n\nBehaviour matches native menu bars: click a title to open, then *hover* any\nother title to switch to it without clicking again; Escape or a click\nanywhere else closes. Items carry shortcut hints, check marks and submenus."
+      },
       "methods": [
         {
           "name": "Item",
@@ -11629,7 +11674,10 @@
     },
     {
       "file": "src/components/PopoutView.jsx",
-      "module": null,
+      "module": {
+        "summary": "The whole page when AcouSim is loaded at /panel?id=<panel>: one panel, full-window, for dragging onto a second monitor.",
+        "description": "The whole page when AcouSim is loaded at /panel?id=<panel>: one panel,\nfull-window, for dragging onto a second monitor.\n\nNo menu bar, no dock, no quick bar — those belong to the main window. State\narrives over the BroadcastChannel wired up in store.js, so the panel behaves\nexactly as it does when docked."
+      },
       "methods": [
         {
           "name": "PopoutView",
@@ -13286,7 +13334,10 @@
     },
     {
       "file": "src/components/Toolbar.jsx",
-      "module": null,
+      "module": {
+        "summary": "Quick-access bar under the menu bar.",
+        "description": "Quick-access bar under the menu bar.\n\nContents are user-configurable (Settings ▸ Quick bar): `store.toolbar` is an\nordered list of item ids from src/toolbarItems.js, and this renders them in\nthat order. Metric items are data-driven and need no case here; controls get\none each. Application-level switches (Settings, experimental features) belong\nto the menu bar, not here — this strip is for per-design adjustments."
+      },
       "methods": [
         {
           "name": "ProjectName",
@@ -13594,7 +13645,10 @@
     },
     {
       "file": "src/components/dock/DockLayout.jsx",
-      "module": null,
+      "module": {
+        "summary": "Dock renderer — turns the layout tree from src/layout.js into DOM.",
+        "description": "Dock renderer — turns the layout tree from src/layout.js into DOM.\n\nThree interactions live here:\n  1. splitter drags        (resize two adjacent siblings, others untouched)\n  2. tab drags             (retarget a panel to any stack, edge or tab slot)\n  3. maximize / close      (per-stack chrome)\n\nPanels stay mounted when their tab is inactive — hidden with display:none\nrather than unmounted — so React Flow keeps its viewport and the charts keep\ntheir zoom when you tab away and back."
+      },
       "methods": [
         {
           "name": "isPanelDrag",
@@ -14169,7 +14223,10 @@
     },
     {
       "file": "src/components/dock/panels.jsx",
-      "module": null,
+      "module": {
+        "summary": "Panel registry — metadata from src/panelMeta.js paired with its component.",
+        "description": "Panel registry — metadata from src/panelMeta.js paired with its component.\n\nAdding a panel to AcouSim means one entry in PANEL_META plus one line here:\nthe dock layout, the View menu and the saved-layout sanitizer all read from\nthose, so nothing else needs to learn about it. Chart panels are generated\nfrom the chart registry instead of listed one by one."
+      },
       "methods": [
         {
           "name": "CanvasPanel",
@@ -14621,7 +14678,10 @@
     },
     {
       "file": "src/data/driver-audit.js",
-      "module": null,
+      "module": {
+        "summary": "Internal-consistency audit for a driver record.",
+        "description": "Internal-consistency audit for a driver record.\n\nA T/S set is over-determined: Qes, Qts and Vas are all implied by the\nparameters the solver actually runs on (Bl, Re, Mms, Cms, Rms, Sd). When a\npublished value disagrees with the one implied by its siblings, the row is\ndescribing two different drivers, and the simulation will follow the\nsolver's set — not the headline Qts a buyer recognises.\n\nThat is worth surfacing rather than silently correcting: the fix requires\nknowing which column was mis-transcribed, which only the datasheet can say.\nSo the audit labels the row and the UI warns. The importer runs this at\ngeneration time and the test suite enforces that any row failing an audit\ncarries its label, so a bad import cannot land unannounced."
+      },
       "methods": [
         {
           "name": "rel",
@@ -14764,7 +14824,10 @@
     },
     {
       "file": "src/data/driver-fields.js",
-      "module": null,
+      "module": {
+        "summary": "The driver record schema, described as data.",
+        "description": "The driver record schema, described as data.\n\nA database entry is flat for the parameters the solver consumes and nests\neverything else under `ext`. The split is deliberate: `driverSI()` reads\nMms/Cms/Rms/Sd/Re/Le/Bl/Fs and nothing else, so spreading a record straight\ninto a node's params must never smuggle construction trivia in with it.\n\n`ext` is sparse by design. Manufacturers publish wildly different subsets —\nB&C give flux density and winding depth, most car-audio brands give a power\nrating and little else — so every extended field is optional and code that\nreads them must tolerate `undefined`. Nothing here is required to simulate.\n\nEnumerating the schema rather than hardcoding it lets the database browser,\nthe CSV export and the MCP tools stay correct as fields are added, and gives\nan agent a machine-readable answer to \"what can I filter on?\"."
+      },
       "methods": [
         {
           "name": "driverToParams",
@@ -14859,7 +14922,10 @@
     },
     {
       "file": "src/data/drivers.js",
-      "module": null,
+      "module": {
+        "summary": "The built-in driver library.",
+        "description": "The built-in driver library.\n\nEntries arrive from two places. Catalog imports (drivers.<brand>.js) are\ngenerated from a manufacturer's own multi-driver data export and carry the\nfull extended parameter set; hand transcriptions (drivers.legacy.js) carry\nthe core T/S only. Both share one record shape, described in\ndriver-fields.js, so nothing downstream has to care which it got — beyond\nreading `source` when it wants to say how much to trust the numbers."
+      },
       "methods": [
         {
           "name": "normalize",
@@ -14906,7 +14972,10 @@
     },
     {
       "file": "src/engine/acoustics.js",
-      "module": null,
+      "module": {
+        "summary": "Acoustic element models: transmission lines, waveguides/horns, radiation impedance of a piston in various solid angles. SI units throughout.",
+        "description": "Acoustic element models: transmission lines, waveguides/horns, radiation\nimpedance of a piston in various solid angles. SI units throughout."
+      },
       "methods": [
         {
           "name": "besselJ1",
@@ -15457,7 +15526,10 @@
     },
     {
       "file": "src/engine/complex.js",
-      "module": null,
+      "module": {
+        "summary": "Thin complex-arithmetic layer over math.js Complex instances. math.js complex numbers are Complex.js objects exposing fast instance methods (.add, .mul, ...), which we use directly in the hot loop.",
+        "description": "Thin complex-arithmetic layer over math.js Complex instances.\nmath.js complex numbers are Complex.js objects exposing fast instance\nmethods (.add, .mul, ...), which we use directly in the hot loop.\n\nEvery operation here returns a new Complex; none mutate their arguments.\nThat is what makes the whole module `@pure` and lets the solver reuse\noperand instances across the 512-point frequency sweep without defensive\ncopying."
+      },
       "methods": [
         {
           "name": "C",
@@ -16257,7 +16329,10 @@
     },
     {
       "file": "src/engine/geometry.js",
-      "module": null,
+      "module": {
+        "summary": "Client-safe geometry helpers: area profiles, volumes, flare cutoff, end corrections, and physical constants. No solver code — this module is the only part of the engine shipped to the browser.",
+        "description": "Client-safe geometry helpers: area profiles, volumes, flare cutoff, end\ncorrections, and physical constants. No solver code — this module is the\nonly part of the engine shipped to the browser.\n\nEverything here is SI: areas in m², lengths in m, frequencies in Hz. The UI\nconverts from cm² / cm at the parameter boundary, not here."
+      },
       "methods": [
         {
           "name": "areaProfile",
@@ -16522,7 +16597,10 @@
     },
     {
       "file": "src/engine/metrics.js",
-      "module": null,
+      "module": {
+        "summary": "Derived metrics from a completed sweep.",
+        "description": "Derived metrics from a completed sweep."
+      },
       "methods": [
         {
           "name": "localMaxima",
@@ -16732,7 +16810,10 @@
     },
     {
       "file": "src/engine/nonlinear.js",
-      "module": null,
+      "module": {
+        "summary": "EXPERIMENTAL: large-signal T/S nonlinearity (quasi-linear method).",
+        "description": "EXPERIMENTAL: large-signal T/S nonlinearity (quasi-linear method).\n\nEach driver may carry three ratio curves — Bl(x), Cms(x), Le(x) — expressed\nrelative to the small-signal value (1.0 = datasheet number). A curve is a\nflat 1.0 baseline (or an imported table), deformed by parametric-EQ style\ncontrol points: gaussian bumps {x mm, g gain, w width mm}.\n\nThe solver iterates: linear sweep → per-frequency excursion → cycle-averaged\nratio at that excursion → scale Bl/Cms/Le → re-solve. Captures power\ncompression and resonance drift; does NOT produce harmonic distortion\nproducts (that needs a time-domain engine)."
+      },
       "methods": [
         {
           "name": "emptyCurve",
@@ -17284,7 +17365,10 @@
     },
     {
       "file": "src/engine/project.js",
-      "module": null,
+      "module": {
+        "summary": "Project (.acousim.json) schema helpers shared by the app and the MCP server. A project is plain JSON: { name, settings, nodes: [{id,type,position,params}], edges: [{source,sourceHandle,target,targetHandle}] }.",
+        "description": "Project (.acousim.json) schema helpers shared by the app and the MCP server.\nA project is plain JSON: { name, settings, nodes: [{id,type,position,params}],\nedges: [{source,sourceHandle,target,targetHandle}] }."
+      },
       "methods": [
         {
           "name": "hydrateProject",
@@ -17357,7 +17441,10 @@
     },
     {
       "file": "src/engine/solver.js",
-      "module": null,
+      "module": {
+        "summary": "Graph → transfer-matrix chain solver. Convention: ABCD matrices map [p_in; U_in] = M · [p_out; U_out] with p = acoustic pressure (Pa), U = volume velocity (m^3/s).",
+        "description": "Graph → transfer-matrix chain solver.\nConvention: ABCD matrices map [p_in; U_in] = M · [p_out; U_out] with\np = acoustic pressure (Pa), U = volume velocity (m^3/s)."
+      },
       "methods": [
         {
           "name": "driverSI",
@@ -18027,7 +18114,10 @@
     },
     {
       "file": "src/keymap.js",
-      "module": null,
+      "module": {
+        "summary": "Keyboard commands and their bindings.",
+        "description": "Keyboard commands and their bindings.\n\nOne registry drives everything: the global key handler, the shortcut hints\nin the menus, and the rebinding UI in Settings ▸ Keyboard. Adding a command\nmeans one entry in COMMANDS and one default in DEFAULT_BINDINGS — nothing\nelse needs to change.\n\nA combo is a lowercase string like `mod+shift+z`. `mod` is Ctrl on\nWindows/Linux and Command on macOS; Ctrl and Command are treated as the same\nmodifier so one default set fits both platforms.\n\nKeys come from `event.code` (the physical key) rather than `event.key`, so a\nbinding does not change meaning when Shift is held — `shift+1` stays\n`shift+1` instead of becoming `!`."
+      },
       "methods": [
         {
           "name": "run",
@@ -19244,7 +19334,10 @@
     },
     {
       "file": "src/layout.js",
-      "module": null,
+      "module": {
+        "summary": "Dock layout model — the data behind the Eclipse-style workspace.",
+        "description": "Dock layout model — the data behind the Eclipse-style workspace.\n\nThe workspace is a tree of two node kinds:\n\n  { id, type: 'split', dir: 'row'|'col', size, children: [node, …] }\n  { id, type: 'stack', size, panels: ['canvas', …], active: 'canvas' }\n\nA *stack* is a tabbed panel group (one visible at a time); a *split* lays\nits children out horizontally or vertically. `size` is a flex weight shared\namong siblings — the absolute numbers are meaningless, only their ratios\nmatter, which is what lets a splitter drag redistribute weight between two\nneighbours without touching the rest of the tree.\n\nEvery operation here is pure: it returns a new tree, never mutates. Two\ninvariants are maintained after each edit:\n  - a stack always holds at least one panel (empty stacks are pruned)\n  - a split always holds at least two children (a lone child replaces it)"
+      },
       "methods": [
         {
           "name": "uid",
@@ -20391,7 +20484,10 @@
     },
     {
       "file": "src/panelMeta.js",
-      "module": null,
+      "module": {
+        "summary": "Panel metadata — plain data, no React. Kept separate from panels.jsx so the store can read it (titles, dock hints, which panels exist for sanitizing a saved layout) without importing components that import the store back.",
+        "description": "Panel metadata — plain data, no React. Kept separate from panels.jsx so the\nstore can read it (titles, dock hints, which panels exist for sanitizing a\nsaved layout) without importing components that import the store back.\n\n  title    label on the tab and in the View menu\n  group    'main' panels are listed directly under View; 'charts' go into\n           the View ▸ Charts submenu so the menu stays short\n  closable false pins the panel open — the canvas is the workspace itself\n  dock     where View ▸ puts the panel when it isn't already visible\n  requires a settings flag that must be truthy for the panel to be offered"
+      },
       "methods": [
         {
           "name": "panelTitle",
@@ -20436,7 +20532,10 @@
     },
     {
       "file": "src/popout.js",
-      "module": null,
+      "module": {
+        "summary": "Popped-out panels: any panel can be sent to its own browser tab, which the user then drags onto a second monitor.",
+        "description": "Popped-out panels: any panel can be sent to its own browser tab, which the\nuser then drags onto a second monitor.\n\nThe tab loads the same app at /panel?id=<panel> and renders that one panel\nfull-window. Both windows run the same store; a BroadcastChannel keeps the\nshared slice of that store identical between them, so a parameter edited in\none window redraws the chart in the other.\n\nThe main window stays the authority for two things it makes no sense to do\ntwice: running the simulation and writing the LocalStorage auto-save."
+      },
       "methods": [
         {
           "name": "popoutPanelId",
@@ -23687,7 +23786,10 @@
     },
     {
       "file": "src/toolbarItems.js",
-      "module": null,
+      "module": {
+        "summary": "Quick-access bar registry.",
+        "description": "Quick-access bar registry.\n\nThe bar under the menu is a list of small widgets chosen and ordered by the\nuser (Settings ▸ Quick bar). Two kinds live here:\n\n  control — an interactive widget (project name, drive voltage, sweep …)\n  metric  — a read-only number derived from the current simulation\n\nAdding an item means one entry in TOOLBAR_ITEMS plus, for controls, one case\nin Toolbar.jsx's renderer. Metrics need nothing else: `metricValue` below is\nthe single place that knows how to compute and format them."
+      },
       "methods": [
         {
           "name": "fmt",
@@ -24324,7 +24426,10 @@
     },
     {
       "file": "test/contracts.mjs",
-      "module": null,
+      "module": {
+        "summary": "Method-contract ratchet.",
+        "description": "Method-contract ratchet.\n\nContracts rot the moment nothing checks them: a parameter gets renamed, the\nJSDoc keeps the old name, and the generated documentation is now confidently\nwrong — worse than absent. This test fails the build on that.\n\nIt deliberately checks only what a machine can know for certain. Whether\n`@pre w >= 0` is *true* is a human question; whether the function documents\na parameter it does not have is not.\n\nMirrors test/drivers.mjs in shape and output so `npm test` reads uniformly."
+      },
       "methods": [
         {
           "name": "check",
@@ -24420,7 +24525,10 @@
     },
     {
       "file": "test/drivers.mjs",
-      "module": null,
+      "module": {
+        "summary": "Driver-library integrity checks.",
+        "description": "Driver-library integrity checks.\n\nThe library is large enough now that a bad row would hide rather than\nannounce itself, and a driver whose parameters disagree with each other\nproduces a plausible-looking simulation of nothing real.\n\nTwo tiers. Hard checks are identities the loader controls — the schema, and\nthe Cms/Rms the importer derives — and must hold exactly. The audit tier\ncovers published values that can legitimately disagree with each other in a\nreal catalog; those rows are permitted, but only if they carry a `suspect`\nlabel, so the count can never grow silently."
+      },
       "methods": [
         {
           "name": "check",
@@ -24526,7 +24634,10 @@
     },
     {
       "file": "test/support/loader.mjs",
-      "module": null,
+      "module": {
+        "summary": "Node module-customization hook that makes the app's .jsx modules importable from tests.",
+        "description": "Node module-customization hook that makes the app's .jsx modules importable\nfrom tests.\n\nThe contract suite needs to reach helpers that happen to live beside React\ncomponents — the T/S solvers in TSCalc.jsx, the axis-fitting maths in\nOutputPanel.jsx — and Node cannot parse JSX. esbuild is already in the tree\nas a Vite dependency, so this transforms on the fly rather than adding a\nbuild step or a test-only dependency."
+      },
       "methods": [
         {
           "name": "resolve",
@@ -24646,7 +24757,10 @@
     },
     {
       "file": "test/support/setup.mjs",
-      "module": null,
+      "module": {
+        "summary": "Single entry point for the contract suite's runtime, loaded via `--import` before any test file.",
+        "description": "Single entry point for the contract suite's runtime, loaded via `--import`\nbefore any test file.\n\nOrder matters and is the reason this file exists rather than two flags: the\nJSX loader must be registered before the first application import is\nresolved, and the browser shims must exist before the first module body runs\n— the store reads localStorage while it initialises."
+      },
       "methods": []
     }
   ]

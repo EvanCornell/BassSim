@@ -3,6 +3,24 @@
 > Generated from method contracts. This file contains **no implementation code**.
 > Write tests against what is claimed here, not against what you expect the code to do.
 
+## Module
+
+The driver record schema, described as data.
+
+A database entry is flat for the parameters the solver consumes and nests
+everything else under `ext`. The split is deliberate: `driverSI()` reads
+Mms/Cms/Rms/Sd/Re/Le/Bl/Fs and nothing else, so spreading a record straight
+into a node's params must never smuggle construction trivia in with it.
+
+`ext` is sparse by design. Manufacturers publish wildly different subsets —
+B&C give flux density and winding depth, most car-audio brands give a power
+rating and little else — so every extended field is optional and code that
+reads them must tolerate `undefined`. Nothing here is required to simulate.
+
+Enumerating the schema rather than hardcoding it lets the database browser,
+the CSV export and the MCP tools stay correct as fields are added, and gives
+an agent a machine-readable answer to "what can I filter on?".
+
 ## EXPORTED (2)
 
 ### `driverToParams(d)`

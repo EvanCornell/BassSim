@@ -3,6 +3,11 @@
 > Generated from method contracts. This file contains **no implementation code**.
 > Write tests against what is claimed here, not against what you expect the code to do.
 
+## Module
+
+AcouSim MCP server core: tool/resource registrations, transport-agnostic.
+Entry points: mcp/server.js (stdio) and mcp/http.js (streamable HTTP).
+
 ## EXPORTED (1)
 
 ### `createServer()`

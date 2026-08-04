@@ -3,6 +3,17 @@
 > Generated from method contracts. This file contains **no implementation code**.
 > Write tests against what is claimed here, not against what you expect the code to do.
 
+## Module
+
+Node module-customization hook that makes the app's .jsx modules importable
+from tests.
+
+The contract suite needs to reach helpers that happen to live beside React
+components — the T/S solvers in TSCalc.jsx, the axis-fitting maths in
+OutputPanel.jsx — and Node cannot parse JSX. esbuild is already in the tree
+as a Vite dependency, so this transforms on the fly rather than adding a
+build step or a test-only dependency.
+
 ## EXPORTED (2)
 
 ### `resolve(specifier, context, next)`

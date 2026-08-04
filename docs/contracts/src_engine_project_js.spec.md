@@ -3,6 +3,12 @@
 > Generated from method contracts. This file contains **no implementation code**.
 > Write tests against what is claimed here, not against what you expect the code to do.
 
+## Module
+
+Project (.acousim.json) schema helpers shared by the app and the MCP server.
+A project is plain JSON: { name, settings, nodes: [{id,type,position,params}],
+edges: [{source,sourceHandle,target,targetHandle}] }.
+
 ## EXPORTED (1)
 
 ### `hydrateProject(proj)`

@@ -3,6 +3,11 @@
 > Generated from method contracts. This file contains **no implementation code**.
 > Write tests against what is claimed here, not against what you expect the code to do.
 
+## Module
+
+Smoke test: spawns the MCP server over stdio and exercises every tool.
+Run: node mcp/test-client.mjs
+
 ## UNREACHABLE (2)
 
 ### `check(name, cond, info)`

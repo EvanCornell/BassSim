@@ -18,6 +18,12 @@
 //   `nodes` / `edges`, each node `{id, type, position, data: {params}}`
 //                                (src/engine/solver.js spec)
 //   `_flowApi`                   (src/components/FlowCanvas.jsx spec)
+//
+// The nine dock-editing methods — activate, dock, dockEdge, resize, dropOnTab,
+// close, open, toggle, reset — live in the store's `layoutOps` namespace and
+// are reached as `useStore.getState().layoutOps.<name>(…)`, per their
+// "Obtain via" lines. Every call below, including the ones that only set up or
+// tear down a test, goes through that path.
 
 import { test, beforeEach } from 'node:test'
 import assert from 'node:assert/strict'
@@ -107,7 +113,7 @@ function layoutKey() {
   const after = snap()
   LAYOUT_KEY = changedKeys(before, after).find((k) => Object.is(after[k], probe))
   assert.ok(LAYOUT_KEY, '_commitLayout must store the tree it was given in state')
-  st().reset()
+  st().layoutOps.reset()
   return LAYOUT_KEY
 }
 
@@ -249,7 +255,7 @@ test('loadLayout: returns a usable non-empty layout tree', () => {
 // panel this build no longer has, or corrupt JSON. All three land on the
 // default rather than throwing."
 test('loadLayout: corrupt stored JSON falls back to the default layout', () => {
-  st().reset()
+  st().layoutOps.reset()
   const before = lsSnap()
   st()._commitLayout(split('row', [
     stack(openPanels(defaultLayout()).slice(0, 1)),
@@ -265,7 +271,7 @@ test('loadLayout: corrupt stored JSON falls back to the default layout', () => {
     openPanels(defaultLayout()).slice().sort(),
     'corrupt JSON must land on the default layout',
   )
-  st().reset()
+  st().layoutOps.reset()
 })
 
 // CONTRACT: "Array<{name: string, tree: object}> — Saved presets, or an empty
@@ -621,13 +627,13 @@ test('_commitLayout: adopts the tree and persists it', () => {
   st()._commitLayout(t)
   assert.equal(tree(), t, 'the committed tree becomes the layout')
   assert.ok(lsChangedKeys(before, lsSnap()).length > 0, 'the layout must be persisted')
-  st().reset()
+  st().layoutOps.reset()
 })
 
 // CONTRACT: "A `null` tree — the result of an edit that would have emptied the
 // workspace — is ignored rather than applied."
 test('_commitLayout: a null tree is ignored', () => {
-  st().reset()
+  st().layoutOps.reset()
   const before = tree()
   const keys = keysWrittenBy(() => st()._commitLayout(null))
   assert.equal(tree(), before, 'the layout must be untouched')
@@ -635,156 +641,156 @@ test('_commitLayout: a null tree is ignored', () => {
 })
 
 // CONTRACT: "Bring a panel to the front of its stack."
-test('activate: makes the named panel the stack\'s active tab', () => {
-  st().reset()
+test('layoutOps.activate: makes the named panel the stack\'s active tab', () => {
+  st().layoutOps.reset()
   const s = stackWithAtLeast(tree(), 2)
   assert.ok(s, 'the default layout must contain a stack with two tabs')
   const other = s.panels.find((p) => p !== s.active)
-  st().activate(s.id, other)
+  st().layoutOps.activate(s.id, other)
   assert.equal(findNode(tree(), s.id).active, other)
 })
 
 // CONTRACT: "Move a panel onto a target stack." / "`zone` — 'center' ... Where
 // relative to the target."
-test('dock: a center drop moves the panel into the target stack', () => {
-  st().reset()
+test('layoutOps.dock: a center drop moves the panel into the target stack', () => {
+  st().layoutOps.reset()
   const stacks = stacksOf(tree())
   const target = stacks[0]
   const mover = stacks.slice(1).flatMap((s) => s.panels).find(Boolean)
   assert.ok(mover, 'the default layout must have a panel outside the target stack')
-  st().dock(mover, target.id, 'center')
+  st().layoutOps.dock(mover, target.id, 'center')
   assert.equal(findPanelStack(tree(), mover).id, target.id)
 })
 
 // CONTRACT: "Dock a panel against an outer edge of the workspace."
-test('dockEdge: a left-edge dock puts the panel first in traversal order', () => {
-  st().reset()
+test('layoutOps.dockEdge: a left-edge dock puts the panel first in traversal order', () => {
+  st().layoutOps.reset()
   const panels = openPanels(tree())
   const mover = panels[panels.length - 1]
-  st().dockEdge(mover, 'left')
+  st().layoutOps.dockEdge(mover, 'left')
   assert.ok(isOpen(tree(), mover), 'the panel stays open')
   assert.equal(openPanels(tree())[0], mover, 'a left dock places it at the far left')
 })
 
 // CONTRACT: "Apply a splitter drag, reweighting two adjacent children." /
 // "`a` — New weight for that child." / "`b` — New weight for the next one."
-test('resize: writes both new child weights', () => {
-  st().reset()
+test('layoutOps.resize: writes both new child weights', () => {
+  st().layoutOps.reset()
   const root = tree()
   assert.ok(Array.isArray(root.children), 'the default layout root is a split')
-  st().resize(root.id, 0, 3, 1)
+  st().layoutOps.resize(root.id, 0, 3, 1)
   const after = findNode(tree(), root.id)
   assert.equal(after.children[0].size, 3)
   assert.equal(after.children[1].size, 1)
 })
 
 // CONTRACT: "dropping within the panel's own stack reorders it"
-test('dropOnTab: a drop inside the panel\'s own stack reorders the tabs', () => {
-  st().reset()
+test('layoutOps.dropOnTab: a drop inside the panel\'s own stack reorders the tabs', () => {
+  st().layoutOps.reset()
   const s = stackWithAtLeast(tree(), 2)
   assert.ok(s)
   const moving = s.panels[s.panels.length - 1]
-  st().dropOnTab(moving, s.id, 0)
+  st().layoutOps.dropOnTab(moving, s.id, 0)
   assert.equal(findNode(tree(), s.id).panels[0], moving)
 })
 
 // CONTRACT: "dropping from elsewhere tabs it in."
-test('dropOnTab: a drop from another stack tabs the panel in', () => {
-  st().reset()
+test('layoutOps.dropOnTab: a drop from another stack tabs the panel in', () => {
+  st().layoutOps.reset()
   const stacks = stacksOf(tree())
   const target = stacks[0]
   const mover = stacks.slice(1).flatMap((x) => x.panels).find(Boolean)
   assert.ok(mover)
-  st().dropOnTab(mover, target.id, 0)
+  st().layoutOps.dropOnTab(mover, target.id, 0)
   assert.equal(findPanelStack(tree(), mover).id, target.id)
 })
 
 // CONTRACT: "A drop on its own current position does nothing."
-test('dropOnTab: a drop on the panel\'s own current position does nothing', () => {
-  st().reset()
+test('layoutOps.dropOnTab: a drop on the panel\'s own current position does nothing', () => {
+  st().layoutOps.reset()
   const s = stackWithAtLeast(tree(), 2)
   assert.ok(s)
   const idx = 0
   const panel = s.panels[idx]
-  const keys = keysWrittenBy(() => st().dropOnTab(panel, s.id, idx))
+  const keys = keysWrittenBy(() => st().layoutOps.dropOnTab(panel, s.id, idx))
   assert.deepEqual(keys, [], 'a no-op drop must not write state')
 })
 
 // CONTRACT: "Close a panel."
-test('close: removes the panel from the layout', () => {
-  st().reset()
+test('layoutOps.close: removes the panel from the layout', () => {
+  st().layoutOps.reset()
   const target = openPanels(tree()).find((p) => {
-    st().reset()
-    st().close(p)
+    st().layoutOps.reset()
+    st().layoutOps.close(p)
     return !isOpen(tree(), p)
   })
   assert.ok(target, 'at least one panel must be closable')
   assert.ok(!isOpen(tree(), target))
-  st().reset()
+  st().layoutOps.reset()
 })
 
 // CONTRACT: "Panels marked `closable: false` — the canvas, which is the
 // workspace itself — are refused, as is a close that would empty the layout."
-test('close: refuses the non-closable canvas and never empties the layout', () => {
-  st().reset()
+test('layoutOps.close: refuses the non-closable canvas and never empties the layout', () => {
+  st().layoutOps.reset()
   const panels = openPanels(tree())
-  for (const p of panels) st().close(p)
+  for (const p of panels) st().layoutOps.close(p)
   const left = openPanels(tree())
   assert.ok(left.length > 0, 'closing everything must never empty the layout')
-  st().reset()
+  st().layoutOps.reset()
 })
 
 // CONTRACT: "Show a panel and give it focus, docking it if it is not already
 // open."
-test('open: docks a closed panel and focuses it', () => {
-  st().reset()
+test('layoutOps.open: docks a closed panel and focuses it', () => {
+  st().layoutOps.reset()
   const panels = openPanels(tree())
   const p = panels.find((x) => {
-    st().reset()
-    st().close(x)
+    st().layoutOps.reset()
+    st().layoutOps.close(x)
     return !isOpen(tree(), x)
   })
   assert.ok(p, 'need a closable panel')
-  st().open(p)
+  st().layoutOps.open(p)
   assert.ok(isOpen(tree(), p), 'the panel must be docked again')
   assert.equal(st().focusedPanel, p, 'opening focuses the panel')
-  st().reset()
+  st().layoutOps.reset()
 })
 
 // CONTRACT: "Un-maximizes first, since opening a panel behind a maximized one
 // would otherwise appear to do nothing."
-test('open: clears the maximized panel', () => {
-  st().reset()
+test('layoutOps.open: clears the maximized panel', () => {
+  st().layoutOps.reset()
   const panels = openPanels(tree())
   st().toggleMaximize(panels[0])
   assert.equal(st().maximized, panels[0], 'precondition: something is maximized')
-  st().open(panels[1])
+  st().layoutOps.open(panels[1])
   assert.ok(!st().maximized, 'opening must un-maximize')
-  st().reset()
+  st().layoutOps.reset()
 })
 
 // CONTRACT: "Open a panel, or close it if it is already open."
-test('toggle: closes an open panel and reopens a closed one', () => {
-  st().reset()
+test('layoutOps.toggle: closes an open panel and reopens a closed one', () => {
+  st().layoutOps.reset()
   const p = openPanels(tree()).find((x) => {
-    st().reset()
-    st().close(x)
+    st().layoutOps.reset()
+    st().layoutOps.close(x)
     return !isOpen(tree(), x)
   })
   assert.ok(p, 'need a closable panel')
-  st().reset()
-  st().toggle(p)
+  st().layoutOps.reset()
+  st().layoutOps.toggle(p)
   assert.ok(!isOpen(tree(), p), 'toggling an open panel closes it')
-  st().toggle(p)
+  st().layoutOps.toggle(p)
   assert.ok(isOpen(tree(), p), 'toggling a closed panel opens it')
-  st().reset()
+  st().layoutOps.reset()
 })
 
 // CONTRACT: "Restore the default workspace arrangement."
-test('reset: restores the default set of panels', () => {
+test('layoutOps.reset: restores the default set of panels', () => {
   const p = openPanels(defaultLayout())[0]
-  st().dockEdge(p, 'bottom')
-  st().reset()
+  st().layoutOps.dockEdge(p, 'bottom')
+  st().layoutOps.reset()
   assert.deepEqual(
     openPanels(tree()).slice().sort(),
     openPanels(defaultLayout()).slice().sort(),
@@ -795,7 +801,7 @@ test('reset: restores the default set of panels', () => {
 // with that name."
 test('saveLayoutPreset: saves under the name, replacing a preset of that name', () => {
   const name = '__preset_replace__'
-  st().reset()
+  st().layoutOps.reset()
   st().saveLayoutPreset(name)
   st().saveLayoutPreset(name)
   assert.equal(
@@ -809,16 +815,16 @@ test('saveLayoutPreset: saves under the name, replacing a preset of that name', 
 // CONTRACT: "Apply a saved arrangement."
 test('applyLayoutPreset: restores the arrangement that was saved', () => {
   const name = '__preset_apply__'
-  st().reset()
+  st().layoutOps.reset()
   const p = openPanels(tree())[openPanels(tree()).length - 1]
-  st().dockEdge(p, 'bottom')
+  st().layoutOps.dockEdge(p, 'bottom')
   const wanted = openPanels(tree()).slice().sort()
   st().saveLayoutPreset(name)
-  st().reset()
+  st().layoutOps.reset()
   st().applyLayoutPreset(name)
   assert.deepEqual(openPanels(tree()).slice().sort(), wanted)
   st().deleteLayoutPreset(name)
-  st().reset()
+  st().layoutOps.reset()
 })
 
 // CONTRACT: "the canvas is docked back in if sanitizing removed it, so a stale
@@ -830,19 +836,19 @@ test('applyLayoutPreset: a preset of unknown panels still leaves the canvas dock
   // sanitize the unknowns away and dock the canvas back in.
   st()._commitLayout(split('row', [stack(['__gone_a__']), stack(['__gone_b__'])]))
   st().saveLayoutPreset(name)
-  st().reset()
+  st().layoutOps.reset()
   st().applyLayoutPreset(name)
   assert.ok(
     openPanels(tree()).length > 0,
     'a stale preset can never leave the workspace without its editor',
   )
   st().deleteLayoutPreset(name)
-  st().reset()
+  st().layoutOps.reset()
 })
 
 // CONTRACT: "`name` — Preset name. An unknown name is ignored."
 test('applyLayoutPreset: an unknown name is ignored', () => {
-  st().reset()
+  st().layoutOps.reset()
   const keys = keysWrittenBy(() => st().applyLayoutPreset('__no_such_preset__'))
   assert.deepEqual(keys, [], 'an unknown preset must not write state')
 })
@@ -1742,54 +1748,54 @@ test('autoSave: an empty project is skipped', () => {
 
 // CONTRACT: "Send a panel to its own browser tab and remove it from the dock."
 test('popOutPanel: removes the panel from the dock', () => {
-  st().reset()
+  st().layoutOps.reset()
   const p = openPanels(tree()).find((x) => {
-    st().reset()
-    st().close(x)
+    st().layoutOps.reset()
+    st().layoutOps.close(x)
     return !isOpen(tree(), x)
   })
   assert.ok(p, 'need a panel that can leave the dock')
-  st().reset()
+  st().layoutOps.reset()
   st().popOutPanel(p)
   assert.ok(!isOpen(tree(), p), 'a popped-out panel is no longer in the dock')
-  st().reset()
+  st().layoutOps.reset()
 })
 
 // CONTRACT: "Mark a panel as popped out and close it in this window's dock."
 test('_detachPanel: closes the panel in this window\'s dock', () => {
-  st().reset()
+  st().layoutOps.reset()
   const p = openPanels(tree()).find((x) => {
-    st().reset()
-    st().close(x)
+    st().layoutOps.reset()
+    st().layoutOps.close(x)
     return !isOpen(tree(), x)
   })
   assert.ok(p)
-  st().reset()
+  st().layoutOps.reset()
   st()._detachPanel(p)
   assert.ok(!isOpen(tree(), p))
   st()._reattachPanel(p)
-  st().reset()
+  st().layoutOps.reset()
 })
 
 // CONTRACT: "Take a panel back into the dock when its tab closes."
 test('_reattachPanel: puts a popped-out panel back into the dock', () => {
-  st().reset()
+  st().layoutOps.reset()
   const p = openPanels(tree()).find((x) => {
-    st().reset()
-    st().close(x)
+    st().layoutOps.reset()
+    st().layoutOps.close(x)
     return !isOpen(tree(), x)
   })
   assert.ok(p)
-  st().reset()
+  st().layoutOps.reset()
   st()._detachPanel(p)
   st()._reattachPanel(p)
   assert.ok(isOpen(tree(), p), 'the panel returns to the dock')
-  st().reset()
+  st().layoutOps.reset()
 })
 
 // CONTRACT: "`id` — Panel id. Ignored when the panel was not popped out."
 test('_reattachPanel: is ignored when the panel was not popped out', () => {
-  st().reset()
+  st().layoutOps.reset()
   const keys = keysWrittenBy(() => st()._reattachPanel('__never_popped_out__'))
   assert.deepEqual(keys, [])
 })

@@ -3,6 +3,20 @@
 > Generated from method contracts. This file contains **no implementation code**.
 > Write tests against what is claimed here, not against what you expect the code to do.
 
+## Module
+
+Quick-access bar registry.
+
+The bar under the menu is a list of small widgets chosen and ordered by the
+user (Settings ▸ Quick bar). Two kinds live here:
+
+  control — an interactive widget (project name, drive voltage, sweep …)
+  metric  — a read-only number derived from the current simulation
+
+Adding an item means one entry in TOOLBAR_ITEMS plus, for controls, one case
+in Toolbar.jsx's renderer. Metrics need nothing else: `metricValue` below is
+the single place that knows how to compute and format them.
+
 ## EXPORTED (3)
 
 ### `systemVolume(nodes)`

@@ -3,6 +3,17 @@
 > Generated from method contracts. This file contains **no implementation code**.
 > Write tests against what is claimed here, not against what you expect the code to do.
 
+## Module
+
+Thin complex-arithmetic layer over math.js Complex instances.
+math.js complex numbers are Complex.js objects exposing fast instance
+methods (.add, .mul, ...), which we use directly in the hot loop.
+
+Every operation here returns a new Complex; none mutate their arguments.
+That is what makes the whole module `@pure` and lets the solver reuse
+operand instances across the 512-point frequency sweep without defensive
+copying.
+
 ## EXPORTED (18)
 
 ### `C(re, im)`

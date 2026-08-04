@@ -3,6 +3,11 @@
 > Generated from method contracts. This file contains **no implementation code**.
 > Write tests against what is claimed here, not against what you expect the code to do.
 
+## Module
+
+Acoustic element models: transmission lines, waveguides/horns, radiation
+impedance of a piston in various solid angles. SI units throughout.
+
 ## EXPORTED (9)
 
 ### `besselJ1(x)`

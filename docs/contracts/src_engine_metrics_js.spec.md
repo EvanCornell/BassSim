@@ -3,6 +3,10 @@
 > Generated from method contracts. This file contains **no implementation code**.
 > Write tests against what is claimed here, not against what you expect the code to do.
 
+## Module
+
+Derived metrics from a completed sweep.
+
 ## EXPORTED (1)
 
 ### `computeMetrics(res, settings)`

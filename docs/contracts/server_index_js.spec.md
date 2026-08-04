@@ -3,6 +3,17 @@
 > Generated from method contracts. This file contains **no implementation code**.
 > Write tests against what is claimed here, not against what you expect the code to do.
 
+## Module
+
+AcouSim production server: one process serving
+  /               the built web app (dist/)
+  /api/simulate   the simulation engine (POST project → results + metrics)
+  /mcp            the MCP endpoint for AI agents (streamable HTTP)
+  /healthz        liveness probe
+
+The engine runs ONLY here — the browser bundle contains no solver code.
+  PORT=8788 ACOUSIM_TOKEN=secret node server/index.js
+
 ## UNREACHABLE (4)
 
 ### `sendJson(res, code, body)`

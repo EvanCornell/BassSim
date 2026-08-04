@@ -3,6 +3,26 @@
 > Generated from method contracts. This file contains **no implementation code**.
 > Write tests against what is claimed here, not against what you expect the code to do.
 
+## Module
+
+Shared machinery for the method-contract toolchain.
+
+Two consumers sit on top of this module and must agree exactly, or the
+coverage test would police a different set of methods than the extractor
+publishes:
+
+  scripts/extract-contracts.mjs → docs/api.json   (documentation feed)
+  test/contracts.mjs            → npm run test:contracts (the ratchet)
+
+Everything they disagree about would be a silent documentation hole, so the
+definition of "a method", the tag vocabulary and the JSDoc parser all live
+here once.
+
+The AST comes from @babel/parser rather than a regex because the codebase is
+JSX-heavy and arrow-dense: `onClick={(e) => …}` and `const apply = (d) => …`
+are indistinguishable to a line matcher but only the second is a method we
+expect a contract on.
+
 ## EXPORTED (5)
 
 ### `normalizeTag(t)`

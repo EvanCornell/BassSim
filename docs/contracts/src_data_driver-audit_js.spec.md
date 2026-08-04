@@ -3,6 +3,22 @@
 > Generated from method contracts. This file contains **no implementation code**.
 > Write tests against what is claimed here, not against what you expect the code to do.
 
+## Module
+
+Internal-consistency audit for a driver record.
+
+A T/S set is over-determined: Qes, Qts and Vas are all implied by the
+parameters the solver actually runs on (Bl, Re, Mms, Cms, Rms, Sd). When a
+published value disagrees with the one implied by its siblings, the row is
+describing two different drivers, and the simulation will follow the
+solver's set — not the headline Qts a buyer recognises.
+
+That is worth surfacing rather than silently correcting: the fix requires
+knowing which column was mis-transcribed, which only the datasheet can say.
+So the audit labels the row and the UI warns. The importer runs this at
+generation time and the test suite enforces that any row failing an audit
+carries its label, so a bad import cannot land unannounced.
+
 ## EXPORTED (1)
 
 ### `auditDriver(d)`

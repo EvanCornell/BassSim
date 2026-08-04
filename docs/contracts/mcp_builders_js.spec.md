@@ -3,6 +3,11 @@
 > Generated from method contracts. This file contains **no implementation code**.
 > Write tests against what is claimed here, not against what you expect the code to do.
 
+## Module
+
+Phase-2 helpers for the MCP server: driver lookup, self-calibrating
+enclosure builders, an optimizer, and comparison scoring.
+
 ## EXPORTED (10)
 
 ### `searchDrivers(criteria)`

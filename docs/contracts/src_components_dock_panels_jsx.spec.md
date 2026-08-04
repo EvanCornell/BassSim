@@ -3,6 +3,15 @@
 > Generated from method contracts. This file contains **no implementation code**.
 > Write tests against what is claimed here, not against what you expect the code to do.
 
+## Module
+
+Panel registry — metadata from src/panelMeta.js paired with its component.
+
+Adding a panel to AcouSim means one entry in PANEL_META plus one line here:
+the dock layout, the View menu and the saved-layout sanitizer all read from
+those, so nothing else needs to learn about it. Chart panels are generated
+from the chart registry instead of listed one by one.
+
 ## UNREACHABLE (1)
 
 ### `CanvasPanel()`

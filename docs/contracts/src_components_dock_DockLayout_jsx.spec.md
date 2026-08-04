@@ -3,6 +3,19 @@
 > Generated from method contracts. This file contains **no implementation code**.
 > Write tests against what is claimed here, not against what you expect the code to do.
 
+## Module
+
+Dock renderer — turns the layout tree from src/layout.js into DOM.
+
+Three interactions live here:
+  1. splitter drags        (resize two adjacent siblings, others untouched)
+  2. tab drags             (retarget a panel to any stack, edge or tab slot)
+  3. maximize / close      (per-stack chrome)
+
+Panels stay mounted when their tab is inactive — hidden with display:none
+rather than unmounted — so React Flow keeps its viewport and the charts keep
+their zoom when you tab away and back.
+
 ## EXPORTED (1)
 
 ### `DockLayout()`

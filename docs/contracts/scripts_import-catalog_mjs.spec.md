@@ -3,6 +3,22 @@
 > Generated from method contracts. This file contains **no implementation code**.
 > Write tests against what is claimed here, not against what you expect the code to do.
 
+## Module
+
+Turn a manufacturer catalog export into a generated driver-database module.
+
+  node scripts/import-catalog.mjs bc
+
+Each profile below names the source file, how to read a row, and how its
+columns map onto our schema. Adding a brand means adding a profile, not
+touching the emitter — so a second catalog lands as data, not as code.
+
+Cms and Rms are derived rather than transcribed: catalogs publish Fs, Mms
+and Qms, and the solver runs on Mms/Cms/Rms. Deriving them from the same
+three numbers guarantees the modeled driver resonates at the published Fs
+with the published mechanical Q, which transcribing a rounded Cms does not.
+Published values (Vas, Qts, …) are always copied verbatim, never recomputed.
+
 ## UNREACHABLE (48)
 
 ### `readSpreadsheetML(path)`
