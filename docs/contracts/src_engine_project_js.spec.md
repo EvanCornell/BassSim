@@ -44,7 +44,9 @@ Keys: `driver`, `chamber`, `waveguide`, `pr`, `radiation`
 Default sweep and display settings for a new project.
 
 `impedance` and `power` are UI conveniences linked to `voltage` by P = V²/Z;
-the solver reads only `voltage`.
+the solver reads only `voltage`. The shipped defaults are rounded for
+display — 2.83 V into 4 Ω is 2.002 W, published as 2 — so the identity holds
+to within rounding here and exactly only after `setAmp` recomputes it.
 
 Keys: `fmin`, `fmax`, `npts`, `voltage`, `impedance`, `power`, `rg`, `vThreshold`, `masking`, `unwrapPhase`, `delayOffset`, `nlEnabled`
 
@@ -75,7 +77,7 @@ them one round-trip at a time is miserable.
 
 **Returns**
 
-- `{nodes: Array<object>, edges: Array<object>, settings: object}` — The hydrated graph.
+- `{nodes: Array<object>, edges: Array<object>, settings: object}` — The hydrated graph. Nodes come back in the solver's shape — `{id, type, position, data: {params}}` — so params sit at `node.data.params`, not at `node.params` as they do in the serialized form.
 
 **Throws**
 

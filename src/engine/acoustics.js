@@ -102,12 +102,12 @@ export function struveH1(x) {
  * is behind it. The interpolation is smooth rather than a switch, so the
  * transition introduces no step in the SPL curve.
  *
- * Two pseudo-terminations short-circuit the piston model entirely: `rigid`
+ * Two pseudo-terminations short-circuit the piston model entirely. `rigid`
  * returns a fixed 1e12 Pa·s/m³ — large enough that the volume velocity through
  * it is numerically zero against any real acoustic impedance, without being
- * `Infinity`, which would propagate NaN through the matrix arithmetic
- * and `anechoic` returns the real characteristic impedance ρc/S (a perfectly
- * absorbing end with no reflection).
+ * `Infinity`, which would propagate NaN through the matrix arithmetic.
+ * `anechoic` returns the real characteristic impedance ρc/S, a perfectly
+ * absorbing end with no reflection.
  *
  * @param {number} S - Piston area, m². Clamped to ≥1e-8 when deriving the radius, so a degenerate port cannot produce a NaN radius.
  * @param {'free'|'half'|'quarter'|'eighth'|'rigid'|'anechoic'} solidAngle - Radiating space, or a pseudo-termination. Unrecognised values fall back to half space.
@@ -264,10 +264,12 @@ export function waveguideMatrix({ S1, S2, L, flare, Q, ecThroat = 0, ecMouth = 0
  * compliance is what makes longitudinal standing waves at n·c/2L show up as
  * real response features — the ripples a lumped model cannot produce.
  *
- * Stuffing does two things: it slows sound as the process shifts from
- * adiabatic toward isothermal (up to −15.5% at 8 g/L, where the model
- * saturates), and it adds resistive loss, combined with the node's own Q in
- * parallel.
+ * Stuffing does two things, and only the first saturates. It slows sound as the
+ * process shifts from adiabatic toward isothermal, by up to −15.5% at 8 g/L,
+ * beyond which the speed stops changing. It also adds resistive loss as 30/density,
+ * combined with the node's own Q in parallel — and that term keeps rising with
+ * density without limit, so two chambers above 8 g/L share a sound speed but not
+ * a Q.
  *
  * @param {object} chamber - Chamber parameters.
  * @param {number} chamber.volume - Internal volume, m³.

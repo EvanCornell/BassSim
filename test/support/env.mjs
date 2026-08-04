@@ -118,6 +118,9 @@ export function installEnv() {
     addEventListener() {},
     removeEventListener() {},
   }
+  // Opening a panel window is a documented side effect, and the state change
+  // beside it is testable — but only if the call does not throw first.
+  globalThis.open ??= (url, name) => ({ url, name, focus() {}, close() {} })
   globalThis.addEventListener ??= () => {}
   globalThis.removeEventListener ??= () => {}
   globalThis.confirm ??= () => true

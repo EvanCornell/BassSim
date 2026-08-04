@@ -6,132 +6,102 @@ sighted reviewer resolves an ambiguous contract by glancing at the code and neve
 notices the ambiguity existed. A blind author cannot, so every place the
 documentation is incomplete, contradictory or unverifiable surfaces as a question.
 
-This is a review of the documentation, not of the code. Entries are grouped by how
-they should be resolved.
+Most of the original list is now fixed. What remains is recorded here so the next
+author does not have to rediscover it, and so the pattern stays visible.
 
 ---
 
-## A. Contract contradicts itself — must be fixed
+## The pattern, stated once
 
-### `normQ` (src/engine/solver.js)
+Almost every defect found was one thing wearing different hats: **the contract
+named a concept and never the identifier.**
 
-The prose says a missing `Q` collapses onto `Infinity`. The parameter block says
-`@param {number} [p.Q=50]`. Both cannot be true, and they imply opposite
-behaviour for `normQ({})`.
+- Store actions said "writes store state" — never which field
+- `rawEval` described "symmetric mode" — never the flag
+- `isPanelDrag` described a panel drag — never the payload type
+- `loadCustom` described reading storage — never the key
+- All 22 commands rendered as `COMMANDS['<id>']` — no real id anywhere
+- Node types and handle names appeared nowhere, so solver fixtures were guesswork
 
-### `besselJ1` / `besselJ0` (src/engine/acoustics.js)
+This reads perfectly well if you already know the answers, which is exactly why
+it survived. Four authors reported it independently before it was fixed.
 
-The postconditions are written with exact equality on floating-point results
-(`result === -J1(-x)`). That holds only if the implementation reduces to `|x|`
-before evaluating; if it evaluates the polynomial on the signed argument the claim
-is false by a few ulps. Either the contract should state a tolerance or it is
-asserting something stronger than intended.
-
-### `matIdentity` (src/engine/complex.js)
-
-"Newly allocated matrix sharing the ZERO/ONE constants" combined with "callers are
-free to overwrite it" cannot both hold for the entries. If the entries are shared
-singletons, overwriting them corrupts every other matrix — the contract invites an
-aliasing bug.
+The corollary is worth keeping in mind when writing new contracts: **if a clause
+cannot be tested by someone who cannot read the code, it is not yet a contract.**
 
 ---
 
-## B. Contract is incomplete — the behaviour exists but is undocumented
+## Resolved
 
-### `fitDb` (src/components/OutputPanel.jsx)
+Contradictions fixed: `normQ`'s prose versus its `@param`; the Bessel
+postconditions asserting exact float equality; `matIdentity` promising both
+shared constants and free mutation; ten store actions falsely claiming
+cross-window mirroring; `EXT_GROUPS` published with the wrong count; `COMMANDS`
+published with 21 of its 26 keys.
 
-Documents a window *below* the peak and says nothing about the upper bound. The
-implementation pads the top and rounds to a multiple of 5. A blind author asserted
-`[peak − windowDb, peak]`, which is the only reading the text supports.
+Undocumented behaviour now stated: `fitDb`'s upper bound; `optimizeProject`'s
+baseline evaluation; `nearestIdx`'s tie-breaking; `rawEval`'s `sym` flag and its
+near-centre rule; `chamberMatrix`'s floor scope and its asymmetric stuffing
+saturation; `hydrateProject`'s hydrated node shape; `auditDriver`'s units,
+tolerances and air constants; `BUILTIN_DRIVERS`' collation; `struveH1`'s accuracy;
+`rigid`'s actual magnitude; `flareCutoff`'s exponential family.
 
-### `rawEval` (src/engine/nonlinear.js)
+Vacuous contracts strengthened: `endCorrectionLength`, `snapLines`, `fmtVal` —
+each was satisfiable by a constant-zero implementation.
 
-Describes "symmetric mode" without ever naming the property that enables it. Two
-independent agents guessed `curve.symmetric`; the real flag is spelled differently.
-
-### `nearestIdx` (src/components/OutputPanel.jsx)
-
-"Index of the nearest sample" does not say how ties resolve. The implementation and
-a reasonable blind reading pick opposite ends of a tie.
-
-### `hydrateProject` (src/engine/project.js)
-
-Never enumerates valid node `type` values, never states an edge's field names, and
-references `DEFAULT_PARAMS`/`DEFAULT_SETTINGS` without either being specified. Its
-two documented throw conditions are consequently **not independently testable**: a
-node missing only an id also trips the unknown-type branch.
-
-### `driverSI` (src/engine/solver.js)
-
-Documents no field name for the driver count or the wiring mode; both had to be
-borrowed from the `mcp/builders.js` contract. "Parallel wiring divides the
-electrical terms" never enumerates which terms.
-
-### `radiationImpedance` (src/engine/acoustics.js)
-
-"Rigid returns a near-infinite impedance" gives no magnitude, so the claim cannot
-be checked without inventing a threshold. The `solidAngle` union also mixes two
-different kinds of thing — actual solid angles and termination models — and the
-`2π/Ω` relation has no defined Ω for `rigid` or `anechoic`.
-
-### `isPanelDrag` (src/components/dock/DockLayout.jsx)
-
-The payload key identifying a panel drag is never stated, so only the negative
-cases are testable. Flagged as the weakest contract in its group.
-
-### `loadCustom` (src/components/DriverDB.jsx)
-
-The LocalStorage key is not documented, so the corrupt-data branch cannot be set up
-blind. Only "absent → `[]`" is coverable.
+Vocabulary published: command ids, command scopes, node types and their
+parameters, node handle names, panel ids, quick-bar item ids, store state fields,
+LocalStorage keys, the driver library's exports, the core T/S field set.
 
 ---
 
-## C. Contract is too weak to constrain the implementation
+## Still open
 
-### `endCorrectionLength` (src/engine/geometry.js)
+### Cannot be tested blind at all
 
-Its only postcondition — `result >= 0 when factor >= 0` — is satisfied by a
-constant-zero implementation. Nearly vacuous. Monotonicity in both arguments is
-derivable from the prose and should be stated.
+- **`normalizeTag`'s alias table.** "Resolve a tag alias to its canonical name"
+  with no alias listed anywhere. The canonical set is now knowable via `TAGS`,
+  but the mapping is not, so only passthrough and idempotence are assertable.
+- **`formatExt`'s unit strings.** `EXT_BY_KEY` gives the valid keys, so the
+  positive branch is now reachable, but no extended field's unit is stated —
+  "with its unit appended" stays half-checkable.
+- **`systemVolume`'s node shape.** Node type names are documented; which field
+  carries a chamber's volume is not.
+- **`isPanelDrag`'s positive branch.** The payload type is now named, but
+  constructing a `DataTransfer` blind remains impractical.
 
-### `struveH1` (src/engine/acoustics.js)
+### Underspecified
 
-No accuracy claim, while its Bessel siblings state "roughly 1e-8". The
-approximation is materially looser and nothing says how much.
+- **`calibratePort`'s "up to ~22 times"** is approximate in a contract that
+  otherwise states exact bounds. Tested as ≤ 22.
+- **`optimizeProject`'s grid endpoints** — inclusive of `min`/`max`, or not?
+- **`run`'s 1024-point cap** — does the returned `settings` reflect the cap or
+  the request?
+- **`normalizeTable`'s 0.5–2 bounds** — inclusive? And what "the detected x = 0
+  value" means for a table with no row at x = 0.
+- **`curveHasContent` with `table: []`** — is an empty table content?
+- **`freeSpotNear`'s distance metric** — Euclidean or Chebyshev, and does the
+  boundary count as occupied?
+- **`setAmp` on an impedance edit** — which of voltage/power is held and which
+  derived? And what rounding applies to derived figures.
+- **`dockPanel`'s "returns the original"** — identity or deep equality? In mild
+  tension with the same method being `@pure` and documented as returning a new
+  tree.
+- **`serialize`'s `modified` format** — "string" only.
+- **`driverToParams`'s label source** — now says it reads `model`, but the
+  record's own field list is documented in a different module.
+- **`parseJsdoc`'s return shape** — "the contract arrays" is still not
+  enumerated, and whether `throws` is a list is unstated.
+- **`takeType`'s remaining-text whitespace** — trimmed or not?
 
-### `snapLines` (src/components/OutputPanel.jsx)
+### Structural
 
-Neither the line-descriptor field names nor the snapshot shape are documented.
-"Dashed and thinner than the live trace" is not checkable from the contract.
-
-### `fmtVal` (src/components/NLLab.jsx)
-
-"Readable precision for its magnitude" fixes no digit count.
-
-### `cycleAverage` (src/engine/nonlinear.js)
-
-"24 points sampled uniformly in phase" states no phase offset, so the exact average
-is not derivable — only offset-independent properties are assertable.
-
----
-
-## D. Genuinely underdetermined edge cases
-
-- `normalizeTable` — whether the 0.5–2 bounds are inclusive; and what "the detected
-  x = 0 value" means for a table with no row at x = 0.
-- `curveHasContent` — whether `table: []` counts as content.
-- `flareCutoff` — never says which flares are "exponential-family". Only conical and
-  parabolic are stated to return `null`, while `areaProfile` describes tractrix and
-  Le Cléac'h as hyperbolic-exponential approximations. If either returns `null` the
-  two contracts contradict each other.
-- `jwPow` — the precondition `w >= 0` admits `w = 0`, but `(j·0)ⁿ` is undefined on
-  the principal branch as usually implemented. If the code returns NaN there, the
-  precondition should exclude zero.
-- `div` — "division by zero yields Infinity/NaN rather than throwing" is a
-  `@returns`-level guarantee stated inside a `@pre`.
-- `LeExp` — appears in a return type with no description at all.
-- `tlineMatrix` — the `c` default is `C_AIR`, which is not documented as an export,
-  so a blind author cannot verify the default's value.
-- `chartPanelComponent` — `@pure` on a factory returning a fresh component each call
-  can only mean identical output if the factory memoises. As written the claim is
-  either false or requires memoisation the contract does not mention.
+- **`IS_MAC` and `formatCombo`** are environment-derived, so only the two output
+  forms can be asserted, not which one is correct here.
+- **Command scopes** now have a documented vocabulary, but no per-command scope
+  is published — `COMMANDS`' nested keys show the field exists without its value.
+- **A wrapped opening paragraph** may land wholly in `moduleDoc.summary` or spill
+  into `description`; the contract does not say which.
+- **Sixty-one methods remain unreachable** — closures nested inside other
+  functions, and React components needing a renderer. They are labelled, not
+  hidden, but nothing tests them.

@@ -37,9 +37,12 @@ Fs Hz · Vas L · Re Ω · Bl T·m · Mms g · Cms mm/N · Sd cm² · Le mH ·
 Xmax mm · Rms N·s/m.
 
 Each entry exposes `key`, `label`, `unit` and `type`, and the solver-facing
-eight additionally carry `solver: true`.
+nine additionally carry `solver: true`: Fs, Re, Bl, Mms, Cms, Sd, Le, Xmax
+and Rms. The three Q values and Vas are published figures the solver derives
+rather than reads.
 
-`solver: true` marks the eight the engine actually reads; the rest are
+`solver: true` marks the nine the engine actually reads — the eight that
+enter the electro-mechanical equation plus Xmax, which bounds excursion; the rest are
 published figures kept for display and for the consistency audit. Declared as
 data so the browser, the CSV export and the MCP tools enumerate fields
 generically instead of hardcoding a list that drifts.

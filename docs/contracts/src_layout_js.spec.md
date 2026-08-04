@@ -419,7 +419,8 @@ sanitizes to `null` and the caller falls back to the default.
 
 **Postconditions (must hold on return)**
 
-- Every returned node has a valid id, a positive numeric size, and — for stacks — an `active` panel drawn from its own list.
+- Every returned node has a non-empty string id, a finite positive size, and — for stacks — an `active` panel drawn from its own list.
+- Never throws, whatever the input contains: every field is re-derived rather than trusted, so a wrong type anywhere yields a dropped node rather than an exception.
 
 **Side effects**
 
@@ -544,3 +545,25 @@ repeated docking builds a deep tree whose splitters behave unpredictably.
 **Side effects**
 
 - Consumes ids from `uid` for the stacks and splits it creates.
+
+## UNREACHABLE (1)
+
+### `sanitizeSize(v)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+Coerce a persisted flex weight to a usable one.
+
+Infinity passes a bare `> 0` test and then breaks the flex layout it is fed
+to, so finiteness is checked rather than assumed.
+
+**Parameters**
+
+- `v` — `any` — Untrusted size value.
+
+**Returns**
+
+- `number` — The value when it is a finite positive number, otherwise 1.
+
+**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.

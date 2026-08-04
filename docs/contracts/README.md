@@ -44,7 +44,7 @@ no implementation. This is the sole input to the blind contract test suite.
 | [`src/engine/project.js`](src_engine_project_js.spec.md) | 1 | 1 | 0 |
 | [`src/engine/solver.js`](src_engine_solver_js.spec.md) | 11 | 6 | 5 |
 | [`src/keymap.js`](src_keymap_js.spec.md) | 29 | 29 | 0 |
-| [`src/layout.js`](src_layout_js.spec.md) | 21 | 21 | 0 |
+| [`src/layout.js`](src_layout_js.spec.md) | 22 | 21 | 1 |
 | [`src/panelMeta.js`](src_panelMeta_js.spec.md) | 1 | 1 | 0 |
 | [`src/popout.js`](src_popout_js.spec.md) | 3 | 3 | 0 |
 | [`src/store.js`](src_store_js.spec.md) | 77 | 74 | 3 |
@@ -53,4 +53,4 @@ no implementation. This is the sole input to the blind contract test suite.
 | [`test/contracts.mjs`](test_contracts_mjs.spec.md) | 2 | 0 | 2 |
 | [`test/drivers.mjs`](test_drivers_mjs.spec.md) | 2 | 0 | 2 |
 | [`test/support/loader.mjs`](test_support_loader_mjs.spec.md) | 2 | 2 | 0 |
-| **Total** | **540** | **271** | **269** |
+| **Total** | **541** | **271** | **270** |

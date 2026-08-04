@@ -25,8 +25,8 @@
   },
   "stats": {
     "modules": 53,
-    "methods": 540,
-    "documented": 540
+    "methods": 541,
+    "documented": 541
   },
   "modules": [
     {
@@ -15259,17 +15259,17 @@
       "constants": [
         {
           "name": "CORE_FIELDS",
-          "line": 33,
+          "line": 36,
           "shape": {
             "kind": "array",
             "length": 13
           },
           "summary": "The flat, solver-facing T/S fields every driver record may carry.",
-          "description": "The flat, solver-facing T/S fields every driver record may carry.\n\nThe thirteen fields are Fs, Qts, Qes, Qms, Vas, Re, Bl, Mms, Cms, Sd, Le,\nXmax and Rms. The three Q values are dimensionless; the rest are\nFs Hz · Vas L · Re Ω · Bl T·m · Mms g · Cms mm/N · Sd cm² · Le mH ·\nXmax mm · Rms N·s/m.\n\nEach entry exposes `key`, `label`, `unit` and `type`, and the solver-facing\neight additionally carry `solver: true`.\n\n`solver: true` marks the eight the engine actually reads; the rest are\npublished figures kept for display and for the consistency audit. Declared as\ndata so the browser, the CSV export and the MCP tools enumerate fields\ngenerically instead of hardcoding a list that drifts."
+          "description": "The flat, solver-facing T/S fields every driver record may carry.\n\nThe thirteen fields are Fs, Qts, Qes, Qms, Vas, Re, Bl, Mms, Cms, Sd, Le,\nXmax and Rms. The three Q values are dimensionless; the rest are\nFs Hz · Vas L · Re Ω · Bl T·m · Mms g · Cms mm/N · Sd cm² · Le mH ·\nXmax mm · Rms N·s/m.\n\nEach entry exposes `key`, `label`, `unit` and `type`, and the solver-facing\nnine additionally carry `solver: true`: Fs, Re, Bl, Mms, Cms, Sd, Le, Xmax\nand Rms. The three Q values and Vas are published figures the solver derives\nrather than reads.\n\n`solver: true` marks the nine the engine actually reads — the eight that\nenter the electro-mechanical equation plus Xmax, which bounds excursion; the rest are\npublished figures kept for display and for the consistency audit. Declared as\ndata so the browser, the CSV export and the MCP tools enumerate fields\ngenerically instead of hardcoding a list that drifts."
         },
         {
           "name": "EXT_FIELDS",
-          "line": 60,
+          "line": 63,
           "shape": {
             "kind": "array",
             "length": 28
@@ -15279,14 +15279,14 @@
         },
         {
           "name": "EXT_BY_KEY",
-          "line": 107,
+          "line": 110,
           "shape": null,
           "summary": "Extended field descriptors indexed by key, for O(1) lookup during filtering.",
           "description": "Extended field descriptors indexed by key, for O(1) lookup during filtering."
         },
         {
           "name": "EXT_GROUPS",
-          "line": 109,
+          "line": 112,
           "shape": {
             "kind": "array"
           },
@@ -15295,7 +15295,7 @@
         },
         {
           "name": "SOURCE_LABELS",
-          "line": 125,
+          "line": 128,
           "shape": {
             "kind": "object",
             "keys": [
@@ -15316,7 +15316,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 147,
+          "line": 150,
           "signature": [
             "d"
           ],
@@ -15358,7 +15358,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 161,
+          "line": 164,
           "signature": [
             "key",
             "value"
@@ -15633,7 +15633,7 @@
           ],
           "documented": true,
           "summary": "Radiation impedance of a circular piston of area S into a solid angle.",
-          "description": "Radiation impedance of a circular piston of area S into a solid angle.\n\nBaseline is the flanged piston (2π): `Z = ρc/S · (R1(2ka) + jX1(2ka))`.\nSmaller solid angles raise the low-frequency radiation resistance by 2π/Ω —\nthis is the corner loading that makes a subwoofer louder in a room corner —\nwhile converging to ρc/S at high ka, where the piston no longer knows what\nis behind it. The interpolation is smooth rather than a switch, so the\ntransition introduces no step in the SPL curve.\n\nTwo pseudo-terminations short-circuit the piston model entirely: `rigid`\nreturns a fixed 1e12 Pa·s/m³ — large enough that the volume velocity through\nit is numerically zero against any real acoustic impedance, without being\n`Infinity`, which would propagate NaN through the matrix arithmetic\nand `anechoic` returns the real characteristic impedance ρc/S (a perfectly\nabsorbing end with no reflection).",
+          "description": "Radiation impedance of a circular piston of area S into a solid angle.\n\nBaseline is the flanged piston (2π): `Z = ρc/S · (R1(2ka) + jX1(2ka))`.\nSmaller solid angles raise the low-frequency radiation resistance by 2π/Ω —\nthis is the corner loading that makes a subwoofer louder in a room corner —\nwhile converging to ρc/S at high ka, where the piston no longer knows what\nis behind it. The interpolation is smooth rather than a switch, so the\ntransition introduces no step in the SPL curve.\n\nTwo pseudo-terminations short-circuit the piston model entirely. `rigid`\nreturns a fixed 1e12 Pa·s/m³ — large enough that the volume velocity through\nit is numerically zero against any real acoustic impedance, without being\n`Infinity`, which would propagate NaN through the matrix arithmetic.\n`anechoic` returns the real characteristic impedance ρc/S, a perfectly\nabsorbing end with no reflection.",
           "params": [
             {
               "name": "S",
@@ -15921,7 +15921,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 284,
+          "line": 286,
           "signature": [
             "arg0",
             "w",
@@ -15929,7 +15929,7 @@
           ],
           "documented": true,
           "summary": "ABCD matrix of a chamber, modelled as a finite transmission line.",
-          "description": "ABCD matrix of a chamber, modelled as a finite transmission line.\n\nTreating a box as a line of area Volume/Length rather than a lumped\ncompliance is what makes longitudinal standing waves at n·c/2L show up as\nreal response features — the ripples a lumped model cannot produce.\n\nStuffing does two things: it slows sound as the process shifts from\nadiabatic toward isothermal (up to −15.5% at 8 g/L, where the model\nsaturates), and it adds resistive loss, combined with the node's own Q in\nparallel.",
+          "description": "ABCD matrix of a chamber, modelled as a finite transmission line.\n\nTreating a box as a line of area Volume/Length rather than a lumped\ncompliance is what makes longitudinal standing waves at n·c/2L show up as\nreal response features — the ripples a lumped model cannot produce.\n\nStuffing does two things, and only the first saturates. It slows sound as the\nprocess shifts from adiabatic toward isothermal, by up to −15.5% at 8 g/L,\nbeyond which the speed stops changing. It also adds resistive loss as 30/density,\ncombined with the node's own Q in parallel — and that term keeps rising with\ndensity without limit, so two chambers above 8 g/L share a sound speed but not\na Q.",
           "params": [
             {
               "name": "chamber",
@@ -16008,7 +16008,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 318,
+          "line": 320,
           "signature": [
             "...qs"
           ],
@@ -18061,7 +18061,7 @@
         },
         {
           "name": "DEFAULT_SETTINGS",
-          "line": 37,
+          "line": 39,
           "shape": {
             "kind": "object",
             "keys": [
@@ -18080,7 +18080,7 @@
             ]
           },
           "summary": "Default sweep and display settings for a new project.",
-          "description": "Default sweep and display settings for a new project.\n\n`impedance` and `power` are UI conveniences linked to `voltage` by P = V²/Z;\nthe solver reads only `voltage`."
+          "description": "Default sweep and display settings for a new project.\n\n`impedance` and `power` are UI conveniences linked to `voltage` by P = V²/Z;\nthe solver reads only `voltage`. The shipped defaults are rounded for\ndisplay — 2.83 V into 4 Ω is 2.002 W, published as 2 — so the identity holds\nto within rounding here and exactly only after `setAmp` recomputes it."
         }
       ],
       "methods": [
@@ -18091,7 +18091,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 65,
+          "line": 67,
           "signature": [
             "proj"
           ],
@@ -18130,7 +18130,7 @@
           ],
           "returns": {
             "type": "{nodes: Array<object>, edges: Array<object>, settings: object}",
-            "desc": "The hydrated graph."
+            "desc": "The hydrated graph. Nodes come back in the solver's shape — `{id, type, position, data: {params}}` — so params sit at `node.data.params`, not at `node.params` as they do in the serialized form."
           },
           "throws": [
             {
@@ -20312,7 +20312,7 @@
         },
         {
           "name": "__internals",
-          "line": 495,
+          "line": 515,
           "shape": {
             "kind": "object",
             "keys": [
@@ -21414,13 +21414,52 @@
           "other": []
         },
         {
+          "name": "sanitizeSize",
+          "qualified": "sanitizeSize",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 458,
+          "signature": [
+            "v"
+          ],
+          "documented": true,
+          "summary": "Coerce a persisted flex weight to a usable one.",
+          "description": "Coerce a persisted flex weight to a usable one.\n\nInfinity passes a bare `> 0` test and then breaks the flex layout it is fed\nto, so finiteness is checked rather than assumed.",
+          "params": [
+            {
+              "name": "v",
+              "type": "any",
+              "optional": false,
+              "default": null,
+              "desc": "Untrusted size value."
+            }
+          ],
+          "returns": {
+            "type": "number",
+            "desc": "The value when it is a finite positive number, otherwise 1."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
           "name": "sanitize",
           "qualified": "sanitize",
           "kind": "function",
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 464,
+          "line": 480,
           "signature": [
             "tree",
             "knownPanels"
@@ -21452,7 +21491,8 @@
           "contract": {
             "pre": [],
             "post": [
-              "Every returned node has a valid id, a positive numeric size, and — for stacks — an `active` panel drawn from its own list."
+              "Every returned node has a non-empty string id, a finite positive size, and — for stacks — an `active` panel drawn from its own list.",
+              "Never throws, whatever the input contains: every field is re-derived rather than trusted, so a wrong type anywhere yields a dropped node rather than an exception."
             ],
             "invariant": [],
             "mutates": [],
