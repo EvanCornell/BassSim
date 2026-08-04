@@ -2,6 +2,17 @@ import React, { useMemo } from 'react'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine, ResponsiveContainer } from 'recharts'
 import { useStore } from '../store'
 
+/**
+ * Floating chart of air velocity in one waveguide.
+ *
+ * Opened by clicking a waveguide node's on-canvas velocity readout. A
+ * reference line marks the turbulence threshold, which is the number that
+ * actually matters — a port above roughly 17 m/s chuffs audibly regardless
+ * of how good the response looks.
+ *
+ * @returns {React.ReactElement|null} The popup, or `null` when no waveguide is selected for it.
+ * @sideEffect Subscribes to the store.
+ */
 export default function VelocityPopup() {
   const nodeId = useStore((s) => s.velocityPopupNodeId)
   const setVelocityPopup = useStore((s) => s.setVelocityPopup)

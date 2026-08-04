@@ -12,18 +12,43 @@ import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { useStore } from '../../store'
 import { PANELS, panelTitle } from './panels'
 
+/**
+ * The dataTransfer type marking a panel tab drag.
+ */
 const DRAG_MIME = 'application/acousim-panel'
+/**
+ * Smallest pane a splitter drag may produce, in pixels.
+ */
 const MIN_PX = 90        // a pane can never be dragged smaller than this
+/**
+ * How far into a stack the edge drop zones reach, as a fraction of its size.
+ */
 const EDGE_FRACTION = 0.28 // outer 28% of a stack docks to that side
 
-// The payload decides what a drag means, never the store flag alone: a palette
-// element carries application/acousim-node and must reach the canvas untouched,
-// even if a previous tab drag left draggingPanel set.
+/**
+ * Whether a drag event is a panel tab drag.
+ *
+ * The payload decides what a drag means, never the store flag alone: a
+ * palette element carries its own type and must reach the canvas untouched,
+ * even if a previous tab drag left `draggingPanel` set.
+ *
+ * @param {React.DragEvent} e - The drag event.
+ * @returns {boolean} True when the drag carries a panel tab.
+ * @pure
+ */
 const isPanelDrag = (e) => !!e.dataTransfer?.types?.includes(DRAG_MIME)
 
-// Chromium never fires dragend when the drag source is removed mid-drag, which
-// is exactly what a successful tab drop does — the tree is rebuilt and the tab
-// disappears. Clear the flag as soon as we act on the drop.
+/**
+ * Clear the panel-drag flag.
+ *
+ * Chromium never fires `dragend` when the drag source is removed mid-drag,
+ * which is exactly what a successful tab drop does — the tree is rebuilt and
+ * the tab disappears. So the flag is cleared as soon as a drop is acted on
+ * rather than waiting for an event that will not arrive.
+ *
+ * @returns {void}
+ * @sideEffect Writes store state, if the flag was set.
+ */
 const endPanelDrag = () => {
   const s = useStore.getState()
   if (s.draggingPanel) s.setDraggingPanel(null)
@@ -31,6 +56,14 @@ const endPanelDrag = () => {
 
 // ---------- panel body ----------
 
+/**
+ * Render one panel's component.
+ *
+ * @param {object} props - Component props.
+ * @param {string} props.id - Panel id.
+ * @returns {React.ReactElement|null} The panel, or `null` for an unknown id.
+ * @pure
+ */
 function PanelBody({ id }) {
   const def = PANELS[id]
   if (!def) return null
@@ -40,6 +73,18 @@ function PanelBody({ id }) {
 
 // ---------- one tabbed group ----------
 
+/**
+ * One tabbed panel group, with its tab strip and drop targets.
+ *
+ * Inactive panels stay mounted — hidden with `display: none` rather than
+ * unmounted — so React Flow keeps its viewport and the charts keep their
+ * zoom when you tab away and back.
+ *
+ * @param {object} props - Component props.
+ * @param {object} props.node - The stack node from the layout tree.
+ * @returns {React.ReactElement} The panel group.
+ * @sideEffect Subscribes to the store.
+ */
 function DockStack({ node }) {
   const layoutOps = useStore((s) => s.layoutOps)
   const dragging = useStore((s) => s.draggingPanel)
@@ -52,7 +97,17 @@ function DockStack({ node }) {
   const active = node.panels.includes(node.active) ? node.active : node.panels[0]
   const hasFocus = node.panels.includes(focused)
 
-  // Which of the five drop targets is the cursor over?
+  /**
+   * Which of the five drop targets the cursor is over.
+   *
+   * The outer 28% of each side docks to that side; anything further in tabs
+   * the panel into this stack. When the cursor is in two edge bands at once —
+   * a corner — the nearer edge wins.
+   *
+   * @param {React.DragEvent} e - The drag event.
+   * @returns {'left'|'right'|'top'|'bottom'|'center'} The target zone.
+   * @sideEffect Reads live element geometry.
+   */
   const zoneAt = (e) => {
     const r = bodyRef.current?.getBoundingClientRect()
     if (!r) return 'center'
@@ -64,6 +119,13 @@ function DockStack({ node }) {
     return edges.length ? edges[0][0] : 'center'
   }
 
+  /**
+   * Track which drop zone a panel drag is over, to highlight it.
+   *
+   * @param {React.DragEvent} e - The drag event.
+   * @returns {void}
+   * @sideEffect Updates the highlighted zone, and prevents the default only for panel drags — a palette drag must pass through to the canvas.
+   */
   const onBodyDragOver = (e) => {
     if (!dragging || !isPanelDrag(e)) return
     e.preventDefault()
@@ -71,6 +133,13 @@ function DockStack({ node }) {
     setZone(zoneAt(e))
   }
 
+  /**
+   * Dock the dragged panel into this stack at the cursor's zone.
+   *
+   * @param {React.DragEvent} e - The drop event.
+   * @returns {void}
+   * @sideEffect Restructures and persists the layout, and clears the drag flag. Ignores drops that are not panel drags.
+   */
   const onBodyDrop = (e) => {
     if (!dragging || !isPanelDrag(e)) return
     e.preventDefault()
@@ -155,14 +224,38 @@ function DockStack({ node }) {
 
 // ---------- splitter between two siblings ----------
 
+/**
+ * The draggable divider between two sibling panes.
+ *
+ * @param {object} props - Component props.
+ * @param {string} props.parentId - Id of the split these panes belong to.
+ * @param {number} props.index - Index of the pane before the splitter.
+ * @param {'row'|'col'} props.dir - Split direction.
+ * @param {React.RefObject} props.containerRef - Ref to the split's DOM element, used to measure the panes.
+ * @returns {React.ReactElement} The splitter.
+ * @sideEffect Subscribes to the store.
+ */
 function Splitter({ parentId, index, dir, containerRef }) {
   const layoutOps = useStore((s) => s.layoutOps)
 
+  /**
+   * Begin a splitter drag.
+   *
+   * Measures both panes in pixels at mousedown and converts the drag into new
+   * flex weights that preserve the pair's combined share, so panes outside
+   * the pair never move. Neither pane can be dragged below the minimum size.
+   *
+   * Listeners go on the window rather than the splitter so the drag survives
+   * the cursor outrunning the element, which it easily does.
+   *
+   * @param {React.MouseEvent} e - The mousedown event.
+   * @returns {void}
+   * @sideEffect Reads live element geometry, registers window mousemove and mouseup listeners, and adds a class to the body for the duration of the drag.
+   */
   const onDown = useCallback((e) => {
     e.preventDefault()
     const el = containerRef.current
     if (!el) return
-    // tree child i sits at DOM index 2i — splitters are interleaved
     const a = el.children[index * 2]
     const b = el.children[index * 2 + 2]
     if (!a || !b) return
@@ -175,12 +268,26 @@ function Splitter({ parentId, index, dir, containerRef }) {
     const wB = parseFloat(b.style.flexGrow) || 1
     const wTotal = wA + wB
 
+    /**
+     * Apply the in-progress splitter drag.
+     *
+     * @param {MouseEvent} ev - The mousemove event.
+     * @returns {void}
+     * @sideEffect Resizes and persists the layout on every mouse move.
+     * @reads the geometry captured when the drag started.
+     */
     const onMove = (ev) => {
       const d = (horiz ? ev.clientX : ev.clientY) - start
       const pxA = Math.max(MIN_PX, Math.min(total - MIN_PX, pxA0 + d))
       const ratio = pxA / total
       layoutOps.resize(parentId, index, wTotal * ratio, wTotal * (1 - ratio))
     }
+    /**
+     * End the splitter drag and remove its listeners.
+     *
+     * @returns {void}
+     * @sideEffect Removes the window listeners and the body class.
+     */
     const onUp = () => {
       window.removeEventListener('mousemove', onMove)
       window.removeEventListener('mouseup', onUp)
@@ -196,6 +303,17 @@ function Splitter({ parentId, index, dir, containerRef }) {
 
 // ---------- recursive node ----------
 
+/**
+ * Render a layout node, recursing through splits down to the stacks.
+ *
+ * Splitters are interleaved between children, which is why the splitter's
+ * own measurement code indexes DOM children at `2i`.
+ *
+ * @param {object} props - Component props.
+ * @param {object} props.node - A stack or split node from the layout tree.
+ * @returns {React.ReactElement} The rendered subtree.
+ * @pure
+ */
 function DockNode({ node }) {
   const ref = useRef(null)
   if (node.type === 'stack') return <DockStack node={node} />
@@ -215,6 +333,14 @@ function DockNode({ node }) {
 
 // ---------- workspace edge drop strips ----------
 
+/**
+ * The four drop strips along the outer edges of the workspace.
+ *
+ * Rendered only during a panel drag, so they never intercept anything else.
+ *
+ * @returns {React.ReactElement|null} The strips, or `null` when no panel is being dragged.
+ * @sideEffect Subscribes to the store.
+ */
 function EdgeDrops() {
   const dragging = useStore((s) => s.draggingPanel)
   const layoutOps = useStore((s) => s.layoutOps)
@@ -246,16 +372,29 @@ function EdgeDrops() {
 
 // ---------- root ----------
 
+/**
+ * The workspace dock: renders the layout tree, or the maximized panel alone.
+ *
+ * Installs a safety net for the drag flag. Whatever a drag turns out to be,
+ * once it is over the workspace must not be left in docking mode — a stuck
+ * flag keeps the edge strips over the window and turns every later palette
+ * drag into a panel move. The listeners are on the bubble phase, so a
+ * panel's own drop handler has already read the flag before it is cleared.
+ *
+ * @returns {React.ReactElement} The dock.
+ * @sideEffect Subscribes to the store. Registers window drop and dragend listeners, removed on unmount.
+ */
 export default function DockLayout() {
   const layout = useStore((s) => s.layout)
   const maximized = useStore((s) => s.maximized)
 
-  // Safety net: whatever a drag was, once it is over the workspace must not be
-  // left in docking mode. A stuck flag keeps the edge strips over the window
-  // and turns every later palette drag into a panel move.
   useEffect(() => {
-    // Bubble phase, so the panel's own drop handler has already run and read
-    // the flag before it is cleared.
+    /**
+     * Clear the drag flag once any drag ends anywhere in the window.
+     *
+     * @returns {void}
+     * @sideEffect Writes store state, if the flag was set.
+     */
     const clear = () => endPanelDrag()
     window.addEventListener('drop', clear)
     window.addEventListener('dragend', clear)
