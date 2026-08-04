@@ -5,12 +5,60 @@ import {
 } from 'recharts'
 import { useStore } from '../store'
 
+/**
+ * Trace colours, cycled per series.
+ */
 const SERIES = ['#3987e5', '#199e70', '#c98500', '#9085e9', '#d55181', '#d95926']
+/**
+ * Chart grid line colour.
+ */
 const GRID = '#2d3646'
+/**
+ * Preferred X-axis tick frequencies for the log scale.
+ */
 const TICKS = [10, 15, 20, 30, 40, 50, 70, 100, 150, 200, 300, 500, 700, 1000, 1500, 2000]
 
+/**
+ * Format a chart value, or an em dash when there is nothing to show.
+ *
+ * @param {number|null|undefined} v - The value.
+ * @param {number} [d=1] - Decimal places.
+ * @returns {string} The formatted number, or `'—'`.
+ * @pure
+ */
 const fmt = (v, d = 1) => (v == null || !isFinite(v) ? '—' : v.toFixed(d))
 
+/**
+ * The shared chart shell: log-frequency axis, zoom, pan and drag-select.
+ *
+ * Every plot is built on this, so they all behave identically. Three
+ * gestures: wheel zooms both axes about the cursor, shift or middle drag
+ * pans, and a plain drag selects an X range.
+ *
+ * Zoom state is read through a ref inside the wheel and pointer handlers
+ * rather than from props. Those listeners are registered once on mount —
+ * `wheel` needs `passive: false` to be preventable and `pointerdown` needs
+ * capture to beat recharts' own drag-select — so they would otherwise close
+ * over the domain as it was at mount and zoom from the wrong origin forever.
+ *
+ * Zooming out to the full sweep resets rather than clamping, which is what
+ * lets a few scroll-outs return the chart to its default view instead of
+ * leaving it in Manual mode at the original bounds.
+ *
+ * @param {object} props - Component props.
+ * @param {string} props.chartId - Chart id; keys the persisted zoom and Y-scale state.
+ * @param {Array<object>} props.data - Recharts rows, each carrying `f` plus one field per series.
+ * @param {Array<object>} props.lines - Series descriptors.
+ * @param {string} props.yLabel - Left axis label.
+ * @param {Array|undefined} props.yDomain - Left axis domain.
+ * @param {string} [props.y2Label] - Right axis label.
+ * @param {Array} [props.y2Domain] - Right axis domain.
+ * @param {Array<React.ReactElement>} [props.refLines=[]] - Reference lines to overlay.
+ * @param {Array<React.ReactElement>} [props.refAreas=[]] - Shaded regions to overlay.
+ * @param {React.ReactNode} [props.children] - Extra toolbar content.
+ * @returns {React.ReactElement} The chart.
+ * @sideEffect Subscribes to the store. Registers wheel and pointerdown listeners on its own element, removed on unmount.
+ */
 function BaseChart({ chartId, data, lines, yLabel, yDomain, y2Label, y2Domain, refLines = [], refAreas = [], children }) {
   const settings = useStore((s) => s.settings)
   const xZoom = useStore((s) => s.xZoom[chartId])
@@ -22,7 +70,6 @@ function BaseChart({ chartId, data, lines, yLabel, yDomain, y2Label, y2Domain, r
   const stateRef = useRef({})
   const xDomain = xZoom || [settings.fmin, settings.fmax]
 
-  // numeric Y bounds for zoom math: resolved Fit/Manual domain, or data extent
   const yBounds = useMemo(() => {
     if (Array.isArray(yDomain) && isFinite(yDomain[0]) && isFinite(yDomain[1])) return yDomain
     let lo = Infinity, hi = -Infinity
@@ -35,12 +82,33 @@ function BaseChart({ chartId, data, lines, yLabel, yDomain, y2Label, y2Domain, r
   }, [yDomain, data, lines])
   stateRef.current = { xDomain, chartId, full: [settings.fmin, settings.fmax], yBounds }
 
+  /**
+   * Switch this chart's Y axis to Manual mode with explicit bounds.
+   *
+   * @param {number} lo - Lower bound.
+   * @param {number} hi - Upper bound.
+   * @returns {void}
+   * @sideEffect Writes the Y-scale setting, which persists with the project.
+   */
   const setManualY = (lo, hi) => {
     const st = useStore.getState()
     const cur = st.settings.yScales || {}
+    /**
+     * Round a bound so the Manual inputs show a readable number.
+     *
+     * @param {number} v - The bound.
+     * @returns {number} The bound at 4 significant figures.
+     * @pure
+     */
     const r4 = (v) => Number(v.toPrecision(4))
     st.updateSettings({ yScales: { ...cur, [chartId]: { mode: 'manual', min: r4(lo), max: r4(hi) } } })
   }
+  /**
+   * Return this chart to its default view: full sweep, Y back to Fit.
+   *
+   * @returns {void}
+   * @sideEffect Clears the zoom and writes the Y-scale setting.
+   */
   const resetAll = () => {
     const st = useStore.getState()
     st.setXZoom(chartId, null)
@@ -48,11 +116,21 @@ function BaseChart({ chartId, data, lines, yLabel, yDomain, y2Label, y2Domain, r
     st.updateSettings({ yScales: { ...cur, [chartId]: { mode: 'fit', min: '', max: '' } } })
   }
 
-  // wheel = cursor-centered zoom of BOTH axes (log-x, linear-y); the Y-scale
-  // control flips to Manual with the zoomed bounds. shift/middle-drag = pan.
   useEffect(() => {
     const el = wrapRef.current
     if (!el) return
+    /**
+     * Where the cursor sits inside the plot area, as fractions of each axis.
+     *
+     * The plot area is inset from the element by the axis gutters, which are
+     * fixed by the chart's own margins, so they are subtracted as constants
+     * rather than measured.
+     *
+     * @param {number} clientX - Pointer X in client coordinates.
+     * @param {number} clientY - Pointer Y in client coordinates.
+     * @returns {[number, number]} Fraction along X and up Y, each clamped to 0–1.
+     * @sideEffect Reads live element geometry.
+     */
     const fracs = (clientX, clientY) => {
       const rect = el.getBoundingClientRect()
       const left = 52, right = 30, top = 10, bottom = 48
@@ -61,6 +139,22 @@ function BaseChart({ chartId, data, lines, yLabel, yDomain, y2Label, y2Domain, r
         Math.min(Math.max(1 - (clientY - rect.top - top) / (rect.height - top - bottom), 0), 1),
       ]
     }
+    /**
+     * Zoom both axes about the cursor.
+     *
+     * X zooms in log space, because the axis is logarithmic and a linear zoom
+     * would feel wrong at one end. When recharts has reported the exact data
+     * point under the cursor, that is used as the centre instead of the
+     * geometric fraction, so the value under the pointer stays put.
+     *
+     * Refuses to zoom in past a 1.15 ratio, and resets entirely rather than
+     * clamping once the view covers the whole sweep.
+     *
+     * @param {WheelEvent} e - The wheel event.
+     * @returns {void}
+     * @sideEffect Prevents the page from scrolling, and writes zoom and Y-scale state.
+     * @reads the current domains through a ref, since this listener is registered once on mount.
+     */
     const onWheel = (e) => {
       e.preventDefault()
       const { xDomain: [x0, x1], full, yBounds: [y0, y1] } = stateRef.current
@@ -86,6 +180,16 @@ function BaseChart({ chartId, data, lines, yLabel, yDomain, y2Label, y2Domain, r
       const ny1 = cy + (y1 - cy) * factor
       if (ny1 - ny0 > 1e-9) setManualY(ny0, ny1)
     }
+    /**
+     * Begin a pan, on shift-drag or middle-drag.
+     *
+     * Propagation is stopped so recharts does not start a drag-select at the
+     * same time. The pan is clamped to keep the window inside the swept range.
+     *
+     * @param {PointerEvent} e - The pointerdown event.
+     * @returns {void}
+     * @sideEffect Registers window pointermove and pointerup listeners.
+     */
     const onPointerDown = (e) => {
       if (!(e.shiftKey || e.button === 1)) return
       e.preventDefault()
@@ -94,6 +198,14 @@ function BaseChart({ chartId, data, lines, yLabel, yDomain, y2Label, y2Domain, r
       const rect = el.getBoundingClientRect()
       const innerW = rect.width - 82
       const innerH = rect.height - 58
+      /**
+       * Apply the in-progress pan.
+       *
+       * @param {PointerEvent} ev - The pointermove event.
+       * @returns {void}
+       * @sideEffect Writes zoom and Y-scale state on every move.
+       * @reads the domains captured when the pan started.
+       */
       const move = (ev) => {
         const [x0, x1] = start.dom
         const { full } = stateRef.current
@@ -106,6 +218,12 @@ function BaseChart({ chartId, data, lines, yLabel, yDomain, y2Label, y2Domain, r
         const dy = ((ev.clientY - start.py) / innerH) * (y1 - y0)
         setManualY(y0 + dy, y1 + dy)
       }
+      /**
+       * End the pan and remove its listeners.
+       *
+       * @returns {void}
+       * @sideEffect Removes the window listeners.
+       */
       const up = () => { window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up) }
       window.addEventListener('pointermove', move)
       window.addEventListener('pointerup', up)
@@ -122,6 +240,15 @@ function BaseChart({ chartId, data, lines, yLabel, yDomain, y2Label, y2Domain, r
     return t.length >= 3 ? t : undefined // very narrow zoom: let recharts pick
   }, [xDomain[0], xDomain[1]])
   const hasY2 = lines.some((l) => l.yAxisId === 'right')
+  /**
+   * Apply a completed drag-select as an X zoom.
+   *
+   * Selections narrower than 5% are discarded as accidental clicks rather
+   * than zooming to a sliver.
+   *
+   * @returns {void}
+   * @sideEffect Writes zoom state and clears the drag markers.
+   */
   const commitZoom = () => {
     if (dragL != null && dragR != null) {
       const a = Math.min(dragL, dragR)
@@ -198,18 +325,45 @@ function BaseChart({ chartId, data, lines, yLabel, yDomain, y2Label, y2Domain, r
   )
 }
 
-// Visible-window data for Y "Fit" mode: when zoomed, fit to what's on screen
+/**
+ * The rows currently visible, for Y "Fit" mode.
+ *
+ * When zoomed, Fit should frame what is on screen rather than the whole
+ * sweep — otherwise zooming into a quiet region leaves the trace pinned to
+ * the bottom of the chart.
+ *
+ * @param {string} chartId - Chart id.
+ * @param {Array<object>} data - All rows.
+ * @returns {Array<object>} The rows inside the current zoom window, or all of them when unzoomed.
+ * @sideEffect Subscribes to the store.
+ */
 function useFitData(chartId, data) {
   const z = useStore((s) => s.xZoom[chartId])
   return useMemo(() => (z ? data.filter((r) => r.f >= z[0] && r.f <= z[1]) : data), [data, z])
 }
 
-// Per-chart Y-scale control: Fit (computed useful range), Full (recharts
-// auto = entire data range), or Manual min/max. Persisted in settings so it
-// survives tab switches and project save/load.
+/**
+ * Per-chart Y-scale control, and the domain it resolves to.
+ *
+ * Three modes: Fit uses a computed useful range, Full lets recharts use the
+ * entire data range, and Manual takes explicit bounds. Persisted in
+ * settings, so the choice survives tab switches and project save/load.
+ *
+ * @param {string} id - Chart id.
+ * @param {Array|null} fitDomain - The computed Fit domain.
+ * @returns {[Array, React.ReactElement]} The resolved Y domain and the control to render.
+ * @sideEffect Subscribes to the store.
+ */
 function useYScale(id, fitDomain) {
   const ys = useStore((s) => s.settings.yScales?.[id]) || { mode: 'fit', min: '', max: '' }
   const updateSettings = useStore((s) => s.updateSettings)
+  /**
+   * Merge a change into this chart's persisted Y-scale settings.
+   *
+   * @param {object} patch - Fields to change.
+   * @returns {void}
+   * @sideEffect Writes the Y-scale setting, which persists with the project.
+   */
   const setYs = (patch) => {
     const cur = useStore.getState().settings.yScales || {}
     updateSettings({ yScales: { ...cur, [id]: { ...ys, ...patch } } })
@@ -240,15 +394,44 @@ function useYScale(id, fitDomain) {
   return [domain, control]
 }
 
-// Fit helpers. dB-type curves: window below the peak (deep nulls excluded);
-// linear curves: zero to padded max.
+/**
+ * Round a dB bound to a multiple of 5, so axis labels land on round numbers.
+ *
+ * @param {number} v - The bound.
+ * @param {boolean} up - Round up rather than down.
+ * @returns {number} The rounded bound.
+ * @pure
+ */
 const round5 = (v, up) => (up ? Math.ceil(v / 5) * 5 : Math.floor(v / 5) * 5)
+/**
+ * A useful Y range for a dB curve: a fixed window below the peak.
+ *
+ * Anchoring to the peak rather than the data extent keeps deep nulls from
+ * compressing the whole trace into the top of the chart — a 60 dB null is
+ * real but says nothing about the passband.
+ *
+ * @param {Array<object>} rows - Chart rows.
+ * @param {string[]} keys - Series keys to consider.
+ * @param {number} [windowDb=45] - How far below the peak to show.
+ * @returns {[number, number]|null} The domain, or `null` when no data is finite.
+ * @pure
+ */
 function fitDb(rows, keys, windowDb = 45) {
   let peak = -Infinity
   for (const r of rows) for (const k of keys) { const v = r[k]; if (v != null && v > peak) peak = v }
   if (!isFinite(peak)) return null
   return [round5(peak - windowDb, false), round5(peak + 4, true)]
 }
+/**
+ * A useful Y range for a linear curve: from a floor to a padded maximum.
+ *
+ * @param {Array<object>} rows - Chart rows.
+ * @param {string[]} keys - Series keys to consider.
+ * @param {number} [floor=0] - Lower bound.
+ * @param {number} [atLeast=0] - Minimum upper bound, so a flat trace still gets a sensible axis.
+ * @returns {[number, number]|null} The domain, or `null` when no data is finite.
+ * @pure
+ */
 function fitLinear(rows, keys, floor = 0, atLeast = 0) {
   let hi = -Infinity
   for (const r of rows) for (const k of keys) { const v = r[k]; if (v != null && v > hi) hi = v }
@@ -256,7 +439,18 @@ function fitLinear(rows, keys, floor = 0, atLeast = 0) {
   return [floor, Math.max(hi * 1.08, atLeast)]
 }
 
-// merge results into recharts row objects
+/**
+ * Merge results and snapshots into recharts row objects.
+ *
+ * One row per frequency carrying every requested series, since recharts
+ * wants row-major data while the solver produces column-major arrays.
+ * Snapshot series are resampled onto the current frequency axis, which is
+ * what lets an overlay taken at a different sweep resolution still line up.
+ *
+ * @param {string[]} keys - Which series families to include.
+ * @returns {{data: Array<object>, portIds: string[]}} The rows, and the radiator ids present in them.
+ * @sideEffect Subscribes to the store.
+ */
 function useChartData(keys) {
   const results = useStore((s) => s.results)
   const snapshots = useStore((s) => s.snapshots)
@@ -324,6 +518,18 @@ function useChartData(keys) {
   }, [results, snapshots, keys.join()])
 }
 
+/**
+ * Index of the sample nearest a frequency, by binary search.
+ *
+ * Used to resample snapshot curves onto the current axis; a linear scan
+ * would make a full overlay O(n²).
+ *
+ * @param {number[]} arr - Ascending frequency axis.
+ * @param {number} f - Frequency to locate.
+ * @returns {number} Index of the nearest sample.
+ * @pre arr is sorted ascending and holds at least two samples
+ * @pure
+ */
 function nearestIdx(arr, f) {
   let lo = 0, hi = arr.length - 1
   while (hi - lo > 1) {
@@ -333,12 +539,29 @@ function nearestIdx(arr, f) {
   return Math.abs(arr[lo] - f) < Math.abs(arr[hi] - f) ? lo : hi
 }
 
+/**
+ * Series descriptors for the snapshot overlays of one quantity.
+ *
+ * Drawn dashed and thinner than the live trace, so an overlay never reads
+ * as the current result.
+ *
+ * @param {Array<object>} snapshots - Stored snapshots.
+ * @param {string} key - Quantity key to overlay.
+ * @returns {Array<object>} Line descriptors for `BaseChart`.
+ * @pure
+ */
 function snapLines(snapshots, key) {
   return snapshots.map((s, si) => ({
     dataKey: `snap${si}_${key}`, name: `⧉ ${s.label}`, color: s.color, width: 1.5, dash: '6 3',
   }))
 }
 
+/**
+ * Sound pressure level, with a trace per radiator beside the combined response.
+ *
+ * @returns {React.ReactElement} The chart.
+ * @sideEffect Subscribes to the store.
+ */
 function SPLTab() {
   const { data, portIds } = useChartData(['spl'])
   const nodes = useStore((s) => s.nodes)
@@ -367,6 +590,12 @@ function SPLTab() {
   )
 }
 
+/**
+ * Electrical input impedance magnitude, with phase on a second axis.
+ *
+ * @returns {React.ReactElement} The chart.
+ * @sideEffect Subscribes to the store.
+ */
 function ImpedanceTab() {
   const { data } = useChartData(['zin'])
   const snapshots = useStore((s) => s.snapshots)
@@ -390,26 +619,51 @@ function ImpedanceTab() {
   )
 }
 
+/**
+ * Cone excursion against Xmax, one trace per driver.
+ *
+ * Cones in different places do not move together and are not
+ * interchangeable when their Xmax differs, so each gets its own trace.
+ *
+ * Millimetres are what you order parts by, but percent is the only way to
+ * compare cones whose limits differ — so a design mixing limits defaults to
+ * percent, and the unit is switchable either way. In percent every driver
+ * shares one 100% line; in millimetres there is a reference line per
+ * distinct Xmax, labelled with its drivers when they differ.
+ *
+ * @returns {React.ReactElement} The chart.
+ * @sideEffect Subscribes to the store.
+ */
 function ExcursionTab() {
   const { data } = useChartData(['exc'])
   const snapshots = useStore((s) => s.snapshots)
   const nodes = useStore((s) => s.nodes)
   const results = useStore((s) => s.results)
-  // One trace per driver: cones in different places do not move together, and
-  // they are not interchangeable when their Xmax differs.
   const xmaxByDriver = results?.xmaxByDriver || {}
   const driverIds = Object.keys(results?.excursionByDriver || {})
   const multi = driverIds.length > 1
+  /**
+   * The display label for a driver node, falling back to its id.
+   *
+   * @param {string} id - Driver node id.
+   * @returns {string} The label, or the id when unlabelled.
+   * @reads the enclosing `nodes` list.
+   */
   const labelOf = (id) => nodes.find((n) => n.id === id)?.data.params.label || id
   const limits = [...new Set(driverIds.map((id) => xmaxByDriver[id]).filter((v) => v > 0))].sort((a, b) => a - b)
   const fallbackXmax = nodes.find((n) => n.type === 'driver')?.data.params.Xmax
   const xmaxes = limits.length ? limits : (fallbackXmax > 0 ? [fallbackXmax] : [])
-  // Millimetres are what you order parts by; percent is the only way to compare
-  // cones whose Xmax differs, so mixed limits default to it.
   const mixed = xmaxes.length > 1
   const [unit, setUnit] = useState(null)
   const pct = (unit ?? (mixed ? '%' : 'mm')) === '%'
 
+  /**
+   * The row field holding this driver's excursion, in the selected unit.
+   *
+   * @param {string} id - Driver node id.
+   * @returns {string} The series key.
+   * @reads the enclosing unit selection.
+   */
   const seriesKey = (id) => (pct ? `excr_${id}` : `exc_${id}`)
   const lines = multi
     ? [
@@ -423,8 +677,16 @@ function ExcursionTab() {
       ...snapLines(snapshots, pct ? 'excr' : 'exc'),
     ]
 
-  // In percent every driver shares one 100% limit; in mm there is a line per
-  // distinct Xmax, labelled with its drivers when they differ.
+  /**
+   * The label for one Xmax reference line.
+   *
+   * With mixed limits the line names the drivers it applies to, since
+   * otherwise two lines a millimetre apart would be indistinguishable.
+   *
+   * @param {number} xm - The Xmax value, mm.
+   * @returns {string} The reference line label.
+   * @reads the enclosing driver list and Xmax map.
+   */
   const nameFor = (xm) => (mixed
     ? `Xmax ${xm} mm — ${driverIds.filter((id) => xmaxByDriver[id] === xm).map(labelOf).join(', ')}`
     : `Xmax ${xm} mm`)
@@ -464,6 +726,15 @@ function ExcursionTab() {
   )
 }
 
+/**
+ * Air velocity in each waveguide, against the turbulence threshold.
+ *
+ * The threshold line is the point of the chart: a port above it chuffs
+ * audibly however good the response looks.
+ *
+ * @returns {React.ReactElement} The chart.
+ * @sideEffect Subscribes to the store.
+ */
 function VelocityTab() {
   const { data } = useChartData(['vel'])
   const nodes = useStore((s) => s.nodes)
@@ -493,6 +764,16 @@ function VelocityTab() {
   )
 }
 
+/**
+ * Interior SPL at each probed chamber's virtual microphone.
+ *
+ * The right measure for in-cabin listening levels, where cabin gain rises
+ * below the cabin's first mode. Point pressure, so there is no 1 m
+ * convention here.
+ *
+ * @returns {React.ReactElement} The chart.
+ * @sideEffect Subscribes to the store.
+ */
 function InteriorTab() {
   const { data } = useChartData(['int'])
   const nodes = useStore((s) => s.nodes)
@@ -527,6 +808,12 @@ function InteriorTab() {
   )
 }
 
+/**
+ * Radiated acoustic power.
+ *
+ * @returns {React.ReactElement} The chart.
+ * @sideEffect Subscribes to the store.
+ */
 function PowerTab() {
   const { data } = useChartData(['pow'])
   const snapshots = useStore((s) => s.snapshots)
@@ -541,6 +828,12 @@ function PowerTab() {
   )
 }
 
+/**
+ * Acoustic efficiency as a percentage of electrical input power.
+ *
+ * @returns {React.ReactElement} The chart.
+ * @sideEffect Subscribes to the store.
+ */
 function EfficiencyTab() {
   const { data } = useChartData(['eff'])
   const lines = [{ dataKey: 'eff', name: 'Efficiency %', color: SERIES[1], width: 2.5 }]
@@ -554,6 +847,12 @@ function EfficiencyTab() {
   )
 }
 
+/**
+ * Electrical input power, real and apparent.
+ *
+ * @returns {React.ReactElement} The chart.
+ * @sideEffect Subscribes to the store.
+ */
 function ElecPowerTab() {
   const { data } = useChartData(['pe'])
   const lines = [
@@ -570,6 +869,12 @@ function ElecPowerTab() {
   )
 }
 
+/**
+ * Phase and group delay on separate axes.
+ *
+ * @returns {React.ReactElement} The chart.
+ * @sideEffect Subscribes to the store.
+ */
 function PhaseTab() {
   const { data } = useChartData(['ph'])
   const settings = useStore((s) => s.settings)
@@ -597,7 +902,14 @@ function PhaseTab() {
   )
 }
 
-// Each chart is its own dockable panel; this is the shell they share.
+/**
+ * The shell every chart panel shares.
+ *
+ * @param {object} props - Component props.
+ * @param {React.ReactNode} props.children - The chart to wrap.
+ * @returns {React.ReactElement} The panel.
+ * @pure
+ */
 function ChartPanel({ children }) {
   return (
     <div className="results-panel">
@@ -606,8 +918,12 @@ function ChartPanel({ children }) {
   )
 }
 
-// id → component, keyed the same as the per-chart zoom state in the store so
-// a chart keeps its zoom when it is re-docked or tabbed away.
+/**
+ * Chart id to component.
+ *
+ * Keyed the same as the per-chart zoom state in the store, so a chart keeps
+ * its zoom when it is re-docked or tabbed away.
+ */
 export const CHART_PANELS = {
   spl: SPLTab,
   zin: ImpedanceTab,
@@ -620,9 +936,22 @@ export const CHART_PANELS = {
   ph: PhaseTab,
 }
 
+/**
+ * Build the dockable panel component for one chart.
+ *
+ * @param {string} id - Chart id.
+ * @returns {React.ComponentType|null} The wrapped panel component, or `null` for an unknown id.
+ * @pure
+ */
 export function chartPanelComponent(id) {
   const Chart = CHART_PANELS[id]
   if (!Chart) return null
+  /**
+   * The chart wrapped in its panel shell.
+   *
+   * @returns {React.ReactElement} The panel.
+   * @pure
+   */
   const Wrapped = () => <ChartPanel><Chart /></ChartPanel>
   Wrapped.displayName = `ChartPanel(${id})`
   return Wrapped
