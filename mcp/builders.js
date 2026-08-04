@@ -272,7 +272,7 @@ export function calibratePort(project, portId, targetFb, simulateFb) {
    *
    * @param {object} p - Project to modify.
    * @param {number} L - Port length, cm.
-   * @returns {number} The assigned length, as the assignment expression's value; ignored by callers.
+   * @returns {void}
    * @mutates The port node's params.
    * @reads the enclosing `portId`.
    */

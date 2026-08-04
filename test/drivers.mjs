@@ -16,6 +16,15 @@ import { auditDriver } from '../src/data/driver-audit.js'
 let fails = 0
 let checks = 0
 
+/**
+ * Run one predicate over every driver and report the result.
+ *
+ * @param {string} name - Check description, printed either way.
+ * @param {(driver: object) => string|null} fn - Returns a problem description, or `null` when the driver passes.
+ * @returns {void}
+ * @mutates Appends to the module-level failure list.
+ * @sideEffect Prints the result line.
+ */
 function check(name, fn) {
   checks++
   const bad = []
@@ -33,6 +42,15 @@ function check(name, fn) {
   }
 }
 
+/**
+ * Relative difference between two values.
+ *
+ * @param {number} a - First value.
+ * @param {number} b - Second value, used as the denominator.
+ * @returns {number} `|a - b| / |b|`.
+ * @pre b is non-zero
+ * @pure
+ */
 const rel = (a, b) => Math.abs(a - b) / Math.abs(b)
 
 // --- structural ---

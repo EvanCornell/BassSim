@@ -23,10 +23,28 @@ const client = new Client({ name: 'smoke', version: '0.0.0' })
 await client.connect(new StdioClientTransport({ command: 'node', args: ['mcp/server.js'] }))
 
 let failures = 0
+/**
+ * Assert one condition and record the outcome.
+ *
+ * @param {string} name - Check description.
+ * @param {any} cond - Truthy to pass.
+ * @param {string} [info=''] - Extra detail appended to the result line.
+ * @returns {void}
+ * @mutates Bumps the module-level failure counter.
+ * @sideEffect Prints the result line.
+ */
 const check = (name, cond, info = '') => {
   console.log(`${cond ? 'PASS' : 'FAIL'}  ${name}${info ? ` — ${info}` : ''}`)
   if (!cond) failures++
 }
+/**
+ * Invoke one MCP tool and return both the raw result and its text payload.
+ *
+ * @param {string} name - Tool name.
+ * @param {object} [args={}] - Tool arguments.
+ * @returns {Promise<{r: object, text: string}>} The raw tool result and its first text block.
+ * @sideEffect Sends a request over the MCP transport.
+ */
 const call = async (name, args = {}) => {
   const r = await client.callTool({ name, arguments: args })
   return { r, text: r.content[0].text }

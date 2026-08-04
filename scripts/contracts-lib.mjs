@@ -21,12 +21,15 @@ import { join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { parse } from '@babel/parser'
 
+/** Repository root, so scanned paths can be reported repo-relative. */
 export const REPO = fileURLToPath(new URL('..', import.meta.url))
 
-// Directories walked for documentable source.
+/** Directories walked for documentable source. */
 export const ROOTS = ['src', 'mcp', 'server', 'scripts', 'test']
 
+/** Directory names never descended into. */
 const IGNORE_DIRS = new Set(['node_modules', 'dist', '.git', 'data'])
+/** File extensions treated as documentable source. */
 const SOURCE_EXT = new Set(['.js', '.jsx', '.mjs'])
 
 // Generated or pure-data modules. These hold no executable surface — a
@@ -42,13 +45,15 @@ export const IGNORE_FILES = new Set([
 // Tag vocabulary
 // ---------------------------------------------------------------------------
 
-// The contract vocabulary, as data so the test can reject anything outside it.
-// A typo like `@sideeffect` would otherwise parse cleanly and then silently
-// vanish from the generated docs.
-//
-//   typed — leading {type} is expected, e.g. `@param {number} w - …`
-//   text  — free prose payload, e.g. `@pre w >= 0`
-//   flag  — no payload, e.g. `@pure`
+/**
+ * The contract vocabulary, as data so the test can reject anything outside it.
+ *
+ * A typo like `@sideeffect` would otherwise parse cleanly and then silently
+ * vanish from the generated docs.
+ *
+ * Payload kinds: `typed` expects a leading `{type}`, `text` takes free
+ * prose, and `flag` takes nothing.
+ */
 export const TAGS = {
   // --- standard JSDoc ---
   param: 'typed',
@@ -76,16 +81,34 @@ export const TAGS = {
   pure: 'flag', // no effects, deterministic in its arguments
 }
 
-// `@return` and `@returns` mean the same thing; normalize so downstream code
-// only ever sees one spelling.
+/** Accepted spellings mapped to the canonical tag name. */
 const TAG_ALIASES = { return: 'returns', arg: 'param', argument: 'param', exception: 'throws' }
 
+/**
+ * Resolve a tag alias to its canonical name.
+ *
+ * @param {string} t - The tag as written.
+ * @returns {string} The canonical tag name, unchanged when it is not an alias.
+ * @pure
+ */
 export const normalizeTag = (t) => TAG_ALIASES[t] || t
 
 // ---------------------------------------------------------------------------
 // File discovery
 // ---------------------------------------------------------------------------
 
+/**
+ * Collect source files under a directory, recursively.
+ *
+ * An unreadable directory is skipped rather than throwing, so a missing
+ * optional root does not break the scan.
+ *
+ * @param {string} dir - Absolute directory path.
+ * @param {string[]} out - Accumulator, appended to in place.
+ * @returns {string[]} The same array.
+ * @mutates The `out` array.
+ * @sideEffect Reads the filesystem.
+ */
 function walkDir(dir, out) {
   let entries
   try { entries = readdirSync(dir) } catch { return out }
@@ -99,7 +122,15 @@ function walkDir(dir, out) {
   return out
 }
 
-/** Every source file in scope, repo-relative and sorted for stable output. */
+/**
+ * Every source file in scope, repo-relative and sorted.
+ *
+ * Sorting matters: it is what makes `docs/api.json` stable across runs, so
+ * a regeneration with no source change produces no diff.
+ *
+ * @returns {string[]} Repo-relative paths, ascending.
+ * @sideEffect Reads the filesystem.
+ */
 export function sourceFiles() {
   const out = []
   for (const root of ROOTS) walkDir(join(REPO, root), out)
@@ -113,9 +144,17 @@ export function sourceFiles() {
 // JSDoc block parsing
 // ---------------------------------------------------------------------------
 
-// Pull a leading {type} off a tag payload. Written as a brace scan rather than
-// a regex so record and union types — {{driver: Driver}}, {Object<string, N>} —
-// survive intact instead of being truncated at the first '}'.
+/**
+ * Pull a leading `{type}` off a tag payload.
+ *
+ * Written as a brace scan rather than a regex so record and union types —
+ * `{{driver: Driver}}`, `{Object<string, N>}` — survive intact instead of
+ * being truncated at the first `}`.
+ *
+ * @param {string} s - The tag payload.
+ * @returns {[string|null, string]} The type and the remaining text; the type is `null` when there was none or the braces were unbalanced.
+ * @pure
+ */
 function takeType(s) {
   if (!s.startsWith('{')) return [null, s]
   let depth = 0
@@ -129,7 +168,16 @@ function takeType(s) {
   return [null, s] // unbalanced — treat as prose, the test reports the miss
 }
 
-// `name`, `[name]` and `[name=default]` are all legal JSDoc param names.
+/**
+ * Pull a parameter name off a tag payload.
+ *
+ * Handles all three JSDoc spellings: `name`, `[name]` for optional, and
+ * `[name=default]`.
+ *
+ * @param {string} s - The payload, after any type has been removed.
+ * @returns {[string|null, boolean, string|null, string]} The name, whether it was optional, its default, and the remaining text.
+ * @pure
+ */
 function takeName(s) {
   if (s.startsWith('[')) {
     const close = s.indexOf(']')
@@ -145,11 +193,24 @@ function takeName(s) {
   return [m[1], false, null, s.slice(m[0].length)]
 }
 
+/**
+ * Remove the optional `-` separating a parameter name from its description.
+ *
+ * @param {string} s - The remaining payload.
+ * @returns {string} The description alone.
+ * @pure
+ */
 const stripDash = (s) => s.replace(/^-\s*/, '').trim()
 
 /**
- * Parse a raw `/** … *\/` comment body into structured contract fields.
- * `raw` is Babel's `comment.value`: the text between the delimiters.
+ * Parse a raw JSDoc comment body into structured contract fields.
+ *
+ * Tags continue across lines until the next one, so a long `@pre` can be
+ * wrapped without losing its tail.
+ *
+ * @param {string} raw - Babel's `comment.value`: the text between the delimiters.
+ * @returns {object} The parsed contract: `summary`, `description`, `params`, `returns`, `throws`, the contract arrays, `pure`, plus `unknownTags` and `malformed` for the test to report on.
+ * @pure
  */
 export function parseJsdoc(raw) {
   const lines = raw.split('\n').map((l) => l.replace(/^\s*\*+ ?/, '').trimEnd())
@@ -230,8 +291,14 @@ const FN_TYPES = new Set(['ArrowFunctionExpression', 'FunctionExpression', 'Func
 
 /**
  * Parameter names as the signature actually declares them.
- * Destructured and rest params are reported with a `pattern` kind because
- * their JSDoc name is the author's choice, so only their position is checkable.
+ *
+ * Destructured and rest params are reported with a `pattern` kind, because
+ * their JSDoc name is the author's choice — only their position is
+ * checkable.
+ *
+ * @param {object} fn - A Babel function node.
+ * @returns {Array<{kind: 'name'|'rest'|'pattern', name: string, optional: boolean}>} One descriptor per declared parameter, in order.
+ * @pure
  */
 function paramNames(fn) {
   return (fn.params || []).map((p, i) => {
@@ -247,11 +314,27 @@ function paramNames(fn) {
   })
 }
 
-/** True when the function can return a value, so a `@returns` is expected. */
+/**
+ * Whether a function can return a value, so a `@returns` is expected.
+ *
+ * A nested function's returns belong to that function, so the walk stops at
+ * any function boundary below the one being examined.
+ *
+ * @param {object} fn - A Babel function node.
+ * @returns {boolean} True for a concise arrow body, or a body containing a `return` with an argument.
+ * @pure
+ */
 function returnsValue(fn) {
   if (fn.type === 'ArrowFunctionExpression' && fn.body.type !== 'BlockStatement') return true
   let found = false
   const seen = new Set()
+  /**
+   * Walk the body looking for a value-returning `return`.
+   *
+   * @param {any} n - An AST node, array, or anything else, which is ignored.
+   * @returns {void}
+   * @mutates The enclosing `found` flag and the visited set.
+   */
   const visit = (n) => {
     if (found || !n || typeof n !== 'object' || seen.has(n)) return
     seen.add(n)
@@ -269,12 +352,21 @@ function returnsValue(fn) {
   return found
 }
 
-// Which node kinds carry a contract. "Absolutely everything" means every
-// *named* function binding at any depth — including one-line aliases like
-// `export const add = (a, b) => a.add(b)` and helpers declared inside a
-// component body. Anonymous functions passed straight to a call or a JSX prop
-// are excluded: `filtered.map((d) => …)` has no name to document and a block
-// comment there would break up the markup it lives in.
+/**
+ * Decide whether an AST node is a documentable method, and name it.
+ *
+ * "Absolutely everything" means every *named* function binding at any depth
+ * — including one-line aliases like `export const add = (a, b) => a.add(b)`
+ * and helpers declared inside a component body. Anonymous functions passed
+ * straight to a call or a JSX prop are excluded: `filtered.map((d) => …)`
+ * has no name to document, and a block comment there would break up the
+ * markup it lives in.
+ *
+ * @param {object} node - The AST node.
+ * @param {object|null} parent - Its parent, needed to recognise a default export.
+ * @returns {{name: string, kind: string, fn: object|null}|null} The method's name, kind and function node, or `null` when the node is not a method.
+ * @pure
+ */
 function classify(node, parent) {
   if (node.type === 'FunctionDeclaration' && node.id) {
     return { name: node.id.name, kind: 'function', fn: node }
@@ -312,9 +404,19 @@ function classify(node, parent) {
   return null
 }
 
-// A contract sits above the whole declaration, not above the inner arrow, so
-// walk out through the wrappers that share a start position: the arrow in
-// `export const f = () => {}` starts well after the comment that documents it.
+/**
+ * Where a method's contract would have to end for it to belong to that method.
+ *
+ * A contract sits above the whole declaration, not above the inner arrow:
+ * in `export const f = () => {}` the arrow starts well after the comment
+ * that documents it, so this walks out through the wrappers that share a
+ * start position.
+ *
+ * @param {object} node - The method's AST node.
+ * @param {Array<object>} parents - Its ancestors, outermost first.
+ * @returns {number} Source offset the contract must be adjacent to.
+ * @pure
+ */
 function anchorStart(node, parents) {
   let anchor = node
   for (let i = parents.length - 1; i >= 0; i--) {
@@ -331,8 +433,16 @@ function anchorStart(node, parents) {
 }
 
 /**
- * Scan one source file and return every documentable method with the contract
- * attached to it (or `doc: null` when it has none).
+ * Scan one source file for methods and the contracts attached to them.
+ *
+ * A contract belongs to a method only when nothing but whitespace separates
+ * them, which is what stops an unrelated block comment further up the file
+ * from being read as one.
+ *
+ * @param {string} relPath - Repo-relative path.
+ * @returns {{file: string, moduleDoc: object|null, methods: Array<object>}} The file's module-level contract and every method in source order, each with `doc: null` when it has none.
+ * @throws {Error} When the file cannot be parsed.
+ * @sideEffect Reads the file from disk.
  */
 export function scanFile(relPath) {
   const source = readFileSync(join(REPO, relPath), 'utf8')
@@ -353,6 +463,13 @@ export function scanFile(relPath) {
   const parents = []
   const scope = []
 
+  /**
+   * Walk the AST, recording every documentable method it finds.
+   *
+   * @param {any} node - An AST node, array, or anything else, which is ignored.
+   * @returns {void}
+   * @mutates The enclosing `found` list, and the parent and scope stacks it maintains during the walk.
+   */
   const visit = (node) => {
     if (!node || typeof node !== 'object') return
     if (Array.isArray(node)) { node.forEach(visit); return }
@@ -408,7 +525,13 @@ export function scanFile(relPath) {
   return { file: relPath, moduleDoc, methods: found.sort((a, b) => a.line - b.line) }
 }
 
-/** Scan the whole repo. */
+/**
+ * Scan every source file in scope.
+ *
+ * @returns {Array<{file: string, moduleDoc: object|null, methods: Array<object>}>} One entry per file, in sorted path order.
+ * @throws {Error} When any file fails to parse.
+ * @sideEffect Reads the filesystem.
+ */
 export function scanRepo() {
   return sourceFiles().map(scanFile)
 }

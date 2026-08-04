@@ -112,6 +112,15 @@ export async function exportSchematicPNG(projectName) {
   if (!el) return
   const dataUrl = await toPng(el, {
     backgroundColor: '#0d1117',
+    /**
+     * Exclude the editor chrome from the exported image.
+     *
+     * The minimap and controls belong to the editor, not the schematic.
+     *
+     * @param {HTMLElement} n - A candidate node.
+     * @returns {boolean} True to include the node in the render.
+     * @pure
+     */
     filter: (n) => !(n.classList?.contains('react-flow__minimap') || n.classList?.contains('react-flow__controls')),
     pixelRatio: 2,
   })

@@ -19,8 +19,18 @@ const all = modules.flatMap((m) => m.methods.map((x) => ({ ...x, file: m.file })
 const failures = []
 let checksRun = 0
 
-// Register one predicate over every method. `fn` returns a string describing
-// the problem, or null when the method passes.
+/**
+ * Run one predicate over every method and report the result.
+ *
+ * Failures are truncated to the first twelve, since an early-stage file can
+ * fail every check at once and a wall of output hides which check matters.
+ *
+ * @param {string} label - Check description, printed either way.
+ * @param {(method: object) => string|null} fn - Returns a problem description, or `null` when the method passes.
+ * @returns {void}
+ * @mutates Appends to the module-level failure list and bumps the check count.
+ * @sideEffect Prints the result line and up to twelve failures.
+ */
 function check(label, fn) {
   checksRun++
   const bad = []
@@ -46,8 +56,17 @@ check('every contract has a summary line', (m) =>
 
 // --- signature agreement ----------------------------------------------------
 
-// Sub-properties (`@param {number} opts.gain`) document a field of a parameter,
-// not a parameter, so they are excluded from the positional comparison.
+/**
+ * A contract's top-level `@param` entries.
+ *
+ * Sub-properties like `@param {number} opts.gain` document a field of a
+ * parameter, not a parameter, so they are excluded from the positional
+ * comparison against the signature.
+ *
+ * @param {object} doc - A parsed contract.
+ * @returns {Array<object>} Only the entries describing whole parameters.
+ * @pure
+ */
 const topLevel = (doc) => doc.params.filter((p) => !p.name.includes('.'))
 
 check('@param list matches the signature arity', (m) => {
