@@ -11,7 +11,7 @@
 // Run: npm run test:triage
 
 import { spawnSync } from 'node:child_process'
-import { readFileSync, writeFileSync } from 'node:fs'
+import { readFileSync, writeFileSync, globSync } from 'node:fs'
 import { join } from 'node:path'
 import { REPO } from './contracts-lib.mjs'
 
@@ -44,7 +44,10 @@ function indexContracts() {
  * @sideEffect Spawns the Node test runner, which imports and executes application code.
  */
 function runSuite() {
-  const r = spawnSync('node', ['--test', '--import', './test/support/setup.mjs', 'test/contract/'], {
+  // Files are globbed here rather than passing the directory: Node's test
+  // runner resolves a directory argument as a module and fails outright.
+  const files = globSync('test/contract/*.test.mjs', { cwd: REPO }).sort()
+  const r = spawnSync('node', ['--test', '--import', './test/support/setup.mjs', ...files], {
     cwd: REPO, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024,
   })
   return { code: r.status ?? 1, out: `${r.stdout || ''}${r.stderr || ''}` }
