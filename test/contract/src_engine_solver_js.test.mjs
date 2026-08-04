@@ -12,11 +12,21 @@ const { normQ, driverPassiveMechZ, buildGraph } = __internals
 //   runSimulation > propagateInto(node, fromHandle, p, U, visited, viaFront)
 
 // --- fixtures ----------------------------------------------------------
-// AMBIGUITY: the spec documents node shape as `{id, type, data: {params}}` and
-// edge shape as `{source, sourceHandle, target, targetHandle}`, but never names
-// the node types or handle strings. `driver` with `front`/`rear` ports comes
-// from the nodes.jsx contract ("front/rear ports"); `radiation` is the terminal
-// the solver contract names ("a radiation node from the piston model").
+// CONTRACT (module): "Graph → transfer-matrix chain solver. Convention: ABCD
+//            matrices map [p_in; U_in] = M · [p_out; U_out] with p = acoustic
+//            pressure (Pa), U = volume velocity (m^3/s)."
+//
+// Node types ARE spec-supported: `getMatrix` names "a `waveguide` or `chamber`
+// node", and `inputZ` names "a radiation node", "a passive radiator" and "a
+// driver".
+//
+// AMBIGUITY (UNRESOLVED): handle strings are still nowhere documented. The
+// module section added by the regeneration states only the ABCD convention and
+// names no handles. `front`/`rear` on a driver comes from the nodes.jsx contract
+// ("front/rear ports"); `throat`/`mouth` on a waveguide is the only handle pair
+// the solver's own prose supports ("Throat and mouth areas", "an unconnected
+// mouth is a working port"). The chamber's and radiation node's handles are
+// guesses with no support anywhere in the pack.
 
 const DRIVER_PARAMS = {
   Re: 6, Le: 1, Bl: 10, Sd: 500, Mms: 100, Cms: 0.2,
@@ -32,6 +42,27 @@ function smallGraph() {
   const edges = [
     { source: 'd1', sourceHandle: 'front', target: 'r1', targetHandle: 'in' },
     { source: 'd1', sourceHandle: 'rear', target: 'r2', targetHandle: 'in' },
+  ]
+  return { nodes, edges }
+}
+
+// A real transfer-matrix *chain*, as the module section describes: the driver's
+// rear loads a chamber, the chamber feeds a waveguide, and the waveguide's mouth
+// radiates. This puts genuine two-port nodes on the backward walk, which is what
+// `inputZ` — the documented writer of `node._Zl` — traverses.
+function chainGraph() {
+  const nodes = [
+    driverNode('d1'),
+    radNode('r1'),
+    { id: 'c1', type: 'chamber', data: { params: { V: 40, Q: 10 } } },
+    { id: 'w1', type: 'waveguide', data: { params: { S1: 50, S2: 50, L: 20, Q: 20 } } },
+    radNode('r2'),
+  ]
+  const edges = [
+    { source: 'd1', sourceHandle: 'front', target: 'r1', targetHandle: 'in' },
+    { source: 'd1', sourceHandle: 'rear', target: 'c1', targetHandle: 'in' },
+    { source: 'c1', sourceHandle: 'out', target: 'w1', targetHandle: 'throat' },
+    { source: 'w1', sourceHandle: 'mouth', target: 'r2', targetHandle: 'in' },
   ]
   return { nodes, edges }
 }
@@ -380,8 +411,12 @@ test('runSimulation: excursion and excursionRatio are per-frequency arrays', () 
 //            objects (`node._Zl`) and on returned impedances (`Z._radS`).
 //            Harmless to the graph's meaning, but the input array is not left
 //            untouched."
+// CONTRACT (module): "Graph → transfer-matrix chain solver" — `_Zl` is written
+// by `inputZ`, the backward walk, which is what a two-port chain exercises, so
+// the graph here is a full driver → chamber → waveguide → radiation chain rather
+// than a bare driver with two terminals.
 test('runSimulation: stashes scratch state on the caller\'s node objects', () => {
-  const { nodes, edges } = smallGraph()
+  const { nodes, edges } = chainGraph()
   const before = structuredClone(nodes)
   runSimulation(nodes, edges, { npts: 8 })
   assert.notDeepEqual(nodes, before, 'the input nodes should not be left untouched')
@@ -413,10 +448,34 @@ test('runSimulation: nlEnabled changes nothing when no driver has nonlinear curv
 // CONTRACT: "`settings.masking` — `boolean` _(optional)_ — Replace chambers with
 //            lumped compliances, hiding standing-wave artifacts."
 test('runSimulation: masking is accepted and leaves the result shape intact', () => {
-  const { nodes, edges } = smallGraph()
+  const { nodes, edges } = chainGraph()
   const res = runSimulation(nodes, edges, { npts: 16, masking: true })
   assert.equal(res.ok, true)
   for (const k of SUCCESS_KEYS) assert.ok(Object.hasOwn(res, k), `missing key ${k}`)
+})
+
+// CONTRACT: "Replace chambers with lumped compliances, hiding standing-wave
+//            artifacts." — a graph containing a chamber must respond to the flag.
+test('runSimulation: masking changes the answer for a graph containing a chamber', () => {
+  const a = chainGraph()
+  const off = runSimulation(a.nodes, a.edges, { npts: 64 })
+  const b = chainGraph()
+  const on = runSimulation(b.nodes, b.edges, { npts: 64, masking: true })
+  assert.equal(off.ok, true)
+  assert.equal(on.ok, true)
+  assert.notDeepEqual(on.splCombined, off.splCombined)
+})
+
+// CONTRACT: "On success `{ok: true, validation, freqs, ...}`" — a chained
+// transfer-matrix graph, which the module section describes as the general case,
+// produces the same documented result shape.
+test('runSimulation: a chained two-port graph succeeds with the documented shape', () => {
+  const { nodes, edges } = chainGraph()
+  const res = runSimulation(nodes, edges, { npts: 32 })
+  assert.equal(res.ok, true)
+  for (const k of SUCCESS_KEYS) assert.ok(Object.hasOwn(res, k), `missing key ${k}`)
+  assert.equal(res.freqs.length, 32)
+  assert.equal(res.splCombined.length, 32)
 })
 
 // CONTRACT: "the validation" field of the result, from validateGraph

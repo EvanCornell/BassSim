@@ -20,6 +20,24 @@ const clone = (v) => JSON.parse(JSON.stringify(v))
 // A combo no sane default would claim, used as "free" in conflict/resolve tests.
 const FREE_COMBO = 'mod+alt+shift+f19'
 
+// CONTRACT (module): "A combo is a lowercase string like `mod+shift+z`."
+// CONTRACT: "Modifiers are emitted in a fixed order — `mod`, `alt`, `shift`"
+const CANONICAL_COMBO = /^(mod\+)?(alt\+)?(shift\+)?[^+]+$/
+
+function assertCanonicalCombo(combo, what) {
+  assert.equal(typeof combo, 'string', `${what}: a combo must be a string`)
+  assert.equal(combo, combo.toLowerCase(), `${what}: a combo must be lowercase (${combo})`)
+  assert.match(combo, CANONICAL_COMBO, `${what}: ${combo} is not a canonical combo string`)
+  // CONTRACT (module): "`mod` is Ctrl on Windows/Linux and Command on macOS; Ctrl and Command
+  // are treated as the same modifier so one default set fits both platforms."
+  for (const banned of ['ctrl', 'meta', 'cmd', 'command']) {
+    assert.ok(
+      !combo.split('+').slice(0, -1).includes(banned),
+      `${what}: ${combo} names ${banned} instead of the platform-neutral mod`,
+    )
+  }
+}
+
 function storageKeys() {
   const out = []
   for (let i = 0; i < localStorage.length; i++) out.push(localStorage.key(i))
@@ -115,6 +133,27 @@ test('comboFromEvent: the same chord always produces the same string', () => {
   assert.equal(a, 'mod+shift+1')
 })
 
+// CONTRACT (module): "A combo is a lowercase string like `mod+shift+z`. `mod` is Ctrl on
+// Windows/Linux and Command on macOS; Ctrl and Command are treated as the same modifier so one
+// default set fits both platforms."
+test('comboFromEvent: every combo it builds is a canonical lowercase combo string', () => {
+  const events = [
+    ev({ code: 'KeyZ', key: 'z' }),
+    ev({ code: 'KeyZ', key: 'Z', shiftKey: true }),
+    ev({ code: 'Digit1', key: '!', ctrlKey: true, shiftKey: true }),
+    ev({ code: 'F5', key: 'F5' }),
+    ev({ code: 'Escape', key: 'Escape' }),
+    ev({ code: 'ArrowUp', key: 'ArrowUp', altKey: true }),
+    ev({ code: 'Slash', key: '/', metaKey: true }),
+    ev({ code: 'UnknownLayoutCode', key: 'É', ctrlKey: true, altKey: true, shiftKey: true }),
+  ]
+  for (const e of events) {
+    const combo = comboFromEvent(e)
+    assert.notEqual(combo, null, `${e.code} should be bindable`)
+    assertCanonicalCombo(combo, `comboFromEvent(${e.code})`)
+  }
+})
+
 // CONTRACT: "@pure"
 test('comboFromEvent: is pure', () => {
   const e = ev({ code: 'KeyZ', key: 'z', ctrlKey: true })
@@ -159,7 +198,8 @@ test('formatCombo: always returns a string', () => {
 // AMBIGUITY: the LocalStorage key is never named in the contract, so it is
 // discovered here by observing which key saveBindings writes.
 // AMBIGUITY: `COMMAND_IDS` is named in the contract but is not listed as an
-// export, so the command id set is taken from `COMMANDS`.
+// export. The module section says "Adding a command means one entry in COMMANDS
+// and one default in DEFAULT_BINDINGS", so the id set is taken from `COMMANDS`.
 // ---------------------------------------------------------------------------
 
 const COMMAND_IDS = Object.keys(COMMANDS)
@@ -175,6 +215,26 @@ test('loadBindings: every command id gets a well-typed entry', () => {
     assert.ok(Object.prototype.hasOwnProperty.call(b, id), `missing entry for command ${id}`)
     assert.ok(Array.isArray(b[id]), `entry for ${id} must be an array`)
     b[id].forEach((c) => assert.equal(typeof c, 'string', `combo for ${id} must be a string`))
+  }
+})
+
+// CONTRACT (module): "Adding a command means one entry in COMMANDS and one default in
+// DEFAULT_BINDINGS — nothing else needs to change."
+test('loadBindings: every command carries at least one default combo', () => {
+  localStorage.clear()
+  const b = loadBindings()
+  for (const id of COMMAND_IDS) {
+    assert.ok(b[id].length > 0, `command ${id} has no default binding`)
+  }
+})
+
+// CONTRACT (module): "A combo is a lowercase string like `mod+shift+z`. `mod` is Ctrl on
+// Windows/Linux and Command on macOS ... so one default set fits both platforms."
+test('loadBindings: every default combo is a canonical lowercase, platform-neutral combo', () => {
+  localStorage.clear()
+  const b = loadBindings()
+  for (const id of COMMAND_IDS) {
+    b[id].forEach((combo) => assertCanonicalCombo(combo, `default binding of ${id}`))
   }
 })
 
@@ -292,8 +352,10 @@ test('findConflict: an unbound combo is free', () => {
 })
 
 // CONTRACT: "Find the command that would fight `exceptId` over a combo."
-// AMBIGUITY: command scopes are not documented, so the only thing assertable for a
-// deliberately shared combo is that the answer is another command that holds it.
+// AMBIGUITY: command scopes are still not documented — the module section names COMMANDS and
+// DEFAULT_BINDINGS but no scope vocabulary, and no command's scope is given anywhere in the
+// pack. The only thing assertable for a deliberately shared combo is that the answer is
+// another command that holds it.
 test('findConflict: a reported conflict is always another command that holds the combo', () => {
   localStorage.clear()
   const bindings = loadBindings()
@@ -361,9 +423,10 @@ test('resolve: an unbound combo resolves to null whatever has focus', () => {
 
 // CONTRACT: "The more specific scope wins: a canvas-scoped binding takes the key while the Node
 // Editor has focus, and the global command bound to the same combo runs everywhere else."
-// AMBIGUITY: neither the panel id of the Node Editor nor the scope of any command is documented,
-// so this asserts the weaker consequence that focus can only ever change the answer to another
-// command that holds the same combo.
+// AMBIGUITY: neither the panel id of the Node Editor nor the scope of any command is documented
+// — the regenerated module section adds the combo format and the `mod` convention but no scope
+// vocabulary — so this asserts the weaker consequence that focus can only ever change the answer
+// to another command that holds the same combo.
 test('resolve: focus only ever swaps in another holder of the same combo', () => {
   localStorage.clear()
   const bindings = loadBindings()
