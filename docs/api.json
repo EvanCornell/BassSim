@@ -24,9 +24,9 @@
     "pure": "flag"
   },
   "stats": {
-    "modules": 46,
-    "methods": 524,
-    "documented": 524
+    "modules": 48,
+    "methods": 530,
+    "documented": 530
   },
   "modules": [
     {
@@ -3095,6 +3095,176 @@
       ]
     },
     {
+      "file": "scripts/build-spec-pack.mjs",
+      "module": null,
+      "methods": [
+        {
+          "name": "internalsByModule",
+          "qualified": "internalsByModule",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 34,
+          "signature": [],
+          "documented": true,
+          "summary": "Which module-private functions each module re-exports for testing.",
+          "description": "Which module-private functions each module re-exports for testing.\n\nRead from the `__internals` declarations rather than hardcoded, so the pack\nstays correct as the test surface changes.",
+          "params": [],
+          "returns": {
+            "type": "Object<string, string[]>",
+            "desc": "Internal names keyed by module path."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Reads every module's source to find its `__internals` block."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "reachability",
+          "qualified": "reachability",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 54,
+          "signature": [
+            "mod",
+            "m"
+          ],
+          "documented": true,
+          "summary": "How a test can obtain this method, or why it cannot.",
+          "description": "How a test can obtain this method, or why it cannot.",
+          "params": [
+            {
+              "name": "mod",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "The module entry from api.json."
+            },
+            {
+              "name": "m",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "The method entry."
+            }
+          ],
+          "returns": {
+            "type": "{reach: string, how: string}",
+            "desc": "A reachability class and an import recipe."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "renderMethod",
+          "qualified": "renderMethod",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 98,
+          "signature": [
+            "mod",
+            "m"
+          ],
+          "documented": true,
+          "summary": "Render one method as a specification block.",
+          "description": "Render one method as a specification block.",
+          "params": [
+            {
+              "name": "mod",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "The module entry."
+            },
+            {
+              "name": "m",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "The method entry."
+            }
+          ],
+          "returns": {
+            "type": "string",
+            "desc": "Markdown for that method."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "renderModule",
+          "qualified": "renderModule",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 152,
+          "signature": [
+            "mod"
+          ],
+          "documented": true,
+          "summary": "Render one module's specification file.",
+          "description": "Render one module's specification file.",
+          "params": [
+            {
+              "name": "mod",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "The module entry from api.json."
+            }
+          ],
+          "returns": {
+            "type": "string",
+            "desc": "Markdown for the whole module."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        }
+      ]
+    },
+    {
       "file": "scripts/contracts-lib.mjs",
       "module": null,
       "methods": [
@@ -3105,7 +3275,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 94,
+          "line": 98,
           "signature": [
             "t"
           ],
@@ -3144,7 +3314,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 112,
+          "line": 116,
           "signature": [
             "dir",
             "out"
@@ -3195,7 +3365,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 134,
+          "line": 138,
           "signature": [],
           "documented": true,
           "summary": "Every source file in scope, repo-relative and sorted.",
@@ -3226,7 +3396,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 158,
+          "line": 162,
           "signature": [
             "s"
           ],
@@ -3265,7 +3435,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 181,
+          "line": 185,
           "signature": [
             "s"
           ],
@@ -3304,7 +3474,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 203,
+          "line": 207,
           "signature": [
             "s"
           ],
@@ -3343,7 +3513,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 215,
+          "line": 219,
           "signature": [
             "raw"
           ],
@@ -3382,7 +3552,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 303,
+          "line": 307,
           "signature": [
             "fn"
           ],
@@ -3421,7 +3591,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 327,
+          "line": 331,
           "signature": [
             "fn"
           ],
@@ -3460,7 +3630,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 338,
+          "line": 342,
           "signature": [
             "n"
           ],
@@ -3501,7 +3671,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 370,
+          "line": 374,
           "signature": [
             "node",
             "parent"
@@ -3548,7 +3718,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 420,
+          "line": 424,
           "signature": [
             "node",
             "parents"
@@ -3595,7 +3765,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 447,
+          "line": 451,
           "signature": [
             "relPath"
           ],
@@ -3641,7 +3811,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 473,
+          "line": 477,
           "signature": [
             "node"
           ],
@@ -3682,7 +3852,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 535,
+          "line": 544,
           "signature": [],
           "documented": true,
           "summary": "Scan every source file in scope.",
@@ -15697,10 +15867,7 @@
     },
     {
       "file": "src/engine/geometry.js",
-      "module": {
-        "summary": "Air density ρ, kg/m³, at 20 °C.",
-        "description": "Air density ρ, kg/m³, at 20 °C."
-      },
+      "module": null,
       "methods": [
         {
           "name": "areaProfile",
@@ -16175,10 +16342,7 @@
     },
     {
       "file": "src/engine/nonlinear.js",
-      "module": {
-        "summary": "The nonlinear parameter names a driver may carry curves for.",
-        "description": "The nonlinear parameter names a driver may carry curves for.\n\n`Cms` and `Kms` are two descriptions of the same suspension, so a driver\nnormally has one or the other rather than both."
-      },
+      "module": null,
       "methods": [
         {
           "name": "emptyCurve",
@@ -16730,10 +16894,7 @@
     },
     {
       "file": "src/engine/project.js",
-      "module": {
-        "summary": "Version of the `.acousim.json` project schema this build reads and writes.",
-        "description": "Version of the `.acousim.json` project schema this build reads and writes.\n\nBumped only for changes a loader cannot absorb by falling back to defaults."
-      },
+      "module": null,
       "methods": [
         {
           "name": "hydrateProject",
@@ -17476,10 +17637,7 @@
     },
     {
       "file": "src/keymap.js",
-      "module": {
-        "summary": "Whether this browser is running on an Apple platform.",
-        "description": "Whether this browser is running on an Apple platform.\n\nDecides only how combos are *displayed* — Ctrl and Command are treated as one\nmodifier when matching, so a single default set fits both platforms."
-      },
+      "module": null,
       "methods": [
         {
           "name": "run",
@@ -19843,10 +20001,7 @@
     },
     {
       "file": "src/panelMeta.js",
-      "module": {
-        "summary": "Metadata for every panel the workspace knows how to render.",
-        "description": "Metadata for every panel the workspace knows how to render.\n\nDoubles as the panel registry: `layout.sanitize` treats an id absent from\nthis map as unknown and drops it, which is what keeps an old saved layout\nfrom referencing a panel that no longer exists."
-      },
+      "module": null,
       "methods": [
         {
           "name": "panelTitle",
@@ -19891,10 +20046,7 @@
     },
     {
       "file": "src/popout.js",
-      "module": {
-        "summary": "Path a popped-out panel is served from.",
-        "description": "Path a popped-out panel is served from."
-      },
+      "module": null,
       "methods": [
         {
           "name": "popoutPanelId",
@@ -23977,6 +24129,126 @@
             "sideEffect": [],
             "reads": [],
             "pure": true
+          },
+          "other": []
+        }
+      ]
+    },
+    {
+      "file": "test/support/loader.mjs",
+      "module": null,
+      "methods": [
+        {
+          "name": "resolve",
+          "qualified": "resolve",
+          "kind": "function",
+          "exported": true,
+          "async": true,
+          "generator": false,
+          "line": 28,
+          "signature": [
+            "specifier",
+            "context",
+            "next"
+          ],
+          "documented": true,
+          "summary": "Resolve a specifier, trying the app's implicit extensions before giving up.",
+          "description": "Resolve a specifier, trying the app's implicit extensions before giving up.",
+          "params": [
+            {
+              "name": "specifier",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "The import specifier."
+            },
+            {
+              "name": "context",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "Node's resolve context, carrying the parent URL."
+            },
+            {
+              "name": "next",
+              "type": "Function",
+              "optional": false,
+              "default": null,
+              "desc": "The next resolver in the chain."
+            }
+          ],
+          "returns": {
+            "type": "Promise<object>",
+            "desc": "A Node resolve result."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Probes the filesystem for candidate files."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "load",
+          "qualified": "load",
+          "kind": "function",
+          "exported": true,
+          "async": true,
+          "generator": false,
+          "line": 52,
+          "signature": [
+            "url",
+            "context",
+            "next"
+          ],
+          "documented": true,
+          "summary": "Transform .jsx sources to plain JS on load; pass everything else through.",
+          "description": "Transform .jsx sources to plain JS on load; pass everything else through.",
+          "params": [
+            {
+              "name": "url",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "The resolved module URL."
+            },
+            {
+              "name": "context",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "Node's load context."
+            },
+            {
+              "name": "next",
+              "type": "Function",
+              "optional": false,
+              "default": null,
+              "desc": "The next loader in the chain."
+            }
+          ],
+          "returns": {
+            "type": "Promise<object>",
+            "desc": "A Node load result."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Reads the module from disk and runs it through esbuild."
+            ],
+            "reads": [],
+            "pure": false
           },
           "other": []
         }

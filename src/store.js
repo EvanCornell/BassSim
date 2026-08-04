@@ -1387,3 +1387,8 @@ export function listSavedProjects() {
   }
   return out.sort((a, b) => (b.modified || '').localeCompare(a.modified || ''))
 }
+
+// Module-private functions, exposed for the contract test suite only
+// (test/contract/*). Not part of this module's public API — application code
+// must not import from here, and nothing outside the tests does.
+export const __internals = { loadLayout, loadPresets, loadToolbar, freeSpotNear, graphSignature }

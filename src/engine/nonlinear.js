@@ -299,3 +299,8 @@ export function parseCurveCSV(text) {
   if (rows.length < 2) throw new Error('Need at least two "x_mm, ratio" rows.')
   return rows.sort((a, b) => a[0] - b[0])
 }
+
+// Module-private functions, exposed for the contract test suite only
+// (test/contract/*). Not part of this module's public API — application code
+// must not import from here, and nothing outside the tests does.
+export const __internals = { baseValue, rawEval }

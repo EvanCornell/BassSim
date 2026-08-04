@@ -510,3 +510,8 @@ export default function ParamPanel() {
     </div>
   )
 }
+
+// Module-private functions, exposed for the contract test suite only
+// (test/contract/*). Not part of this module's public API — application code
+// must not import from here, and nothing outside the tests does.
+export const __internals = { round3 }

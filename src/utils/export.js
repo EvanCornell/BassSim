@@ -173,3 +173,8 @@ export function exportMetricsTxt(metrics, settings, projectName) {
   row('Max power before Xmax', metrics.maxPower ? `${metrics.maxPower.toFixed(0)} W (${metrics.vMax.toFixed(1)} V)` : 'n/a')
   download(`${projectName}-metrics.txt`, l.join('\n'), 'text/plain')
 }
+
+// Module-private functions, exposed for the contract test suite only
+// (test/contract/*). Not part of this module's public API — application code
+// must not import from here, and nothing outside the tests does.
+export const __internals = { download }

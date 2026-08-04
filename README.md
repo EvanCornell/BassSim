@@ -202,7 +202,7 @@ panel you are looking at.
 ## Method contracts
 
 Every method in the codebase carries an explicit contract as a JSDoc block —
-524 of them, checked on every run of `npm run test:contracts`.
+526 of them, checked on every run of `npm run test:contract-lint`.
 
 The format is standard JSDoc for the machine-checkable part (`@param`,
 `@returns`, `@throws`) plus a small vocabulary for the parts a signature
@@ -231,7 +231,7 @@ script or an agent should read it rather than parsing the source, which needs a
 JSX-aware parser to make sense of. It is committed, and carries no timestamp, so
 regenerating without a source change produces no diff.
 
-`npm run test:contracts` is the ratchet. It checks only what a machine can know
+`npm run test:contract-lint` is the ratchet. It checks only what a machine can know
 for certain: that every method has a contract, that `@param` names and arity
 match the real signature, that value-returning bodies declare `@returns`, that
 tags come from the known vocabulary, and that effects are disclosed. Whether a
@@ -247,7 +247,7 @@ simulate, optimize against goals, and compare designs directly — see
 [`mcp/README.md`](mcp/README.md). Run it locally over stdio (`npm run mcp`,
 for Claude Desktop/Code) or as a hosted HTTP connector for claude.ai/ChatGPT
 (`npm run mcp:http`, also Dockerized). `npm run test:mcp`,
-`npm run test:http`, `npm run test:drivers` and `npm run test:contracts`
+`npm run test:http`, `npm run test:drivers` and `npm run test:contract`
 run the checks.
 
 ## Stack

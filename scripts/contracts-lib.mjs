@@ -39,6 +39,10 @@ const SOURCE_EXT = new Set(['.js', '.jsx', '.mjs'])
 export const IGNORE_FILES = new Set([
   'src/data/drivers.bc.js',
   'src/data/drivers.legacy.js',
+  // Browser-API stubs. Every "method" here is an inert impersonation of a DOM
+  // or Storage call that exists only so app modules import cleanly under the
+  // test runner; contracting `setAttribute() {}` would be pure noise.
+  'test/support/env.mjs',
 ])
 
 // ---------------------------------------------------------------------------
@@ -517,8 +521,13 @@ export function scanFile(relPath) {
 
   visit(ast.program)
 
-  // A file-level block before the first import/statement documents the module.
-  const moduleDoc = docs.length && docs[0].start < (ast.program.body[0]?.start ?? Infinity) && !docs[0].used
+  // A file-level block documents the module only when a blank line separates it
+  // from the first statement. Without that test, a JSDoc sitting directly above
+  // the first declaration — which is the common case — would be read as the
+  // module's description as well as that declaration's.
+  const firstStmt = ast.program.body[0]?.start ?? Infinity
+  const moduleDoc = docs.length && docs[0].end < firstStmt && !docs[0].used
+    && /\n\s*\n/.test(source.slice(docs[0].end, firstStmt))
     ? parseJsdoc(docs[0].value)
     : null
 
@@ -535,3 +544,8 @@ export function scanFile(relPath) {
 export function scanRepo() {
   return sourceFiles().map(scanFile)
 }
+
+// Module-private functions, exposed for the contract test suite only
+// (test/contract/*). Not part of this module's public API — application code
+// must not import from here, and nothing outside the tests does.
+export const __internals = { walkDir, takeType, takeName, stripDash, paramNames, returnsValue, classify, anchorStart }
