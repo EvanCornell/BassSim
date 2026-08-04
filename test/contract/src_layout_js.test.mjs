@@ -436,13 +436,16 @@ test('dockPanel: an edge drop splits the target and keeps every panel open', () 
 // CONTRACT: "Removal happens before insertion ... pruning the panel's old stack can delete the
 // very target it was being dropped on. When that happens the panel docks against the right edge
 // instead, so the drag still does something rather than silently failing."
-test('dockPanel: when pruning deletes the target, the panel still lands in the tree', () => {
-  // pC is alone in its stack; dropping it on its own neighbouring stack after pruning
-  // exercises the "target vanished" path via the sole panel of a pruned stack.
-  const { root, c } = fixture()
-  const out = dockPanel(root, 'pC', c.id, 'center')
-  assert.deepEqual(panelsOf(out), ['pA', 'pB', 'pC', 'pD'])
-  checkInvariants(out)
+test('dockPanel: a panel whose old stack is pruned still lands somewhere in the tree', () => {
+  // pC is alone in its stack, so removing it prunes that stack — including when the
+  // pruned stack is itself the drop target.
+  for (const zone of ['center', 'left', 'right', 'top', 'bottom']) {
+    const { root, c } = fixture()
+    const out = dockPanel(root, 'pC', c.id, zone)
+    assert.deepEqual(panelsOf(out), ['pA', 'pB', 'pC', 'pD'], `zone ${zone}`)
+    assert.equal(isOpen(out, 'pC'), true, `zone ${zone}: the dragged panel must still be open`)
+    checkInvariants(out, `root(${zone})`)
+  }
 })
 
 // CONTRACT: "`object` — A new tree, or the original when the move would empty the workspace."

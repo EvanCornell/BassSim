@@ -33,6 +33,9 @@ no implementation. This is the sole input to the blind contract test suite.
 | [`src/components/dock/DockLayout.jsx`](src_components_dock_DockLayout_jsx.spec.md) | 14 | 3 | 11 |
 | [`src/components/dock/panels.jsx`](src_components_dock_panels_jsx.spec.md) | 1 | 0 | 1 |
 | [`src/components/nodes.jsx`](src_components_nodes_jsx.spec.md) | 7 | 5 | 2 |
+| [`src/data/driver-audit.js`](src_data_driver-audit_js.spec.md) | 3 | 1 | 2 |
+| [`src/data/driver-fields.js`](src_data_driver-fields_js.spec.md) | 2 | 2 | 0 |
+| [`src/data/drivers.js`](src_data_drivers_js.spec.md) | 1 | 0 | 1 |
 | [`src/engine/acoustics.js`](src_engine_acoustics_js.spec.md) | 9 | 9 | 0 |
 | [`src/engine/complex.js`](src_engine_complex_js.spec.md) | 18 | 18 | 0 |
 | [`src/engine/geometry.js`](src_engine_geometry_js.spec.md) | 4 | 4 | 0 |
@@ -50,4 +53,4 @@ no implementation. This is the sole input to the blind contract test suite.
 | [`test/contracts.mjs`](test_contracts_mjs.spec.md) | 2 | 0 | 2 |
 | [`test/drivers.mjs`](test_drivers_mjs.spec.md) | 2 | 0 | 2 |
 | [`test/support/loader.mjs`](test_support_loader_mjs.spec.md) | 2 | 2 | 0 |
-| **Total** | **533** | **268** | **265** |
+| **Total** | **539** | **271** | **268** |

@@ -27,8 +27,14 @@ export const REPO = fileURLToPath(new URL('..', import.meta.url))
 /** Directories walked for documentable source. */
 export const ROOTS = ['src', 'mcp', 'server', 'scripts', 'test']
 
-/** Directory names never descended into. */
-const IGNORE_DIRS = new Set(['node_modules', 'dist', '.git', 'data'])
+/** Directory names never descended into, wherever they appear. */
+const IGNORE_DIRS = new Set(['node_modules', 'dist', '.git'])
+
+// Excluded by path rather than by name. `data/` holds the raw manufacturer
+// catalog exports and has no source in it — but matching on the bare name would
+// also swallow `src/data/`, which holds the driver library modules and is very
+// much in scope.
+const IGNORE_PATHS = new Set([join(REPO, 'data')])
 /** File extensions treated as documentable source. */
 const SOURCE_EXT = new Set(['.js', '.jsx', '.mjs'])
 
@@ -127,6 +133,7 @@ function walkDir(dir, out) {
   for (const name of entries) {
     if (IGNORE_DIRS.has(name)) continue
     const full = join(dir, name)
+    if (IGNORE_PATHS.has(full)) continue
     const st = statSync(full)
     if (st.isDirectory()) walkDir(full, out)
     else if (SOURCE_EXT.has(name.slice(name.lastIndexOf('.')))) out.push(full)

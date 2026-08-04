@@ -24,9 +24,9 @@
     "pure": "flag"
   },
   "stats": {
-    "modules": 50,
-    "methods": 533,
-    "documented": 533
+    "modules": 53,
+    "methods": 539,
+    "documented": 539
   },
   "modules": [
     {
@@ -3230,7 +3230,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 152,
+          "line": 159,
           "signature": [
             "mod"
           ],
@@ -3275,7 +3275,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 106,
+          "line": 112,
           "signature": [
             "t"
           ],
@@ -3314,7 +3314,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 124,
+          "line": 130,
           "signature": [
             "dir",
             "out"
@@ -3365,7 +3365,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 146,
+          "line": 153,
           "signature": [],
           "documented": true,
           "summary": "Every source file in scope, repo-relative and sorted.",
@@ -3396,7 +3396,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 170,
+          "line": 177,
           "signature": [
             "s"
           ],
@@ -3435,7 +3435,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 193,
+          "line": 200,
           "signature": [
             "s"
           ],
@@ -3474,7 +3474,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 215,
+          "line": 222,
           "signature": [
             "s"
           ],
@@ -3513,7 +3513,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 227,
+          "line": 234,
           "signature": [
             "raw"
           ],
@@ -3552,7 +3552,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 315,
+          "line": 322,
           "signature": [
             "fn"
           ],
@@ -3591,7 +3591,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 339,
+          "line": 346,
           "signature": [
             "fn"
           ],
@@ -3630,7 +3630,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 350,
+          "line": 357,
           "signature": [
             "n"
           ],
@@ -3671,7 +3671,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 382,
+          "line": 389,
           "signature": [
             "node",
             "parent"
@@ -3718,7 +3718,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 432,
+          "line": 439,
           "signature": [
             "node",
             "parents"
@@ -3765,7 +3765,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 459,
+          "line": 466,
           "signature": [
             "relPath"
           ],
@@ -3811,7 +3811,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 485,
+          "line": 492,
           "signature": [
             "node"
           ],
@@ -3852,7 +3852,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 552,
+          "line": 559,
           "signature": [],
           "documented": true,
           "summary": "Scan every source file in scope.",
@@ -6194,7 +6194,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 63,
+          "line": 66,
           "signature": [
             "out"
           ],
@@ -14614,6 +14614,291 @@
             ],
             "reads": [],
             "pure": false
+          },
+          "other": []
+        }
+      ]
+    },
+    {
+      "file": "src/data/driver-audit.js",
+      "module": null,
+      "methods": [
+        {
+          "name": "rel",
+          "qualified": "rel",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 27,
+          "signature": [
+            "a",
+            "b"
+          ],
+          "documented": true,
+          "summary": "Relative difference between a computed value and a published one.",
+          "description": "Relative difference between a computed value and a published one.",
+          "params": [
+            {
+              "name": "a",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "The computed value."
+            },
+            {
+              "name": "b",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "The published value, used as the denominator."
+            }
+          ],
+          "returns": {
+            "type": "number",
+            "desc": "`|a - b| / |b|`, so 0.1 is a 10% disagreement."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [
+              "b is non-zero — every caller guards with `> 0` first"
+            ],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "pct",
+          "qualified": "pct",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 37,
+          "signature": [
+            "a",
+            "b"
+          ],
+          "documented": true,
+          "summary": "The same difference as a whole percentage, for the message text.",
+          "description": "The same difference as a whole percentage, for the message text.",
+          "params": [
+            {
+              "name": "a",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "The computed value."
+            },
+            {
+              "name": "b",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "The published value."
+            }
+          ],
+          "returns": {
+            "type": "number",
+            "desc": "The difference in percent, rounded."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "auditDriver",
+          "qualified": "auditDriver",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 74,
+          "signature": [
+            "d"
+          ],
+          "documented": true,
+          "summary": "Check a driver record against the identities its own parameters imply.",
+          "description": "Check a driver record against the identities its own parameters imply.\n\nA T/S set is over-determined: Qes, Qts and Vas all follow from the Bl, Re,\nMms, Cms and Sd the solver actually runs on. When a published value disagrees\nwith the one implied by its siblings, the row describes two different drivers,\nand the simulation will follow the solver's set rather than the headline\nfigure a buyer recognises.\n\nDiscrepancies are returned as human-readable sentences rather than codes\nbecause they are shown verbatim in the database browser and committed into the\ngenerated data as `suspect` labels. Nothing is corrected here — the fix\nrequires knowing which column was mis-transcribed, which only the datasheet\ncan say.\n\nEach check is skipped unless every value it needs is present and positive, so\na sparse hand-transcribed row is audited on whatever it does provide instead\nof being flagged for what it omits.",
+          "params": [
+            {
+              "name": "d",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "A driver record. Reads `Fs`, `Qes`, `Qts`, `Qms`, `Vas`, `Re`, `Bl`, `Mms`, `Cms` and `Sd`."
+            }
+          ],
+          "returns": {
+            "type": "string[]",
+            "desc": "One sentence per inconsistency found, empty when the record is self-consistent."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [
+              "d is not modified."
+            ],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        }
+      ]
+    },
+    {
+      "file": "src/data/driver-fields.js",
+      "module": null,
+      "methods": [
+        {
+          "name": "driverToParams",
+          "qualified": "driverToParams",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 138,
+          "signature": [
+            "d"
+          ],
+          "documented": true,
+          "summary": "Project a database row down to the params a Driver node accepts.",
+          "description": "Project a database row down to the params a Driver node accepts.\n\nThe load-bearing boundary between the database and the graph. A record\ncarries construction trivia — spider type, magnet material, recommended\nenclosure — that must never reach a node's params, so this copies the core\nfields explicitly rather than spreading the row and deleting what it does not\nwant. Fields the record omits stay absent, leaving the node's own defaults in\nplace.",
+          "params": [
+            {
+              "name": "d",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "A driver database record."
+            }
+          ],
+          "returns": {
+            "type": "object",
+            "desc": "Node params: `label` from the model name, plus each present core T/S field."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [
+              "The result contains no `ext`, `source`, `suspect` or `brand` key, whatever the input carries.",
+              "d is not modified."
+            ],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "formatExt",
+          "qualified": "formatExt",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 152,
+          "signature": [
+            "key",
+            "value"
+          ],
+          "documented": true,
+          "summary": "Render an extended parameter as display text with its unit.",
+          "description": "Render an extended parameter as display text with its unit.",
+          "params": [
+            {
+              "name": "key",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "An extended field key."
+            },
+            {
+              "name": "value",
+              "type": "number|string|null|undefined",
+              "optional": false,
+              "default": null,
+              "desc": "The record's value for that key."
+            }
+          ],
+          "returns": {
+            "type": "string|null",
+            "desc": "The formatted value with its unit appended, or `null` when the key is unknown or the value is absent — which is the normal case, since extended parameters are sparse."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        }
+      ]
+    },
+    {
+      "file": "src/data/drivers.js",
+      "module": null,
+      "methods": [
+        {
+          "name": "normalize",
+          "qualified": "normalize",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 28,
+          "signature": [
+            "d"
+          ],
+          "documented": true,
+          "summary": "Bring a raw database row up to the full record shape.",
+          "description": "Bring a raw database row up to the full record shape.\n\nTwo guarantees the rest of the app relies on: `ext` is always an object, so\ncallers can iterate it without guarding, and `name` exists as one\npre-joined field for search to match against.",
+          "params": [
+            {
+              "name": "d",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "A row from a catalog or legacy module."
+            }
+          ],
+          "returns": {
+            "type": "object",
+            "desc": "A copy carrying a guaranteed `ext` object and a `name`."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [
+              "The input row is not modified."
+            ],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
           },
           "other": []
         }

@@ -1231,6 +1231,7 @@ test('duplicateSelected: edges are not duplicated', () => {
   st().selectAll()
   st().duplicateSelected()
   assert.equal(edgesOf().length, 1, 'the edge count must be unchanged')
+  assert.equal(nodesOf().length, 4, 'both nodes were duplicated')
   assert.ok(a && b)
 })
 
@@ -1585,12 +1586,14 @@ test('serialize: node positions are included', () => {
 })
 
 // CONTRACT: "Reads the current time for the `modified` stamp."
-test('serialize: the modified stamp advances between calls', () => {
-  const a = st().serialize().modified
-  const start = Date.now()
-  while (Date.now() - start < 3) { /* let the clock move on */ }
-  const b = st().serialize().modified
-  assert.ok(String(b) >= String(a), 'the stamp must track the current time')
+test('serialize: the modified stamp is the current time', () => {
+  const p = st().serialize()
+  // listSavedProjects documents `modified` as a string, and it is read from
+  // the current clock.
+  assert.equal(typeof p.modified, 'string')
+  const t = Date.parse(p.modified)
+  assert.ok(Number.isFinite(t), `modified must be a parseable timestamp: ${p.modified}`)
+  assert.ok(Math.abs(Date.now() - t) < 60_000, 'the stamp must be the current time')
 })
 
 // CONTRACT: "Replace the current project with a deserialized one."
