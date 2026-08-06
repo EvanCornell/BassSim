@@ -11,7 +11,9 @@
 //
 // Mirrors test/drivers.mjs in shape and output so `npm test` reads uniformly.
 
-import { scanRepo, TAGS } from '../scripts/contracts-lib.mjs'
+import { existsSync, readFileSync, readdirSync } from 'node:fs'
+import { join } from 'node:path'
+import { scanRepo, TAGS, REPO } from '../scripts/contracts-lib.mjs'
 
 const modules = scanRepo()
 const all = modules.flatMap((m) => m.methods.map((x) => ({ ...x, file: m.file })))
@@ -156,6 +158,50 @@ check('contract tags come from the known vocabulary', (m) => {
 
 check('contract tags are well formed', (m) =>
   (m.doc?.malformed.length ? m.doc.malformed.join('; ') : null))
+
+// --- blindness --------------------------------------------------------------
+
+// The spec pack is what the blind test authors read, and its whole value rests
+// on being *derived* from contracts rather than copied from code. That is a
+// property of the generator, and generators drift, so it is checked rather than
+// asserted: no body line from any scanned module may appear verbatim in the
+// pack.
+//
+// Declaration lines are exempt. A signature is part of the contract — an author
+// cannot call a function without knowing its parameters — and the pack
+// publishes it deliberately.
+{
+  checksRun++
+  const packDir = join(REPO, 'docs/contracts')
+  const pack = existsSync(packDir)
+    ? readdirSync(packDir).filter((f) => f.endsWith('.md'))
+      .map((f) => readFileSync(join(packDir, f), 'utf8')).join('\n')
+    : ''
+  const declared = new Set(all.map((m) => `${m.file}:${m.line}`))
+  for (const mod of modules) {
+    for (const c of mod.constants || []) declared.add(`${mod.file}:${c.line}`)
+  }
+  const leaks = []
+  for (const mod of modules) {
+    const lines = readFileSync(join(REPO, mod.file), 'utf8').split('\n')
+    lines.forEach((raw, i) => {
+      const line = raw.trim()
+      // Short lines are punctuation — `}`, `})`, `return` — and collide with
+      // prose by coincidence rather than by leaking anything.
+      if (line.length < 40) return
+      if (line.startsWith('*') || line.startsWith('//') || line.startsWith('/*')) return
+      if (declared.has(`${mod.file}:${i + 1}`)) return
+      if (pack.includes(line)) leaks.push(`${mod.file}:${i + 1}  ${line.slice(0, 70)}`)
+    })
+  }
+  if (leaks.length) {
+    failures.push({ label: 'the spec pack contains no implementation', bad: leaks })
+    console.log(`  FAIL the spec pack contains no implementation — ${leaks.length} leaked line(s)`)
+    for (const l of leaks.slice(0, 12)) console.log(`       ${l}`)
+  } else {
+    console.log('  ok   the spec pack contains no implementation')
+  }
+}
 
 // --- report -----------------------------------------------------------------
 
