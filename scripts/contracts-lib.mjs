@@ -27,8 +27,14 @@ export const REPO = fileURLToPath(new URL('..', import.meta.url))
 /** Directories walked for documentable source. */
 export const ROOTS = ['src', 'mcp', 'server', 'scripts', 'test']
 
-/** Directory names never descended into. */
-const IGNORE_DIRS = new Set(['node_modules', 'dist', '.git', 'data'])
+/** Directory names never descended into, wherever they appear. */
+const IGNORE_DIRS = new Set(['node_modules', 'dist', '.git'])
+
+// Excluded by path rather than by name. `data/` holds the raw manufacturer
+// catalog exports and has no source in it — but matching on the bare name would
+// also swallow `src/data/`, which holds the driver library modules and is very
+// much in scope.
+const IGNORE_PATHS = new Set([join(REPO, 'data')])
 /** File extensions treated as documentable source. */
 const SOURCE_EXT = new Set(['.js', '.jsx', '.mjs'])
 
@@ -39,7 +45,19 @@ const SOURCE_EXT = new Set(['.js', '.jsx', '.mjs'])
 export const IGNORE_FILES = new Set([
   'src/data/drivers.bc.js',
   'src/data/drivers.legacy.js',
+  // Browser-API stubs. Every "method" here is an inert impersonation of a DOM
+  // or Storage call that exists only so app modules import cleanly under the
+  // test runner; contracting `setAttribute() {}` would be pure noise.
+  'test/support/env.mjs',
 ])
+
+// Directories excluded wholesale.
+//
+// The blind contract suite consumes contracts rather than carrying them: its
+// files are generated from docs/contracts/ by an author that never sees this
+// codebase and could not know the convention. Holding assertion helpers to the
+// application's documentation standard would police the wrong surface.
+export const IGNORE_DIRS_REL = ['test/contract/']
 
 // ---------------------------------------------------------------------------
 // Tag vocabulary
@@ -115,6 +133,7 @@ function walkDir(dir, out) {
   for (const name of entries) {
     if (IGNORE_DIRS.has(name)) continue
     const full = join(dir, name)
+    if (IGNORE_PATHS.has(full)) continue
     const st = statSync(full)
     if (st.isDirectory()) walkDir(full, out)
     else if (SOURCE_EXT.has(name.slice(name.lastIndexOf('.')))) out.push(full)
@@ -136,7 +155,7 @@ export function sourceFiles() {
   for (const root of ROOTS) walkDir(join(REPO, root), out)
   return out
     .map((f) => relative(REPO, f).split('\\').join('/'))
-    .filter((f) => !IGNORE_FILES.has(f))
+    .filter((f) => !IGNORE_FILES.has(f) && !IGNORE_DIRS_REL.some((d) => f.startsWith(d)))
     .sort()
 }
 
@@ -180,7 +199,16 @@ function takeType(s) {
  */
 function takeName(s) {
   if (s.startsWith('[')) {
-    const close = s.indexOf(']')
+    // Depth scan rather than indexOf, because the default value may itself
+    // contain brackets — `[out=[]]` is a legal optional-array parameter, and
+    // stopping at the first ']' would report a default of '[' and leak the rest
+    // into the description.
+    let depth = 0
+    let close = -1
+    for (let i = 0; i < s.length; i++) {
+      if (s[i] === '[') depth++
+      else if (s[i] === ']') { depth--; if (depth === 0) { close = i; break } }
+    }
     if (close === -1) return [null, false, null, s]
     const inner = s.slice(1, close)
     const eq = inner.indexOf('=')
@@ -460,8 +488,76 @@ export function scanFile(relPath) {
     .map((c) => ({ start: c.start, end: c.end, value: c.value, used: false }))
 
   const found = []
+  const constants = []
   const parents = []
   const scope = []
+
+  /**
+   * Summarise a constant's value shape without reproducing its implementation.
+   *
+   * The keys of an exported object are vocabulary, not code: they are the
+   * command ids, node types and panel ids that method contracts refer to by
+   * role and never enumerate. Publishing them closes the single most-reported
+   * gap in the spec pack. Values are deliberately not published — only names,
+   * and the primitive value of a scalar.
+   *
+   * @param {object} node - The initialiser expression.
+   * @returns {{kind: string, keys?: string[], length?: number, values?: Array<string|number>, value?: any}|null} A shape summary, or `null` when there is nothing useful to say.
+   * @pure
+   */
+  const shapeOf = (node) => {
+    if (!node) return null
+    if (node.type === 'ObjectExpression') {
+      const props = node.properties
+        .filter((pr) => (pr.type === 'ObjectProperty' || pr.type === 'ObjectMethod') && !pr.computed)
+      const keys = props.map((pr) => pr.key?.name ?? pr.key?.value).filter((k) => k != null)
+      // A spread or a computed key contributes names the source does not
+      // spell out. Publishing the literal ones as if they were the whole set
+      // is worse than publishing nothing: a reader has no way to tell the list
+      // is short, and every count derived from it is wrong.
+      const partial = node.properties.some((pr) => pr.type === 'SpreadElement' || pr.computed)
+      // One level of nesting, because for a registry keyed by kind — node types
+      // to their parameters, panels to their metadata — the inner names are the
+      // vocabulary, and the outer ones alone say almost nothing.
+      const nested = {}
+      for (const pr of props) {
+        if (pr.value?.type !== 'ObjectExpression') continue
+        const inner = pr.value.properties
+          .filter((q) => (q.type === 'ObjectProperty' || q.type === 'ObjectMethod') && !q.computed)
+          .map((q) => q.key?.name ?? q.key?.value)
+          .filter((k) => k != null)
+        if (inner.length) nested[pr.key?.name ?? pr.key?.value] = inner
+      }
+      const out = { kind: 'object', keys }
+      if (Object.keys(nested).length) out.nested = nested
+      if (partial) out.partial = true
+      return out
+    }
+    if (node.type === 'ArrayExpression') {
+      const lit = node.elements.filter((e) => e && (e.type === 'StringLiteral' || e.type === 'NumericLiteral'))
+      // Only claim a length when every element is a literal. A spread or a
+      // computed element counts as one node in the AST but expands to any
+      // number at runtime, and reporting the source count as the length is
+      // simply wrong — `[...new Set(xs)]` is not an array of one.
+      if (lit.length === node.elements.length && node.elements.length) {
+        return { kind: 'array', length: node.elements.length, values: lit.map((e) => e.value) }
+      }
+      const computed = node.elements.some((e) => e && (e.type === 'SpreadElement' || e.type === 'CallExpression'))
+      return computed ? { kind: 'array' } : { kind: 'array', length: node.elements.length }
+    }
+    if (node.type === 'StringLiteral' || node.type === 'NumericLiteral' || node.type === 'BooleanLiteral') {
+      return { kind: 'literal', value: node.value }
+    }
+    if (node.type === 'NewExpression' && node.callee.name === 'Set') {
+      const arg = node.arguments[0]
+      if (arg?.type === 'ArrayExpression') {
+        const lit = arg.elements.filter((e) => e?.type === 'StringLiteral')
+        return { kind: 'set', length: arg.elements.length, values: lit.length === arg.elements.length ? lit.map((e) => e.value) : undefined }
+      }
+      return { kind: 'set' }
+    }
+    return null
+  }
 
   /**
    * Walk the AST, recording every documentable method it finds.
@@ -477,6 +573,29 @@ export function scanFile(relPath) {
 
     const parent = parents[parents.length - 1] || null
     const hit = classify(node, parent)
+
+    // An exported binding that is not a function is a constant. It carries no
+    // method contract, so it is kept out of `methods` and never policed by the
+    // coverage ratchet — but its documentation and the names it defines are
+    // published.
+    if (!hit && node.type === 'VariableDeclarator' && node.id.type === 'Identifier'
+        && !scope.length && node.init && !FN_TYPES.has(node.init.type)
+        && parents[parents.length - 2]?.type === 'ExportNamedDeclaration') {
+      const start = anchorStart(node, parents)
+      let doc = null
+      for (let i = docs.length - 1; i >= 0; i--) {
+        const c = docs[i]
+        if (c.end > start) continue
+        if (source.slice(c.end, start).trim() === '') { doc = c; c.used = true }
+        break
+      }
+      constants.push({
+        name: node.id.name,
+        line: node.loc.start.line,
+        shape: shapeOf(node.init),
+        doc: doc ? parseJsdoc(doc.value) : null,
+      })
+    }
 
     if (hit) {
       const start = anchorStart(node, parents)
@@ -506,23 +625,69 @@ export function scanFile(relPath) {
       scope.push(hit.name)
     }
 
+    // A property holding a plain object is a namespace, not a method — but its
+    // members belong to it. Without pushing it, `layoutOps: { reset() {} }`
+    // reports a bare `reset`, and anything deriving a call path from the
+    // qualified name emits `store.reset()` instead of `store.layoutOps.reset()`.
+    const namespace = node.type === 'ObjectProperty' && !node.computed
+      && (node.key.type === 'Identifier' || node.key.type === 'StringLiteral')
+      && node.value?.type === 'ObjectExpression'
+    if (namespace) scope.push(node.key.name ?? node.key.value)
+
     parents.push(node)
     for (const k of Object.keys(node)) {
       if (k === 'leadingComments' || k === 'trailingComments' || k === 'innerComments' || k === 'loc') continue
       visit(node[k])
     }
     parents.pop()
+    if (namespace) scope.pop()
     if (hit) scope.pop()
   }
 
   visit(ast.program)
 
-  // A file-level block before the first import/statement documents the module.
-  const moduleDoc = docs.length && docs[0].start < (ast.program.body[0]?.start ?? Infinity) && !docs[0].used
+  // A file-level block documents the module only when a blank line separates it
+  // from the first statement. Without that test, a JSDoc sitting directly above
+  // the first declaration — which is the common case — would be read as the
+  // module's description as well as that declaration's.
+  const firstStmt = ast.program.body[0]?.start ?? Infinity
+  let moduleDoc = docs.length && docs[0].end < firstStmt && !docs[0].used
+    && /\n\s*\n/.test(source.slice(docs[0].end, firstStmt))
     ? parseJsdoc(docs[0].value)
     : null
 
-  return { file: relPath, moduleDoc, methods: found.sort((a, b) => a.line - b.line) }
+  // Most modules here introduce themselves with a `//` header rather than a
+  // JSDoc block — and that header is where the shared vocabulary lives: the
+  // shape of a layout node, the ABCD matrix convention, the protocol between
+  // windows. Dropping it loses exactly the context a reader needs before any
+  // individual method makes sense, so a leading run of line comments counts as
+  // the module's documentation when there is no JSDoc block.
+  if (!moduleDoc) {
+    const header = []
+    for (const c of ast.comments || []) {
+      if (c.type !== 'CommentLine' || c.start >= firstStmt) break
+      // Stop at the first gap: a second, unrelated comment block further down
+      // is not part of the header.
+      if (header.length && /\n\s*\n/.test(source.slice(header[header.length - 1].end, c.start))) break
+      header.push(c)
+    }
+    if (header.length) {
+      const text = header.map((c) => c.value.replace(/^ /, '')).join('\n').trim()
+      if (text) {
+        moduleDoc = {
+          summary: text.split(/\n\s*\n/)[0].replace(/\s+/g, ' ').trim(),
+          description: text,
+        }
+      }
+    }
+  }
+
+  return {
+    file: relPath,
+    moduleDoc,
+    methods: found.sort((a, b) => a.line - b.line),
+    constants: constants.sort((a, b) => a.line - b.line),
+  }
 }
 
 /**
@@ -535,3 +700,8 @@ export function scanFile(relPath) {
 export function scanRepo() {
   return sourceFiles().map(scanFile)
 }
+
+// Module-private functions, exposed for the contract test suite only
+// (test/contract/*). Not part of this module's public API — application code
+// must not import from here, and nothing outside the tests does.
+export const __internals = { walkDir, takeType, takeName, stripDash, paramNames, returnsValue, classify, anchorStart }

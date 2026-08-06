@@ -18,7 +18,7 @@ export { RHO, C_AIR, areaProfile, waveguideVolume, flareCutoff, endCorrectionLen
  *
  * @param {number} x - Argument, dimensionless (here 2ka).
  * @returns {number} J₁(x).
- * @post result === -J1(-x) — the function is odd
+ * @post result equals -J1(-x) to within floating-point rounding — the function is odd, and |x| is taken before the polynomial is evaluated, so the two differ by at most a sign flip
  * @pure
  */
 export function besselJ1(x) {
@@ -49,7 +49,7 @@ export function besselJ1(x) {
  *
  * @param {number} x - Argument, dimensionless.
  * @returns {number} J₀(x).
- * @post result === J0(-x) — the function is even
+ * @post result equals J0(-x) exactly — |x| is taken before the polynomial is evaluated, so the two arguments follow an identical path
  * @pure
  */
 export function besselJ0(x) {
@@ -75,6 +75,11 @@ export function besselJ0(x) {
  * The approximation is a closed form in J₀, sin and cos, so it costs a handful
  * of flops per frequency point instead of a series summation.
  *
+ * Materially looser than the Bessel routines beside it — roughly 1e-3 relative
+ * over the usable range rather than 1e-8. That is well inside the error of the
+ * rigid-piston assumption it feeds, but it is not a drop-in general-purpose
+ * Struve function.
+ *
  * @param {number} x - Argument, dimensionless (here 2ka).
  * @returns {number} H₁(x); exactly 0 at x = 0, which the series form cannot evaluate directly.
  * @pure
@@ -97,10 +102,12 @@ export function struveH1(x) {
  * is behind it. The interpolation is smooth rather than a switch, so the
  * transition introduces no step in the SPL curve.
  *
- * Two pseudo-terminations short-circuit the piston model entirely: `rigid`
- * returns a near-infinite impedance (a closed wall passes no volume velocity)
- * and `anechoic` returns the real characteristic impedance ρc/S (a perfectly
- * absorbing end with no reflection).
+ * Two pseudo-terminations short-circuit the piston model entirely. `rigid`
+ * returns a fixed 1e12 Pa·s/m³ — large enough that the volume velocity through
+ * it is numerically zero against any real acoustic impedance, without being
+ * `Infinity`, which would propagate NaN through the matrix arithmetic.
+ * `anechoic` returns the real characteristic impedance ρc/S, a perfectly
+ * absorbing end with no reflection.
  *
  * @param {number} S - Piston area, m². Clamped to ≥1e-8 when deriving the radius, so a degenerate port cannot produce a NaN radius.
  * @param {'free'|'half'|'quarter'|'eighth'|'rigid'|'anechoic'} solidAngle - Radiating space, or a pseudo-termination. Unrecognised values fall back to half space.
@@ -118,7 +125,14 @@ export function radiationImpedance(S, solidAngle, w) {
   const k = w / C_AIR
   const x = 2 * k * a
   let R1, X1
-  if (x < 1e-6) {
+  // The series forms are used well beyond where they are merely convenient.
+  // `1 - 2·J₁(x)/x` is catastrophic cancellation at small x: the two terms agree
+  // to more digits than the Bessel polynomial carries, so the difference is
+  // noise — and ρc/S, of order 1e8 for a small opening, amplifies it into a
+  // visibly negative radiation resistance. Below x ≈ 1e-3 the leading terms
+  // x²/8 and 2x/3π are themselves accurate to far better than the polynomial,
+  // so switching early costs nothing and keeps Re ≥ 0 everywhere.
+  if (x < 1e-3) {
     R1 = x * x / 8
     X1 = (4 / (3 * Math.PI)) * x / 2
   } else {
@@ -250,14 +264,16 @@ export function waveguideMatrix({ S1, S2, L, flare, Q, ecThroat = 0, ecMouth = 0
  * compliance is what makes longitudinal standing waves at n·c/2L show up as
  * real response features — the ripples a lumped model cannot produce.
  *
- * Stuffing does two things: it slows sound as the process shifts from
- * adiabatic toward isothermal (up to −15.5% at 8 g/L, where the model
- * saturates), and it adds resistive loss, combined with the node's own Q in
- * parallel.
+ * Stuffing does two things, and only the first saturates. It slows sound as the
+ * process shifts from adiabatic toward isothermal, by up to −15.5% at 8 g/L,
+ * beyond which the speed stops changing. It also adds resistive loss as 30/density,
+ * combined with the node's own Q in parallel — and that term keeps rising with
+ * density without limit, so two chambers above 8 g/L share a sound speed but not
+ * a Q.
  *
  * @param {object} chamber - Chamber parameters.
  * @param {number} chamber.volume - Internal volume, m³.
- * @param {number} chamber.length - Acoustic path length, m. Floored at 1e-4 to keep the derived area finite.
+ * @param {number} chamber.length - Acoustic path length, m. The floor of 1e-4 applies only to the Volume/Length division that derives the cross-section; the line itself is built at the length as given, so a length of 0 yields a zero-length line rather than a 1e-4 one.
  * @param {number|null} chamber.Q - Wall-loss factor.
  * @param {number} [chamber.stuffing=0] - Stuffing density, g/L. 0 is empty.
  * @param {number} w - Angular frequency ω, rad/s.

@@ -28,11 +28,11 @@ const EDGE_FRACTION = 0.28 // outer 28% of a stack docks to that side
 /**
  * Whether a drag event is a panel tab drag.
  *
- * The payload decides what a drag means, never the store flag alone: a
- * palette element carries its own type and must reach the canvas untouched,
- * even if a previous tab drag left `draggingPanel` set.
+ * The payload decides what a drag means, never the store flag alone: a palette
+ * element carries `application/acousim-node` and must reach the canvas
+ * untouched, even if a previous tab drag left `draggingPanel` set.
  *
- * @param {React.DragEvent} e - The drag event.
+ * @param {React.DragEvent} e - The drag event. A panel tab drag is identified by `application/acousim-panel` appearing in `dataTransfer.types`.
  * @returns {boolean} True when the drag carries a panel tab.
  * @pure
  */
@@ -435,3 +435,8 @@ export default function DockLayout() {
     </div>
   )
 }
+
+// Module-private functions, exposed for the contract test suite only
+// (test/contract/*). Not part of this module's public API — application code
+// must not import from here, and nothing outside the tests does.
+export const __internals = { isPanelDrag, endPanelDrag }

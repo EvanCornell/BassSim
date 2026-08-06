@@ -32,7 +32,9 @@ export const DEFAULT_PARAMS = {
  * Default sweep and display settings for a new project.
  *
  * `impedance` and `power` are UI conveniences linked to `voltage` by P = V²/Z;
- * the solver reads only `voltage`.
+ * the solver reads only `voltage`. The shipped defaults are rounded for
+ * display — 2.83 V into 4 Ω is 2.002 W, published as 2 — so the identity holds
+ * to within rounding here and exactly only after `setAmp` recomputes it.
  */
 export const DEFAULT_SETTINGS = {
   fmin: 10, fmax: 1000, npts: 512,
@@ -57,7 +59,7 @@ export const DEFAULT_SETTINGS = {
  * @param {Array<object>} [proj.nodes] - Serialized nodes, each `{id, type, position, params}`.
  * @param {Array<object>} [proj.edges] - Serialized edges. Missing ids are assigned positionally.
  * @param {object} [proj.settings] - Sweep settings, merged over `DEFAULT_SETTINGS`.
- * @returns {{nodes: Array<object>, edges: Array<object>, settings: object}} The hydrated graph.
+ * @returns {{nodes: Array<object>, edges: Array<object>, settings: object}} The hydrated graph. Nodes come back in the solver's shape — `{id, type, position, data: {params}}` — so params sit at `node.data.params`, not at `node.params` as they do in the serialized form.
  * @throws {Error} When a node lacks an id, a node has an unknown type, or an edge references a missing node. The full list is on the error's `projectErrors` property as well as its message.
  * @post proj is not modified — nodes and params are copied, not aliased.
  * @pure

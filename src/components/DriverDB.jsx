@@ -13,7 +13,7 @@ const CUSTOM_KEY = 'acousim:customDrivers'
  * Load the user's saved custom drivers.
  *
  * @returns {Array<object>} Custom driver records, or an empty list when absent or corrupt.
- * @sideEffect Reads LocalStorage.
+ * @sideEffect Reads LocalStorage key `acousim:customDrivers`. Anything that is not parseable JSON, and anything that parses to a falsy value, yields an empty list rather than throwing.
  */
 function loadCustom() {
   try { return JSON.parse(localStorage.getItem(CUSTOM_KEY)) || [] } catch { return [] }
@@ -261,3 +261,8 @@ export default function DriverDB() {
     </div>
   )
 }
+
+// Module-private functions, exposed for the contract test suite only
+// (test/contract/*). Not part of this module's public API — application code
+// must not import from here, and nothing outside the tests does.
+export const __internals = { loadCustom }

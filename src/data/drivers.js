@@ -33,6 +33,10 @@ const normalize = (d) => ({ ...d, ext: d.ext || {}, name: `${d.brand} ${d.model}
  * Catalog and hand-transcribed entries are merged into one list deliberately:
  * consumers filter on `source` when provenance matters rather than choosing
  * between two arrays.
+ *
+ * Sorted by brand then model using `localeCompare`, so ordering follows the
+ * runtime's collation rather than code-unit order — the two disagree on real
+ * brand names. Same-brand rows are therefore contiguous.
  */
 export const BUILTIN_DRIVERS = [...BC_DRIVERS, ...LEGACY_DRIVERS]
   .map(normalize)

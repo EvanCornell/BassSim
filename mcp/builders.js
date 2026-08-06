@@ -18,6 +18,10 @@ import { C_AIR } from '../src/engine/acoustics.js'
  * the schema, with no change here or in the tool definition.
  *
  * @param {object} [criteria={}] - Filter criteria.
+ * The numeric filters read the record's own field names — `Fs`, `Xmax`, `Sd`,
+ * capitalised as the driver schema spells them — and a row missing the field
+ * being filtered on is excluded, exactly as for an extended parameter.
+ *
  * @param {string} [criteria.query] - Substring of "brand model".
  * @param {string} [criteria.brand] - Exact brand name.
  * @param {'official'|'datasheet'|'custom'} [criteria.source] - Provenance.
@@ -78,6 +82,10 @@ export function searchDrivers({
  * wrong thing. An exact match on the full name or the model alone breaks a
  * tie, so "18SW115-4" resolves even though it is a substring of nothing
  * else.
+ *
+ * Note that "exact" is exact, not longest: a model that is a strict substring of
+ * another model resolves only if it matches one of them exactly, so `SA-12` is
+ * fine while `SA-1` is ambiguous.
  *
  * @param {string} query - Brand, model, or any substring of "brand model".
  * @returns {object} The single matching driver record.
@@ -229,7 +237,7 @@ const edge = (p, source, sourceHandle, target, targetHandle) =>
  * @param {number} volumeL - Box volume, litres.
  * @param {number} areaCm2 - Total port area, cm².
  * @param {number} [ecFactor=0.732] - End-correction coefficient, applied to both ends.
- * @returns {number} Port length in cm, floored at 1 cm — the end correction alone can exceed the required length for a large port on a small box, which would otherwise give a negative length.
+ * @returns {number} Port length in cm. Never below 1: the end correction alone can exceed the required length for a large port on a small box, and a negative length is not a port. A returned 1 therefore means "this geometry cannot reach that tuning", not "1 cm will do it".
  * @pure
  */
 export function portLengthGuess(fb, volumeL, areaCm2, ecFactor = 0.732) {
@@ -480,7 +488,8 @@ export const BUILDERS = {
  * Each round sweeps every free parameter across its current range on a
  * grid, keeps the best value found, then halves the range around it. This
  * converges far faster than a full grid search over all parameters at once
- * — cost is `rounds × params × gridN` evaluations rather than `gridN ^
+ * — cost is one baseline evaluation of the starting design plus
+ * `rounds × params × gridN` for the search itself, rather than `gridN ^
  * params` — at the price of being able to miss a narrow optimum that only
  * appears when two parameters move together.
  *
@@ -499,7 +508,7 @@ export const BUILDERS = {
  * @param {object} [opts={}] - Search controls.
  * @param {number} [opts.rounds=3] - Refinement rounds.
  * @param {number} [opts.gridN=9] - Grid points per parameter per round.
- * @returns {{best: object, bestScore: number, evals: number, values: number[]}} The best project found, its score, how many evaluations it took, and the winning value of each parameter in the order given.
+ * @returns {{best: object, bestScore: number, evals: number, values: number[]}} The best project found, its score, how many evaluations it took — `1 + rounds × params × gridN` — and the winning value of each parameter in the order given.
  * @sideEffect Calls `score` many times; if scoring simulates, this is the expensive part.
  */
 export function optimizeProject(project, params, score, { rounds = 3, gridN = 9 } = {}) {
@@ -565,3 +574,8 @@ export function optimizeProject(project, params, score, { rounds = 3, gridN = 9 
   }
   return { best, bestScore, evals, values: params.map((prm) => getVal(best, prm)) }
 }
+
+// Module-private functions, exposed for the contract test suite only
+// (test/contract/*). Not part of this module's public API — application code
+// must not import from here, and nothing outside the tests does.
+export const __internals = { nid, pos, baseProject, addNode, edge }

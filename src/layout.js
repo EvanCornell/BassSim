@@ -446,6 +446,21 @@ export function resizeChildren(tree, splitId, index, weightA, weightB) {
 // ---------- persistence ----------
 
 /**
+ * Coerce a persisted flex weight to a usable one.
+ *
+ * Infinity passes a bare `> 0` test and then breaks the flex layout it is fed
+ * to, so finiteness is checked rather than assumed.
+ *
+ * @param {any} v - Untrusted size value.
+ * @returns {number} The value when it is a finite positive number, otherwise 1.
+ * @pure
+ */
+function sanitizeSize(v) {
+  const n = Number(v)
+  return Number.isFinite(n) && n > 0 ? n : 1
+}
+
+/**
  * Rebuild a persisted layout, discarding anything this build cannot render.
  *
  * The trust boundary for LocalStorage. A saved tree may name panels that no
@@ -458,33 +473,43 @@ export function resizeChildren(tree, splitId, index, weightA, weightB) {
  * @param {any} tree - Untrusted layout tree, typically parsed from LocalStorage.
  * @param {string[]} knownPanels - Panel ids this build knows how to render. Anything else is dropped.
  * @returns {object|null} A valid layout tree, or `null` when nothing renderable survived.
- * @post Every returned node has a valid id, a positive numeric size, and — for stacks — an `active` panel drawn from its own list.
+ * @post Every returned node has a non-empty string id, a finite positive size, and — for stacks — an `active` panel drawn from its own list.
+ * @post Never throws, whatever the input contains: every field is re-derived rather than trusted, so a wrong type anywhere yields a dropped node rather than an exception.
  * @sideEffect Consumes ids from `uid` for any node that was missing one.
  */
 export function sanitize(tree, knownPanels) {
   if (!tree || typeof tree !== 'object') return null
   if (tree.type === 'stack') {
-    const panels = (tree.panels || []).filter((p) => knownPanels.includes(p))
+    // `panels` is whatever LocalStorage held. A string has a `.includes` but no
+    // `.filter`, so trusting the shape here threw on exactly the corrupt input
+    // this function exists to absorb.
+    const panels = (Array.isArray(tree.panels) ? tree.panels : []).filter((p) => knownPanels.includes(p))
     if (!panels.length) return null
     return {
-      id: tree.id || uid('s'),
+      id: typeof tree.id === 'string' && tree.id ? tree.id : uid('s'),
       type: 'stack',
-      size: Number(tree.size) > 0 ? Number(tree.size) : 1,
+      size: sanitizeSize(tree.size),
       panels,
       active: panels.includes(tree.active) ? tree.active : panels[0],
     }
   }
   if (tree.type === 'split') {
-    const children = (tree.children || []).map((c) => sanitize(c, knownPanels)).filter(Boolean)
+    const kids = Array.isArray(tree.children) ? tree.children : []
+    const children = kids.map((c) => sanitize(c, knownPanels)).filter(Boolean)
     if (!children.length) return null
-    if (children.length === 1) return { ...children[0], size: Number(tree.size) > 0 ? Number(tree.size) : 1 }
+    if (children.length === 1) return { ...children[0], size: sanitizeSize(tree.size) }
     return {
-      id: tree.id || uid('d'),
+      id: typeof tree.id === 'string' && tree.id ? tree.id : uid('d'),
       type: 'split',
       dir: tree.dir === 'col' ? 'col' : 'row',
-      size: Number(tree.size) > 0 ? Number(tree.size) : 1,
+      size: sanitizeSize(tree.size),
       children,
     }
   }
   return null
 }
+
+// Module-private functions, exposed for the contract test suite only
+// (test/contract/*). Not part of this module's public API — application code
+// must not import from here, and nothing outside the tests does.
+export const __internals = { mapStacks, removeRec, dirOf, isBefore, insertRec }

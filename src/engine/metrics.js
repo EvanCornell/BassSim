@@ -63,7 +63,7 @@ function localMaxima(freqs, vals, minProminence = 1) {
  * @param {object} settings - Sweep settings.
  * @param {number} [settings.voltage=2.83] - Drive voltage the sweep was run at, V RMS.
  * @param {number} [settings.xmax] - Legacy single Xmax, mm, used only when the result carries no per-driver ratio.
- * @returns {object|null} Metrics — any of `passband`, `peakSPL`, `f3`, `f10`, `bwHz`, `bwOct`, `zPeaks`, `fb`, `fbZ`, `fc`, `qtc`, `xPeak`, `xPeakF`, `xAtFb`, `xAtF3`, `xRatioPeak`, `xRatioPeakF`, `xLimitDriver`, `maxPower`, `vMax` — or `null` when the sweep failed or is empty. Individual fields are absent rather than null when the topology does not define them, so a sealed box has no `fb`.
+ * @returns {object|null} Metrics — any of `passband`, `peakSPL`, `f3`, `f10`, `bwHz`, `bwOct`, `zPeaks`, `fb`, `fbZ`, `fc`, `qtc`, `xPeak`, `xPeakF`, `xAtFb`, `xAtF3`, `xRatioPeak`, `xRatioPeakF`, `xLimitDriver`, `maxPower`, `vMax` — or `null` when the sweep failed or is empty. Most fields are simply absent when the topology does not define them, so a sealed box has no `fb` key at all. The exceptions are `f3`, `f10`, `xPeakF`, `xAtFb` and `xAtF3`, which are always present and carry `null` when undefined — `xAtFb` is null for a sealed box because it is looked up at a tuning that does not exist.
  * @post res and settings are not modified
  * @pure
  */
@@ -208,3 +208,8 @@ export function computeMetrics(res, settings) {
   }
   return m
 }
+
+// Module-private functions, exposed for the contract test suite only
+// (test/contract/*). Not part of this module's public API — application code
+// must not import from here, and nothing outside the tests does.
+export const __internals = { localMaxima }

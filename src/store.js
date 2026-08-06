@@ -1,3 +1,28 @@
+// Application state: the project graph, the workspace, and everything the UI
+// reads. One Zustand store, deliberately flat.
+//
+// State fields, since the action contracts below name what changes rather than
+// where:
+//
+//   project    nodes, edges, projectName, selectedNodeId, settings
+//   results    results, metrics, snapshots, simError
+//   history    history, future, clipboard
+//   workspace  layout, layoutPresets, maximized, focusedPanel, draggingPanel,
+//              poppedOut, toolbar, bindings, xZoom
+//   modals     showDriverDB, showProjectManager, showTSCalc, showSettings,
+//              settingsSection, restorePrompt, velocityPopupNodeId
+//
+// Fields prefixed with an underscore are solver and persistence bookkeeping
+// (`_lastSig`, `_abort`, `_computeTimer`, `_flowApi`, `_lastSavedName`,
+// `_nameTimer`) and are not part of any action's observable contract.
+//
+// LocalStorage keys, all prefixed `acousim:` — `acousim:layout`,
+// `acousim:layoutPresets`, `acousim:toolbar`, `acousim:keymap`,
+// `acousim:project:<name>` and `acousim:lastProject`.
+//
+// A subset of the state is mirrored to popped-out panel windows over a
+// BroadcastChannel; see src/popout.js for which keys and why.
+
 import { create } from 'zustand'
 import { applyNodeChanges, applyEdgeChanges, addEdge } from 'reactflow'
 import { SCHEMA_VERSION, DEFAULT_PARAMS } from './engine/project'
@@ -216,7 +241,7 @@ export const useStore = create((rawSet, get) => {
    *
    * @param {string|null} id - Panel id, or `null` when the drag ends.
    * @returns {void}
-   * @sideEffect Writes store state, mirrored to other windows.
+   * @sideEffect Writes store state. The field is local to the window — `SHARED_KEYS` deliberately excludes it, so a popped-out panel keeps its own.
    */
   setDraggingPanel: (id) => set({ draggingPanel: id }),
   /**
@@ -227,7 +252,7 @@ export const useStore = create((rawSet, get) => {
    *
    * @param {string} id - Panel id.
    * @returns {void}
-   * @sideEffect Writes store state, mirrored to other windows.
+   * @sideEffect Writes store state. The field is local to the window — `SHARED_KEYS` deliberately excludes it, so a popped-out panel keeps its own.
    */
   focusPanel: (id) => { if (get().focusedPanel !== id) set({ focusedPanel: id }) },
   /**
@@ -235,7 +260,7 @@ export const useStore = create((rawSet, get) => {
    *
    * @param {string|null} id - Panel id to toggle.
    * @returns {void}
-   * @sideEffect Writes store state, mirrored to other windows.
+   * @sideEffect Writes store state. The field is local to the window — `SHARED_KEYS` deliberately excludes it, so a popped-out panel keeps its own.
    */
   toggleMaximize: (id) => set({ maximized: get().maximized === id ? null : id }),
   /**
@@ -244,7 +269,7 @@ export const useStore = create((rawSet, get) => {
    * @param {boolean} v - Whether to show the window.
    * @param {string} [section] - Section to select. The current section is kept when omitted.
    * @returns {void}
-   * @sideEffect Writes store state, mirrored to other windows.
+   * @sideEffect Writes store state. The field is local to the window — `SHARED_KEYS` deliberately excludes it, so a popped-out panel keeps its own.
    */
   setShowSettings: (v, section) => set({ showSettings: v, ...(section ? { settingsSection: section } : {}) }),
   /**
@@ -252,7 +277,7 @@ export const useStore = create((rawSet, get) => {
    *
    * @param {string} id - Section id.
    * @returns {void}
-   * @sideEffect Writes store state, mirrored to other windows.
+   * @sideEffect Writes store state. The field is local to the window — `SHARED_KEYS` deliberately excludes it, so a popped-out panel keeps its own.
    */
   setSettingsSection: (id) => set({ settingsSection: id }),
 
@@ -535,7 +560,7 @@ export const useStore = create((rawSet, get) => {
    * Restore the default quick-bar arrangement.
    *
    * @returns {void}
-   * @sideEffect Writes store state, mirrored to other windows.
+   * @sideEffect Writes store state and persists the toolbar, since it delegates to `setToolbar`. The toolbar is local to the window; `SHARED_KEYS` excludes it.
    */
   resetToolbar: () => get().setToolbar(DEFAULT_TOOLBAR),
 
@@ -1014,7 +1039,7 @@ export const useStore = create((rawSet, get) => {
    *
    * @param {boolean} v - Whether to show it.
    * @returns {void}
-   * @sideEffect Writes store state, mirrored to other windows.
+   * @sideEffect Writes store state. The field is local to the window — `SHARED_KEYS` deliberately excludes it, so a popped-out panel keeps its own.
    */
   setShowDriverDB: (v) => set({ showDriverDB: v }),
   /**
@@ -1022,7 +1047,7 @@ export const useStore = create((rawSet, get) => {
    *
    * @param {boolean} v - Whether to show it.
    * @returns {void}
-   * @sideEffect Writes store state, mirrored to other windows.
+   * @sideEffect Writes store state. The field is local to the window — `SHARED_KEYS` deliberately excludes it, so a popped-out panel keeps its own.
    */
   setShowProjectManager: (v) => set({ showProjectManager: v }),
   /**
@@ -1030,7 +1055,7 @@ export const useStore = create((rawSet, get) => {
    *
    * @param {boolean} v - Whether to show it.
    * @returns {void}
-   * @sideEffect Writes store state, mirrored to other windows.
+   * @sideEffect Writes store state. The field is local to the window — `SHARED_KEYS` deliberately excludes it, so a popped-out panel keeps its own.
    */
   setShowTSCalc: (v) => set({ showTSCalc: v }),
   /**
@@ -1038,7 +1063,7 @@ export const useStore = create((rawSet, get) => {
    *
    * @param {object|null} v - The candidate project, or `null` to dismiss.
    * @returns {void}
-   * @sideEffect Writes store state, mirrored to other windows.
+   * @sideEffect Writes store state. The field is local to the window — `SHARED_KEYS` deliberately excludes it, so a popped-out panel keeps its own.
    */
   setRestorePrompt: (v) => set({ restorePrompt: v }),
 
@@ -1387,3 +1412,8 @@ export function listSavedProjects() {
   }
   return out.sort((a, b) => (b.modified || '').localeCompare(a.modified || ''))
 }
+
+// Module-private functions, exposed for the contract test suite only
+// (test/contract/*). Not part of this module's public API — application code
+// must not import from here, and nothing outside the tests does.
+export const __internals = { loadLayout, loadPresets, loadToolbar, freeSpotNear, graphSignature }

@@ -112,9 +112,10 @@ function baseValue(curve, x) {
  * Evaluate a curve at displacement x, baseline plus control points, unclamped.
  *
  * Control points are gaussian bumps added onto the baseline, in the manner of a
- * parametric EQ. In symmetric mode each point is mirrored to the opposite
- * stroke direction, which is how a motor with a symmetric gap is described with
- * half the points.
+ * parametric EQ. When the curve sets `sym`, each point is mirrored to the
+ * opposite stroke direction — a point at +3 mm also acts at −3 mm — which is how
+ * a motor with a symmetric gap is described with half the points. Points within
+ * 0.01 mm of centre are not mirrored, since they already straddle it.
  *
  * The result is deliberately not floored here: `evalCurve` needs the raw slope
  * to extrapolate beyond Xmax.
@@ -299,3 +300,8 @@ export function parseCurveCSV(text) {
   if (rows.length < 2) throw new Error('Need at least two "x_mm, ratio" rows.')
   return rows.sort((a, b) => a[0] - b[0])
 }
+
+// Module-private functions, exposed for the contract test suite only
+// (test/contract/*). Not part of this module's public API — application code
+// must not import from here, and nothing outside the tests does.
+export const __internals = { baseValue, rawEval }

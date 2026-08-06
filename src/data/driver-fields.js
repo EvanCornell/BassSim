@@ -17,10 +17,18 @@
 /**
  * The flat, solver-facing T/S fields every driver record may carry.
  *
- * Units: Fs Hz · Vas L · Re Ω · Bl T·m · Mms g · Cms mm/N · Sd cm² · Le mH ·
+ * The thirteen fields are Fs, Qts, Qes, Qms, Vas, Re, Bl, Mms, Cms, Sd, Le,
+ * Xmax and Rms. The three Q values are dimensionless; the rest are
+ * Fs Hz · Vas L · Re Ω · Bl T·m · Mms g · Cms mm/N · Sd cm² · Le mH ·
  * Xmax mm · Rms N·s/m.
  *
- * `solver: true` marks the eight the engine actually reads; the rest are
+ * Each entry exposes `key`, `label`, `unit` and `type`, and the solver-facing
+ * nine additionally carry `solver: true`: Fs, Re, Bl, Mms, Cms, Sd, Le, Xmax
+ * and Rms. The three Q values and Vas are published figures the solver derives
+ * rather than reads.
+ *
+ * `solver: true` marks the nine the engine actually reads — the eight that
+ * enter the electro-mechanical equation plus Xmax, which bounds excursion; the rest are
  * published figures kept for display and for the consistency audit. Declared as
  * data so the browser, the CSV export and the MCP tools enumerate fields
  * generically instead of hardcoding a list that drifts.
@@ -47,6 +55,10 @@ export const CORE_FIELDS = [
  * Sparse by design — B&C publish flux density and winding depth, most brands
  * publish a power rating and stop — so every field is optional and any consumer
  * must tolerate `undefined`. Nothing here is required to simulate.
+ *
+ * Each entry exposes `key`, `group`, `label`, `unit` and `type`, and some carry
+ * a `desc`. The groups are Excursion, Electrical, Motor, Construction and
+ * Application.
  */
 export const EXT_FIELDS = [
   // --- excursion and efficiency beyond the core set ---
@@ -130,7 +142,7 @@ export const SOURCE_LABELS = {
  * place.
  *
  * @param {object} d - A driver database record.
- * @returns {object} Node params: `label` from the model name, plus each present core T/S field.
+ * @returns {object} Node params: `label` taken from the record's `model` field, plus each present core T/S field.
  * @post The result contains no `ext`, `source`, `suspect` or `brand` key, whatever the input carries.
  * @post d is not modified.
  * @pure

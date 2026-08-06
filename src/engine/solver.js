@@ -1,6 +1,20 @@
 // Graph → transfer-matrix chain solver.
 // Convention: ABCD matrices map [p_in; U_in] = M · [p_out; U_out] with
 // p = acoustic pressure (Pa), U = volume velocity (m^3/s).
+//
+// A node is `{ id, type, data: { params } }` and an edge is
+// `{ source, sourceHandle, target, targetHandle }`. Each node type exposes a
+// fixed set of named handles, and an edge must name one at each end:
+//
+//   driver      front (out), rear (out)  — both may fan out
+//   chamber     in (in), out (out)
+//   waveguide   throat (in), mouth (out)
+//   pr          in (in)
+//   radiation   in (in)
+//
+// Ports are directional: an output handle connects to an input handle. An
+// unconnected output is not an error — an open waveguide mouth radiates, and a
+// chamber with nothing on its outlet is sealed.
 import {
   C, ZERO, add, sub, mul, div, inv, abs, arg, jw, jwPow, parallel,
   zInFromMatrix, propagate,
@@ -66,10 +80,13 @@ export function driverSI(p) {
 /**
  * Resolve a node's loss factor to a number the element builders can use.
  *
- * Collapses three ways of saying "lossless" — an explicit `lossless` flag, a
- * missing Q, and a non-positive Q — onto `Infinity`, which is what
- * `combineQ` and `tlineMatrix` expect. Without this, a Q of 0 read literally
- * would divide by zero.
+ * Collapses two ways of saying "lossless" — an explicit `lossless` flag and a
+ * non-positive Q — onto `Infinity`, which is what `combineQ` and `tlineMatrix`
+ * expect. Without this, a Q of 0 read literally would divide by zero.
+ *
+ * A *missing* Q is not lossless: it falls back to 50, the same moderate loss a
+ * new node is created with, so a node whose Q was never set behaves like one
+ * that was left at its default rather than like a lossless idealisation.
  *
  * @param {object} p - Any node's params.
  * @param {boolean} [p.lossless] - When true, force `Infinity` regardless of Q.
@@ -742,3 +759,8 @@ export function runSimulation(nodes, edges, settings) {
   res.elapsedMs = performance.now() - t0
   return res
 }
+
+// Module-private functions, exposed for the contract test suite only
+// (test/contract/*). Not part of this module's public API — application code
+// must not import from here, and nothing outside the tests does.
+export const __internals = { normQ, driverPassiveMechZ, buildGraph }

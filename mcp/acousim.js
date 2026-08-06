@@ -41,7 +41,7 @@ const sig = (v, n = 4) => (v == null || !isFinite(v) ? null : Number(Number(v).t
  * Used throughout the tool responses so an agent reads "Port (waveguide_3)"
  * rather than an opaque id.
  *
- * @param {Array<object>} nodes - Hydrated graph nodes.
+ * @param {Array<object>} nodes - Hydrated graph nodes, each shaped `{id, type, data: {params}}` — the label lives at `node.data.params.label`.
  * @param {string} id - Node id.
  * @returns {string} A human-readable node reference.
  * @pure
@@ -57,7 +57,7 @@ function labelOf(nodes, id) {
  * Agents naturally refer to "the port" rather than `waveguide_3`, so both
  * work. Ids are matched first, then labels case-insensitively.
  *
- * @param {Array<object>} nodes - Hydrated graph nodes.
+ * @param {Array<object>} nodes - Hydrated graph nodes, each shaped `{id, type, data: {params}}` — labels are matched against `node.data.params.label`.
  * @param {string} ref - Node id or label.
  * @param {string[]|null} [types=null] - Restrict to these node types. `null` searches every node.
  * @returns {object} The matching node.
@@ -322,7 +322,7 @@ const QUANTITIES = {
  * reads to an agent as a missing measurement rather than an inapplicable one.
  *
  * @param {object|null} metrics - Metrics from `computeMetrics`.
- * @returns {object|null} A flat object of formatted metrics, or `null` when there were none.
+ * @returns {object|null} Formatted metrics keyed by name, or `null` when there were none. Values are strings or numbers except `impedance_peaks`, which is an array of one formatted string per peak.
  * @pure
  */
 function metricsSummary(metrics) {
@@ -858,3 +858,8 @@ server.registerResource('design-guide', 'acousim://guide', {
 
 return server
 }
+
+// Module-private functions, exposed for the contract test suite only
+// (test/contract/*). Not part of this module's public API — application code
+// must not import from here, and nothing outside the tests does.
+export const __internals = { sig, labelOf, resolveNode, run, downsample, metricsSummary, summarize, jsonResult, errResult }
