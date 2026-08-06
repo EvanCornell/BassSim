@@ -37,6 +37,21 @@ const driverNode = (id = 'd1') => ({ id, type: 'driver', data: { params: { ...DR
 const radNode = (id) => ({ id, type: 'radiation', data: { params: {} } })
 
 // Smallest graph the contract implies: one driver radiating from both faces.
+//
+// CONTRACT (runSimulation): "`splCombined` is the *complex* sum of every
+//            radiating outlet ... A bare driver with both faces wired straight
+//            to radiation nodes is the extreme case: front and rear are
+//            exactly out of phase into the same far field, the sum is
+//            identically zero, and the reported level sits at the −146 dB
+//            floor at every frequency and every drive voltage. That is the
+//            physics, not a failure — a dipole needs a baffle, and the drive
+//            level is visible in `splDriver`, `excursion` and `zinMag`
+//            regardless."
+// This fixture IS that extreme case, so `splCombined` must NOT be used below
+// to observe drive-level defaults (voltage, rg): the contract states it is
+// invariant to drive level for this exact topology. Tests that need a
+// drive-level-responsive output use `splDriver`/`excursion`/`zinMag` instead,
+// as the contract names them explicitly as still carrying the level.
 function smallGraph() {
   const nodes = [driverNode('d1'), radNode('r1'), radNode('r2')]
   const edges = [
@@ -385,30 +400,65 @@ test('runSimulation: a small positive fmin is honoured', () => {
 
 // CONTRACT: "`settings.voltage` — _(optional, default `2.83`)_ — Drive voltage,
 //            V RMS at the amplifier."
+// CONTRACT: "`splCombined` is the *complex* sum of every radiating outlet ... A
+//            bare driver with both faces wired straight to radiation nodes is
+//            the extreme case: front and rear are exactly out of phase into the
+//            same far field, the sum is identically zero, and the reported
+//            level sits at the −146 dB floor at every frequency and every
+//            drive voltage ... the drive level is visible in `splDriver`,
+//            `excursion` and `zinMag` regardless."
+// `smallGraph()` IS that extreme-case topology, so `splCombined` cannot be used
+// to detect the voltage default here — the contract says it is pinned to the
+// floor regardless of drive level for this exact graph. `splDriver` and
+// `excursion` are used instead, as the contract names them as still carrying
+// the drive level; `zinMag` is a linear-circuit property that is not expected
+// to depend on drive amplitude at all (no `nlEnabled`), so it is checked only
+// for equality between the omitted and explicit-default calls.
 test('runSimulation: voltage defaults to 2.83', () => {
   const a = smallGraph()
   const def = runSimulation(a.nodes, a.edges, { npts: 16 })
   const b = smallGraph()
   const exp = runSimulation(b.nodes, b.edges, { npts: 16, voltage: 2.83 })
-  assert.deepEqual(exp.splCombined, def.splCombined)
+  assert.deepEqual(exp.splDriver, def.splDriver)
   assert.deepEqual(exp.excursion, def.excursion)
-  // and a different voltage really is a different drive level
+  assert.deepEqual(exp.zinMag, def.zinMag)
+
+  // sanity check on the contract's own claim about this exact topology: the
+  // floor is stated as exactly -146 dB "at every frequency and every drive
+  // voltage" — tolerance of 1 dB for how the floor constant is represented.
+  for (const v of def.splCombined) {
+    assert.ok(Math.abs(v - (-146)) < 1, `splCombined should sit at the -146 dB floor, got ${v}`)
+  }
+
+  // and a different voltage really is a different drive level, visible where
+  // the contract says it must be
   const c = smallGraph()
   const loud = runSimulation(c.nodes, c.edges, { npts: 16, voltage: 28.3 })
-  assert.notDeepEqual(loud.splCombined, def.splCombined)
+  assert.notDeepEqual(loud.splDriver, def.splDriver)
+  assert.notDeepEqual(loud.excursion, def.excursion)
+  // and splCombined must still sit at the floor even at the louder voltage
+  for (const v of loud.splCombined) {
+    assert.ok(Math.abs(v - (-146)) < 1, `splCombined should stay at the floor at 28.3V, got ${v}`)
+  }
 })
 
 // CONTRACT: "`settings.rg` — _(optional, default `0`)_ — Amplifier source
 //            resistance, Ω."
+// As above, `smallGraph()` is the front+rear-to-radiation dipole the contract
+// singles out for `splCombined` being pinned to the noise floor regardless of
+// drive level; `splDriver`/`excursion` are used instead, which the contract
+// names as still carrying the drive level.
 test('runSimulation: rg defaults to 0', () => {
   const a = smallGraph()
   const def = runSimulation(a.nodes, a.edges, { npts: 16 })
   const b = smallGraph()
   const exp = runSimulation(b.nodes, b.edges, { npts: 16, rg: 0 })
-  assert.deepEqual(exp.splCombined, def.splCombined)
+  assert.deepEqual(exp.splDriver, def.splDriver)
+  assert.deepEqual(exp.excursion, def.excursion)
+
   const c = smallGraph()
   const damped = runSimulation(c.nodes, c.edges, { npts: 16, rg: 10 })
-  assert.notDeepEqual(damped.splCombined, def.splCombined)
+  assert.notDeepEqual(damped.splDriver, def.splDriver)
 })
 
 // CONTRACT: "Excursion is deliberately *not* summed — cones move independently,

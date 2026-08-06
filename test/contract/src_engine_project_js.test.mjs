@@ -70,16 +70,32 @@ test('DEFAULT_SETTINGS: has exactly the documented keys', () => {
 })
 
 // CONTRACT: "`impedance` and `power` are UI conveniences linked to `voltage` by
-// P = V²/Z; the solver reads only `voltage`."
-test('DEFAULT_SETTINGS: power, voltage and impedance satisfy P = V²/Z', () => {
+// P = V²/Z; the solver reads only `voltage`. The shipped defaults are rounded
+// for display — 2.83 V into 4 Ω is 2.002 W, published as 2 — so the identity
+// holds to within rounding here and exactly only after `setAmp` recomputes it."
+// This is now explicit about the tolerance and about the shipped numbers
+// themselves, so both are asserted directly rather than to a near-exact
+// relative tolerance.
+test('DEFAULT_SETTINGS: power, voltage and impedance satisfy P = V²/Z to within display rounding', () => {
   const { voltage: V, impedance: Z, power: P } = DEFAULT_SETTINGS
   assert.equal(typeof V, 'number')
   assert.equal(typeof Z, 'number')
   assert.equal(typeof P, 'number')
-  // Tolerance 1e-9 relative: the three are stored as rounded display values.
+  // The contract states the shipped figures exactly.
+  assert.equal(V, 2.83, 'the shipped default voltage is 2.83 V')
+  assert.equal(Z, 4, 'the shipped default impedance is 4 Ω')
+  assert.equal(P, 2, 'the shipped default power is published as 2 W')
+  // The exact V²/Z is ~2.002 W; "published as 2" means it was rounded to the
+  // nearest whole watt, not stored to the precise value.
+  const exact = (V * V) / Z
   assert.ok(
-    Math.abs(P - (V * V) / Z) <= 1e-9 * Math.abs((V * V) / Z),
-    `expected P = V²/Z: P=${P}, V=${V}, Z=${Z}`,
+    Math.abs(exact - 2.002) < 0.001,
+    `V²/Z should compute to ~2.002 W, got ${exact}`,
+  )
+  assert.notEqual(P, exact, 'the published power must be the rounded figure, not the exact one')
+  assert.ok(
+    Math.abs(P - exact) < 0.5,
+    `published power ${P} should round from V²/Z = ${exact} to the nearest watt`,
   )
 })
 
@@ -130,21 +146,32 @@ test('hydrateProject: settings are merged over DEFAULT_SETTINGS', () => {
 // specifies only what matters ... hydrates into a complete graph." and
 // "every saved node is merged over its entry so a project written by an older
 // build gains any parameter added since."
+// CONTRACT (@returns): "Nodes come back in the solver's shape —
+// `{id, type, position, data: {params}}` — so params sit at `node.data.params`,
+// not at `node.params` as they do in the serialized form."
 test('hydrateProject: missing params are filled from DEFAULT_PARAMS', () => {
   const proj = { nodes: NODE_TYPES.map((t, i) => node(`n${i}`, t)), edges: [] }
   const out = hydrateProject(proj)
   assert.equal(out.nodes.length, NODE_TYPES.length)
   for (const n of out.nodes) {
+    // the documented hydrated node shape: {id, type, position, data: {params}}
+    assert.equal(typeof n.data, 'object', `${n.type}: node must carry a data object`)
+    assert.notEqual(n.data, null, `${n.type}: data must not be null`)
+    assert.equal(
+      n.params, undefined,
+      `${n.type}: params must not sit at node.params in the hydrated shape`,
+    )
     const defaults = DEFAULT_PARAMS[n.type]
-    assert.equal(typeof n.params, 'object', `${n.type}: params must be an object`)
+    assert.equal(typeof n.data.params, 'object', `${n.type}: data.params must be an object`)
     for (const [k, v] of Object.entries(defaults)) {
-      assert.deepEqual(n.params[k], v, `${n.type}: param ${k} must be filled from DEFAULT_PARAMS`)
+      assert.deepEqual(n.data.params[k], v, `${n.type}: param ${k} must be filled from DEFAULT_PARAMS`)
     }
   }
 })
 
 // CONTRACT: "every saved node is merged over its entry" — a saved value wins
 // over the default, and the other defaults still arrive.
+// CONTRACT (@returns): params sit at `node.data.params` in the hydrated shape.
 test('hydrateProject: saved params are merged over the defaults', () => {
   const type = 'driver'
   const keys = Object.keys(DEFAULT_PARAMS[type])
@@ -154,10 +181,10 @@ test('hydrateProject: saved params are merged over the defaults', () => {
     nodes: [node('n1', type, { [overridden]: '__saved__' })],
     edges: [],
   })
-  assert.equal(out.nodes[0].params[overridden], '__saved__', 'a saved param must win')
+  assert.equal(out.nodes[0].data.params[overridden], '__saved__', 'a saved param must win')
   for (const k of keys.slice(1)) {
     assert.deepEqual(
-      out.nodes[0].params[k], DEFAULT_PARAMS[type][k],
+      out.nodes[0].data.params[k], DEFAULT_PARAMS[type][k],
       `param ${k} must still be filled from DEFAULT_PARAMS`,
     )
   }
@@ -300,6 +327,7 @@ test('hydrateProject: collects several structural problems together', () => {
 
 // CONTRACT postcondition: "proj is not modified — nodes and params are copied,
 // not aliased."
+// CONTRACT (@returns): params sit at `node.data.params` in the hydrated shape.
 test('hydrateProject: proj is not modified', () => {
   const proj = {
     name: 'p',
@@ -312,7 +340,7 @@ test('hydrateProject: proj is not modified', () => {
   assert.deepEqual(proj, before, 'hydrateProject must not mutate its argument')
   // "copied, not aliased": mutating the result must not reach back into proj.
   out.settings.fmin = -999
-  out.nodes[0].params.__custom__ = -999
+  out.nodes[0].data.params.__custom__ = -999
   out.nodes.push({ id: 'injected' })
   out.edges.push({ id: 'injected' })
   assert.deepEqual(proj, before, 'the result must not alias proj')
@@ -320,11 +348,12 @@ test('hydrateProject: proj is not modified', () => {
 
 // CONTRACT: "`DEFAULT_PARAMS` — Default params for each node type" — it is the
 // shared schema, so a hydrated node must not alias it either.
+// CONTRACT (@returns): params sit at `node.data.params` in the hydrated shape.
 test('hydrateProject: hydrated params do not alias DEFAULT_PARAMS', () => {
   const before = structuredClone(DEFAULT_PARAMS)
   const out = hydrateProject({ nodes: [node('n1', 'driver')], edges: [] })
   const key = Object.keys(DEFAULT_PARAMS.driver)[0]
-  out.nodes[0].params[key] = '__mutated__'
+  out.nodes[0].data.params[key] = '__mutated__'
   assert.deepEqual(DEFAULT_PARAMS, before, 'DEFAULT_PARAMS must not be aliased by the result')
 })
 

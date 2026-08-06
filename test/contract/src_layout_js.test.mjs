@@ -520,18 +520,50 @@ test('dockToEdge: a newly created root split gives the newcomer 22% of the space
   )
 })
 
-// CONTRACT: "When the root split already runs in the right direction the panel joins it as
-// a sibling at a quarter of the average weight"
-test('dockToEdge: joining an existing root split uses a quarter of the average weight', () => {
-  const a = stack(['pA', 'pX'], { size: 1 })
-  const b = stack(['pB'], { size: 1 })
-  const root = split('row', [a, b])
-  const out = dockToEdge(root, 'pX', 'right')
-  assert.ok(isSplit(out) && out.dir === 'row')
-  // Remaining children weigh 1 and 1, so the average is 1 and a quarter of it is 0.25.
-  const newcomer = findPanelStack(out, 'pX')
-  assert.equal(newcomer.size, 0.25)
-  assert.equal(out.children.length, 3, 'the panel must join the root split as a sibling')
+// CONTRACT (corrected): "When the root split already runs in the right direction
+// the panel joins it as a sibling weighted at a quarter of the split's *total*
+// — so it takes a fifth of the edge whatever the sibling count, which is close
+// to the 22% the other branch gives."
+//
+// The joining weight is a quarter of the *sum of the existing children's
+// sizes*, not a quarter of their average. With two children of size 1 each
+// (total 2), the newcomer's weight is 2/4 = 0.5, and its resulting share of
+// the edge is 0.5 / (2 + 0.5) = 0.2 — one fifth, independent of how many
+// siblings there were, which is exactly the "whatever the sibling count"
+// claim this test checks with both two and three existing children.
+test('dockToEdge: joining an existing root split weights the newcomer at a quarter of the split total, one fifth of the edge', () => {
+  {
+    const a = stack(['pA', 'pX'], { size: 1 })
+    const b = stack(['pB'], { size: 1 })
+    const root = split('row', [a, b])
+    const out = dockToEdge(root, 'pX', 'right')
+    assert.ok(isSplit(out) && out.dir === 'row')
+    const newcomer = findPanelStack(out, 'pX')
+    // Quarter of the total of the pre-existing children (1 + 1 = 2).
+    assert.equal(newcomer.size, 0.5)
+    assert.equal(out.children.length, 3, 'the panel must join the root split as a sibling')
+    const total = out.children.reduce((sum, ch) => sum + ch.size, 0)
+    assert.ok(
+      Math.abs(newcomer.size / total - 0.2) < 1e-9,
+      `newcomer share should be a fifth of the edge, got ${newcomer.size / total}`,
+    )
+  }
+  // "whatever the sibling count" — repeat with three pre-existing children.
+  {
+    const a = stack(['pA', 'pX'], { size: 1 })
+    const b = stack(['pB'], { size: 1 })
+    const c = stack(['pC'], { size: 1 })
+    const root = split('row', [a, b, c])
+    const out = dockToEdge(root, 'pX', 'right')
+    const newcomer = findPanelStack(out, 'pX')
+    // Quarter of the total of the pre-existing children (1 + 1 + 1 = 3).
+    assert.equal(newcomer.size, 0.75)
+    const total = out.children.reduce((sum, ch) => sum + ch.size, 0)
+    assert.ok(
+      Math.abs(newcomer.size / total - 0.2) < 1e-9,
+      `newcomer share should still be a fifth of the edge with three siblings, got ${newcomer.size / total}`,
+    )
+  }
 })
 
 // CONTRACT: "`object` — A new tree. Falls back to a lone stack if the panel was the only one open."

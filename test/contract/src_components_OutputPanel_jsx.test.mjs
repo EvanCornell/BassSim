@@ -92,11 +92,18 @@ test('fmt: @pure — twice with equal inputs gives equal output', () => {
 
 // CONTRACT: "Round a dB bound to a multiple of 5, so axis labels land on round
 // numbers." / "`up` — `boolean` — Round up rather than down."
+// NOTE: divisibility is checked with the plain `%` operator inside a boolean
+// (`r % 5 === 0`), not with `assert.equal`/`node:assert/strict`'s
+// `strictEqual`, which follows `Object.is` and therefore treats `-0` as
+// distinct from `0`. `%` on a negative multiple of 5 (e.g. `-40 % 5`) yields
+// `-0`, and `-0 === 0` is `true` under the plain `===` operator even though
+// `Object.is(-0, 0)` is `false` — so this is a divisibility check, not a test
+// of the remainder's sign.
 test('round5: rounds down to a multiple of 5 when up is false', () => {
   for (const v of [-37, -35, -0.1, 0, 3, 12.5, 101]) {
     const r = __internals.round5(v, false)
     assert.equal(typeof r, 'number')
-    assert.equal(r % 5, 0, `${r} should be a multiple of 5`)
+    assert.ok(r % 5 === 0, `${r} should be a multiple of 5`)
     assert.ok(r <= v, `${r} should be at or below ${v}`)
     assert.ok(v - r < 5, `${r} should be within 5 of ${v}`)
   }
@@ -115,10 +122,11 @@ test('round5: a bound landing on zero is not negative zero', () => {
 })
 
 // CONTRACT: "`up` — `boolean` — Round up rather than down."
+// NOTE: same divisibility-vs-sign fix as the "rounds down" test above.
 test('round5: rounds up to a multiple of 5 when up is true', () => {
   for (const v of [-37, -35, -0.1, 0, 3, 12.5, 101]) {
     const r = __internals.round5(v, true)
-    assert.equal(r % 5, 0, `${r} should be a multiple of 5`)
+    assert.ok(r % 5 === 0, `${r} should be a multiple of 5`)
     assert.ok(r >= v, `${r} should be at or above ${v}`)
     assert.ok(r - v < 5, `${r} should be within 5 of ${v}`)
   }

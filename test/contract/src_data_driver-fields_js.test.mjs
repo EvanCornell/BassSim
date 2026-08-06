@@ -21,6 +21,23 @@ import {
 // Those ten are quoted; `CORE_FIELDS` is documented as "An array of 13
 // entries", so three further core fields exist that the contract never names.
 //
+// The `solver: true` count was corrected: the contract now states outright
+// "Exactly nine entries carry `solver: true`", explaining in the same breath
+// that eight of those nine enter `driverSI`'s electro-mechanical equation and
+// the ninth — Xmax — merely bounds excursion. "Nine is the count to assert;
+// eight is a subset of it, not an alternative reading."
+//
+// AMBIGUITY (still open): the module-level line "`driverSI()` reads
+// Mms/Cms/Rms/Sd/Re/Le/Bl/Fs and nothing else" (eight fields, explicitly
+// exhaustive) sits uneasily beside the CORE_FIELDS line's claim that the nine
+// solver-marked fields "are exactly the fields `driverSI` reads". Read
+// literally, one says driverSI reads eight and nothing else, the other says it
+// reads nine (the eight plus Xmax). Both readings agree on which nine fields
+// carry `solver: true` (the eight named fields, plus Xmax), so that set is
+// asserted directly below without resolving whether driverSI itself consumes
+// Xmax — `driverSI` is not exported from this module and cannot be probed
+// blind.
+//
 // AMBIGUITY (still open): `driverToParams` says the result carries "`label`
 // from the model name", but no contract names the record field holding the
 // model name. `model` is taken as the strictest reading — the postcondition
@@ -34,6 +51,10 @@ import {
 // ---------------------------------------------------------------------------
 
 const SPEC_CORE_FIELDS = ['Fs', 'Vas', 'Re', 'Bl', 'Mms', 'Cms', 'Sd', 'Le', 'Xmax', 'Rms']
+
+// The nine fields the corrected contract names as carrying solver: true:
+// "the eight of them that enter the electro-mechanical equation, plus Xmax".
+const SPEC_SOLVER_FIELDS = ['Bl', 'Cms', 'Fs', 'Le', 'Mms', 'Re', 'Rms', 'Sd', 'Xmax']
 
 // A record carrying every named core field, every forbidden key, and trivia.
 function fullRecord () {
@@ -69,9 +90,13 @@ test('CORE_FIELDS: an array of 13 entries', () => {
   assert.equal(CORE_FIELDS.length, 13)
 })
 
-// CONTRACT: "`solver: true` marks the eight the engine actually reads"
-test('CORE_FIELDS: exactly eight entries are marked solver: true', () => {
-  assert.equal(CORE_FIELDS.filter((f) => f.solver === true).length, 8)
+// CONTRACT: "Exactly nine entries carry `solver: true`, and they are exactly
+// the fields `driverSI` reads: the eight of them that enter the
+// electro-mechanical equation, plus Xmax, which bounds excursion rather than
+// shaping response. Nine is the count to assert; eight is a subset of it, not
+// an alternative reading."
+test('CORE_FIELDS: exactly nine entries are marked solver: true', () => {
+  assert.equal(CORE_FIELDS.filter((f) => f.solver === true).length, 9)
 })
 
 // CONTRACT: "Units: Fs Hz · Vas L · Re Ω · Bl T·m · Mms g · Cms mm/N · Sd cm² · Le mH ·
@@ -83,11 +108,13 @@ test('CORE_FIELDS: contains every core field the contract names', () => {
   }
 })
 
-// CONTRACT: "`driverSI()` reads Mms/Cms/Rms/Sd/Re/Le/Bl/Fs and nothing else" +
-// "`solver: true` marks the eight the engine actually reads"
-test('CORE_FIELDS: the solver-marked eight are exactly the fields driverSI reads', () => {
+// CONTRACT: "Exactly nine entries carry `solver: true` ... the eight of them
+// that enter the electro-mechanical equation, plus Xmax" — this pins down the
+// exact set of nine keys, independent of which of the two module-doc readings
+// of "reads" is correct (see the AMBIGUITY note above).
+test('CORE_FIELDS: the solver-marked entries are exactly the documented nine', () => {
   const solverKeys = CORE_FIELDS.filter((f) => f.solver === true).map((f) => f.key).sort()
-  assert.deepEqual(solverKeys, ['Bl', 'Cms', 'Fs', 'Le', 'Mms', 'Re', 'Rms', 'Sd'])
+  assert.deepEqual(solverKeys, [...SPEC_SOLVER_FIELDS].sort())
 })
 
 // CONTRACT: "`EXT_FIELDS` — Extended, manufacturer-specific parameters, grouped for
@@ -119,10 +146,18 @@ test('EXT_BY_KEY: each descriptor is filed under its own key', () => {
 })
 
 // CONTRACT: "`EXT_GROUPS` — Display group names in declaration order, so the UI groups
-// fields consistently. An array of 1 entries."
-test('EXT_GROUPS: an array of 1 display group name', () => {
+// fields consistently. An array. Its length is computed at load time and is not
+// published here." / (EXT_FIELDS) "The groups are Excursion, Electrical, Motor,
+// Construction and Application." — the group names are now stated, even though
+// the array's length is explicitly not published as a number; the five names
+// pin the length regardless.
+test('EXT_GROUPS: contains exactly the five documented display group names', () => {
   assert.ok(Array.isArray(EXT_GROUPS))
-  assert.equal(EXT_GROUPS.length, 1)
+  assert.equal(EXT_GROUPS.length, 5)
+  assert.deepEqual(
+    [...EXT_GROUPS].sort(),
+    ['Application', 'Construction', 'Electrical', 'Excursion', 'Motor'],
+  )
   for (const g of EXT_GROUPS) assert.equal(typeof g, 'string')
 })
 

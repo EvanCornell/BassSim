@@ -144,19 +144,36 @@ test('computeMetrics: f10 is never above f3', () => {
 
 // CONTRACT: "The impedance peak count decides how the box is interpreted: two
 //            peaks mean a vented alignment, so the minimum between them is the
-//            tuning `fb`; one peak means sealed, so it is `fc`"
+//            tuning `fb`; one peak means sealed, so it is `fc` ... Note that the
+//            reported `zPeaks` is the peak *list*, not the count —
+//            `zPeaks.length` is what the branch above turns on. Zero peaks, or
+//            three or more, yield neither `fb` nor `fc`."
+// CONTRACT (@returns): "`zPeaks` (an array of at most five `{f, v, i}` peak
+//            descriptors — frequency in Hz, impedance magnitude in Ω, and the
+//            sweep index — in ascending frequency)"
 test('computeMetrics: fb appears only with two impedance peaks, fc only with one', () => {
   const m = computeMetrics(sweep(), {})
   assert.ok(Object.hasOwn(m, 'zPeaks'), 'zPeaks should be reported')
-  if (m.zPeaks === 2) {
+  assert.ok(Array.isArray(m.zPeaks), 'zPeaks must be an array, not a count')
+  assert.ok(m.zPeaks.length <= 5, 'zPeaks holds at most five peak descriptors')
+  for (const [i, p] of m.zPeaks.entries()) {
+    assert.equal(typeof p.f, 'number', `zPeaks[${i}].f must be a number`)
+    assert.equal(typeof p.v, 'number', `zPeaks[${i}].v must be a number`)
+    assert.equal(typeof p.i, 'number', `zPeaks[${i}].i must be a number`)
+    if (i > 0) {
+      assert.ok(p.f > m.zPeaks[i - 1].f, 'zPeaks must be in ascending frequency order')
+    }
+  }
+  if (m.zPeaks.length === 2) {
     assert.ok(Object.hasOwn(m, 'fb'), 'two impedance peaks should give fb')
     assert.equal(Object.hasOwn(m, 'fc'), false, 'two peaks is not a sealed box')
-  } else if (m.zPeaks === 1) {
+  } else if (m.zPeaks.length === 1) {
     assert.ok(Object.hasOwn(m, 'fc'), 'one impedance peak should give fc')
     assert.equal(Object.hasOwn(m, 'fb'), false, 'one peak is not a vented box')
   } else {
-    assert.equal(Object.hasOwn(m, 'fb'), false)
-    assert.equal(Object.hasOwn(m, 'fc'), false)
+    // zero peaks, or three or more
+    assert.equal(Object.hasOwn(m, 'fb'), false, 'zero/3+ peaks must not yield fb')
+    assert.equal(Object.hasOwn(m, 'fc'), false, 'zero/3+ peaks must not yield fc')
   }
 })
 

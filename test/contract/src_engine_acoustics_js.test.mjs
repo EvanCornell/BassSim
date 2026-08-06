@@ -761,18 +761,61 @@ test('chamberMatrix: above the floor the area is Volume/Length', () => {
   assertMatNear(longer, tlineMatrix(0.08 / 1, 1, w, null), 1e-12 * scale2)
 })
 
-// CONTRACT: "Stuffing does two things: it slows sound as the process shifts
-// from adiabatic toward isothermal (up to −15.5% at 8 g/L, where the model
-// saturates)".
-test('chamberMatrix: the stuffing model saturates at 8 g/L', () => {
+// CONTRACT: "Stuffing does two things, and only the first saturates. It slows
+// sound as the process shifts from adiabatic toward isothermal, by up to
+// −15.5% at 8 g/L, beyond which the speed stops changing. It also adds
+// resistive loss as 30/density, combined with the node's own Q in parallel —
+// and that term keeps rising with density without limit, so two chambers
+// above 8 g/L share a sound speed but not a Q."
+//
+// This is a stronger and different claim than the previous contract text: only
+// ONE of the two stuffing effects saturates at 8 g/L (the sound-speed slowdown);
+// the resistive-loss effect never saturates, so the full ABCD matrix must NOT
+// be identical above 8 g/L.
+//
+// AMBIGUITY (UNRESOLVED): the sound-speed effect and the resistive-loss effect
+// both feed the same `tlineMatrix(area, L, w, Q, c, ...)` call inside
+// `chamberMatrix` (per the module's own description of the chamber as a line
+// built from `tlineMatrix`), and neither the speed nor the loss factor is
+// separately exposed by the public API. There is no way, from outside the
+// module, to hold one of the two effects fixed while varying the other, so the
+// speed-saturation half of the claim cannot be mechanically isolated and
+// verified here. This test instead checks the half that IS externally
+// observable: the resistive-loss effect does not saturate, so the whole matrix
+// keeps changing (and keeps diverging further from a lossless reference) as
+// stuffing density rises past 8 g/L.
+test('chamberMatrix: stuffing above 8 g/L keeps changing the matrix, because only the sound speed saturates', () => {
   const w = 2 * Math.PI * 100
   const at8 = chamberMatrix({ volume: 0.05, length: 0.4, Q: 20, stuffing: 8 }, w)
-  for (const stuffing of [8.1, 12, 100]) {
-    assertMatNear(
-      chamberMatrix({ volume: 0.05, length: 0.4, Q: 20, stuffing }, w), at8, TOL,
-      `stuffing=${stuffing} must saturate at the 8 g/L value:`,
-    )
+  const at12 = chamberMatrix({ volume: 0.05, length: 0.4, Q: 20, stuffing: 12 }, w)
+  const at100 = chamberMatrix({ volume: 0.05, length: 0.4, Q: 20, stuffing: 100 }, w)
+
+  // The matrix must NOT be identical above 8 g/L — the loss term keeps rising.
+  const matDiffers = (A, B) => {
+    for (let i = 0; i < 2; i++) {
+      for (let j = 0; j < 2; j++) {
+        if (A[i][j].re !== B[i][j].re || A[i][j].im !== B[i][j].im) return true
+      }
+    }
+    return false
   }
+  assert.ok(matDiffers(at12, at8), 'stuffing 12 g/L must still differ from 8 g/L: the loss term has not saturated')
+  assert.ok(matDiffers(at100, at8), 'stuffing 100 g/L must still differ from 8 g/L: the loss term has not saturated')
+
+  // "keeps rising with density without limit": deviation from a lossless
+  // reference of the same geometry (Q=null, stuffing=0) must keep growing as
+  // density rises further above 8 g/L — mirroring tlineMatrix's own contract
+  // ("lower Q means more loss").
+  const lossless = chamberMatrix({ volume: 0.05, length: 0.4, Q: null, stuffing: 0 }, w)
+  const dev = (M) => Math.hypot(M[0][0].re - lossless[0][0].re, M[0][0].im - lossless[0][0].im)
+  assert.ok(
+    dev(at100) > dev(at12),
+    `expected deviation to keep rising past 8 g/L: dev(100)=${dev(at100)} > dev(12)=${dev(at12)}`,
+  )
+  assert.ok(
+    dev(at12) > dev(at8),
+    `expected deviation to keep rising past 8 g/L: dev(12)=${dev(at12)} > dev(8)=${dev(at8)}`,
+  )
 })
 
 // CONTRACT: "it adds resistive loss, combined with the node's own Q in

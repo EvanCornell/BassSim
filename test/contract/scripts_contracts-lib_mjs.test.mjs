@@ -235,9 +235,10 @@ test('parseJsdoc: returns every documented field', () => {
   assert.equal(d.pure, true)
 })
 
-// CONTRACT: the parsed `params`, built from `takeType` and `takeName`
-// ("Handles all three JSDoc spellings: `name`, `[name]` for optional, and
-// `[name=default]`").
+// CONTRACT: "`params` is an array of `{name, type, optional, default, desc}`
+// — the description field is `desc`, not `description`, and `type` and
+// `default` are null when absent" — corrected: the field is `desc`, not the
+// more obvious `description`.
 test('parseJsdoc: params carry type, name, optionality and default', () => {
   const d = parseJsdoc(RAW)
   assert.ok(Array.isArray(d.params))
@@ -245,25 +246,31 @@ test('parseJsdoc: params carry type, name, optionality and default', () => {
   assert.equal(d.params[0].name, 'a')
   assert.equal(d.params[0].type, 'number')
   assert.equal(d.params[0].optional, false)
-  assert.ok(String(d.params[0].description).includes('The first.'))
+  assert.equal(d.params[0].default, null)
+  assert.ok(String(d.params[0].desc).includes('The first.'), 'the description field is named desc, not description')
   assert.equal(d.params[1].name, 'b')
   assert.equal(d.params[1].type, 'string')
   assert.equal(d.params[1].optional, true)
   assert.equal(d.params[1].default, '5')
+  assert.ok(String(d.params[1].desc).includes('The second.'))
 })
 
-// CONTRACT: `returns` and `throws` are parsed contract fields.
+// CONTRACT: "`returns` is `{type, desc}` or null; `throws` is an array of
+// `{type, desc}`." — corrected: both use the field name `desc`, not
+// `description`.
 // AMBIGUITY: the contract does not say whether `throws` is a list; since JSDoc
 // permits several @throws and the field is named alongside the plural contract
 // arrays, the strict reading is that every one is retained.
 test('parseJsdoc: returns and throws are parsed', () => {
   const d = parseJsdoc(RAW)
   assert.equal(d.returns.type, 'boolean')
-  assert.ok(String(d.returns.description).includes('Whether it worked.'))
+  assert.ok(String(d.returns.desc).includes('Whether it worked.'), 'the returns description field is named desc')
   assert.ok(Array.isArray(d.throws))
   assert.equal(d.throws.length, 2)
   assert.equal(d.throws[0].type, 'Error')
+  assert.ok(String(d.throws[0].desc).includes('When it is bad.'))
   assert.equal(d.throws[1].type, 'RangeError')
+  assert.ok(String(d.throws[1].desc).includes('When it is out of range.'))
 })
 
 // CONTRACT: "Tags continue across lines until the next one, so a long `@pre`
