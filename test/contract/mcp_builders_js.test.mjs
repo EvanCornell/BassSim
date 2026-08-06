@@ -494,26 +494,45 @@ test('portLengthGuess: ecFactor defaults to 0.732', () => {
   assert.notEqual(portLengthGuess(32, 60, 100), portLengthGuess(32, 60, 100, 0.1))
 })
 
-// CONTRACT: "Port length in cm. Never below 1: the end correction alone can
-// exceed the required length for a large port on a small box, and a negative
-// length is not a port. A returned 1 therefore means \"this geometry cannot
-// reach that tuning\", not \"1 cm will do it\"."
+// CONTRACT (corrected): "Never below 1: the required length falls as the port
+// narrows, as the box grows and as the target tuning rises, so a *small* port
+// on a *large* box at a high tuning drives it below the end correction and a
+// negative length is not a port. A returned 1 therefore means \"this geometry
+// cannot reach that tuning\", not \"1 cm will do it\". The converse case — a
+// large port on a small box — makes the port longer, not shorter, and can run
+// to metres."
+//
+// The floor-triggering geometry is now the opposite of what an earlier
+// reading assumed: it is a SMALL port area on a LARGE box at a HIGH tuning
+// that drives the required length below the floor — not a large port on a
+// small box, which the contract now explicitly says makes the port *longer*.
 test('portLengthGuess: never below 1 cm, and 1 signals an unreachable tuning', () => {
   const normal = portLengthGuess(32, 60, 100)
   assert.equal(typeof normal, 'number')
   assert.ok(Number.isFinite(normal))
   assert.ok(normal >= 1)
-  // A huge port on a tiny box: the end correction alone dominates, so the
-  // geometry cannot reach the tuning and the floor is reported.
-  assert.equal(portLengthGuess(80, 1, 2000), 1)
+  // A small port on a huge box at a high tuning: the required length is
+  // driven below the end correction, so the geometry cannot reach the tuning
+  // and the floor of 1 cm is reported.
+  assert.equal(portLengthGuess(80, 2000, 1), 1)
   // Every input, however extreme, stays at or above the floor.
   for (const [fb, v, a] of [
-    [200, 0.5, 5000],
-    [10, 500, 1],
+    [200, 5000, 0.5],
+    [10, 1, 500],
     [1, 1, 1],
   ]) {
     assert.ok(portLengthGuess(fb, v, a) >= 1, `floor breached for (${fb}, ${v}, ${a})`)
   }
+})
+
+// CONTRACT: "The converse case — a large port on a small box — makes the port
+// longer, not shorter, and can run to metres." — the opposite geometry from
+// the floor-triggering one must not be floored; it should run well past a
+// normal port length.
+test('portLengthGuess: a large port on a small box makes the port longer, not shorter', () => {
+  const small = portLengthGuess(32, 60, 100)
+  const large = portLengthGuess(32, 1, 2000)
+  assert.ok(large > small, `a large port on a small box (${large}) must be longer than the baseline (${small})`)
 })
 
 // CONTRACT: @pure
