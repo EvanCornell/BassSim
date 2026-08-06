@@ -134,6 +134,40 @@ beforeEach(() => {
   st().loadSerialized(blank())
 })
 
+// CONTRACT (copySelection): "An empty selection leaves the previous clipboard
+// in place rather than clearing it, so a stray copy with nothing selected
+// cannot lose what you copied a moment ago. There is no action that empties
+// the clipboard." (pasteClipboard): "Does nothing when the clipboard is
+// empty."
+//
+// AMBIGUITY (RESOLVED via reachability): no documented action ever empties
+// the clipboard once it holds something, and `loadSerialized` — the reset
+// this file's `beforeEach` uses between tests — is documented to clear
+// "History, redo, snapshots and selection", but the clipboard is conspicuously
+// absent from that list. So an empty clipboard is reachable only in the
+// store's pristine, never-copied-to state, which is why this test is placed
+// ahead of every other test in the file.
+//
+// Placement alone would make it order-dependent, so it asserts its own
+// precondition rather than assuming it: `clipboard` is documented observable
+// state (the store header groups it with history and future), so the test can
+// see whether the state it needs still exists and fail loudly with the reason
+// if it does not, instead of silently testing nothing. A caller with a
+// `clearClipboard` action would not need any of this.
+test('pasteClipboard: does nothing when the clipboard has never been populated', () => {
+  assert.ok(
+    !st().clipboard?.nodes?.length,
+    'precondition unreachable: something populated the clipboard before this test ran, '
+    + 'and no documented action empties it again — this test must stay first in the file',
+  )
+  const id = st().addNode(T_DRIVER, { x: 0, y: 0 })
+  const before = nodesOf().length
+  const keys = keysWrittenBy(() => st().pasteClipboard())
+  assert.deepEqual(keys, [], 'pasting from a never-populated clipboard must write nothing')
+  assert.equal(nodesOf().length, before, 'no node may have been pasted')
+  assert.ok(nodeById(id), 'the pre-existing node must be untouched')
+})
+
 // ============================================================== EXPORTED ====
 
 // CONTRACT: "Generate a unique node or edge id." / "`type` — Node type, used
@@ -1271,6 +1305,23 @@ test('copySelection: returns 0 for an empty selection', () => {
   assert.equal(st().copySelection(), 0)
 })
 
+// CONTRACT: "An empty selection leaves the previous clipboard in place rather
+// than clearing it, so a stray copy with nothing selected cannot lose what you
+// copied a moment ago."
+test('copySelection: an empty selection leaves the previous clipboard in place', () => {
+  const a = st().addNode(T_DRIVER, { x: 0, y: 0 })
+  st().addNode(T_CHAMBER, { x: 80, y: 0 })
+  st().selectAll()
+  assert.equal(st().copySelection(), 2, 'precondition: something is on the clipboard')
+  const before = structuredClone(st().clipboard)
+
+  // Deselect everything, then copy again with nothing selected.
+  for (const n of nodesOf()) st().onNodesChange([{ id: n.id, type: 'select', selected: false }])
+  assert.equal(st().copySelection(), 0, 'the stray copy reports nothing copied')
+  assert.deepEqual(st().clipboard, before, 'the previous clipboard must be left untouched')
+  assert.ok(nodeById(a))
+})
+
 // CONTRACT: "Copy the selected nodes and their internal edges to the in-app
 // clipboard." / "Only edges wholly inside the selection are taken — a dangling
 // half-edge would have nothing to reconnect to on paste."
@@ -1377,15 +1428,18 @@ test('pasteClipboard: pasted params are the copied values over the defaults', ()
   }
 })
 
-// CONTRACT: "Does nothing when the clipboard is empty."
-test('pasteClipboard: does nothing when the clipboard is empty', () => {
-  const id = st().addNode(T_DRIVER, { x: 0, y: 0 })
-  st().onNodesChange([{ id, type: 'select', selected: false }])
-  st().copySelection() // copies nothing, leaving the clipboard empty
-  const keys = keysWrittenBy(() => st().pasteClipboard())
-  assert.deepEqual(keys, [])
-  assert.equal(nodesOf().length, 1)
-})
+// CONTRACT (pasteClipboard): "Does nothing when the clipboard is empty."
+//
+// The reachable exercise of this clause — pasting before the clipboard has
+// ever been populated — is tested at the very top of this file, as
+// `pasteClipboard: does nothing when the clipboard has never been populated`,
+// specifically so it runs before any other test's `copySelection` or
+// `cutSelection` call can populate the clipboard. See the AMBIGUITY note
+// there: `copySelection`'s own contract says an empty selection "leaves the
+// previous clipboard in place rather than clearing it" and states outright
+// "There is no action that empties the clipboard", so once any test in this
+// process has copied something, an empty clipboard can no longer be reached
+// through the documented API at all.
 
 // CONTRACT: "Add a node under the pointer, or at a default spot when it is
 // off-canvas." / "`string` — The new node's id."

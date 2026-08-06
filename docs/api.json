@@ -3601,7 +3601,7 @@
           ],
           "returns": {
             "type": "[string|null, string]",
-            "desc": "The type and the remaining text; the type is `null` when there was none or the braces were unbalanced."
+            "desc": "The type and the remaining text, both trimmed when a type was taken; the type is `null` when there was none or the braces were unbalanced, and the payload then comes back exactly as given."
           },
           "throws": [],
           "contract": {
@@ -15344,12 +15344,12 @@
       "file": "src/data/driver-fields.js",
       "module": {
         "summary": "The driver record schema, described as data.",
-        "description": "The driver record schema, described as data.\n\nA database entry is flat for the parameters the solver consumes and nests\neverything else under `ext`. The split is deliberate: `driverSI()` reads\nMms/Cms/Rms/Sd/Re/Le/Bl/Fs and nothing else, so spreading a record straight\ninto a node's params must never smuggle construction trivia in with it.\n\n`ext` is sparse by design. Manufacturers publish wildly different subsets —\nB&C give flux density and winding depth, most car-audio brands give a power\nrating and little else — so every extended field is optional and code that\nreads them must tolerate `undefined`. Nothing here is required to simulate.\n\nEnumerating the schema rather than hardcoding it lets the database browser,\nthe CSV export and the MCP tools stay correct as fields are added, and gives\nan agent a machine-readable answer to \"what can I filter on?\"."
+        "description": "The driver record schema, described as data.\n\nA database entry is flat for the parameters the solver consumes and nests\neverything else under `ext`. The split is deliberate: of the record's own\nfields `driverSI()` reads only the nine marked `solver: true` below — the\neight of the electro-mechanical equation, Mms/Cms/Rms/Sd/Re/Le/Bl/Fs, plus\nXmax — so spreading a record straight into a node's params must never\nsmuggle construction trivia in with it. (It reads `count`, `wiring`, `Q` and\n`LeExp` too, but those are node settings the user chooses, not properties of\na driver the database describes.)\n\n`ext` is sparse by design. Manufacturers publish wildly different subsets —\nB&C give flux density and winding depth, most car-audio brands give a power\nrating and little else — so every extended field is optional and code that\nreads them must tolerate `undefined`. Nothing here is required to simulate.\n\nEnumerating the schema rather than hardcoding it lets the database browser,\nthe CSV export and the MCP tools stay correct as fields are added, and gives\nan agent a machine-readable answer to \"what can I filter on?\"."
       },
       "constants": [
         {
           "name": "CORE_FIELDS",
-          "line": 39,
+          "line": 43,
           "shape": {
             "kind": "array",
             "length": 13
@@ -15359,7 +15359,7 @@
         },
         {
           "name": "EXT_FIELDS",
-          "line": 66,
+          "line": 70,
           "shape": {
             "kind": "array",
             "length": 28
@@ -15369,14 +15369,14 @@
         },
         {
           "name": "EXT_BY_KEY",
-          "line": 113,
+          "line": 117,
           "shape": null,
           "summary": "Extended field descriptors indexed by key, for O(1) lookup during filtering.",
           "description": "Extended field descriptors indexed by key, for O(1) lookup during filtering."
         },
         {
           "name": "EXT_GROUPS",
-          "line": 115,
+          "line": 119,
           "shape": {
             "kind": "array"
           },
@@ -15385,7 +15385,7 @@
         },
         {
           "name": "SOURCE_LABELS",
-          "line": 131,
+          "line": 135,
           "shape": {
             "kind": "object",
             "keys": [
@@ -15406,7 +15406,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 153,
+          "line": 157,
           "signature": [
             "d"
           ],
@@ -15448,7 +15448,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 167,
+          "line": 171,
           "signature": [
             "key",
             "value"
@@ -25931,7 +25931,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 34,
+          "line": 36,
           "signature": [
             "label",
             "fn"
@@ -25982,7 +25982,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 70,
+          "line": 72,
           "signature": [
             "doc"
           ],

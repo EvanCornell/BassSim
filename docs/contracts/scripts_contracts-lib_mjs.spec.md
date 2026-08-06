@@ -212,7 +212,7 @@ being truncated at the first `}`.
 
 **Returns**
 
-- `[string|null, string]` — The type and the remaining text; the type is `null` when there was none or the braces were unbalanced.
+- `[string|null, string]` — The type and the remaining text, both trimmed when a type was taken; the type is `null` when there was none or the braces were unbalanced, and the payload then comes back exactly as given.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 

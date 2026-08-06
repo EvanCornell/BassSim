@@ -171,7 +171,7 @@ export function sourceFiles() {
  * being truncated at the first `}`.
  *
  * @param {string} s - The tag payload.
- * @returns {[string|null, string]} The type and the remaining text; the type is `null` when there was none or the braces were unbalanced.
+ * @returns {[string|null, string]} The type and the remaining text, both trimmed when a type was taken; the type is `null` when there was none or the braces were unbalanced, and the payload then comes back exactly as given.
  * @pure
  */
 function takeType(s) {
