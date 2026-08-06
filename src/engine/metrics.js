@@ -53,7 +53,9 @@ function localMaxima(freqs, vals, minProminence = 1) {
  * The impedance peak count decides how the box is interpreted: two peaks mean a
  * vented alignment, so the minimum between them is the tuning `fb`; one peak
  * means sealed, so it is `fc` and `qtc` follows from the exact second-order
- * high-pass relation between fc and F3.
+ * high-pass relation between fc and F3. Note that the reported `zPeaks` is the
+ * peak *list*, not the count — `zPeaks.length` is what the branch above turns
+ * on. Zero peaks, or three or more, yield neither `fb` nor `fc`.
  *
  * Maximum power before Xmax is driven by the per-driver headroom ratio, so a
  * mixed set of drivers is judged against each cone's own limit; it falls back
@@ -63,7 +65,7 @@ function localMaxima(freqs, vals, minProminence = 1) {
  * @param {object} settings - Sweep settings.
  * @param {number} [settings.voltage=2.83] - Drive voltage the sweep was run at, V RMS.
  * @param {number} [settings.xmax] - Legacy single Xmax, mm, used only when the result carries no per-driver ratio.
- * @returns {object|null} Metrics — any of `passband`, `peakSPL`, `f3`, `f10`, `bwHz`, `bwOct`, `zPeaks`, `fb`, `fbZ`, `fc`, `qtc`, `xPeak`, `xPeakF`, `xAtFb`, `xAtF3`, `xRatioPeak`, `xRatioPeakF`, `xLimitDriver`, `maxPower`, `vMax` — or `null` when the sweep failed or is empty. Most fields are simply absent when the topology does not define them, so a sealed box has no `fb` key at all. The exceptions are `f3`, `f10`, `xPeakF`, `xAtFb` and `xAtF3`, which are always present and carry `null` when undefined — `xAtFb` is null for a sealed box because it is looked up at a tuning that does not exist.
+ * @returns {object|null} Metrics — any of `passband`, `peakSPL`, `f3`, `f10`, `bwHz`, `bwOct`, `zPeaks` (an array of at most five `{f, v, i}` peak descriptors — frequency in Hz, impedance magnitude in Ω, and the sweep index — in ascending frequency), `fb`, `fbZ`, `fc`, `qtc`, `xPeak`, `xPeakF`, `xAtFb`, `xAtF3`, `xRatioPeak`, `xRatioPeakF`, `xLimitDriver`, `maxPower`, `vMax` — or `null` when the sweep failed or is empty. Most fields are simply absent when the topology does not define them, so a sealed box has no `fb` key at all. The exceptions are `f3`, `f10`, `xPeakF`, `xAtFb` and `xAtF3`, which are always present and carry `null` when undefined — `xAtFb` is null for a sealed box because it is looked up at a tuning that does not exist.
  * @post res and settings are not modified
  * @pure
  */

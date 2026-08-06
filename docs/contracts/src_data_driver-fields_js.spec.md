@@ -41,11 +41,14 @@ nine additionally carry `solver: true`: Fs, Re, Bl, Mms, Cms, Sd, Le, Xmax
 and Rms. The three Q values and Vas are published figures the solver derives
 rather than reads.
 
-`solver: true` marks the nine the engine actually reads — the eight that
-enter the electro-mechanical equation plus Xmax, which bounds excursion; the rest are
-published figures kept for display and for the consistency audit. Declared as
-data so the browser, the CSV export and the MCP tools enumerate fields
-generically instead of hardcoding a list that drifts.
+Exactly nine entries carry `solver: true`, and they are exactly the fields
+`driverSI` reads: the eight of them that enter the electro-mechanical
+equation, plus Xmax, which bounds excursion rather than shaping response.
+Nine is the count to assert; eight is a subset of it, not an alternative
+reading. The remaining four are published figures kept for display and for
+the consistency audit. Declared as data so the browser, the CSV export and
+the MCP tools enumerate fields generically instead of hardcoding a list that
+drifts.
 
 An array of 13 entries.
 
@@ -71,7 +74,7 @@ Extended field descriptors indexed by key, for O(1) lookup during filtering.
 
 Display group names in declaration order, so the UI groups fields consistently.
 
-An array of undefined entries.
+An array. Its length is computed at load time and is not published here.
 
 ### `SOURCE_LABELS`
 

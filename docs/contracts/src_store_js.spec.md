@@ -631,11 +631,15 @@ stale preset can never leave the workspace without its editor.
 Replace the quick-bar arrangement.
 
 Sanitized on the way in, so an arrangement carrying unknown ids falls
-back to the default rather than rendering a broken bar.
+back to the default rather than rendering a broken bar. Unknown ids are
+dropped individually; the fallback fires only when nothing survives, since
+a non-empty request sanitizing to nothing means the whole arrangement was
+foreign. An explicitly empty `ids` is honoured — that is a deliberately
+hidden bar, not corruption.
 
 **Parameters**
 
-- `ids` — `string[]` — Item ids in display order.
+- `ids` — `string[]` — Item ids in display order. A non-array falls back to the default.
 
 **Returns**
 
@@ -987,6 +991,10 @@ window and paste into a popped-out Node Editor.
 
 Only edges wholly inside the selection are taken — a dangling half-edge
 would have nothing to reconnect to on paste.
+
+An empty selection leaves the previous clipboard in place rather than
+clearing it, so a stray copy with nothing selected cannot lose what you
+copied a moment ago. There is no action that empties the clipboard.
 
 **Returns**
 

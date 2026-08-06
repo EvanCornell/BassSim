@@ -25,8 +25,8 @@
   },
   "stats": {
     "modules": 53,
-    "methods": 541,
-    "documented": 541
+    "methods": 543,
+    "documented": 543
   },
   "modules": [
     {
@@ -2021,7 +2021,7 @@
           ],
           "returns": {
             "type": "number",
-            "desc": "Port length in cm. Never below 1: the end correction alone can exceed the required length for a large port on a small box, and a negative length is not a port. A returned 1 therefore means \"this geometry cannot reach that tuning\", not \"1 cm will do it\"."
+            "desc": "Port length in cm. Never below 1: the required length falls as the port narrows, as the box grows and as the target tuning rises, so a *small* port on a *large* box at a high tuning drives it below the end correction and a negative length is not a port. A returned 1 therefore means \"this geometry cannot reach that tuning\", not \"1 cm will do it\". The converse case — a large port on a small box — makes the port longer, not shorter, and can run to metres."
           },
           "throws": [],
           "contract": {
@@ -3436,7 +3436,7 @@
         },
         {
           "name": "__internals",
-          "line": 707,
+          "line": 710,
           "shape": {
             "kind": "object",
             "keys": [
@@ -3661,13 +3661,13 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 231,
+          "line": 234,
           "signature": [
             "s"
           ],
           "documented": true,
           "summary": "Remove the optional `-` separating a parameter name from its description.",
-          "description": "Remove the optional `-` separating a parameter name from its description.",
+          "description": "Remove the optional `-` separating a parameter name from its description.\n\nTrims before matching: `takeName` can leave a leading space, and a dash\nbehind one is still the separator.",
           "params": [
             {
               "name": "s",
@@ -3679,7 +3679,7 @@
           ],
           "returns": {
             "type": "string",
-            "desc": "The description alone."
+            "desc": "The description alone, trimmed at both ends."
           },
           "throws": [],
           "contract": {
@@ -3700,7 +3700,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 243,
+          "line": 246,
           "signature": [
             "raw"
           ],
@@ -3718,7 +3718,7 @@
           ],
           "returns": {
             "type": "object",
-            "desc": "The parsed contract: `summary`, `description`, `params`, `returns`, `throws`, the contract arrays, `pure`, plus `unknownTags` and `malformed` for the test to report on."
+            "desc": "The parsed contract. `summary` and `description` are strings; `params` is an array of `{name, type, optional, default, desc}` — the description field is `desc`, not `description`, and `type` and `default` are null when absent; `returns` is `{type, desc}` or null; `throws` is an array of `{type, desc}`. The contract arrays `pre`, `post`, `invariant`, `mutates`, `sideEffect` and `reads` each hold plain strings, and `pure` is a boolean. `other` collects parsed `@property` entries. `unknownTags` and `malformed` are arrays of strings for the test to report on."
           },
           "throws": [],
           "contract": {
@@ -3739,7 +3739,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 331,
+          "line": 334,
           "signature": [
             "fn"
           ],
@@ -3778,7 +3778,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 355,
+          "line": 358,
           "signature": [
             "fn"
           ],
@@ -3817,7 +3817,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 366,
+          "line": 369,
           "signature": [
             "n"
           ],
@@ -3858,7 +3858,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 398,
+          "line": 401,
           "signature": [
             "node",
             "parent"
@@ -3905,7 +3905,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 448,
+          "line": 451,
           "signature": [
             "node",
             "parents"
@@ -3952,7 +3952,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 475,
+          "line": 478,
           "signature": [
             "relPath"
           ],
@@ -3998,7 +3998,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 508,
+          "line": 511,
           "signature": [
             "node"
           ],
@@ -4037,7 +4037,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 569,
+          "line": 572,
           "signature": [
             "node"
           ],
@@ -4078,7 +4078,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 700,
+          "line": 703,
           "signature": [],
           "documented": true,
           "summary": "Scan every source file in scope.",
@@ -6395,13 +6395,62 @@
           "other": []
         },
         {
+          "name": "add",
+          "qualified": "indexContracts > add",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 39,
+          "signature": [
+            "name",
+            "entry"
+          ],
+          "documented": true,
+          "summary": "Record one declaration under its bare name.",
+          "description": "Record one declaration under its bare name.",
+          "params": [
+            {
+              "name": "name",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "The method or constant name."
+            },
+            {
+              "name": "entry",
+              "type": "{file: string, method: object}",
+              "optional": false,
+              "default": null,
+              "desc": "Where it is declared."
+            }
+          ],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [
+              "The index being built."
+            ],
+            "sideEffect": [],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
           "name": "runSuite",
           "qualified": "runSuite",
           "kind": "function",
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 46,
+          "line": 61,
           "signature": [],
           "documented": true,
           "summary": "Run the contract suite and capture its TAP output.",
@@ -6432,13 +6481,13 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 66,
+          "line": 86,
           "signature": [
             "out"
           ],
           "documented": true,
-          "summary": "Extract failing tests from TAP output.",
-          "description": "Extract failing tests from TAP output.\n\nTest names follow the suite's convention `<method>: <clause>`, which is what\nlets a failure be traced back to the contract it contradicts.",
+          "summary": "Extract failing tests from TAP output, with their full diagnostic block.",
+          "description": "Extract failing tests from TAP output, with their full diagnostic block.\n\nNode emits each failure as a YAML block whose `error` may be a multi-line\nliteral (`error: |-`) holding an assertion diff. Reading only the first line\nloses exactly the part that says what went wrong, so the block is parsed\nproperly rather than scanned for keys.\n\nTest names follow the suite's convention `<method>: <clause>`, which is what\nlets a failure be traced back to the contract it contradicts.",
           "params": [
             {
               "name": "out",
@@ -6449,7 +6498,7 @@
             }
           ],
           "returns": {
-            "type": "Array<{name: string, method: string, clause: string, detail: string}>",
+            "type": "Array<{name: string, method: string, clause: string, message: string, expected: string|null, actual: string|null, location: string|null}>",
             "desc": "One entry per failure."
           },
           "throws": [],
@@ -6461,6 +6510,47 @@
             "sideEffect": [],
             "reads": [],
             "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "field",
+          "qualified": "parseFailures > field",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 111,
+          "signature": [
+            "key"
+          ],
+          "documented": true,
+          "summary": "Read one key out of the failure's YAML block.",
+          "description": "Read one key out of the failure's YAML block.\n\nHandles both an inline scalar and a `|-` literal block, which is how\nNode emits a multi-line assertion diff.",
+          "params": [
+            {
+              "name": "key",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "The YAML key to read."
+            }
+          ],
+          "returns": {
+            "type": "string|null",
+            "desc": "The value with quotes stripped, or `null` when the key is absent."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [
+              "the `body` lines captured for the current failure."
+            ],
+            "pure": false
           },
           "other": []
         }
@@ -15259,17 +15349,17 @@
       "constants": [
         {
           "name": "CORE_FIELDS",
-          "line": 36,
+          "line": 39,
           "shape": {
             "kind": "array",
             "length": 13
           },
           "summary": "The flat, solver-facing T/S fields every driver record may carry.",
-          "description": "The flat, solver-facing T/S fields every driver record may carry.\n\nThe thirteen fields are Fs, Qts, Qes, Qms, Vas, Re, Bl, Mms, Cms, Sd, Le,\nXmax and Rms. The three Q values are dimensionless; the rest are\nFs Hz · Vas L · Re Ω · Bl T·m · Mms g · Cms mm/N · Sd cm² · Le mH ·\nXmax mm · Rms N·s/m.\n\nEach entry exposes `key`, `label`, `unit` and `type`, and the solver-facing\nnine additionally carry `solver: true`: Fs, Re, Bl, Mms, Cms, Sd, Le, Xmax\nand Rms. The three Q values and Vas are published figures the solver derives\nrather than reads.\n\n`solver: true` marks the nine the engine actually reads — the eight that\nenter the electro-mechanical equation plus Xmax, which bounds excursion; the rest are\npublished figures kept for display and for the consistency audit. Declared as\ndata so the browser, the CSV export and the MCP tools enumerate fields\ngenerically instead of hardcoding a list that drifts."
+          "description": "The flat, solver-facing T/S fields every driver record may carry.\n\nThe thirteen fields are Fs, Qts, Qes, Qms, Vas, Re, Bl, Mms, Cms, Sd, Le,\nXmax and Rms. The three Q values are dimensionless; the rest are\nFs Hz · Vas L · Re Ω · Bl T·m · Mms g · Cms mm/N · Sd cm² · Le mH ·\nXmax mm · Rms N·s/m.\n\nEach entry exposes `key`, `label`, `unit` and `type`, and the solver-facing\nnine additionally carry `solver: true`: Fs, Re, Bl, Mms, Cms, Sd, Le, Xmax\nand Rms. The three Q values and Vas are published figures the solver derives\nrather than reads.\n\nExactly nine entries carry `solver: true`, and they are exactly the fields\n`driverSI` reads: the eight of them that enter the electro-mechanical\nequation, plus Xmax, which bounds excursion rather than shaping response.\nNine is the count to assert; eight is a subset of it, not an alternative\nreading. The remaining four are published figures kept for display and for\nthe consistency audit. Declared as data so the browser, the CSV export and\nthe MCP tools enumerate fields generically instead of hardcoding a list that\ndrifts."
         },
         {
           "name": "EXT_FIELDS",
-          "line": 63,
+          "line": 66,
           "shape": {
             "kind": "array",
             "length": 28
@@ -15279,14 +15369,14 @@
         },
         {
           "name": "EXT_BY_KEY",
-          "line": 110,
+          "line": 113,
           "shape": null,
           "summary": "Extended field descriptors indexed by key, for O(1) lookup during filtering.",
           "description": "Extended field descriptors indexed by key, for O(1) lookup during filtering."
         },
         {
           "name": "EXT_GROUPS",
-          "line": 112,
+          "line": 115,
           "shape": {
             "kind": "array"
           },
@@ -15295,7 +15385,7 @@
         },
         {
           "name": "SOURCE_LABELS",
-          "line": 128,
+          "line": 131,
           "shape": {
             "kind": "object",
             "keys": [
@@ -15316,7 +15406,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 150,
+          "line": 153,
           "signature": [
             "d"
           ],
@@ -15358,7 +15448,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 164,
+          "line": 167,
           "signature": [
             "key",
             "value"
@@ -17163,7 +17253,7 @@
       "constants": [
         {
           "name": "__internals",
-          "line": 215,
+          "line": 217,
           "shape": {
             "kind": "object",
             "keys": [
@@ -17241,14 +17331,14 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 70,
+          "line": 72,
           "signature": [
             "res",
             "settings"
           ],
           "documented": true,
           "summary": "Reduce a completed sweep to the scalar figures shown in the quick bar.",
-          "description": "Reduce a completed sweep to the scalar figures shown in the quick bar.\n\nPassband level is the median of the top quartile of SPL rather than the peak,\nso a single resonance spike cannot drag the reference — and therefore F3 —\noff with it. F3 and F10 are then found by linear interpolation at the first\nupward crossing of that reference.\n\nThe impedance peak count decides how the box is interpreted: two peaks mean a\nvented alignment, so the minimum between them is the tuning `fb`; one peak\nmeans sealed, so it is `fc` and `qtc` follows from the exact second-order\nhigh-pass relation between fc and F3.\n\nMaximum power before Xmax is driven by the per-driver headroom ratio, so a\nmixed set of drivers is judged against each cone's own limit; it falls back\nto a single global Xmax for results produced before that ratio existed.",
+          "description": "Reduce a completed sweep to the scalar figures shown in the quick bar.\n\nPassband level is the median of the top quartile of SPL rather than the peak,\nso a single resonance spike cannot drag the reference — and therefore F3 —\noff with it. F3 and F10 are then found by linear interpolation at the first\nupward crossing of that reference.\n\nThe impedance peak count decides how the box is interpreted: two peaks mean a\nvented alignment, so the minimum between them is the tuning `fb`; one peak\nmeans sealed, so it is `fc` and `qtc` follows from the exact second-order\nhigh-pass relation between fc and F3. Note that the reported `zPeaks` is the\npeak *list*, not the count — `zPeaks.length` is what the branch above turns\non. Zero peaks, or three or more, yield neither `fb` nor `fc`.\n\nMaximum power before Xmax is driven by the per-driver headroom ratio, so a\nmixed set of drivers is judged against each cone's own limit; it falls back\nto a single global Xmax for results produced before that ratio existed.",
           "params": [
             {
               "name": "res",
@@ -17281,7 +17371,7 @@
           ],
           "returns": {
             "type": "object|null",
-            "desc": "Metrics — any of `passband`, `peakSPL`, `f3`, `f10`, `bwHz`, `bwOct`, `zPeaks`, `fb`, `fbZ`, `fc`, `qtc`, `xPeak`, `xPeakF`, `xAtFb`, `xAtF3`, `xRatioPeak`, `xRatioPeakF`, `xLimitDriver`, `maxPower`, `vMax` — or `null` when the sweep failed or is empty. Most fields are simply absent when the topology does not define them, so a sealed box has no `fb` key at all. The exceptions are `f3`, `f10`, `xPeakF`, `xAtFb` and `xAtF3`, which are always present and carry `null` when undefined — `xAtFb` is null for a sealed box because it is looked up at a tuning that does not exist."
+            "desc": "Metrics — any of `passband`, `peakSPL`, `f3`, `f10`, `bwHz`, `bwOct`, `zPeaks` (an array of at most five `{f, v, i}` peak descriptors — frequency in Hz, impedance magnitude in Ω, and the sweep index — in ascending frequency), `fb`, `fbZ`, `fc`, `qtc`, `xPeak`, `xPeakF`, `xAtFb`, `xAtF3`, `xRatioPeak`, `xRatioPeakF`, `xLimitDriver`, `maxPower`, `vMax` — or `null` when the sweep failed or is empty. Most fields are simply absent when the topology does not define them, so a sealed box has no `fb` key at all. The exceptions are `f3`, `f10`, `xPeakF`, `xAtFb` and `xAtF3`, which are always present and carry `null` when undefined — `xAtFb` is null for a sealed box because it is looked up at a tuning that does not exist."
           },
           "throws": [],
           "contract": {
@@ -17304,7 +17394,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 93,
+          "line": 95,
           "signature": [
             "drop"
           ],
@@ -17345,7 +17435,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 161,
+          "line": 163,
           "signature": [
             "f"
           ],
@@ -18162,7 +18252,7 @@
       "constants": [
         {
           "name": "__internals",
-          "line": 766,
+          "line": 774,
           "shape": {
             "kind": "object",
             "keys": [
@@ -18484,7 +18574,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 272,
+          "line": 280,
           "signature": [
             "nodes",
             "edges",
@@ -18492,7 +18582,7 @@
           ],
           "documented": true,
           "summary": "Solve the whole graph across the frequency sweep.",
-          "description": "Solve the whole graph across the frequency sweep.\n\nThe single entry point of the engine. For each of `npts` log-spaced\nfrequencies it builds every element's ABCD matrix, walks the graph backward\nto find the load each driver sees, solves the coupled electro-mechanical\nequation for cone velocity, then walks forward again accumulating radiated\npressure, port velocity and interior probe pressure.\n\nMultiple drivers are handled by **superposition**: each is solved as the sole\nsource with the others present as passive mechanical loads, and the resulting\npressures are summed coherently. Excursion is deliberately *not* summed —\ncones move independently, so `excursion` reports the worst single cone and\n`excursionRatio` the worst cone relative to its own Xmax.\n\nWhen `settings.nlEnabled` is set and at least one driver has nonlinear\ncurves, the whole sweep runs four times, refining per-frequency Bl/Cms/Le\nscale factors from the previous pass's excursion by damped fixed-point\niteration. This is experimental and roughly quadruples the solve time.",
+          "description": "Solve the whole graph across the frequency sweep.\n\nThe single entry point of the engine. For each of `npts` log-spaced\nfrequencies it builds every element's ABCD matrix, walks the graph backward\nto find the load each driver sees, solves the coupled electro-mechanical\nequation for cone velocity, then walks forward again accumulating radiated\npressure, port velocity and interior probe pressure.\n\nMultiple drivers are handled by **superposition**: each is solved as the sole\nsource with the others present as passive mechanical loads, and the resulting\npressures are summed coherently. Excursion is deliberately *not* summed —\ncones move independently, so `excursion` reports the worst single cone and\n`excursionRatio` the worst cone relative to its own Xmax.\n\nWhen `settings.nlEnabled` is set and at least one driver has nonlinear\ncurves, the whole sweep runs four times, refining per-frequency Bl/Cms/Le\nscale factors from the previous pass's excursion by damped fixed-point\niteration. This is experimental and roughly quadruples the solve time.\n\n`splCombined` is the *complex* sum of every radiating outlet, so radiators\nthat oppose each other cancel. A bare driver with both faces wired straight\nto radiation nodes is the extreme case: front and rear are exactly out of\nphase into the same far field, the sum is identically zero, and the reported\nlevel sits at the −146 dB floor at every frequency and every drive voltage.\nThat is the physics, not a failure — a dipole needs a baffle, and the drive\nlevel is visible in `splDriver`, `excursion` and `zinMag` regardless.",
           "params": [
             {
               "name": "nodes",
@@ -18595,7 +18685,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 348,
+          "line": 356,
           "signature": [
             "id",
             "i"
@@ -18644,7 +18734,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 399,
+          "line": 407,
           "signature": [
             "node",
             "Sup"
@@ -18695,7 +18785,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 448,
+          "line": 456,
           "signature": [
             "node",
             "fromHandle",
@@ -18764,7 +18854,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 534,
+          "line": 542,
           "signature": [
             "node",
             "fromHandle",
@@ -20312,7 +20402,7 @@
         },
         {
           "name": "__internals",
-          "line": 515,
+          "line": 517,
           "shape": {
             "kind": "object",
             "keys": [
@@ -21138,7 +21228,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 350,
+          "line": 352,
           "signature": [
             "tree",
             "panelId",
@@ -21146,7 +21236,7 @@
           ],
           "documented": true,
           "summary": "Dock a panel against an outer edge of the whole workspace.",
-          "description": "Dock a panel against an outer edge of the whole workspace.\n\nWhen the root split already runs in the right direction the panel joins it as\na sibling at a quarter of the average weight; otherwise a new root split is\ncreated giving the newcomer 22% of the width or height.",
+          "description": "Dock a panel against an outer edge of the whole workspace.\n\nWhen the root split already runs in the right direction the panel joins it as\na sibling weighted at a quarter of the split's *total* — so it takes a fifth\nof the edge whatever the sibling count, which is close to the 22% the other\nbranch gives. Otherwise a new root split is created giving the newcomer 22%\nof the width or height.",
           "params": [
             {
               "name": "tree",
@@ -21195,7 +21285,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 377,
+          "line": 379,
           "signature": [
             "tree",
             "stackId",
@@ -21262,7 +21352,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 405,
+          "line": 407,
           "signature": [
             "tree",
             "panelId",
@@ -21347,7 +21437,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 435,
+          "line": 437,
           "signature": [
             "tree",
             "splitId",
@@ -21420,7 +21510,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 458,
+          "line": 460,
           "signature": [
             "v"
           ],
@@ -21459,7 +21549,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 480,
+          "line": 482,
           "signature": [
             "tree",
             "knownPanels"
@@ -21856,7 +21946,7 @@
         },
         {
           "name": "__internals",
-          "line": 1419,
+          "line": 1435,
           "shape": {
             "kind": "object",
             "keys": [
@@ -23178,20 +23268,20 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 524,
+          "line": 528,
           "signature": [
             "ids"
           ],
           "documented": true,
           "summary": "Replace the quick-bar arrangement.",
-          "description": "Replace the quick-bar arrangement.\n\nSanitized on the way in, so an arrangement carrying unknown ids falls\nback to the default rather than rendering a broken bar.",
+          "description": "Replace the quick-bar arrangement.\n\nSanitized on the way in, so an arrangement carrying unknown ids falls\nback to the default rather than rendering a broken bar. Unknown ids are\ndropped individually; the fallback fires only when nothing survives, since\na non-empty request sanitizing to nothing means the whole arrangement was\nforeign. An explicitly empty `ids` is honoured — that is a deliberately\nhidden bar, not corruption.",
           "params": [
             {
               "name": "ids",
               "type": "string[]",
               "optional": false,
               "default": null,
-              "desc": "Item ids in display order."
+              "desc": "Item ids in display order. A non-array falls back to the default."
             }
           ],
           "returns": {
@@ -23219,7 +23309,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 539,
+          "line": 544,
           "signature": [
             "id"
           ],
@@ -23260,7 +23350,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 551,
+          "line": 556,
           "signature": [
             "id",
             "delta"
@@ -23309,7 +23399,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 565,
+          "line": 570,
           "signature": [],
           "documented": true,
           "summary": "Restore the default quick-bar arrangement.",
@@ -23340,7 +23430,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 574,
+          "line": 579,
           "signature": [
             "name"
           ],
@@ -23381,7 +23471,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 592,
+          "line": 597,
           "signature": [
             "id",
             "range"
@@ -23430,7 +23520,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 608,
+          "line": 613,
           "signature": [],
           "documented": true,
           "summary": "Record the current graph as an undo point.",
@@ -23461,7 +23551,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 619,
+          "line": 626,
           "signature": [],
           "documented": true,
           "summary": "Step back one entry in the history.",
@@ -23492,7 +23582,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 636,
+          "line": 643,
           "signature": [],
           "documented": true,
           "summary": "Step forward one entry in the history.",
@@ -23523,7 +23613,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 661,
+          "line": 668,
           "signature": [
             "changes"
           ],
@@ -23564,7 +23654,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 675,
+          "line": 682,
           "signature": [
             "changes"
           ],
@@ -23605,7 +23695,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 687,
+          "line": 694,
           "signature": [
             "conn"
           ],
@@ -23646,7 +23736,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 699,
+          "line": 706,
           "signature": [
             "id"
           ],
@@ -23687,7 +23777,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 712,
+          "line": 719,
           "signature": [
             "type",
             "position"
@@ -23736,7 +23826,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 738,
+          "line": 745,
           "signature": [
             "id",
             "patch"
@@ -23785,7 +23875,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 755,
+          "line": 767,
           "signature": [],
           "documented": true,
           "summary": "Delete the selected nodes and edges.",
@@ -23816,7 +23906,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 780,
+          "line": 792,
           "signature": [],
           "documented": true,
           "summary": "Copy the selected nodes in place, offset down-right.",
@@ -23847,7 +23937,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 805,
+          "line": 817,
           "signature": [],
           "documented": true,
           "summary": "Select every node on the canvas.",
@@ -23878,11 +23968,11 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 826,
+          "line": 842,
           "signature": [],
           "documented": true,
           "summary": "Copy the selected nodes and their internal edges to the in-app clipboard.",
-          "description": "Copy the selected nodes and their internal edges to the in-app clipboard.\n\nAn in-app clipboard rather than the system one: the graph is a structure,\nnot text, and reading the system clipboard needs a permission prompt on\nevery paste. It rides the sync channel, so you can copy in the main\nwindow and paste into a popped-out Node Editor.\n\nOnly edges wholly inside the selection are taken — a dangling half-edge\nwould have nothing to reconnect to on paste.",
+          "description": "Copy the selected nodes and their internal edges to the in-app clipboard.\n\nAn in-app clipboard rather than the system one: the graph is a structure,\nnot text, and reading the system clipboard needs a permission prompt on\nevery paste. It rides the sync channel, so you can copy in the main\nwindow and paste into a popped-out Node Editor.\n\nOnly edges wholly inside the selection are taken — a dangling half-edge\nwould have nothing to reconnect to on paste.\n\nAn empty selection leaves the previous clipboard in place rather than\nclearing it, so a stray copy with nothing selected cannot lose what you\ncopied a moment ago. There is no action that empties the clipboard.",
           "params": [],
           "returns": {
             "type": "number",
@@ -23909,7 +23999,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 852,
+          "line": 868,
           "signature": [],
           "documented": true,
           "summary": "Copy the selection, then delete it.",
@@ -23940,7 +24030,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 867,
+          "line": 883,
           "signature": [],
           "documented": true,
           "summary": "Paste the clipboard as new nodes, offset down-right.",
@@ -23971,7 +24061,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 911,
+          "line": 927,
           "signature": [
             "type"
           ],
@@ -24012,7 +24102,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 927,
+          "line": 943,
           "signature": [
             "delta"
           ],
@@ -24053,7 +24143,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 940,
+          "line": 956,
           "signature": [],
           "documented": true,
           "summary": "Force a resimulation even though nothing has changed.",
@@ -24084,7 +24174,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 953,
+          "line": 969,
           "signature": [
             "patch"
           ],
@@ -24125,7 +24215,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 969,
+          "line": 985,
           "signature": [
             "field",
             "value"
@@ -24174,7 +24264,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 990,
+          "line": 1006,
           "signature": [],
           "documented": true,
           "summary": "Freeze the current result as a labelled reference overlay.",
@@ -24205,7 +24295,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1017,
+          "line": 1033,
           "signature": [
             "id"
           ],
@@ -24246,7 +24336,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1026,
+          "line": 1042,
           "signature": [
             "id",
             "label"
@@ -24295,7 +24385,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1036,
+          "line": 1052,
           "signature": [
             "id"
           ],
@@ -24336,7 +24426,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1044,
+          "line": 1060,
           "signature": [
             "v"
           ],
@@ -24377,7 +24467,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1052,
+          "line": 1068,
           "signature": [
             "v"
           ],
@@ -24418,7 +24508,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1060,
+          "line": 1076,
           "signature": [
             "v"
           ],
@@ -24459,7 +24549,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1068,
+          "line": 1084,
           "signature": [
             "v"
           ],
@@ -24500,7 +24590,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1096,
+          "line": 1112,
           "signature": [],
           "documented": true,
           "summary": "Schedule a debounced simulation run.",
@@ -24531,7 +24621,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1145,
+          "line": 1161,
           "signature": [],
           "documented": true,
           "summary": "Capture the project as a plain, saveable object.",
@@ -24562,7 +24652,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1171,
+          "line": 1187,
           "signature": [
             "proj"
           ],
@@ -24603,7 +24693,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1201,
+          "line": 1217,
           "signature": [
             "name"
           ],
@@ -24644,7 +24734,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1216,
+          "line": 1232,
           "signature": [],
           "documented": true,
           "summary": "Start an empty project, confirming first if there is anything to lose.",
@@ -24675,7 +24765,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1226,
+          "line": 1242,
           "signature": [],
           "documented": true,
           "summary": "Download the project as a file, auto-saving it first.",
@@ -24706,7 +24796,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1243,
+          "line": 1259,
           "signature": [],
           "documented": true,
           "summary": "Write the project to LocalStorage under its name.",
@@ -24737,7 +24827,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1267,
+          "line": 1283,
           "signature": [
             "id"
           ],
@@ -24778,7 +24868,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1282,
+          "line": 1298,
           "signature": [
             "id"
           ],
@@ -24819,7 +24909,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1293,
+          "line": 1309,
           "signature": [
             "id"
           ],
@@ -24860,7 +24950,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1312,
+          "line": 1328,
           "signature": [
             "patch"
           ],
@@ -24903,7 +24993,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1322,
+          "line": 1338,
           "signature": [],
           "documented": true,
           "summary": "The full shared slice, sent to a popped-out tab when it announces itself.",
@@ -24934,7 +25024,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1359,
+          "line": 1375,
           "signature": [
             "arg0"
           ],
@@ -24984,7 +25074,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 1402,
+          "line": 1418,
           "signature": [],
           "documented": true,
           "summary": "List the auto-saved projects in LocalStorage, newest first.",

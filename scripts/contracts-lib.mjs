@@ -224,11 +224,14 @@ function takeName(s) {
 /**
  * Remove the optional `-` separating a parameter name from its description.
  *
+ * Trims before matching: `takeName` can leave a leading space, and a dash
+ * behind one is still the separator.
+ *
  * @param {string} s - The remaining payload.
- * @returns {string} The description alone.
+ * @returns {string} The description alone, trimmed at both ends.
  * @pure
  */
-const stripDash = (s) => s.replace(/^-\s*/, '').trim()
+const stripDash = (s) => s.trim().replace(/^-\s*/, '').trim()
 
 /**
  * Parse a raw JSDoc comment body into structured contract fields.
@@ -237,7 +240,7 @@ const stripDash = (s) => s.replace(/^-\s*/, '').trim()
  * wrapped without losing its tail.
  *
  * @param {string} raw - Babel's `comment.value`: the text between the delimiters.
- * @returns {object} The parsed contract: `summary`, `description`, `params`, `returns`, `throws`, the contract arrays, `pure`, plus `unknownTags` and `malformed` for the test to report on.
+ * @returns {object} The parsed contract. `summary` and `description` are strings; `params` is an array of `{name, type, optional, default, desc}` — the description field is `desc`, not `description`, and `type` and `default` are null when absent; `returns` is `{type, desc}` or null; `throws` is an array of `{type, desc}`. The contract arrays `pre`, `post`, `invariant`, `mutates`, `sideEffect` and `reads` each hold plain strings, and `pure` is a boolean. `other` collects parsed `@property` entries. `unknownTags` and `malformed` are arrays of strings for the test to report on.
  * @pure
  */
 export function parseJsdoc(raw) {

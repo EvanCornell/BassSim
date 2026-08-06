@@ -165,7 +165,7 @@ impedance minimum. Expect this to be several Hz optimistic on a real box.
 
 **Returns**
 
-- `number` — Port length in cm. Never below 1: the end correction alone can exceed the required length for a large port on a small box, and a negative length is not a port. A returned 1 therefore means "this geometry cannot reach that tuning", not "1 cm will do it".
+- `number` — Port length in cm. Never below 1: the required length falls as the port narrows, as the box grows and as the target tuning rises, so a *small* port on a *large* box at a high tuning drives it below the end correction and a negative length is not a port. A returned 1 therefore means "this geometry cannot reach that tuning", not "1 cm will do it". The converse case — a large port on a small box — makes the port longer, not shorter, and can run to metres.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 

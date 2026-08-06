@@ -515,14 +515,19 @@ export const useStore = create((rawSet, get) => {
    * Replace the quick-bar arrangement.
    *
    * Sanitized on the way in, so an arrangement carrying unknown ids falls
-   * back to the default rather than rendering a broken bar.
+   * back to the default rather than rendering a broken bar. Unknown ids are
+   * dropped individually; the fallback fires only when nothing survives, since
+   * a non-empty request sanitizing to nothing means the whole arrangement was
+   * foreign. An explicitly empty `ids` is honoured — that is a deliberately
+   * hidden bar, not corruption.
    *
-   * @param {string[]} ids - Item ids in display order.
+   * @param {string[]} ids - Item ids in display order. A non-array falls back to the default.
    * @returns {void}
    * @sideEffect Writes store state and LocalStorage. A quota failure is swallowed.
    */
   setToolbar: (ids) => {
-    const clean = sanitizeToolbar(ids) || DEFAULT_TOOLBAR
+    const kept = sanitizeToolbar(ids)
+    const clean = !kept || (kept.length === 0 && ids.length > 0) ? DEFAULT_TOOLBAR : kept
     set({ toolbar: clean })
     try { localStorage.setItem(TOOLBAR_KEY, JSON.stringify(clean)) } catch { /* quota */ }
   },
@@ -608,7 +613,9 @@ export const useStore = create((rawSet, get) => {
   pushHistory: () => {
     const { nodes, edges, history } = get()
     const snap = { nodes: JSON.parse(JSON.stringify(nodes)), edges: JSON.parse(JSON.stringify(edges)) }
-    set({ history: [...history.slice(-HISTORY_LIMIT), snap], future: [] })
+    // slice to one *below* the limit: the new entry is about to take the last
+    // slot, so trimming to the limit first would leave 81.
+    set({ history: [...history.slice(-(HISTORY_LIMIT - 1)), snap], future: [] })
   },
   /**
    * Step back one entry in the history.
@@ -736,8 +743,13 @@ export const useStore = create((rawSet, get) => {
    * @sideEffect Writes store state and schedules a resimulation.
    */
   updateParams: (id, patch) => {
+    const nodes = get().nodes
+    // Return before writing rather than mapping to an identical list: `set`
+    // installs a fresh array either way, which re-renders every node and
+    // schedules a resimulation for an edit that changed nothing.
+    if (!nodes.some((n) => n.id === id)) return
     set({
-      nodes: get().nodes.map((n) =>
+      nodes: nodes.map((n) =>
         n.id === id ? { ...n, data: { ...n.data, params: { ...n.data.params, ...patch } } } : n),
     })
     get().scheduleCompute()
@@ -819,6 +831,10 @@ export const useStore = create((rawSet, get) => {
    *
    * Only edges wholly inside the selection are taken — a dangling half-edge
    * would have nothing to reconnect to on paste.
+   *
+   * An empty selection leaves the previous clipboard in place rather than
+   * clearing it, so a stray copy with nothing selected cannot lose what you
+   * copied a moment ago. There is no action that empties the clipboard.
    *
    * @returns {number} How many nodes were copied; 0 when the selection was empty.
    * @sideEffect Writes store state, mirrored to other windows.

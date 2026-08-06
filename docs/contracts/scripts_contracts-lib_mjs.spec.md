@@ -116,7 +116,7 @@ wrapped without losing its tail.
 
 **Returns**
 
-- `object` — The parsed contract: `summary`, `description`, `params`, `returns`, `throws`, the contract arrays, `pure`, plus `unknownTags` and `malformed` for the test to report on.
+- `object` — The parsed contract. `summary` and `description` are strings; `params` is an array of `{name, type, optional, default, desc}` — the description field is `desc`, not `description`, and `type` and `default` are null when absent; `returns` is `{type, desc}` or null; `throws` is an array of `{type, desc}`. The contract arrays `pre`, `post`, `invariant`, `mutates`, `sideEffect` and `reads` each hold plain strings, and `pure` is a boolean. `other` collects parsed `@property` entries. `unknownTags` and `malformed` are arrays of strings for the test to report on.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
@@ -243,13 +243,16 @@ Handles all three JSDoc spellings: `name`, `[name]` for optional, and
 
 Remove the optional `-` separating a parameter name from its description.
 
+Trims before matching: `takeName` can leave a leading space, and a dash
+behind one is still the separator.
+
 **Parameters**
 
 - `s` — `string` — The remaining payload.
 
 **Returns**
 
-- `string` — The description alone.
+- `string` — The description alone, trimmed at both ends.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 

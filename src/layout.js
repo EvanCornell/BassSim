@@ -338,8 +338,10 @@ export function dockPanel(tree, panelId, targetStackId, zone) {
  * Dock a panel against an outer edge of the whole workspace.
  *
  * When the root split already runs in the right direction the panel joins it as
- * a sibling at a quarter of the average weight; otherwise a new root split is
- * created giving the newcomer 22% of the width or height.
+ * a sibling weighted at a quarter of the split's *total* — so it takes a fifth
+ * of the edge whatever the sibling count, which is close to the 22% the other
+ * branch gives. Otherwise a new root split is created giving the newcomer 22%
+ * of the width or height.
  *
  * @param {object} tree - Layout tree.
  * @param {string} panelId - Panel to dock.
