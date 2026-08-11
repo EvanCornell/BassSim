@@ -130,8 +130,13 @@ for far-field prediction later.
 ### Tier 2 — Engines
 
 Pure functions of `(Model, AnalysisSpec) → Results`. No framework, no store, no
-I/O, no knowledge of who called them. This is what makes one engine runnable
-both in a browser and on a server without a second implementation.
+I/O, no knowledge of who called them.
+
+All engines run **server-side** (§5). Purity is still a hard rule, for two
+reasons that survive that decision: an engine must be runnable from a headless
+fixture with no HTTP server and no UI, which is what lets one session test one
+package; and an engine that has never assumed a host can later acquire a
+different one without a rewrite.
 
 Each engine **declares which node types and analyses it supports**, so a surface
 can grey out what an engine cannot do, and adding a node type cannot silently
@@ -146,6 +151,14 @@ imports an engine — they submit a job.
 
 Identity, storage, sharing, entitlement, orchestration. Entitlement is checked
 **at the job boundary**, never in a surface.
+
+Solver execution is separated from state: a compute pool that runs engines and
+holds no durable state, and a storage tier that owns projects and never runs a
+solver. Onshape draws the same line — geometry computation on isolated servers,
+distinct from the systems that write to the database. It matters more here than
+it looks, because it is what allows heavy time-domain jobs to be scaled,
+rate-limited, sandboxed, and starved of database credentials independently of
+the interactive frequency-domain path.
 
 ---
 
@@ -200,43 +213,98 @@ instead of a method.
 
 ---
 
-## 5. Consequences of the language split
+## 5. Hosting: everything server-side
 
-The time-domain engine will be **C/C++**; the frequency-domain engine is
-JavaScript today and will **move to the client** so parameter tweaking is
-instant and free-tier users cost nothing to serve.
+**Decision: all engines run on the server.** No solver ships to the browser.
+This continues what `server/index.js` already does rather than reversing it.
 
-Two consequences follow, and both need a decision rather than a discovery.
+The alternative — moving the free frequency-domain engine into the browser for
+instant response — was considered and rejected. The deciding argument is the
+language split: the time-domain engine will be **C/C++**, and the clean
+long-run answer to numerics drift (below) is a single C++ core serving both
+engines. In that end state a client-side JavaScript engine is a host that gets
+built, maintained, and then deleted. Server-side avoids constructing a dead end.
 
-**Two numerics stacks will drift.** Radiation impedance, the Bessel and Struve
-approximations, air constants and end corrections would exist in both JS and
-C++. The contract audit already found a real defect in exactly this area — the
-Bessel cancellation in `radiationImpedance` — so this is not hypothetical.
+Onshape is the reference case here — a fully cloud CAD system whose Parasolid
+kernel never leaves the server and whose browser client receives only
+tessellated triangles. Worth noting what does *not* transfer: Onshape is
+server-side partly by necessity (a closed, licensed kernel that legally cannot
+ship to a client) and operates on assemblies orders of magnitude larger than a
+lumped-element network. The reasons here are different, which is why the
+interaction budget below has to be taken seriously rather than assumed away.
+
+### 5.1 What this buys
+
+- One code path per engine. No dual-host conformance burden, no proving two
+  implementations agree.
+- The commercial boundary is physical by default. Entitlement cannot be
+  bypassed by reading the bundle.
+- All usage is measurable — necessary for capacity planning and abuse limits.
+- Offline is explicitly not a goal, which simplifies the platform tier.
+
+### 5.2 What it costs, and the budget that has to be met
+
+Every parameter change is now a network round trip. **Dragging a slider and
+watching the response curve move is the core interaction of this tool**, and
+that interaction is now latency-bound. The compute is milliseconds; the network
+is not. This is the single risk the decision creates, and it must be designed
+for rather than discovered.
+
+Targets, to be treated as requirements and not aspirations:
+
+| Interaction | Budget | Mechanism |
+|---|---|---|
+| Pan, zoom, cursor readout, trace toggle, comparing stored curves | **0 ms** | Never leaves the client. Must not invalidate results at all. |
+| Dragging a continuous parameter | **< 60 ms** perceived | Coarse preview sweep (~64 points), debounced, in-flight requests cancelled on new input. |
+| Release / commit | **< 300 ms** | Full-resolution sweep at the configured `npts`. |
+| Time-domain or far-field analysis | Async job | Progress reported; never blocks the editor. |
+
+Two rules follow, and both belong in the Results tier:
+
+1. **Display transforms never invalidate results.** Borrowed directly from
+   Onshape: only a change to the *model* costs a round trip. Axis ranges,
+   cursors, visibility, and overlay comparisons operate on cached results.
+2. **Invalidation is per-parameter, not per-project.** Changing a driver
+   parameter must not discard an unrelated stored comparison curve.
+
+If these budgets cannot be met in practice, the client-side option should be
+reopened for the free engine specifically. Recording that here so the decision
+is revisited on evidence rather than defended by default.
+
+### 5.3 Numerics drift between the two languages
+
+Radiation impedance, the Bessel and Struve approximations, air constants and
+end corrections will exist in both JavaScript and C++ for as long as both
+engines exist. The contract audit already found a real defect in exactly this
+area — the Bessel cancellation in `radiationImpedance` — so this is not
+hypothetical.
 
 > **Mitigation: a shared golden-fixture set at Tier 0.** One
 > language-independent file of inputs and expected outputs, with both
 > implementations tested against it in their own CI. Drift becomes a failing
 > test rather than a discrepancy someone notices in a plot months later.
 
-**The paywall and the client both want the time-domain engine.** The free
-engine moving client-side makes the commercial boundary physical, which is the
-right instinct. But the paid engine cannot follow it: WASM shipped to a browser
-is extractable, entitlement check or not.
+Because both engines now run in the same environment, consolidating onto one
+C++ numerics core later is a straightforward option rather than a rewrite. The
+fixtures make deferring that safe.
 
-That collides with real-time music playback, which wants the engine next to the
-audio thread and cannot tolerate a per-buffer server round-trip.
+### 5.4 The one remaining exception
 
-The three honest options:
+Server-side hosting resolves the paywall question for every feature except
+one. **Real-time music playback cannot round-trip per audio buffer.** It is the
+sole case where the engine wants to be next to the audio thread.
 
 | Option | Trade |
 |---|---|
-| Server-side render, stream audio back | Protects the asset. Not truly real-time; becomes "render then audition," with latency on every EQ change. |
-| Ship WASM to entitled users | True real-time and the best product. Accepts that a determined user can extract the engine. |
-| Split it — cheap path client-side, heavy nonlinear analysis server-side | Best of both, most complexity, and the two paths must be proven to agree. |
+| Server-side render, stream audio back | Consistent with everything else. Not truly real-time; becomes "render then audition," with latency on every EQ change. |
+| Ship WASM to entitled users | True real-time and the better product. Breaks the rule, and a determined user can extract the engine. |
 
-**This should be decided before the engine is written, not after**, because it
-determines whether the engine is built to a streaming block-processing interface
-or a batch one. Retrofitting block processing onto a batch engine is a rewrite.
+**This must be decided before the time-domain engine is written**, because it
+determines whether the engine is built to a streaming block-processing
+interface or a batch one. Retrofitting block processing onto a batch engine is
+a rewrite. Note that building to a streaming interface keeps *both* options
+open at little cost, and is therefore the safer default even if the audio path
+ends up server-rendered.
 
 ---
 
@@ -298,42 +366,53 @@ of them a normal piece of work instead of a negotiation with the whole tree.
    the same contract so the two consumers cannot drift.
 5. Extract Tier 0 numerics and write the golden-fixture set.
 
-**Phase 1 — prove the boundaries are real**
+**Phase 1 — prove the boundaries are real, and meet the interaction budget**
 
-6. Move the frequency-domain engine to the client, keeping the server host.
-   *This is the test of Phase 0:* if the same engine runs in both hosts against
-   one conformance suite, the seam is genuine.
-7. Split `store.js` — 1435 lines currently holding dock layout, keybindings,
+6. *The test of Phase 0:* every engine must run from a headless fixture runner
+   with no HTTP server, no store and no React, and the node-editor package must
+   run its full suite without compiling the C++ engine. If either is untrue the
+   boundary has failed regardless of what §2 says.
+7. Implement the §5.2 interaction budget: results caching, per-parameter
+   invalidation, request cancellation, and coarse-preview/full-commit sweeps.
+   This is now load-bearing rather than an optimisation — it is what makes the
+   server-side decision survivable.
+8. Split `store.js` — 1435 lines currently holding dock layout, keybindings,
    graph editing, simulation orchestration and persistence — along the tier
    lines the model extraction reveals.
 
 **Phase 2 — the paid engine**
 
-8. Build `engine-td` in C++ to the already-existing Model and Results contracts,
-   after resolving §5's streaming-versus-batch question.
-9. Entitlement at the job boundary.
+9. Build `engine-td` in C++ to the already-existing Model and Results contracts,
+   to a streaming block-processing interface (§5.4).
+10. Entitlement at the job boundary; compute pool separated from the storage
+    tier.
 
 **Phase 3 — the platform**
 
-10. Cloud projects, version history, share links. No live co-editing, so the
+11. Cloud projects, version history, share links. No live co-editing, so the
     model schema does not need to be mergeable — a constraint deliberately
     avoided.
 
 **Phase 4+ — the new surfaces**
 
-11. Baffle builder, then 3D designer, then far-field.
+12. Baffle builder, then 3D designer, then far-field.
 
 ---
 
 ## 8. Open questions
 
-- **Streaming or batch** for the time-domain engine (§5). Blocks Phase 2.
-- **Does the paid engine ever ship to the client?** Determines whether real-time
-  music is a real-time feature or a render-and-audition one.
+- **Does the audio path ever ship to the client?** (§5.4) The only surviving
+  exception to server-side hosting, and it decides whether real-time music is
+  genuinely real-time or a render-and-audition feature. Building the engine to
+  a streaming interface keeps both answers available, so this blocks Phase 2
+  less than it appears — but it should still be answered deliberately.
+- **Can the §5.2 interaction budget actually be met** over real connections? If
+  not, the client-side free engine is reopened for that reason and no other.
 - **Does the frequency-domain engine eventually become C++ too**, sharing the
   numerics core with the time-domain engine? It removes the drift risk entirely
   at the cost of rewriting working, well-tested code. The golden fixtures make
-  deferring this safe, so it should be deferred — but not forgotten.
+  deferring this safe, so it should be deferred — but not forgotten. Fully
+  server-side hosting makes this a later option rather than a fork in the road.
 - **How much geometry belongs in the model from day one?** Enough for the baffle
   builder is cheap now. Enough for the 3D designer may over-constrain the schema
   before its interaction model is understood.
