@@ -491,6 +491,10 @@ of them a normal piece of work instead of a negotiation with the whole tree.
 
 **Phase 0 — the foundation**
 
+The engine contract is the centre of this phase; see
+[`ENGINE-CONTRACT.md`](./ENGINE-CONTRACT.md) for the field-level definition and
+§11 there for the order within these steps.
+
 1. Stand up the monorepo and the boundary lint.
 2. Extract `@acousim/model`: node registry, project schema, migrations. This
    alone removes the nine-file tax on every future node type.
