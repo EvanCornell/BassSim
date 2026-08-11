@@ -114,9 +114,17 @@ must become a domain format that ReactFlow is one renderer of.
 
 Usually forgotten, and as load-bearing as the model.
 
-A single envelope covering every engine: per-outlet complex frequency response,
-time-domain waveforms, derived metrics, and provenance — which engine, which
-version, which settings produced this.
+Not one flat shape. The three result kinds genuinely differ — frequency sweeps
+are arrays over frequency, time-domain analyses are scalars plus band × frame
+matrices, far-field is arrays over angle × frequency — so this is a **tagged
+union sharing a common header**: provenance (which engine, which version, which
+settings, which metric-set version), units, and a reference to the model that
+produced it. Forcing one schema across all three yields a record that is mostly
+null.
+
+**Time-domain analyses return summaries, never raw waveforms** (§6.4). This is
+a property of the seam, not an optimisation, and the rest of the envelope is
+designed around it.
 
 **One specific decision unlocks the far-field tool.** `runSimulation` currently
 collapses every radiating outlet into `splCombined`, a complex sum. That
@@ -141,6 +149,12 @@ different one without a rewrite.
 Each engine **declares which node types and analyses it supports**, so a surface
 can grey out what an engine cannot do, and adding a node type cannot silently
 produce wrong physics in an engine that was never taught about it.
+
+Each engine also exposes **`estimateCost(Model, AnalysisSpec) → core-seconds`**
+alongside its solver. Runtime here is essentially deterministic — state count ×
+sample rate × sweep points × settling time — so one cheap function serves four
+purposes at once: pre-run UX, scheduler admission control, quota accounting,
+and tier gating (§6).
 
 ### Tier 3 — Surfaces
 
@@ -308,7 +322,126 @@ ends up server-rendered.
 
 ---
 
-## 6. Honest assessment of the far-term ideas
+## 6. Compute cost, the job model, and metering
+
+The commercial model is a **fixed compute rate per user** rather than gated
+features: everyone gets every capability, and complexity is priced in wall-clock
+time. This section records what that requires of the architecture. Specific
+metric definitions are deliberately *not* here — see
+[`analysis-metrics.md`](./analysis-metrics.md), which is expected to change.
+
+### 6.1 The computational profile
+
+Time-domain simulation here is **SPICE-class, not FEA-class**. A ported box is
+roughly 100–200 states (driver 3; chamber-as-line ~48; port waveguide ~48;
+radiation rational fits ~4 per outlet), against 10⁵–10⁶ for structural FEA. Note
+that `waveguideMatrix` and `chamberMatrix` are already *distributed* — 24
+transmission-line segments each — so this is not a textbook lumped model.
+
+Order-of-magnitude estimate for a well-implemented engine: **~20× faster than
+real time on one core.** Not benchmarked; everything downstream scales linearly
+with it, so it should be measured on a prototype before the price is fixed.
+
+Two implementation requirements follow, and they are economic rather than
+aesthetic:
+
+- **Multi-rate integration.** Segment length is tied to timestep in a delay-line
+  formulation, so work on distributed elements scales as **fs²** — oversampling
+  8× for nonlinearity costs 64×, not 8×. The nonlinearity lives entirely in the
+  driver's 3 lumped states, so oversample that core and run the linear lines at
+  base rate. Thermal splits off again at ~10 Hz.
+- **Banded solve.** The network is a chain of two-ports, so the system matrix is
+  banded. Exploiting that is O(N) instead of O(N³) — roughly four orders of
+  magnitude on a 200-state model.
+
+Missing either turns ~20× real time into a fraction of it. Under fixed-rate
+pricing that is a **~100× swing in unit economics**, which makes engine
+efficiency a margin lever rather than a nicety.
+
+### 6.2 Cost, sized
+
+At 730 hours/month, one continuously-pegged core costs ~$26 on AWS on-demand,
+~$9 on spot, ~$7 on cheap bare metal. **At a $15/month subscription, AWS
+on-demand cannot fund a single 24/7 core.** Hosting choice is a 3–4× swing and
+is therefore a real architectural decision, not an ops detail.
+
+The saving grace is that "running 24/7" means two very different things:
+
+| Workload | Core usage | Cost/month |
+|---|---|---|
+| Real-time playback, continuous | ~5% of a core (self-limiting — wall-clock bounds it) | ~$0.37 |
+| Back-to-back batch sweeps | 1.0 core saturated | $7–26 |
+
+One core-month buys ~146,000 distortion sweeps or ~292,000 track analyses. A
+heavy user running 100 sweeps a day consumes ~2% of a core. **Realistic use is
+far below the price; only a runaway script is expensive.**
+
+### 6.3 What metering therefore requires
+
+- **Rate cap plus total budget.** Rate bounds peak cost and makes the experience
+  predictable; a monthly core-second allowance bounds the tail. Rate alone
+  bounds neither.
+- **Scheduler shares, never reserved cores.** Oversubscription of a shared pool
+  *is* the business — a dedicated core per subscriber costs more than the
+  subscription.
+- **Two QoS classes.** Interactive work gets a burst allowance so the §5.2
+  latency budget survives throttling; batch work gets the sustained rate. Caps
+  apply to a user's aggregate concurrent work, not per job.
+- **Cost shown before running.** Because runtime is predictable, the UI can
+  state "estimated 3 min 20 s" at commit time. This is what makes fixed-rate
+  pricing read as fair rather than punitive, and it makes the upsell honest.
+
+Indicative shape: 8-core burst, ~1-core sustained fair share, ~40 core-hour
+monthly budget. That budget costs well under a dollar and no legitimate user
+approaches it.
+
+### 6.4 Summaries, not waveforms
+
+**Time-domain analyses return bounded summaries by default. Raw waveforms never
+cross the seam except on explicit request.** Three consequences make this
+structural rather than a preference:
+
+1. **Output size stops depending on run length.** A 3-minute track drops from
+   ~2.2 GB to a few MB. Egress and result storage become rounding errors —
+   relevant because egress is billed and would otherwise dwarf compute.
+2. **Results become cacheable by content hash.** `hash(model, analysisSpec,
+   stimulusRef, metricSetVersion) → summary`, stored indefinitely because it is
+   kilobytes. Stock drivers and standard test signals will collide across users.
+   This is only possible *because* full data is not returned.
+3. **Reduction must happen inside the engine, single-pass.** Computing metrics
+   by buffering the waveform and post-processing defeats the purpose. Every
+   metric must be an online estimator.
+
+Two things keep this safe:
+
+**`metricSetVersion` is part of the cache key.** The metric set is expected to
+evolve; versioning it into the hash means adding or changing metrics never
+silently returns stale results and never requires a backfill. This is what makes
+the metric definitions a tunable rather than a commitment.
+
+**Re-run-with-detail is a first-class operation.** Because the model, stimulus
+and spec are retained and simulation is deterministic, any discarded detail is
+reconstructible for ~9 core-seconds. The choice is not "store 2.2 GB or lose
+the information" — it is "store it or regenerate it for a fraction of a cent."
+
+### 6.5 Job model
+
+Two shapes the current `/api/simulate` does not have:
+
+- **Fan-out.** One `AnalysisSpec` expands into many independent runs (a
+  distortion sweep is ~240), aggregated on completion. Embarrassingly parallel,
+  which is what makes tiered burst allocation meaningful — and also gives the
+  scheduler natural units to interleave and throttle.
+- **Paired runs.** Compression and distortion are both defined *against* a
+  linear cold reference, so the nonlinear run and its reference are one job, not
+  two. Budget ~1.5× a bare nonlinear run. The pairing belongs in the job
+  definition rather than being improvised by the engine.
+
+Jobs must yield or checkpoint so they can be throttled mid-flight.
+
+---
+
+## 7. Honest assessment of the far-term ideas
 
 These are worth building. They are also not equally hard, and the sequencing
 should reflect that rather than treating them as one bucket.
@@ -346,12 +479,12 @@ out of the near-term model so it does not distort earlier decisions.
 **Real-time music analysis — the strongest product idea here.** Per-band
 compression, headroom, and pre-audition EQ is a genuinely differentiated feature
 and the clearest justification for the paid tier. C++ is the right call
-specifically because of this feature. Its real constraint is §5's paywall
+specifically because of this feature. Its real constraint is §5.4's paywall
 tension, not the DSP.
 
 ---
 
-## 7. Sequencing
+## 8. Sequencing
 
 Phase 0 builds none of the new tools. That is the point: it is what makes each
 of them a normal piece of work instead of a negotiation with the whole tree.
@@ -361,45 +494,52 @@ of them a normal piece of work instead of a negotiation with the whole tree.
 1. Stand up the monorepo and the boundary lint.
 2. Extract `@acousim/model`: node registry, project schema, migrations. This
    alone removes the nine-file tax on every future node type.
-3. Define the results envelope, with **per-outlet complex data retained**.
+3. Define the results envelope as a tagged union, with **per-outlet complex data
+   retained** and `metricSetVersion` in the header.
 4. Version `/api/simulate` and put a conformance suite on it. Point `/mcp` at
    the same contract so the two consumers cannot drift.
 5. Extract Tier 0 numerics and write the golden-fixture set.
+6. Benchmark a prototype integrator on one ported box. The ~20× real-time
+   estimate in §6.1 underpins the whole cost model and is currently unverified.
 
 **Phase 1 — prove the boundaries are real, and meet the interaction budget**
 
-6. *The test of Phase 0:* every engine must run from a headless fixture runner
+7. *The test of Phase 0:* every engine must run from a headless fixture runner
    with no HTTP server, no store and no React, and the node-editor package must
    run its full suite without compiling the C++ engine. If either is untrue the
    boundary has failed regardless of what §2 says.
-7. Implement the §5.2 interaction budget: results caching, per-parameter
+8. Implement the §5.2 interaction budget: results caching, per-parameter
    invalidation, request cancellation, and coarse-preview/full-commit sweeps.
    This is now load-bearing rather than an optimisation — it is what makes the
    server-side decision survivable.
-8. Split `store.js` — 1435 lines currently holding dock layout, keybindings,
+9. Split `store.js` — 1435 lines currently holding dock layout, keybindings,
    graph editing, simulation orchestration and persistence — along the tier
    lines the model extraction reveals.
 
 **Phase 2 — the paid engine**
 
-9. Build `engine-td` in C++ to the already-existing Model and Results contracts,
-   to a streaming block-processing interface (§5.4).
-10. Entitlement at the job boundary; compute pool separated from the storage
+10. Build `engine-td` in C++ to the already-existing Model and Results
+    contracts, to a streaming block-processing interface (§5.4). Multi-rate
+    integration and a banded solve are requirements, not optimisations (§6.1).
+11. Fan-out and paired-run job model; in-engine metric reduction (§6.4–6.5).
+12. Entitlement at the job boundary; compute pool separated from the storage
     tier.
 
 **Phase 3 — the platform**
 
-11. Cloud projects, version history, share links. No live co-editing, so the
+13. Scheduler with per-user rate caps, monthly budgets and two QoS classes
+    (§6.3). Content-hash result cache.
+14. Cloud projects, version history, share links. No live co-editing, so the
     model schema does not need to be mergeable — a constraint deliberately
     avoided.
 
 **Phase 4+ — the new surfaces**
 
-12. Baffle builder, then 3D designer, then far-field.
+15. Baffle builder, then 3D designer, then far-field.
 
 ---
 
-## 8. Open questions
+## 9. Open questions
 
 - **Does the audio path ever ship to the client?** (§5.4) The only surviving
   exception to server-side hosting, and it decides whether real-time music is
@@ -413,6 +553,9 @@ of them a normal piece of work instead of a negotiation with the whole tree.
   at the cost of rewriting working, well-tested code. The golden fixtures make
   deferring this safe, so it should be deferred — but not forgotten. Fully
   server-side hosting makes this a later option rather than a fork in the road.
+- **Where is it hosted?** §6.2 makes this architectural rather than
+  operational: AWS on-demand cannot fund a 24/7 core at $15/month, and the
+  spread between hosting options is 3–4× on unit economics.
 - **How much geometry belongs in the model from day one?** Enough for the baffle
   builder is cheap now. Enough for the 3D designer may over-constrain the schema
   before its interaction model is understood.
