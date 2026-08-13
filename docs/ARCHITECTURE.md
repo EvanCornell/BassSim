@@ -493,7 +493,8 @@ of them a normal piece of work instead of a negotiation with the whole tree.
 
 The engine contract is the centre of this phase; see
 [`ENGINE-CONTRACT.md`](./ENGINE-CONTRACT.md) for the field-level definition and
-§11 there for the order within these steps.
+§11 there for the order within these steps. For the physics and numerics the
+contract has to carry, see [`SOLVER-ARCHITECTURE.md`](./SOLVER-ARCHITECTURE.md).
 
 1. Stand up the monorepo and the boundary lint.
 2. Extract `@acousim/model`: node registry, project schema, migrations. This
