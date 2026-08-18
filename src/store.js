@@ -81,6 +81,28 @@ function simulateInWorker(project) {
   })
 }
 
+/**
+ * Rewrite a popped-out tab's own URL to match what it now holds.
+ *
+ * The URL seeds the tab but does not own it: views can be added and closed
+ * once it is open. Keeping the address in step means reloading the tab — or
+ * restoring it after a browser restart — brings back the window the user
+ * actually built rather than the one they first opened.
+ *
+ * `replaceState` rather than `pushState`, since adding a view is not somewhere
+ * the back button should return from.
+ *
+ * @param {string[]} ids - Panel ids the tab now holds, in tab order.
+ * @param {string|null} active - The view in front.
+ * @returns {void}
+ * @sideEffect Replaces the current history entry. Silently does nothing where the History API is unavailable.
+ */
+function syncPopoutUrl(ids, active) {
+  if (typeof window === 'undefined' || !window.history?.replaceState || !ids.length) return
+  const query = `id=${encodeURIComponent(ids.join(','))}${active ? `&active=${encodeURIComponent(active)}` : ''}`
+  window.history.replaceState(null, '', `${window.location.pathname}?${query}`)
+}
+
 const LAYOUT_KEY = 'acousim:layout'
 const PRESETS_KEY = 'acousim:layoutPresets'
 const TOOLBAR_KEY = 'acousim:toolbar'
@@ -1375,18 +1397,75 @@ export const useStore = create((rawSet, get) => {
   // A panel sent to its own tab leaves the dock; closing that tab brings it
   // back. Tracking which are out keeps the View menu honest.
   poppedOut: [],
-  // Which view a popped-out tab is showing. Local to that window — the main
-  // window's front tab is the layout tree's business, and `SHARED_KEYS`
-  // excludes this so two popouts do not fight over one another's tab strip.
+  // What a popped-out tab holds, and which of it is in front. Seeded from the
+  // URL but not bound to it: a popped-out tab can gain and lose views like any
+  // other window, so the list has to be state. Both are local to the window —
+  // `SHARED_KEYS` excludes them, so two popouts do not fight over one
+  // another's tab strip.
+  popoutIds: POPOUT ? popoutPanelIds() : [],
   popoutActive: POPOUT ? popoutPanelId() : null,
   /**
    * Bring a view to the front in a popped-out tab.
    *
    * @param {string} id - Panel id.
    * @returns {void}
-   * @sideEffect Writes store state. The field is local to the window — `SHARED_KEYS` deliberately excludes it.
+   * @sideEffect Writes store state and rewrites this tab's URL. The fields are local to the window — `SHARED_KEYS` deliberately excludes them.
    */
-  setPopoutActive: (id) => set({ popoutActive: id }),
+  setPopoutActive: (id) => {
+    set({ popoutActive: id })
+    syncPopoutUrl(get().popoutIds, id)
+  },
+  /**
+   * Add a view to this popped-out tab, beside the ones already in it.
+   *
+   * The counterpart of `addViewToStack` for a window that has no dock. The
+   * main window is told so it can let go of the panel, exactly as it does when
+   * a whole new tab claims one — a panel exists once across every window, and
+   * a view showing in two places would be two things to keep in step.
+   *
+   * @param {string} id - Panel to add. One already here is merely brought to the front.
+   * @returns {void}
+   * @sideEffect Writes store state, rewrites this tab's URL, and announces the claim to the main window. Does nothing outside a popped-out tab.
+   */
+  addViewToPopout: (id) => {
+    if (!POPOUT) return
+    const ids = get().popoutIds
+    if (!ids.includes(id)) {
+      const next = [...ids, id]
+      set({ popoutIds: next, popoutActive: id })
+      syncPopoutUrl(next, id)
+      channel?.postMessage({ type: 'claim', panels: [id] })
+    } else {
+      get().setPopoutActive(id)
+    }
+    get().focusPanel(id)
+  },
+  /**
+   * Remove a view from this popped-out tab, handing it back to the main window.
+   *
+   * Closing the last one closes the tab rather than leaving an empty window,
+   * which is also how every remaining view gets handed back at once.
+   *
+   * @param {string} id - Panel to close. One this tab does not hold is a no-op.
+   * @returns {void}
+   * @sideEffect Writes store state, rewrites this tab's URL, and either announces the release to the main window or closes the browser tab. Does nothing outside a popped-out tab.
+   */
+  closeViewInPopout: (id) => {
+    if (!POPOUT) return
+    const ids = get().popoutIds
+    if (!ids.includes(id)) return
+    const next = ids.filter((p) => p !== id)
+    // The last view leaving means the tab has nothing to show. Closing sends
+    // `bye` on the way out, which hands that view back too, so this does not
+    // announce the release itself.
+    if (!next.length) { window.close(); return }
+    const front = get().popoutActive === id
+      ? next[Math.min(ids.indexOf(id), next.length - 1)]
+      : get().popoutActive
+    set({ popoutIds: next, popoutActive: front })
+    syncPopoutUrl(next, front)
+    channel?.postMessage({ type: 'release', panels: [id] })
+  },
   /**
    * Send a panel to its own browser tab and remove it from the dock.
    *
@@ -1512,7 +1591,9 @@ export const useStore = create((rawSet, get) => {
 //   hello   a popped-out tab announcing itself and the panels it took; the main
 //           window answers with a full snapshot and lets go of those panels
 //   full    that snapshot
-//   bye     the tab closing; the main window takes its panels back
+//   claim   an open tab taking one more panel; the main window lets go of it
+//   release that tab giving one back, without closing
+//   bye     the tab closing; the main window takes its remaining panels back
 if (channel) {
   /**
    * Handle a message from another window.
@@ -1556,7 +1637,9 @@ if (channel) {
     if (data.type === 'hello') {
       channel.postMessage({ type: 'full', patch: st._sharedSnapshot() })
       for (const id of data.panels || [data.panel]) st._detachPanel(id)
-    } else if (data.type === 'bye') {
+    } else if (data.type === 'claim') {
+      for (const id of data.panels) st._detachPanel(id)
+    } else if (data.type === 'release' || data.type === 'bye') {
       for (const id of data.panels || [data.panel]) st._reattachPanel(id)
     }
   }
@@ -1565,10 +1648,14 @@ if (channel) {
     // One message for the whole tab rather than one per panel: a tab holding a
     // popped-out window announces every panel it took, and the main window
     // answers with a single snapshot instead of one per tab.
-    const panels = popoutPanelIds()
-    channel.postMessage({ type: 'hello', panel: popoutPanelId(), panels })
-    // pagehide fires on close and on navigation, where unload is unreliable
-    window.addEventListener('pagehide', () => channel.postMessage({ type: 'bye', panel: popoutPanelId(), panels }))
+    channel.postMessage({ type: 'hello', panel: popoutPanelId(), panels: popoutPanelIds() })
+    // pagehide fires on close and on navigation, where unload is unreliable.
+    // The list is read at that moment rather than captured here, since a tab
+    // gains and loses views while it is open.
+    window.addEventListener('pagehide', () => {
+      const st = useStore.getState()
+      channel.postMessage({ type: 'bye', panel: st.popoutActive, panels: st.popoutIds })
+    })
   }
 }
 

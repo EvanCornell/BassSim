@@ -25,8 +25,8 @@
   },
   "stats": {
     "modules": 55,
-    "methods": 576,
-    "documented": 576
+    "methods": 582,
+    "documented": 582
   },
   "modules": [
     {
@@ -6737,7 +6737,7 @@
       "constants": [
         {
           "name": "__internals",
-          "line": 502,
+          "line": 547,
           "shape": {
             "kind": "object",
             "keys": [
@@ -6757,7 +6757,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 39,
+          "line": 38,
           "signature": [
             "el"
           ],
@@ -6796,7 +6796,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 56,
+          "line": 55,
           "signature": [
             "ids",
             "settings"
@@ -6843,7 +6843,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 70,
+          "line": 69,
           "signature": [],
           "documented": true,
           "summary": "The floating right-click menu.",
@@ -6874,7 +6874,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 88,
+          "line": 87,
           "signature": [
             "e"
           ],
@@ -6915,7 +6915,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 114,
+          "line": 113,
           "signature": [
             "e"
           ],
@@ -6956,7 +6956,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 122,
+          "line": 121,
           "signature": [
             "e"
           ],
@@ -6997,7 +6997,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 150,
+          "line": 149,
           "signature": [
             "id"
           ],
@@ -7038,7 +7038,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 169,
+          "line": 168,
           "signature": [],
           "documented": true,
           "summary": "Submenu offering every view that could be added to the clicked window.",
@@ -7069,7 +7069,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 177,
+          "line": 176,
           "signature": [
             "id"
           ],
@@ -7110,7 +7110,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 186,
+          "line": 185,
           "signature": [],
           "documented": true,
           "summary": "Add this view to the clicked window.",
@@ -7141,14 +7141,14 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 211,
+          "line": 212,
           "signature": [
             "here",
             "front"
           ],
           "documented": true,
           "summary": "The items a popped-out browser tab offers about itself.",
-          "description": "The items a popped-out browser tab offers about itself.\n\nA popped-out tab has no dock, so none of the docking commands apply. What\nit can do instead is switch which of its views is in front, spawn a\nfurther tab, and hand its views back — which it does by closing, the same\npath a user closing the tab by hand takes.",
+          "description": "The items a popped-out browser tab offers about itself.\n\nA popped-out tab has no dock, so none of the docking commands apply — but\nit is still a window, and the thing a window most needs to be able to do\nis gain a view without spawning another window. So it offers the same Add\nView Here a docked stack does, alongside switching which view is in front,\nspawning a further tab, and handing its views back — which it does by\nclosing, the same path a user closing the tab by hand takes.",
           "params": [
             {
               "name": "here",
@@ -7184,13 +7184,132 @@
           "other": []
         },
         {
+          "name": "rowsFor",
+          "qualified": "ContextMenu > popoutItems > rowsFor",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 221,
+          "signature": [
+            "act"
+          ],
+          "documented": true,
+          "summary": "One row offering a view this tab does not yet hold.",
+          "description": "One row offering a view this tab does not yet hold.",
+          "params": [
+            {
+              "name": "act",
+              "type": "(id: string) => void",
+              "optional": false,
+              "default": null,
+              "desc": "What to do with the chosen panel."
+            }
+          ],
+          "returns": {
+            "type": "(id: string) => object",
+            "desc": "A row builder."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "The row's handler runs `act` and closes the menu."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "onClick",
+          "qualified": "ContextMenu > popoutItems > rowsFor > onClick",
+          "kind": "method",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 229,
+          "signature": [],
+          "documented": true,
+          "summary": "Act on this view.",
+          "description": "Act on this view.",
+          "params": [],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Runs the chosen action and closes the menu."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "grouped",
+          "qualified": "ContextMenu > popoutItems > grouped",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 242,
+          "signature": [
+            "row",
+            "empty"
+          ],
+          "documented": true,
+          "summary": "Split a list of offerable views into a menu, charts nested one level down.",
+          "description": "Split a list of offerable views into a menu, charts nested one level down.\n\nNine charts flattened into one list makes a menu nobody can scan, which\nis why the View menu nests them too.",
+          "params": [
+            {
+              "name": "row",
+              "type": "(id: string) => object",
+              "optional": false,
+              "default": null,
+              "desc": "Row builder for one panel."
+            },
+            {
+              "name": "empty",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "What to say when nothing is left to offer."
+            }
+          ],
+          "returns": {
+            "type": "Array<object>",
+            "desc": "Item descriptors."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
           "name": "onClick",
           "qualified": "ContextMenu > popoutItems > onClick",
           "kind": "method",
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 225,
+          "line": 269,
           "signature": [],
           "documented": true,
           "summary": "Bring this view to the front of the tab.",
@@ -7221,11 +7340,11 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 239,
+          "line": 286,
           "signature": [],
           "documented": true,
-          "summary": "Open a further browser tab showing this view.",
-          "description": "Open a further browser tab showing this view.",
+          "summary": "Close the view in front, handing it back to the main window.",
+          "description": "Close the view in front, handing it back to the main window.",
           "params": [],
           "returns": {
             "type": "void",
@@ -7238,7 +7357,7 @@
             "invariant": [],
             "mutates": [],
             "sideEffect": [
-              "Opens a browser window and closes the menu."
+              "Writes store state, or closes the browser tab when this was its last view."
             ],
             "reads": [],
             "pure": false
@@ -7252,7 +7371,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 256,
+          "line": 301,
           "signature": [],
           "documented": true,
           "summary": "Close this tab, which hands its views back to the main window.",
@@ -7283,7 +7402,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 272,
+          "line": 317,
           "signature": [],
           "documented": true,
           "summary": "The items describing whichever window the click landed in.",
@@ -7314,7 +7433,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 288,
+          "line": 333,
           "signature": [],
           "documented": true,
           "summary": "Send the whole clicked window, tabs and all, to one browser tab.",
@@ -7345,7 +7464,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 300,
+          "line": 345,
           "signature": [],
           "documented": true,
           "summary": "Send this one view to its own browser tab.",
@@ -7376,7 +7495,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 316,
+          "line": 361,
           "signature": [
             "fn"
           ],
@@ -7417,7 +7536,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 324,
+          "line": 369,
           "signature": [],
           "documented": true,
           "summary": "The rows for whatever was right-clicked.",
@@ -7448,7 +7567,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 348,
+          "line": 393,
           "signature": [],
           "documented": true,
           "summary": "Paste the clipboard where the menu was opened.",
@@ -7479,7 +7598,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 369,
+          "line": 414,
           "signature": [],
           "documented": true,
           "summary": "Create this element where the menu was opened.",
@@ -7510,7 +7629,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 388,
+          "line": 433,
           "signature": [],
           "documented": true,
           "summary": "Remove the right-clicked edge.",
@@ -7541,7 +7660,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 405,
+          "line": 450,
           "signature": [],
           "documented": true,
           "summary": "Send the right-clicked view to its own browser tab.",
@@ -7572,7 +7691,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 416,
+          "line": 461,
           "signature": [],
           "documented": true,
           "summary": "Maximize the right-clicked view, or restore the layout.",
@@ -7603,7 +7722,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 429,
+          "line": 474,
           "signature": [],
           "documented": true,
           "summary": "Close the right-clicked view.",
@@ -7634,7 +7753,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 440,
+          "line": 485,
           "signature": [],
           "documented": true,
           "summary": "Close every other view in this window.",
@@ -7665,7 +7784,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 461,
+          "line": 506,
           "signature": [],
           "documented": true,
           "summary": "Maximize the window's front view, or restore the layout.",
@@ -7696,7 +7815,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 471,
+          "line": 516,
           "signature": [],
           "documented": true,
           "summary": "Restore the default workspace arrangement.",
@@ -13054,13 +13173,13 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 56,
+          "line": 57,
           "signature": [
             "e"
           ],
           "documented": true,
           "summary": "Raise the right-click menu for this tab.",
-          "description": "Raise the right-click menu for this tab.\n\nA popped-out tab has no dock, so the menu it gets is its own: switch the\nview in front, open another view in a further tab, or hand these views\nback to the main window. Panels that raise their own menu — the node\neditor — consume the event before it reaches here.",
+          "description": "Raise the right-click menu for this tab.\n\nA popped-out tab has no dock, so the menu it gets is its own: add a view\nhere beside the others, switch which is in front, send one to a further\ntab, or hand them back to the main window. Panels that raise their own\nmenu — the node editor — consume the event before it reaches here.",
           "params": [
             {
               "name": "e",
@@ -22842,14 +22961,14 @@
       "constants": [
         {
           "name": "useStore",
-          "line": 223,
+          "line": 245,
           "shape": null,
           "summary": null,
           "description": null
         },
         {
           "name": "__internals",
-          "line": 1601,
+          "line": 1688,
           "shape": {
             "kind": "object",
             "keys": [
@@ -22948,13 +23067,62 @@
           "other": []
         },
         {
+          "name": "syncPopoutUrl",
+          "qualified": "syncPopoutUrl",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 100,
+          "signature": [
+            "ids",
+            "active"
+          ],
+          "documented": true,
+          "summary": "Rewrite a popped-out tab's own URL to match what it now holds.",
+          "description": "Rewrite a popped-out tab's own URL to match what it now holds.\n\nThe URL seeds the tab but does not own it: views can be added and closed\nonce it is open. Keeping the address in step means reloading the tab — or\nrestoring it after a browser restart — brings back the window the user\nactually built rather than the one they first opened.\n\n`replaceState` rather than `pushState`, since adding a view is not somewhere\nthe back button should return from.",
+          "params": [
+            {
+              "name": "ids",
+              "type": "string[]",
+              "optional": false,
+              "default": null,
+              "desc": "Panel ids the tab now holds, in tab order."
+            },
+            {
+              "name": "active",
+              "type": "string|null",
+              "optional": false,
+              "default": null,
+              "desc": "The view in front."
+            }
+          ],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Replaces the current history entry. Silently does nothing where the History API is unavailable."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
           "name": "loadLayout",
           "qualified": "loadLayout",
           "kind": "function",
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 100,
+          "line": 122,
           "signature": [],
           "documented": true,
           "summary": "Load the persisted dock layout, falling back to the default.",
@@ -22985,7 +23153,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 118,
+          "line": 140,
           "signature": [],
           "documented": true,
           "summary": "Load the user's saved layout arrangements.",
@@ -23016,7 +23184,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 138,
+          "line": 160,
           "signature": [],
           "documented": true,
           "summary": "Load the quick-bar arrangement.",
@@ -23047,7 +23215,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 158,
+          "line": 180,
           "signature": [
             "type"
           ],
@@ -23088,7 +23256,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 178,
+          "line": 200,
           "signature": [
             "spot",
             "nodes",
@@ -23153,7 +23321,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 186,
+          "line": 208,
           "signature": [
             "x",
             "y"
@@ -23202,7 +23370,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 205,
+          "line": 227,
           "signature": [
             "nodes",
             "edges",
@@ -23257,7 +23425,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 243,
+          "line": 265,
           "signature": [
             "partial",
             "replace"
@@ -23308,7 +23476,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 300,
+          "line": 322,
           "signature": [
             "x",
             "y",
@@ -23365,7 +23533,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 311,
+          "line": 333,
           "signature": [],
           "documented": true,
           "summary": "Dismiss the context menu.",
@@ -23396,7 +23564,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 320,
+          "line": 342,
           "signature": [
             "id"
           ],
@@ -23437,7 +23605,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 331,
+          "line": 353,
           "signature": [
             "id"
           ],
@@ -23478,7 +23646,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 339,
+          "line": 361,
           "signature": [
             "id"
           ],
@@ -23519,7 +23687,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 348,
+          "line": 370,
           "signature": [
             "v",
             "section"
@@ -23568,7 +23736,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 356,
+          "line": 378,
           "signature": [
             "id"
           ],
@@ -23609,7 +23777,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 368,
+          "line": 390,
           "signature": [
             "id",
             "combos"
@@ -23658,7 +23826,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 385,
+          "line": 407,
           "signature": [
             "id",
             "combo"
@@ -23707,7 +23875,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 403,
+          "line": 425,
           "signature": [
             "id",
             "combo"
@@ -23756,7 +23924,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 410,
+          "line": 432,
           "signature": [],
           "documented": true,
           "summary": "Restore every command to its default combos.",
@@ -23787,7 +23955,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 427,
+          "line": 449,
           "signature": [
             "tree"
           ],
@@ -23828,7 +23996,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 444,
+          "line": 466,
           "signature": [
             "stackId",
             "panelId"
@@ -23877,7 +24045,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 454,
+          "line": 476,
           "signature": [
             "panelId",
             "stackId",
@@ -23934,7 +24102,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 463,
+          "line": 485,
           "signature": [
             "panelId",
             "edge"
@@ -23983,7 +24151,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 474,
+          "line": 496,
           "signature": [
             "splitId",
             "index",
@@ -24048,7 +24216,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 488,
+          "line": 510,
           "signature": [
             "panelId",
             "stackId",
@@ -24105,7 +24273,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 509,
+          "line": 531,
           "signature": [
             "panelId"
           ],
@@ -24146,7 +24314,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 526,
+          "line": 548,
           "signature": [
             "panelId"
           ],
@@ -24187,7 +24355,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 538,
+          "line": 560,
           "signature": [
             "panelId"
           ],
@@ -24228,7 +24396,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 549,
+          "line": 571,
           "signature": [],
           "documented": true,
           "summary": "Restore the default workspace arrangement.",
@@ -24259,7 +24427,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 559,
+          "line": 581,
           "signature": [
             "name"
           ],
@@ -24300,7 +24468,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 578,
+          "line": 600,
           "signature": [
             "name"
           ],
@@ -24341,7 +24509,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 602,
+          "line": 624,
           "signature": [
             "ids"
           ],
@@ -24382,7 +24550,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 618,
+          "line": 640,
           "signature": [
             "id"
           ],
@@ -24423,7 +24591,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 630,
+          "line": 652,
           "signature": [
             "id",
             "delta"
@@ -24472,7 +24640,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 644,
+          "line": 666,
           "signature": [],
           "documented": true,
           "summary": "Restore the default quick-bar arrangement.",
@@ -24503,7 +24671,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 653,
+          "line": 675,
           "signature": [
             "name"
           ],
@@ -24544,7 +24712,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 671,
+          "line": 693,
           "signature": [
             "id",
             "range"
@@ -24593,7 +24761,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 687,
+          "line": 709,
           "signature": [],
           "documented": true,
           "summary": "Record the current graph as an undo point.",
@@ -24624,7 +24792,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 700,
+          "line": 722,
           "signature": [],
           "documented": true,
           "summary": "Step back one entry in the history.",
@@ -24655,7 +24823,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 717,
+          "line": 739,
           "signature": [],
           "documented": true,
           "summary": "Step forward one entry in the history.",
@@ -24686,7 +24854,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 742,
+          "line": 764,
           "signature": [
             "changes"
           ],
@@ -24727,7 +24895,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 756,
+          "line": 778,
           "signature": [
             "changes"
           ],
@@ -24768,7 +24936,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 768,
+          "line": 790,
           "signature": [
             "conn"
           ],
@@ -24809,7 +24977,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 780,
+          "line": 802,
           "signature": [
             "id"
           ],
@@ -24850,7 +25018,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 793,
+          "line": 815,
           "signature": [
             "type",
             "position"
@@ -24899,7 +25067,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 819,
+          "line": 841,
           "signature": [
             "id",
             "patch"
@@ -24948,7 +25116,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 841,
+          "line": 863,
           "signature": [],
           "documented": true,
           "summary": "Delete the selected nodes and edges.",
@@ -24979,7 +25147,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 866,
+          "line": 888,
           "signature": [],
           "documented": true,
           "summary": "Copy the selected nodes in place, offset down-right.",
@@ -25010,7 +25178,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 891,
+          "line": 913,
           "signature": [],
           "documented": true,
           "summary": "Select every node on the canvas.",
@@ -25041,7 +25209,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 906,
+          "line": 928,
           "signature": [
             "ids",
             "additive"
@@ -25090,7 +25258,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 939,
+          "line": 961,
           "signature": [],
           "documented": true,
           "summary": "Copy the selected nodes and their internal edges to the in-app clipboard.",
@@ -25121,7 +25289,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 965,
+          "line": 987,
           "signature": [],
           "documented": true,
           "summary": "Copy the selection, then delete it.",
@@ -25152,7 +25320,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 986,
+          "line": 1008,
           "signature": [
             "at"
           ],
@@ -25193,7 +25361,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1034,
+          "line": 1056,
           "signature": [
             "type"
           ],
@@ -25234,7 +25402,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1050,
+          "line": 1072,
           "signature": [
             "delta"
           ],
@@ -25275,7 +25443,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1063,
+          "line": 1085,
           "signature": [],
           "documented": true,
           "summary": "Force a resimulation even though nothing has changed.",
@@ -25306,7 +25474,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1076,
+          "line": 1098,
           "signature": [
             "patch"
           ],
@@ -25347,7 +25515,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1092,
+          "line": 1114,
           "signature": [
             "field",
             "value"
@@ -25396,7 +25564,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1113,
+          "line": 1135,
           "signature": [],
           "documented": true,
           "summary": "Freeze the current result as a labelled reference overlay.",
@@ -25427,7 +25595,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1140,
+          "line": 1162,
           "signature": [
             "id"
           ],
@@ -25468,7 +25636,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1149,
+          "line": 1171,
           "signature": [
             "id",
             "label"
@@ -25517,7 +25685,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1159,
+          "line": 1181,
           "signature": [
             "id"
           ],
@@ -25558,7 +25726,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1167,
+          "line": 1189,
           "signature": [
             "v"
           ],
@@ -25599,7 +25767,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1175,
+          "line": 1197,
           "signature": [
             "v"
           ],
@@ -25640,7 +25808,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1183,
+          "line": 1205,
           "signature": [
             "v"
           ],
@@ -25681,7 +25849,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1191,
+          "line": 1213,
           "signature": [
             "v"
           ],
@@ -25722,7 +25890,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1222,
+          "line": 1244,
           "signature": [],
           "documented": true,
           "summary": "Schedule a debounced simulation run.",
@@ -25753,7 +25921,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1263,
+          "line": 1285,
           "signature": [],
           "documented": true,
           "summary": "Capture the project as a plain, saveable object.",
@@ -25784,7 +25952,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1289,
+          "line": 1311,
           "signature": [
             "proj"
           ],
@@ -25825,7 +25993,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1319,
+          "line": 1341,
           "signature": [
             "name"
           ],
@@ -25866,7 +26034,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1334,
+          "line": 1356,
           "signature": [],
           "documented": true,
           "summary": "Start an empty project, confirming first if there is anything to lose.",
@@ -25897,7 +26065,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1344,
+          "line": 1366,
           "signature": [],
           "documented": true,
           "summary": "Download the project as a file, auto-saving it first.",
@@ -25928,7 +26096,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1361,
+          "line": 1383,
           "signature": [],
           "documented": true,
           "summary": "Write the project to LocalStorage under its name.",
@@ -25959,7 +26127,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1389,
+          "line": 1414,
           "signature": [
             "id"
           ],
@@ -25986,7 +26154,89 @@
             "invariant": [],
             "mutates": [],
             "sideEffect": [
-              "Writes store state. The field is local to the window — `SHARED_KEYS` deliberately excludes it."
+              "Writes store state and rewrites this tab's URL. The fields are local to the window — `SHARED_KEYS` deliberately excludes them."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "addViewToPopout",
+          "qualified": "addViewToPopout",
+          "kind": "method",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 1430,
+          "signature": [
+            "id"
+          ],
+          "documented": true,
+          "summary": "Add a view to this popped-out tab, beside the ones already in it.",
+          "description": "Add a view to this popped-out tab, beside the ones already in it.\n\nThe counterpart of `addViewToStack` for a window that has no dock. The\nmain window is told so it can let go of the panel, exactly as it does when\na whole new tab claims one — a panel exists once across every window, and\na view showing in two places would be two things to keep in step.",
+          "params": [
+            {
+              "name": "id",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Panel to add. One already here is merely brought to the front."
+            }
+          ],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Writes store state, rewrites this tab's URL, and announces the claim to the main window. Does nothing outside a popped-out tab."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "closeViewInPopout",
+          "qualified": "closeViewInPopout",
+          "kind": "method",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 1453,
+          "signature": [
+            "id"
+          ],
+          "documented": true,
+          "summary": "Remove a view from this popped-out tab, handing it back to the main window.",
+          "description": "Remove a view from this popped-out tab, handing it back to the main window.\n\nClosing the last one closes the tab rather than leaving an empty window,\nwhich is also how every remaining view gets handed back at once.",
+          "params": [
+            {
+              "name": "id",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Panel to close. One this tab does not hold is a no-op."
+            }
+          ],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Writes store state, rewrites this tab's URL, and either announces the release to the main window or closes the browser tab. Does nothing outside a popped-out tab."
             ],
             "reads": [],
             "pure": false
@@ -26000,7 +26250,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1401,
+          "line": 1480,
           "signature": [
             "id"
           ],
@@ -26041,7 +26291,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1417,
+          "line": 1496,
           "signature": [
             "stackId"
           ],
@@ -26082,7 +26332,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1441,
+          "line": 1520,
           "signature": [
             "panelId",
             "stackId"
@@ -26131,7 +26381,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1461,
+          "line": 1540,
           "signature": [
             "id"
           ],
@@ -26172,7 +26422,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1472,
+          "line": 1551,
           "signature": [
             "id"
           ],
@@ -26213,7 +26463,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1491,
+          "line": 1570,
           "signature": [
             "patch"
           ],
@@ -26256,7 +26506,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1501,
+          "line": 1580,
           "signature": [],
           "documented": true,
           "summary": "The full shared slice, sent to a popped-out tab when it announces itself.",
@@ -26287,7 +26537,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1538,
+          "line": 1619,
           "signature": [
             "arg0"
           ],
@@ -26337,7 +26587,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 1584,
+          "line": 1671,
           "signature": [],
           "documented": true,
           "summary": "List the auto-saved projects in LocalStorage, newest first.",

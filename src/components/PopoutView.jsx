@@ -32,11 +32,12 @@ import ContextMenu from './ContextMenu'
  * @sideEffect Subscribes to the store, reads `window.location`, and sets `document.title` to track the project name.
  */
 export default function PopoutView() {
-  const ids = popoutPanelIds().filter((id) => PANELS[id]?.component)
-  // The front view lives in the store rather than in local state, so the
-  // right-click menu can switch it without this component having to hand a
-  // callback through the menu's data.
+  // What this tab holds lives in the store rather than being read back off the
+  // URL, because it changes: views can be added to a popped-out tab and closed
+  // from it, exactly as in a docked window.
+  const held = useStore((s) => s.popoutIds)
   const stored = useStore((s) => s.popoutActive)
+  const ids = held.filter((id) => PANELS[id]?.component)
   const active = ids.includes(stored) ? stored : (ids.includes(popoutPanelId()) ? popoutPanelId() : ids[0])
   const projectName = useStore((s) => s.projectName)
   const results = useStore((s) => s.results)
@@ -44,10 +45,10 @@ export default function PopoutView() {
   /**
    * Raise the right-click menu for this tab.
    *
-   * A popped-out tab has no dock, so the menu it gets is its own: switch the
-   * view in front, open another view in a further tab, or hand these views
-   * back to the main window. Panels that raise their own menu — the node
-   * editor — consume the event before it reaches here.
+   * A popped-out tab has no dock, so the menu it gets is its own: add a view
+   * here beside the others, switch which is in front, send one to a further
+   * tab, or hand them back to the main window. Panels that raise their own
+   * menu — the node editor — consume the event before it reaches here.
    *
    * @param {React.MouseEvent} e - The contextmenu event.
    * @returns {void}
@@ -89,7 +90,14 @@ export default function PopoutView() {
               key={id}
               className={`popout-tab ${id === active ? 'active' : ''}`}
               onClick={() => { useStore.getState().setPopoutActive(id); useStore.getState().focusPanel(id) }}
-            >{panelTitle(id)}</button>
+            >
+              {panelTitle(id)}
+              <span
+                className="dt-x"
+                title="Close this view — it goes back to the main window"
+                onClick={(e) => { e.stopPropagation(); useStore.getState().closeViewInPopout(id) }}
+              >✕</span>
+            </button>
           ))}
         </div>
       )}

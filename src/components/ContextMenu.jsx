@@ -17,7 +17,6 @@ import React, { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useStore } from '../store'
 import { PANEL_META, MAIN_IDS, CHART_IDS, panelTitle } from '../panelMeta'
 import { findNode, isOpen } from '../layout'
-import { popoutPanelIds } from '../popout'
 import { formatCombo } from '../keymap'
 import { NODE_KINDS } from './Palette'
 import { ItemList } from './MenuItem'
@@ -198,10 +197,12 @@ export default function ContextMenu() {
   /**
    * The items a popped-out browser tab offers about itself.
    *
-   * A popped-out tab has no dock, so none of the docking commands apply. What
-   * it can do instead is switch which of its views is in front, spawn a
-   * further tab, and hand its views back — which it does by closing, the same
-   * path a user closing the tab by hand takes.
+   * A popped-out tab has no dock, so none of the docking commands apply — but
+   * it is still a window, and the thing a window most needs to be able to do
+   * is gain a view without spawning another window. So it offers the same Add
+   * View Here a docked stack does, alongside switching which view is in front,
+   * spawning a further tab, and handing its views back — which it does by
+   * closing, the same path a user closing the tab by hand takes.
    *
    * @param {string[]} here - The panel ids this tab holds.
    * @param {string} front - The view currently showing.
@@ -210,7 +211,50 @@ export default function ContextMenu() {
    */
   const popoutItems = (here, front) => {
     const elsewhere = offerable([...MAIN_IDS, ...CHART_IDS], settings).filter((id) => !here.includes(id))
+    /**
+     * One row offering a view this tab does not yet hold.
+     *
+     * @param {(id: string) => void} act - What to do with the chosen panel.
+     * @returns {(id: string) => object} A row builder.
+     * @sideEffect The row's handler runs `act` and closes the menu.
+     */
+    const rowsFor = (act) => (id) => ({
+      label: panelTitle(id),
+      /**
+       * Act on this view.
+       *
+       * @returns {void}
+       * @sideEffect Runs the chosen action and closes the menu.
+       */
+      onClick: () => { act(id); close() },
+    })
+    /**
+     * Split a list of offerable views into a menu, charts nested one level down.
+     *
+     * Nine charts flattened into one list makes a menu nobody can scan, which
+     * is why the View menu nests them too.
+     *
+     * @param {(id: string) => object} row - Row builder for one panel.
+     * @param {string} empty - What to say when nothing is left to offer.
+     * @returns {Array<object>} Item descriptors.
+     * @pure
+     */
+    const grouped = (row, empty) => {
+      const main = elsewhere.filter((id) => MAIN_IDS.includes(id))
+      const charts = elsewhere.filter((id) => CHART_IDS.includes(id))
+      const out = main.map(row)
+      if (charts.length) {
+        if (out.length) out.push({ label: '-' })
+        out.push({ label: 'Charts', submenu: charts.map(row) })
+      }
+      return out.length ? out : [{ label: empty, disabled: true }]
+    }
+
     return [
+      {
+        label: 'Add View Here',
+        submenu: grouped(rowsFor(store.addViewToPopout), '(every view is already here)'),
+      },
       ...(here.length > 1 ? [{
         label: 'Show View',
         submenu: here.map((id) => ({
@@ -224,21 +268,22 @@ export default function ContextMenu() {
            */
           onClick: () => { store.setPopoutActive(id); store.focusPanel(id); close() },
         })),
-      }, { label: '-' }] : []),
+      }] : []),
+      { label: '-' },
       {
         label: 'Open a View in a New Tab',
-        submenu: elsewhere.length
-          ? elsewhere.map((id) => ({
-            label: panelTitle(id),
-            /**
-             * Open a further browser tab showing this view.
-             *
-             * @returns {void}
-             * @sideEffect Opens a browser window and closes the menu.
-             */
-            onClick: () => { store.popOutPanel(id); close() },
-          }))
-          : [{ label: '(every view is already open here)', disabled: true }],
+        submenu: grouped(rowsFor(store.popOutPanel), '(every view is already open here)'),
+      },
+      {
+        label: `Close “${panelTitle(front)}”`,
+        hint: here.length === 1 ? 'closes this tab' : '',
+        /**
+         * Close the view in front, handing it back to the main window.
+         *
+         * @returns {void}
+         * @sideEffect Writes store state, or closes the browser tab when this was its last view.
+         */
+        onClick: () => { close(); store.closeViewInPopout(front) },
       },
       { label: '-' },
       {
@@ -271,7 +316,7 @@ export default function ContextMenu() {
    */
   const windowItems = () => {
     if (!stackNode) {
-      const here = popoutPanelIds()
+      const here = store.popoutIds
       return here.length ? popoutItems(here, store.popoutActive || here[0]) : []
     }
     return [

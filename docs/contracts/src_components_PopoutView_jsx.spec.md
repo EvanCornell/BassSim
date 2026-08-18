@@ -52,10 +52,10 @@ stale bookmark to a removed panel is the likely cause.
 
 Raise the right-click menu for this tab.
 
-A popped-out tab has no dock, so the menu it gets is its own: switch the
-view in front, open another view in a further tab, or hand these views
-back to the main window. Panels that raise their own menu — the node
-editor — consume the event before it reaches here.
+A popped-out tab has no dock, so the menu it gets is its own: add a view
+here beside the others, switch which is in front, send one to a further
+tab, or hand them back to the main window. Panels that raise their own
+menu — the node editor — consume the event before it reaches here.
 
 **Parameters**
 

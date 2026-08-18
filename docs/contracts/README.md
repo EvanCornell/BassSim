@@ -15,7 +15,7 @@ no implementation. This is the sole input to the blind contract test suite.
 | [`scripts/import-catalog.mjs`](scripts_import-catalog_mjs.spec.md) | 48 | 0 | 48 |
 | [`scripts/triage-contracts.mjs`](scripts_triage-contracts_mjs.spec.md) | 5 | 0 | 5 |
 | [`src/App.jsx`](src_App_jsx.spec.md) | 5 | 1 | 4 |
-| [`src/components/ContextMenu.jsx`](src_components_ContextMenu_jsx.spec.md) | 28 | 3 | 25 |
+| [`src/components/ContextMenu.jsx`](src_components_ContextMenu_jsx.spec.md) | 31 | 3 | 28 |
 | [`src/components/DriverDB.jsx`](src_components_DriverDB_jsx.spec.md) | 7 | 2 | 5 |
 | [`src/components/FlowCanvas.jsx`](src_components_FlowCanvas_jsx.spec.md) | 10 | 2 | 8 |
 | [`src/components/MenuBar.jsx`](src_components_MenuBar_jsx.spec.md) | 30 | 1 | 29 |
@@ -50,10 +50,10 @@ no implementation. This is the sole input to the blind contract test suite.
 | [`src/panelMeta.js`](src_panelMeta_js.spec.md) | 1 | 1 | 0 |
 | [`src/popout.js`](src_popout_js.spec.md) | 5 | 5 | 0 |
 | [`src/selection.js`](src_selection_js.spec.md) | 5 | 5 | 0 |
-| [`src/store.js`](src_store_js.spec.md) | 85 | 80 | 5 |
+| [`src/store.js`](src_store_js.spec.md) | 88 | 82 | 6 |
 | [`src/toolbarItems.js`](src_toolbarItems_js.spec.md) | 6 | 4 | 2 |
 | [`src/utils/export.js`](src_utils_export_js.spec.md) | 7 | 5 | 2 |
 | [`test/contracts.mjs`](test_contracts_mjs.spec.md) | 2 | 0 | 2 |
 | [`test/drivers.mjs`](test_drivers_mjs.spec.md) | 2 | 0 | 2 |
 | [`test/support/loader.mjs`](test_support_loader_mjs.spec.md) | 2 | 2 | 0 |
-| **Total** | **576** | **288** | **288** |
+| **Total** | **582** | **290** | **292** |

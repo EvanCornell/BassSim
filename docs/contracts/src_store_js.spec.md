@@ -192,7 +192,7 @@ around the canvas does not re-run the sweep.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
-## STORE ACTION (73)
+## STORE ACTION (75)
 
 ### `openContextMenu(x, y, target)`
 
@@ -1545,7 +1545,53 @@ Bring a view to the front in a popped-out tab.
 
 **Side effects**
 
-- Writes store state. The field is local to the window — `SHARED_KEYS` deliberately excludes it.
+- Writes store state and rewrites this tab's URL. The fields are local to the window — `SHARED_KEYS` deliberately excludes them.
+
+### `addViewToPopout(id)`
+
+- **Reachability:** STORE ACTION
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().addViewToPopout(…)
+
+Add a view to this popped-out tab, beside the ones already in it.
+
+The counterpart of `addViewToStack` for a window that has no dock. The
+main window is told so it can let go of the panel, exactly as it does when
+a whole new tab claims one — a panel exists once across every window, and
+a view showing in two places would be two things to keep in step.
+
+**Parameters**
+
+- `id` — `string` — Panel to add. One already here is merely brought to the front.
+
+**Returns**
+
+- `void`
+
+**Side effects**
+
+- Writes store state, rewrites this tab's URL, and announces the claim to the main window. Does nothing outside a popped-out tab.
+
+### `closeViewInPopout(id)`
+
+- **Reachability:** STORE ACTION
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().closeViewInPopout(…)
+
+Remove a view from this popped-out tab, handing it back to the main window.
+
+Closing the last one closes the tab rather than leaving an empty window,
+which is also how every remaining view gets handed back at once.
+
+**Parameters**
+
+- `id` — `string` — Panel to close. One this tab does not hold is a no-op.
+
+**Returns**
+
+- `void`
+
+**Side effects**
+
+- Writes store state, rewrites this tab's URL, and either announces the release to the main window or closes the browser tab. Does nothing outside a popped-out tab.
 
 ### `popOutPanel(id)`
 
@@ -1707,7 +1753,7 @@ The full shared slice, sent to a popped-out tab when it announces itself.
 
 - Current store state.
 
-## UNREACHABLE (5)
+## UNREACHABLE (6)
 
 ### `simulateInWorker(project)`
 
@@ -1753,6 +1799,34 @@ the request was superseded and its entry already removed.
 **Side effects**
 
 - Removes the request from `simPending` and resolves its promise.
+
+### `syncPopoutUrl(ids, active)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+Rewrite a popped-out tab's own URL to match what it now holds.
+
+The URL seeds the tab but does not own it: views can be added and closed
+once it is open. Keeping the address in step means reloading the tab — or
+restoring it after a browser restart — brings back the window the user
+actually built rather than the one they first opened.
+
+`replaceState` rather than `pushState`, since adding a view is not somewhere
+the back button should return from.
+
+**Parameters**
+
+- `ids` — `string[]` — Panel ids the tab now holds, in tab order.
+- `active` — `string|null` — The view in front.
+
+**Returns**
+
+- `void`
+
+**Side effects**
+
+- Replaces the current history entry. Silently does nothing where the History API is unavailable.
 
 ### `freeSpotNear > taken(x, y)`
 

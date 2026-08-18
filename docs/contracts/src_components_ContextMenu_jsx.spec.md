@@ -97,7 +97,7 @@ be reaching for yet.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
-## UNREACHABLE (25)
+## UNREACHABLE (28)
 
 ### `ContextMenu > suppress(e)`
 
@@ -238,10 +238,12 @@ Add this view to the clicked window.
 
 The items a popped-out browser tab offers about itself.
 
-A popped-out tab has no dock, so none of the docking commands apply. What
-it can do instead is switch which of its views is in front, spawn a
-further tab, and hand its views back — which it does by closing, the same
-path a user closing the tab by hand takes.
+A popped-out tab has no dock, so none of the docking commands apply — but
+it is still a window, and the thing a window most needs to be able to do
+is gain a view without spawning another window. So it offers the same Add
+View Here a docked stack does, alongside switching which view is in front,
+spawning a further tab, and handing its views back — which it does by
+closing, the same path a user closing the tab by hand takes.
 
 **Parameters**
 
@@ -255,6 +257,61 @@ path a user closing the tab by hand takes.
 **Reads external mutable state**
 
 - the current settings, to leave out views gated behind one.
+
+### `ContextMenu > popoutItems > rowsFor(act)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+One row offering a view this tab does not yet hold.
+
+**Parameters**
+
+- `act` — `(id: string) => void` — What to do with the chosen panel.
+
+**Returns**
+
+- `(id: string) => object` — A row builder.
+
+**Side effects**
+
+- The row's handler runs `act` and closes the menu.
+
+### `ContextMenu > popoutItems > rowsFor > onClick()`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+Act on this view.
+
+**Returns**
+
+- `void`
+
+**Side effects**
+
+- Runs the chosen action and closes the menu.
+
+### `ContextMenu > popoutItems > grouped(row, empty)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+Split a list of offerable views into a menu, charts nested one level down.
+
+Nine charts flattened into one list makes a menu nobody can scan, which
+is why the View menu nests them too.
+
+**Parameters**
+
+- `row` — `(id: string) => object` — Row builder for one panel.
+- `empty` — `string` — What to say when nothing is left to offer.
+
+**Returns**
+
+- `Array<object>` — Item descriptors.
+
+**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
 ### `ContextMenu > popoutItems > onClick()`
 
@@ -276,7 +333,7 @@ Bring this view to the front of the tab.
 - **Reachability:** UNREACHABLE
 - **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
 
-Open a further browser tab showing this view.
+Close the view in front, handing it back to the main window.
 
 **Returns**
 
@@ -284,7 +341,7 @@ Open a further browser tab showing this view.
 
 **Side effects**
 
-- Opens a browser window and closes the menu.
+- Writes store state, or closes the browser tab when this was its last view.
 
 ### `ContextMenu > popoutItems > onClick()`
 
