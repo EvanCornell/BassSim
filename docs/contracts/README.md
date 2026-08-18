@@ -17,7 +17,7 @@ no implementation. This is the sole input to the blind contract test suite.
 | [`src/App.jsx`](src_App_jsx.spec.md) | 5 | 1 | 4 |
 | [`src/components/ContextMenu.jsx`](src_components_ContextMenu_jsx.spec.md) | 31 | 3 | 28 |
 | [`src/components/DriverDB.jsx`](src_components_DriverDB_jsx.spec.md) | 7 | 2 | 5 |
-| [`src/components/FlowCanvas.jsx`](src_components_FlowCanvas_jsx.spec.md) | 10 | 2 | 8 |
+| [`src/components/FlowCanvas.jsx`](src_components_FlowCanvas_jsx.spec.md) | 13 | 2 | 11 |
 | [`src/components/MenuBar.jsx`](src_components_MenuBar_jsx.spec.md) | 30 | 1 | 29 |
 | [`src/components/MenuItem.jsx`](src_components_MenuItem_jsx.spec.md) | 2 | 2 | 0 |
 | [`src/components/NLLab.jsx`](src_components_NLLab_jsx.spec.md) | 23 | 4 | 19 |
@@ -56,4 +56,4 @@ no implementation. This is the sole input to the blind contract test suite.
 | [`test/contracts.mjs`](test_contracts_mjs.spec.md) | 2 | 0 | 2 |
 | [`test/drivers.mjs`](test_drivers_mjs.spec.md) | 2 | 0 | 2 |
 | [`test/support/loader.mjs`](test_support_loader_mjs.spec.md) | 2 | 2 | 0 |
-| **Total** | **582** | **290** | **292** |
+| **Total** | **585** | **290** | **295** |

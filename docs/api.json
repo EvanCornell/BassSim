@@ -25,8 +25,8 @@
   },
   "stats": {
     "modules": 55,
-    "methods": 582,
-    "documented": 582
+    "methods": 585,
+    "documented": 585
   },
   "modules": [
     {
@@ -8135,7 +8135,7 @@
       "constants": [
         {
           "name": "__internals",
-          "line": 324,
+          "line": 374,
           "shape": {
             "kind": "object",
             "keys": [
@@ -8187,17 +8187,17 @@
           "other": []
         },
         {
-          "name": "swallowNextContextMenu",
-          "qualified": "swallowNextContextMenu",
+          "name": "swallowNextClick",
+          "qualified": "swallowNextClick",
           "kind": "function",
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 40,
+          "line": 56,
           "signature": [],
           "documented": true,
-          "summary": "Discard the one `contextmenu` event that trails a completed right-drag.",
-          "description": "Discard the one `contextmenu` event that trails a completed right-drag.\n\nThe browser fires it whatever the drag was for, and on whatever element the\npointer happened to be over when the button came up — which after a sweep\nacross the workspace is often not the canvas at all. Left alone it raises\nthat element's menu on top of the selection just made.\n\nSwallowed at the window in the capture phase, so the event never reaches the\nhandler that would act on it, and only ever once: the listener stands down\non the next turn of the loop whether or not the event arrived, which is what\nkeeps a drag that ends outside the window from eating a later, deliberate\nright-click.",
+          "summary": "Discard the one `click` event that trails a completed marquee drag.",
+          "description": "Discard the one `click` event that trails a completed marquee drag.\n\nA press and release on the same element is a click whatever happened in\nbetween, so the browser fires one at the end of every sweep. React Flow's\npane handles that click by clearing the selection — which is right for a\nclick on empty space and exactly wrong here, since it would wipe the\nselection the sweep had just made.\n\nSwallowed at the window in the capture phase, so the event never reaches the\nhandler that would act on it, and only ever once: the listener stands down on\nthe next turn of the loop whether or not the event arrived, so a drag that\nends outside the window cannot eat a later, deliberate click.",
           "params": [],
           "returns": {
             "type": "void",
@@ -8210,7 +8210,7 @@
             "invariant": [],
             "mutates": [],
             "sideEffect": [
-              "Registers a one-shot window contextmenu listener and schedules its removal."
+              "Registers a one-shot window click listener and schedules its removal."
             ],
             "reads": [],
             "pure": false
@@ -8219,12 +8219,12 @@
         },
         {
           "name": "eat",
-          "qualified": "swallowNextContextMenu > eat",
+          "qualified": "swallowNextClick > eat",
           "kind": "function",
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 48,
+          "line": 64,
           "signature": [
             "e"
           ],
@@ -8237,7 +8237,7 @@
               "type": "MouseEvent",
               "optional": false,
               "default": null,
-              "desc": "The contextmenu event."
+              "desc": "The click event."
             }
           ],
           "returns": {
@@ -8251,7 +8251,7 @@
             "invariant": [],
             "mutates": [],
             "sideEffect": [
-              "Prevents the event's default and stops it propagating."
+              "Stops the event propagating to the handlers that would act on it."
             ],
             "reads": [],
             "pure": false
@@ -8265,11 +8265,11 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 71,
+          "line": 88,
           "signature": [],
           "documented": true,
           "summary": "The node editor canvas.",
-          "description": "The node editor canvas.\n\nMust render inside a `ReactFlowProvider`, which is why `FlowCanvas` wraps\nit — `useReactFlow` is only available below the provider.\n\nTracks the pointer so a keyboard-added node can land where the user is\nlooking, and publishes that as `_flowApi` on the store for\n`addNodeAtCursor` to read.\n\nThe right mouse button does two jobs here, told apart by how far it travels:\na click raises the context menu, a drag sweeps a marquee over the elements\nit crosses. Panning is therefore restricted to the left and middle buttons,\nso a right-drag is unambiguously a selection.",
+          "description": "The node editor canvas.\n\nMust render inside a `ReactFlowProvider`, which is why `FlowCanvas` wraps\nit — `useReactFlow` is only available below the provider.\n\nTracks the pointer so a keyboard-added node can land where the user is\nlooking, and publishes that as `_flowApi` on the store for\n`addNodeAtCursor` to read.\n\nThe mouse follows the convention every other node editor uses: dragging the\nbackground with the left button sweeps a marquee over the elements it\ncrosses, the middle button — or the left with Space held — pans, and the\nright button raises the context menu. Left-dragging cannot both select and\npan, so panning is what moves aside.",
           "params": [],
           "returns": {
             "type": "React.ReactElement",
@@ -8290,13 +8290,126 @@
           "other": []
         },
         {
+          "name": "down",
+          "qualified": "CanvasInner > down",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 117,
+          "signature": [
+            "e"
+          ],
+          "documented": true,
+          "summary": "Note that Space is down, which makes the left button pan.",
+          "description": "Note that Space is down, which makes the left button pan.",
+          "params": [
+            {
+              "name": "e",
+              "type": "KeyboardEvent",
+              "optional": false,
+              "default": null,
+              "desc": "The keydown event."
+            }
+          ],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [
+              "The held-key flag."
+            ],
+            "sideEffect": [],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "up",
+          "qualified": "CanvasInner > up",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 125,
+          "signature": [
+            "e"
+          ],
+          "documented": true,
+          "summary": "Note that Space is up.",
+          "description": "Note that Space is up.",
+          "params": [
+            {
+              "name": "e",
+              "type": "KeyboardEvent",
+              "optional": false,
+              "default": null,
+              "desc": "The keyup event."
+            }
+          ],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [
+              "The held-key flag."
+            ],
+            "sideEffect": [],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "clear",
+          "qualified": "CanvasInner > clear",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 135,
+          "signature": [],
+          "documented": true,
+          "summary": "Forget the key when the window loses focus.",
+          "description": "Forget the key when the window loses focus.\n\nA keyup delivered to another window never arrives here, which would\notherwise leave the canvas convinced Space is still down.",
+          "params": [],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [
+              "The held-key flag."
+            ],
+            "sideEffect": [],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
           "name": "dropPoint",
           "qualified": "CanvasInner > dropPoint",
           "kind": "function",
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 100,
+          "line": 157,
           "signature": [],
           "documented": true,
           "summary": "Where a keyboard-added node should land, in canvas coordinates.",
@@ -8321,19 +8434,19 @@
           "other": []
         },
         {
-          "name": "onRightDown",
-          "qualified": "CanvasInner > onRightDown",
+          "name": "onPaneDown",
+          "qualified": "CanvasInner > onPaneDown",
           "kind": "function",
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 142,
+          "line": 200,
           "signature": [
             "e"
           ],
           "documented": true,
-          "summary": "Begin a right-drag, which may turn out to be a marquee or a click.",
-          "description": "Begin a right-drag, which may turn out to be a marquee or a click.\n\nNothing is committed at mousedown: which of the two this is only becomes\nclear once the pointer has moved, or failed to. Listeners go on the window\nrather than the canvas so the drag survives the cursor leaving it, which a\nsweep across the whole graph routinely does.",
+          "summary": "Begin a left-drag on the background, which may turn out to be a marquee.",
+          "description": "Begin a left-drag on the background, which may turn out to be a marquee.\n\nNothing is committed at mousedown: whether this is a marquee or a plain\nclick on empty space only becomes clear once the pointer has moved, or\nfailed to. Listeners go on the window rather than the canvas so the drag\nsurvives the cursor leaving it, which a sweep across the whole graph\nroutinely does.",
           "params": [
             {
               "name": "e",
@@ -8363,12 +8476,12 @@
         },
         {
           "name": "onMove",
-          "qualified": "CanvasInner > onRightDown > onMove",
+          "qualified": "CanvasInner > onPaneDown > onMove",
           "kind": "function",
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 160,
+          "line": 219,
           "signature": [
             "ev"
           ],
@@ -8406,18 +8519,18 @@
         },
         {
           "name": "onUp",
-          "qualified": "CanvasInner > onRightDown > onUp",
+          "qualified": "CanvasInner > onPaneDown > onUp",
           "kind": "function",
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 179,
+          "line": 241,
           "signature": [
             "ev"
           ],
           "documented": true,
-          "summary": "Finish the gesture: select what the marquee caught, or let the menu open.",
-          "description": "Finish the gesture: select what the marquee caught, or let the menu open.",
+          "summary": "Finish the gesture: select what the marquee caught, if it was one.",
+          "description": "Finish the gesture: select what the marquee caught, if it was one.\n\nA press that never moved is a plain click on empty space, which React\nFlow's own pane handler already treats as clearing the selection.",
           "params": [
             {
               "name": "ev",
@@ -8440,7 +8553,7 @@
               "The in-progress drag record."
             ],
             "sideEffect": [
-              "Removes the window listeners, clears the overlay, swallows the trailing contextmenu event and — for a drag — replaces the node selection."
+              "Removes the window listeners, clears the overlay and — for a drag — swallows the trailing click and replaces the node selection."
             ],
             "reads": [],
             "pure": false
@@ -8454,14 +8567,14 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 224,
+          "line": 273,
           "signature": [
             "e",
             "target"
           ],
           "documented": true,
           "summary": "Raise the context menu against something on the canvas.",
-          "description": "Raise the context menu against something on the canvas.\n\nHeld back rather than raised when a right-press on the background is still\nin progress, because the two platforms disagree about when `contextmenu`\narrives: Windows fires it once the button comes up, by which time a drag\nhas declared itself, but Linux and macOS fire it at mousedown — before\nanyone can know whether this is a click or the start of a marquee. Raising\nit there would put a menu over every sweep the user drew. So when a gesture\nis pending the menu is stashed on it, and the mouseup that finds no\nmovement is what finally opens it.\n\nThe event is consumed either way, so the docked window's own menu does not\nopen behind this one on the way up.",
+          "description": "Raise the context menu against something on the canvas.\n\nThe event is consumed so the docked window's own menu does not open behind\nthis one on the way up.\n\nNothing has to be told apart here: selection is the left button's job, so\nthe right button means the menu and only the menu, whether the platform\nfires `contextmenu` at mousedown or at mouseup.",
           "params": [
             {
               "name": "e",
@@ -8487,11 +8600,9 @@
             "pre": [],
             "post": [],
             "invariant": [],
-            "mutates": [
-              "The in-progress drag record, when there is one."
-            ],
+            "mutates": [],
             "sideEffect": [
-              "Focuses the canvas and either opens the context menu or defers it to the pending gesture."
+              "Focuses the canvas and opens the context menu."
             ],
             "reads": [],
             "pure": false
@@ -8505,7 +8616,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 313,
+          "line": 363,
           "signature": [],
           "documented": true,
           "summary": "The Node Editor panel, wrapping the canvas in its React Flow provider.",
@@ -22707,19 +22818,19 @@
     {
       "file": "src/selection.js",
       "module": {
-        "summary": "Marquee selection geometry — the arithmetic behind a right-drag lasso on the node editor.",
-        "description": "Marquee selection geometry — the arithmetic behind a right-drag lasso on the\nnode editor.\n\nKept out of the canvas component because it is the part worth being sure\nabout: a rectangle dragged up-and-left has a negative width, a node that has\nnever been measured has no size, and \"inside the box\" is really \"overlaps the\nbox\" in every editor users have met. None of that needs React to be checked.\n\nAll coordinates here are canvas coordinates, not screen pixels. The caller\nconverts through React Flow's `screenToFlowPosition` before calling in."
+        "summary": "Marquee selection geometry — the arithmetic behind the lasso dragged over the node editor's background.",
+        "description": "Marquee selection geometry — the arithmetic behind the lasso dragged over the\nnode editor's background.\n\nKept out of the canvas component because it is the part worth being sure\nabout: a rectangle dragged up-and-left has a negative width, a node that has\nnever been measured has no size, and \"inside the box\" is really \"overlaps the\nbox\" in every editor users have met. None of that needs React to be checked.\n\nAll coordinates here are canvas coordinates, not screen pixels. The caller\nconverts through React Flow's `screenToFlowPosition` before calling in."
       },
       "constants": [
         {
           "name": "MARQUEE_THRESHOLD",
-          "line": 116,
+          "line": 117,
           "shape": {
             "kind": "literal",
             "value": 4
           },
-          "summary": "Smallest right-drag, in pixels, that counts as a marquee rather than a click.",
-          "description": "Smallest right-drag, in pixels, that counts as a marquee rather than a click.\n\nBelow this the gesture opens the context menu. Three pixels of travel is\nwithin the slop of a deliberate click on a trackpad, so the threshold sits\njust above it."
+          "summary": "Smallest drag, in pixels, that counts as a marquee rather than a click.",
+          "description": "Smallest drag, in pixels, that counts as a marquee rather than a click.\n\nBelow this the gesture is a plain click on empty space. Three pixels of\ntravel is within the slop of a deliberate click on a trackpad, so the\nthreshold sits just above it."
         }
       ],
       "methods": [
@@ -22910,14 +23021,14 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 105,
+          "line": 106,
           "signature": [
             "a",
             "b"
           ],
           "documented": true,
           "summary": "How far apart two screen points are, in pixels.",
-          "description": "How far apart two screen points are, in pixels.\n\nUsed to tell a right-*click* from a right-*drag*: below the threshold the\ngesture is a click and must open the context menu instead.",
+          "description": "How far apart two screen points are, in pixels.\n\nUsed to tell a *click* on empty space from a *drag* across it: below the\nthreshold the gesture is a click, which clears the selection rather than\nreplacing it.",
           "params": [
             {
               "name": "a",
