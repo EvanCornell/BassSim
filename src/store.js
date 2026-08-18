@@ -279,7 +279,7 @@ export const useStore = create((rawSet, get) => {
   focusedPanel: POPOUT ? popoutPanelId() : 'canvas', // which panel owns the keyboard
   draggingPanel: null,      // panel id mid tab-drag (drives the drop targets)
   showSettings: false,      // floating settings window
-  settingsSection: 'account',
+  settingsSection: 'keyboard',
   clipboard: null,
 
   /**

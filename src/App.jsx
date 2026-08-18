@@ -6,7 +6,7 @@ import DockLayout from './components/dock/DockLayout'
 import DriverDB from './components/DriverDB'
 import TSCalc from './components/TSCalc'
 import ProjectManager from './components/ProjectManager'
-import SettingsWindow, { ResetPasswordPage } from './components/SettingsWindow'
+import SettingsWindow from './components/SettingsWindow'
 import PopoutView from './components/PopoutView'
 import { isPopout } from './popout'
 import { COMMANDS, comboFromEvent, resolve } from './keymap'
@@ -150,7 +150,6 @@ export default function App() {
     return () => window.removeEventListener('keydown', onKey)
   }, [])
 
-  if (window.location.pathname === '/reset-password') return <ResetPasswordPage />
   if (isPopout()) return <PopoutView />
 
   return (
