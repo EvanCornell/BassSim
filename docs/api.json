@@ -25,8 +25,8 @@
   },
   "stats": {
     "modules": 55,
-    "methods": 570,
-    "documented": 570
+    "methods": 576,
+    "documented": 576
   },
   "modules": [
     {
@@ -6737,7 +6737,7 @@
       "constants": [
         {
           "name": "__internals",
-          "line": 428,
+          "line": 502,
           "shape": {
             "kind": "object",
             "keys": [
@@ -6757,7 +6757,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 38,
+          "line": 39,
           "signature": [
             "el"
           ],
@@ -6796,7 +6796,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 55,
+          "line": 56,
           "signature": [
             "ids",
             "settings"
@@ -6843,7 +6843,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 69,
+          "line": 70,
           "signature": [],
           "documented": true,
           "summary": "The floating right-click menu.",
@@ -6874,7 +6874,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 87,
+          "line": 88,
           "signature": [
             "e"
           ],
@@ -6915,7 +6915,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 113,
+          "line": 114,
           "signature": [
             "e"
           ],
@@ -6956,7 +6956,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 121,
+          "line": 122,
           "signature": [
             "e"
           ],
@@ -6997,7 +6997,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 149,
+          "line": 150,
           "signature": [
             "id"
           ],
@@ -7038,7 +7038,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 168,
+          "line": 169,
           "signature": [],
           "documented": true,
           "summary": "Submenu offering every view that could be added to the clicked window.",
@@ -7069,7 +7069,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 176,
+          "line": 177,
           "signature": [
             "id"
           ],
@@ -7110,7 +7110,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 185,
+          "line": 186,
           "signature": [],
           "documented": true,
           "summary": "Add this view to the clicked window.",
@@ -7135,21 +7135,39 @@
           "other": []
         },
         {
-          "name": "windowItems",
-          "qualified": "ContextMenu > windowItems",
+          "name": "popoutItems",
+          "qualified": "ContextMenu > popoutItems",
           "kind": "function",
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 206,
-          "signature": [],
+          "line": 211,
+          "signature": [
+            "here",
+            "front"
+          ],
           "documented": true,
-          "summary": "The items common to every click inside a docked window.",
-          "description": "The items common to every click inside a docked window.\n\nEmpty when the click did not land in one — a popped-out tab, or a\nmaximized panel — so the same builder can be used from every target.",
-          "params": [],
+          "summary": "The items a popped-out browser tab offers about itself.",
+          "description": "The items a popped-out browser tab offers about itself.\n\nA popped-out tab has no dock, so none of the docking commands apply. What\nit can do instead is switch which of its views is in front, spawn a\nfurther tab, and hand its views back — which it does by closing, the same\npath a user closing the tab by hand takes.",
+          "params": [
+            {
+              "name": "here",
+              "type": "string[]",
+              "optional": false,
+              "default": null,
+              "desc": "The panel ids this tab holds."
+            },
+            {
+              "name": "front",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "The view currently showing."
+            }
+          ],
           "returns": {
             "type": "Array<object>",
-            "desc": "Item descriptors, or an empty list outside the dock."
+            "desc": "Item descriptors."
           },
           "throws": [],
           "contract": {
@@ -7159,7 +7177,131 @@
             "mutates": [],
             "sideEffect": [],
             "reads": [
-              "the clicked stack and the current layout."
+              "the current settings, to leave out views gated behind one."
+            ],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "onClick",
+          "qualified": "ContextMenu > popoutItems > onClick",
+          "kind": "method",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 225,
+          "signature": [],
+          "documented": true,
+          "summary": "Bring this view to the front of the tab.",
+          "description": "Bring this view to the front of the tab.",
+          "params": [],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Writes store state and closes the menu."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "onClick",
+          "qualified": "ContextMenu > popoutItems > onClick",
+          "kind": "method",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 239,
+          "signature": [],
+          "documented": true,
+          "summary": "Open a further browser tab showing this view.",
+          "description": "Open a further browser tab showing this view.",
+          "params": [],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Opens a browser window and closes the menu."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "onClick",
+          "qualified": "ContextMenu > popoutItems > onClick",
+          "kind": "method",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 256,
+          "signature": [],
+          "documented": true,
+          "summary": "Close this tab, which hands its views back to the main window.",
+          "description": "Close this tab, which hands its views back to the main window.\n\nThe handover is the tab's own closing announcement rather than\nanything done here — the same path a user closing the tab by hand\ntakes, so there is only one way it can happen.",
+          "params": [],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Closes the browser tab."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "windowItems",
+          "qualified": "ContextMenu > windowItems",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 272,
+          "signature": [],
+          "documented": true,
+          "summary": "The items describing whichever window the click landed in.",
+          "description": "The items describing whichever window the click landed in.\n\nA docked stack gets the docking commands; a popped-out tab gets its own\nset; a maximized panel gets neither, since the stack it would name is not\nwhat is on screen. One builder, so every target can end with \"and whatever\nthis window can do\" without caring which kind it is.",
+          "params": [],
+          "returns": {
+            "type": "Array<object>",
+            "desc": "Item descriptors, empty when the click belongs to no window."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [
+              "the clicked stack, the current layout and the window's own URL."
             ],
             "pure": false
           },
@@ -7172,7 +7314,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 219,
+          "line": 288,
           "signature": [],
           "documented": true,
           "summary": "Send the whole clicked window, tabs and all, to one browser tab.",
@@ -7203,7 +7345,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 231,
+          "line": 300,
           "signature": [],
           "documented": true,
           "summary": "Send this one view to its own browser tab.",
@@ -7234,7 +7376,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 247,
+          "line": 316,
           "signature": [
             "fn"
           ],
@@ -7275,7 +7417,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 255,
+          "line": 324,
           "signature": [],
           "documented": true,
           "summary": "The rows for whatever was right-clicked.",
@@ -7306,7 +7448,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 274,
+          "line": 348,
           "signature": [],
           "documented": true,
           "summary": "Paste the clipboard where the menu was opened.",
@@ -7337,7 +7479,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 295,
+          "line": 369,
           "signature": [],
           "documented": true,
           "summary": "Create this element where the menu was opened.",
@@ -7368,7 +7510,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 313,
+          "line": 388,
           "signature": [],
           "documented": true,
           "summary": "Remove the right-clicked edge.",
@@ -7399,7 +7541,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 330,
+          "line": 405,
           "signature": [],
           "documented": true,
           "summary": "Send the right-clicked view to its own browser tab.",
@@ -7430,7 +7572,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 341,
+          "line": 416,
           "signature": [],
           "documented": true,
           "summary": "Maximize the right-clicked view, or restore the layout.",
@@ -7461,7 +7603,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 354,
+          "line": 429,
           "signature": [],
           "documented": true,
           "summary": "Close the right-clicked view.",
@@ -7492,7 +7634,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 365,
+          "line": 440,
           "signature": [],
           "documented": true,
           "summary": "Close every other view in this window.",
@@ -7523,7 +7665,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 387,
+          "line": 461,
           "signature": [],
           "documented": true,
           "summary": "Maximize the window's front view, or restore the layout.",
@@ -7554,7 +7696,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 397,
+          "line": 471,
           "signature": [],
           "documented": true,
           "summary": "Restore the default workspace arrangement.",
@@ -9305,7 +9447,7 @@
       "file": "src/components/MenuItem.jsx",
       "module": {
         "summary": "The dropdown row, shared by the menu bar and the right-click menu.",
-        "description": "The dropdown row, shared by the menu bar and the right-click menu.\n\nOne implementation rather than two so the two menus cannot drift: a command\noffered in both places gets the same check mark, the same shortcut hint and\nthe same disabled styling without anyone having to keep a copy in step.\n\nAn item descriptor is plain data — `{label, hint, onClick, disabled,\nchecked, danger, submenu}` — which is what lets a menu be built by whoever\nknows the context and rendered by code that knows nothing about it."
+        "description": "The dropdown row, shared by the menu bar and the right-click menu.\n\nOne implementation rather than two so the two menus cannot drift: a command\noffered in both places gets the same check mark, the same shortcut hint and\nthe same disabled styling without anyone having to keep a copy in step.\n\nAn item descriptor is plain data — `{label, hint, onClick, disabled,\nchecked, danger, submenu}` — which is what lets a menu be built by whoever\nknows the context and rendered by code that knows nothing about it.\n\nA submenu keeps itself on screen the same way the right-click menu does:\ndrawn where it would naturally go, measured, then nudged back inside the\nwindow. Guessing from the parent's position is not enough — a submenu is\nas tall as its own contents, so whether it fits is a question only it can\nanswer."
       },
       "constants": [],
       "methods": [
@@ -9316,7 +9458,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 31,
+          "line": 40,
           "signature": [
             "arg0"
           ],
@@ -9385,7 +9527,7 @@
               "type": "'right'|'left'",
               "optional": true,
               "default": "'right'",
-              "desc": "Which way submenus open. A menu near the right edge of the window opens them leftward so they stay on screen."
+              "desc": "Which way to try opening a submenu first. Only a starting guess: the submenu measures itself and flips if it does not fit."
             }
           ],
           "returns": {
@@ -9398,9 +9540,11 @@
             "post": [],
             "invariant": [],
             "mutates": [],
-            "sideEffect": [],
+            "sideEffect": [
+              "Reads live element geometry while a submenu is open, to keep it inside the window."
+            ],
             "reads": [],
-            "pure": true
+            "pure": false
           },
           "other": []
         },
@@ -9411,7 +9555,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 72,
+          "line": 114,
           "signature": [
             "arg0"
           ],
@@ -12897,6 +13041,47 @@
             "mutates": [],
             "sideEffect": [
               "Subscribes to the store, reads `window.location`, and sets `document.title` to track the project name."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "onContextMenu",
+          "qualified": "PopoutView > onContextMenu",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 56,
+          "signature": [
+            "e"
+          ],
+          "documented": true,
+          "summary": "Raise the right-click menu for this tab.",
+          "description": "Raise the right-click menu for this tab.\n\nA popped-out tab has no dock, so the menu it gets is its own: switch the\nview in front, open another view in a further tab, or hand these views\nback to the main window. Panels that raise their own menu — the node\neditor — consume the event before it reaches here.",
+          "params": [
+            {
+              "name": "e",
+              "type": "React.MouseEvent",
+              "optional": false,
+              "default": null,
+              "desc": "The contextmenu event."
+            }
+          ],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Opens the context menu."
             ],
             "reads": [],
             "pure": false
@@ -22664,7 +22849,7 @@
         },
         {
           "name": "__internals",
-          "line": 1585,
+          "line": 1601,
           "shape": {
             "kind": "object",
             "keys": [
@@ -25768,19 +25953,19 @@
           "other": []
         },
         {
-          "name": "popOutPanel",
-          "qualified": "popOutPanel",
+          "name": "setPopoutActive",
+          "qualified": "setPopoutActive",
           "kind": "method",
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1385,
+          "line": 1389,
           "signature": [
             "id"
           ],
           "documented": true,
-          "summary": "Send a panel to its own browser tab and remove it from the dock.",
-          "description": "Send a panel to its own browser tab and remove it from the dock.",
+          "summary": "Bring a view to the front in a popped-out tab.",
+          "description": "Bring a view to the front in a popped-out tab.",
           "params": [
             {
               "name": "id",
@@ -25801,7 +25986,48 @@
             "invariant": [],
             "mutates": [],
             "sideEffect": [
-              "Opens a browser window, writes store state and persists the layout."
+              "Writes store state. The field is local to the window — `SHARED_KEYS` deliberately excludes it."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "popOutPanel",
+          "qualified": "popOutPanel",
+          "kind": "method",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 1401,
+          "signature": [
+            "id"
+          ],
+          "documented": true,
+          "summary": "Send a panel to its own browser tab and remove it from the dock.",
+          "description": "Send a panel to its own browser tab and remove it from the dock.\n\nCalled from a popped-out tab it only opens the window: that tab has no\ndock to take the panel out of, and the new window announces itself over\nthe channel anyway, which is what makes the main window let go of it.",
+          "params": [
+            {
+              "name": "id",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Panel id."
+            }
+          ],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Opens a browser window, and in the main window writes store state and persists the layout."
             ],
             "reads": [],
             "pure": false
@@ -25815,7 +26041,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1401,
+          "line": 1417,
           "signature": [
             "stackId"
           ],
@@ -25856,7 +26082,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1425,
+          "line": 1441,
           "signature": [
             "panelId",
             "stackId"
@@ -25905,7 +26131,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1445,
+          "line": 1461,
           "signature": [
             "id"
           ],
@@ -25946,7 +26172,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1456,
+          "line": 1472,
           "signature": [
             "id"
           ],
@@ -25987,7 +26213,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1475,
+          "line": 1491,
           "signature": [
             "patch"
           ],
@@ -26030,7 +26256,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1485,
+          "line": 1501,
           "signature": [],
           "documented": true,
           "summary": "The full shared slice, sent to a popped-out tab when it announces itself.",
@@ -26061,7 +26287,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1522,
+          "line": 1538,
           "signature": [
             "arg0"
           ],
@@ -26111,7 +26337,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 1568,
+          "line": 1584,
           "signature": [],
           "documented": true,
           "summary": "List the auto-saved projects in LocalStorage, newest first.",

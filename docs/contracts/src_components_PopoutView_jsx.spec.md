@@ -42,3 +42,29 @@ stale bookmark to a removed panel is the likely cause.
 **Side effects**
 
 - Subscribes to the store, reads `window.location`, and sets `document.title` to track the project name.
+
+## UNREACHABLE (1)
+
+### `PopoutView > onContextMenu(e)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+Raise the right-click menu for this tab.
+
+A popped-out tab has no dock, so the menu it gets is its own: switch the
+view in front, open another view in a further tab, or hand these views
+back to the main window. Panels that raise their own menu — the node
+editor — consume the event before it reaches here.
+
+**Parameters**
+
+- `e` — `React.MouseEvent` — The contextmenu event.
+
+**Returns**
+
+- `void`
+
+**Side effects**
+
+- Opens the context menu.

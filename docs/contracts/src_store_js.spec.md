@@ -192,7 +192,7 @@ around the canvas does not re-run the sweep.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
-## STORE ACTION (72)
+## STORE ACTION (73)
 
 ### `openContextMenu(x, y, target)`
 
@@ -1528,12 +1528,12 @@ overwrite a real save with nothing.
 
 - Writes LocalStorage. Skipped entirely in a popped-out tab — there is one writer for the auto-save. A quota failure is swallowed.
 
-### `popOutPanel(id)`
+### `setPopoutActive(id)`
 
 - **Reachability:** STORE ACTION
-- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().popOutPanel(…)
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().setPopoutActive(…)
 
-Send a panel to its own browser tab and remove it from the dock.
+Bring a view to the front in a popped-out tab.
 
 **Parameters**
 
@@ -1545,7 +1545,30 @@ Send a panel to its own browser tab and remove it from the dock.
 
 **Side effects**
 
-- Opens a browser window, writes store state and persists the layout.
+- Writes store state. The field is local to the window — `SHARED_KEYS` deliberately excludes it.
+
+### `popOutPanel(id)`
+
+- **Reachability:** STORE ACTION
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().popOutPanel(…)
+
+Send a panel to its own browser tab and remove it from the dock.
+
+Called from a popped-out tab it only opens the window: that tab has no
+dock to take the panel out of, and the new window announces itself over
+the channel anyway, which is what makes the main window let go of it.
+
+**Parameters**
+
+- `id` — `string` — Panel id.
+
+**Returns**
+
+- `void`
+
+**Side effects**
+
+- Opens a browser window, and in the main window writes store state and persists the layout.
 
 ### `popOutStack(stackId)`
 

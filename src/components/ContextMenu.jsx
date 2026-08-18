@@ -17,6 +17,7 @@ import React, { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useStore } from '../store'
 import { PANEL_META, MAIN_IDS, CHART_IDS, panelTitle } from '../panelMeta'
 import { findNode, isOpen } from '../layout'
+import { popoutPanelIds } from '../popout'
 import { formatCombo } from '../keymap'
 import { NODE_KINDS } from './Palette'
 import { ItemList } from './MenuItem'
@@ -195,16 +196,84 @@ export default function ContextMenu() {
   }
 
   /**
-   * The items common to every click inside a docked window.
+   * The items a popped-out browser tab offers about itself.
    *
-   * Empty when the click did not land in one — a popped-out tab, or a
-   * maximized panel — so the same builder can be used from every target.
+   * A popped-out tab has no dock, so none of the docking commands apply. What
+   * it can do instead is switch which of its views is in front, spawn a
+   * further tab, and hand its views back — which it does by closing, the same
+   * path a user closing the tab by hand takes.
    *
-   * @returns {Array<object>} Item descriptors, or an empty list outside the dock.
-   * @reads the clicked stack and the current layout.
+   * @param {string[]} here - The panel ids this tab holds.
+   * @param {string} front - The view currently showing.
+   * @returns {Array<object>} Item descriptors.
+   * @reads the current settings, to leave out views gated behind one.
+   */
+  const popoutItems = (here, front) => {
+    const elsewhere = offerable([...MAIN_IDS, ...CHART_IDS], settings).filter((id) => !here.includes(id))
+    return [
+      ...(here.length > 1 ? [{
+        label: 'Show View',
+        submenu: here.map((id) => ({
+          label: panelTitle(id),
+          checked: id === front,
+          /**
+           * Bring this view to the front of the tab.
+           *
+           * @returns {void}
+           * @sideEffect Writes store state and closes the menu.
+           */
+          onClick: () => { store.setPopoutActive(id); store.focusPanel(id); close() },
+        })),
+      }, { label: '-' }] : []),
+      {
+        label: 'Open a View in a New Tab',
+        submenu: elsewhere.length
+          ? elsewhere.map((id) => ({
+            label: panelTitle(id),
+            /**
+             * Open a further browser tab showing this view.
+             *
+             * @returns {void}
+             * @sideEffect Opens a browser window and closes the menu.
+             */
+            onClick: () => { store.popOutPanel(id); close() },
+          }))
+          : [{ label: '(every view is already open here)', disabled: true }],
+      },
+      { label: '-' },
+      {
+        label: here.length > 1 ? 'Return These Views to the Main Window' : 'Return This View to the Main Window',
+        /**
+         * Close this tab, which hands its views back to the main window.
+         *
+         * The handover is the tab's own closing announcement rather than
+         * anything done here — the same path a user closing the tab by hand
+         * takes, so there is only one way it can happen.
+         *
+         * @returns {void}
+         * @sideEffect Closes the browser tab.
+         */
+        onClick: () => { close(); window.close() },
+      },
+    ]
+  }
+
+  /**
+   * The items describing whichever window the click landed in.
+   *
+   * A docked stack gets the docking commands; a popped-out tab gets its own
+   * set; a maximized panel gets neither, since the stack it would name is not
+   * what is on screen. One builder, so every target can end with "and whatever
+   * this window can do" without caring which kind it is.
+   *
+   * @returns {Array<object>} Item descriptors, empty when the click belongs to no window.
+   * @reads the clicked stack, the current layout and the window's own URL.
    */
   const windowItems = () => {
-    if (!stackNode) return []
+    if (!stackNode) {
+      const here = popoutPanelIds()
+      return here.length ? popoutItems(here, store.popoutActive || here[0]) : []
+    }
     return [
       { label: 'Add View Here', submenu: addViewItems() },
       { label: '-' },
@@ -255,6 +324,11 @@ export default function ContextMenu() {
   const items = () => {
     const hasClip = !!store.clipboard?.nodes?.length
     const hasSel = store.nodes.some((n) => n.selected)
+    // A separator is only a separator when there is something on both sides of
+    // it: a maximized panel contributes no window items, and a trailing rule
+    // under the last command reads as a menu that failed to finish drawing.
+    const win = windowItems()
+    const tail = win.length ? [{ label: '-' }, ...win] : []
 
     if (target.kind === 'node' || target.kind === 'pane') {
       const onNode = target.kind === 'node'
@@ -277,7 +351,7 @@ export default function ContextMenu() {
         { label: '-' },
         { label: 'Delete', hint: key('edit.delete'), danger: true, disabled: !hasSel, onClick: run(store.deleteSelected) },
       ]
-      if (onNode) return [...editRows, { label: '-' }, ...windowItems()]
+      if (onNode) return [...editRows, ...tail]
       return [
         ...editRows,
         { label: '-' },
@@ -295,10 +369,11 @@ export default function ContextMenu() {
             onClick: () => { store.addNode(k.type, target.flowPos); close() },
           })),
         },
-        { label: '-' },
-        ...windowItems(),
+        ...tail,
       ]
     }
+
+    if (target.kind === 'popout') return popoutItems(target.ids || [], target.panelId)
 
     if (target.kind === 'edge') {
       return [{
@@ -364,16 +439,15 @@ export default function ContextMenu() {
            */
           onClick: () => { others.forEach((p) => layoutOps.close(p)); close() },
         },
-        { label: '-' },
-        ...windowItems(),
+        ...tail,
       ]
     }
 
     // A bare window: the tab strip's empty space, or a panel's own body.
     const front = stackNode?.active
     return [
-      ...windowItems(),
-      { label: '-' },
+      ...win,
+      ...(win.length ? [{ label: '-' }] : []),
       {
         label: maximized ? 'Restore Panel Sizes' : 'Maximize This View',
         hint: key('view.maximize'),

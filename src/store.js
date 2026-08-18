@@ -1375,16 +1375,32 @@ export const useStore = create((rawSet, get) => {
   // A panel sent to its own tab leaves the dock; closing that tab brings it
   // back. Tracking which are out keeps the View menu honest.
   poppedOut: [],
+  // Which view a popped-out tab is showing. Local to that window — the main
+  // window's front tab is the layout tree's business, and `SHARED_KEYS`
+  // excludes this so two popouts do not fight over one another's tab strip.
+  popoutActive: POPOUT ? popoutPanelId() : null,
   /**
-   * Send a panel to its own browser tab and remove it from the dock.
+   * Bring a view to the front in a popped-out tab.
    *
    * @param {string} id - Panel id.
    * @returns {void}
-   * @sideEffect Opens a browser window, writes store state and persists the layout.
+   * @sideEffect Writes store state. The field is local to the window — `SHARED_KEYS` deliberately excludes it.
+   */
+  setPopoutActive: (id) => set({ popoutActive: id }),
+  /**
+   * Send a panel to its own browser tab and remove it from the dock.
+   *
+   * Called from a popped-out tab it only opens the window: that tab has no
+   * dock to take the panel out of, and the new window announces itself over
+   * the channel anyway, which is what makes the main window let go of it.
+   *
+   * @param {string} id - Panel id.
+   * @returns {void}
+   * @sideEffect Opens a browser window, and in the main window writes store state and persists the layout.
    */
   popOutPanel: (id) => {
     openPanelWindow(id)
-    get()._detachPanel(id)
+    if (!POPOUT) get()._detachPanel(id)
   },
   /**
    * Send a whole docked window — every tab in one stack — to a single browser tab.

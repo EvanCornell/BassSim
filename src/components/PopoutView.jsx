@@ -10,7 +10,7 @@
 // deliberately not a dock: tabs here cannot be dragged, split or closed,
 // because the arrangement lives in the main window and a second authority over
 // it would be a second thing to keep in step.
-import React, { useEffect, useState } from 'react'
+import React, { useEffect } from 'react'
 import { useStore } from '../store'
 import { popoutPanelId, popoutPanelIds } from '../popout'
 import { panelTitle } from '../panelMeta'
@@ -33,12 +33,30 @@ import ContextMenu from './ContextMenu'
  */
 export default function PopoutView() {
   const ids = popoutPanelIds().filter((id) => PANELS[id]?.component)
-  const [active, setActive] = useState(() => {
-    const front = popoutPanelId()
-    return ids.includes(front) ? front : ids[0]
-  })
+  // The front view lives in the store rather than in local state, so the
+  // right-click menu can switch it without this component having to hand a
+  // callback through the menu's data.
+  const stored = useStore((s) => s.popoutActive)
+  const active = ids.includes(stored) ? stored : (ids.includes(popoutPanelId()) ? popoutPanelId() : ids[0])
   const projectName = useStore((s) => s.projectName)
   const results = useStore((s) => s.results)
+
+  /**
+   * Raise the right-click menu for this tab.
+   *
+   * A popped-out tab has no dock, so the menu it gets is its own: switch the
+   * view in front, open another view in a further tab, or hand these views
+   * back to the main window. Panels that raise their own menu — the node
+   * editor — consume the event before it reaches here.
+   *
+   * @param {React.MouseEvent} e - The contextmenu event.
+   * @returns {void}
+   * @sideEffect Opens the context menu.
+   */
+  const onContextMenu = (e) => {
+    e.preventDefault()
+    useStore.getState().openContextMenu(e.clientX, e.clientY, { kind: 'popout', ids, panelId: active })
+  }
 
   useEffect(() => {
     document.title = `${active ? panelTitle(active) : 'Panel'} — ${projectName || 'AcouSim'}`
@@ -56,7 +74,7 @@ export default function PopoutView() {
   }
 
   return (
-    <div className="popout">
+    <div className="popout" onContextMenu={onContextMenu}>
       <div className="popout-title">
         <span className="pt-name">{panelTitle(active)}</span>
         <span className="pt-project">{projectName}</span>
@@ -70,7 +88,7 @@ export default function PopoutView() {
             <button
               key={id}
               className={`popout-tab ${id === active ? 'active' : ''}`}
-              onClick={() => { setActive(id); useStore.getState().focusPanel(id) }}
+              onClick={() => { useStore.getState().setPopoutActive(id); useStore.getState().focusPanel(id) }}
             >{panelTitle(id)}</button>
           ))}
         </div>

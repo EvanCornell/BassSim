@@ -15,7 +15,7 @@ no implementation. This is the sole input to the blind contract test suite.
 | [`scripts/import-catalog.mjs`](scripts_import-catalog_mjs.spec.md) | 48 | 0 | 48 |
 | [`scripts/triage-contracts.mjs`](scripts_triage-contracts_mjs.spec.md) | 5 | 0 | 5 |
 | [`src/App.jsx`](src_App_jsx.spec.md) | 5 | 1 | 4 |
-| [`src/components/ContextMenu.jsx`](src_components_ContextMenu_jsx.spec.md) | 24 | 3 | 21 |
+| [`src/components/ContextMenu.jsx`](src_components_ContextMenu_jsx.spec.md) | 28 | 3 | 25 |
 | [`src/components/DriverDB.jsx`](src_components_DriverDB_jsx.spec.md) | 7 | 2 | 5 |
 | [`src/components/FlowCanvas.jsx`](src_components_FlowCanvas_jsx.spec.md) | 10 | 2 | 8 |
 | [`src/components/MenuBar.jsx`](src_components_MenuBar_jsx.spec.md) | 30 | 1 | 29 |
@@ -24,7 +24,7 @@ no implementation. This is the sole input to the blind contract test suite.
 | [`src/components/OutputPanel.jsx`](src_components_OutputPanel_jsx.spec.md) | 35 | 7 | 28 |
 | [`src/components/Palette.jsx`](src_components_Palette_jsx.spec.md) | 2 | 1 | 1 |
 | [`src/components/ParamPanel.jsx`](src_components_ParamPanel_jsx.spec.md) | 14 | 2 | 12 |
-| [`src/components/PopoutView.jsx`](src_components_PopoutView_jsx.spec.md) | 1 | 1 | 0 |
+| [`src/components/PopoutView.jsx`](src_components_PopoutView_jsx.spec.md) | 2 | 1 | 1 |
 | [`src/components/ProjectManager.jsx`](src_components_ProjectManager_jsx.spec.md) | 6 | 1 | 5 |
 | [`src/components/SettingsWindow.jsx`](src_components_SettingsWindow_jsx.spec.md) | 11 | 1 | 10 |
 | [`src/components/TSCalc.jsx`](src_components_TSCalc_jsx.spec.md) | 6 | 4 | 2 |
@@ -50,10 +50,10 @@ no implementation. This is the sole input to the blind contract test suite.
 | [`src/panelMeta.js`](src_panelMeta_js.spec.md) | 1 | 1 | 0 |
 | [`src/popout.js`](src_popout_js.spec.md) | 5 | 5 | 0 |
 | [`src/selection.js`](src_selection_js.spec.md) | 5 | 5 | 0 |
-| [`src/store.js`](src_store_js.spec.md) | 84 | 79 | 5 |
+| [`src/store.js`](src_store_js.spec.md) | 85 | 80 | 5 |
 | [`src/toolbarItems.js`](src_toolbarItems_js.spec.md) | 6 | 4 | 2 |
 | [`src/utils/export.js`](src_utils_export_js.spec.md) | 7 | 5 | 2 |
 | [`test/contracts.mjs`](test_contracts_mjs.spec.md) | 2 | 0 | 2 |
 | [`test/drivers.mjs`](test_drivers_mjs.spec.md) | 2 | 0 | 2 |
 | [`test/support/loader.mjs`](test_support_loader_mjs.spec.md) | 2 | 2 | 0 |
-| **Total** | **570** | **287** | **283** |
+| **Total** | **576** | **288** | **288** |

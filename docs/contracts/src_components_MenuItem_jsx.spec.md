@@ -15,6 +15,12 @@ An item descriptor is plain data — `{label, hint, onClick, disabled,
 checked, danger, submenu}` — which is what lets a menu be built by whoever
 knows the context and rendered by code that knows nothing about it.
 
+A submenu keeps itself on screen the same way the right-click menu does:
+drawn where it would naturally go, measured, then nudged back inside the
+window. Guessing from the parent's position is not enough — a submenu is
+as tall as its own contents, so whether it fits is a question only it can
+answer.
+
 ## EXPORTED (2)
 
 ### `Item(props)`
@@ -38,13 +44,15 @@ opens on hover and a click there means "I am on my way to the child".
 - `props.checked` — `boolean` _(optional)_ — Show a check mark.
 - `props.danger` — `boolean` _(optional)_ — Style as destructive.
 - `props.submenu` — `Array<object>` _(optional)_ — Child items; makes this a submenu parent.
-- `props.submenuSide` — `'right'|'left'` _(optional, default `'right'`)_ — Which way submenus open. A menu near the right edge of the window opens them leftward so they stay on screen.
+- `props.submenuSide` — `'right'|'left'` _(optional, default `'right'`)_ — Which way to try opening a submenu first. Only a starting guess: the submenu measures itself and flips if it does not fit.
 
 **Returns**
 
 - `React.ReactElement` — The menu row.
 
-**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
+**Side effects**
+
+- Reads live element geometry while a submenu is open, to keep it inside the window.
 
 ### `ItemList(props)`
 

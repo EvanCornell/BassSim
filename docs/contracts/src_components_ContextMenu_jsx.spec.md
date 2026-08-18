@@ -97,7 +97,7 @@ be reaching for yet.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
-## UNREACHABLE (21)
+## UNREACHABLE (25)
 
 ### `ContextMenu > suppress(e)`
 
@@ -231,23 +231,99 @@ Add this view to the clicked window.
 
 - Changes and persists the layout, and closes the menu.
 
+### `ContextMenu > popoutItems(here, front)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+The items a popped-out browser tab offers about itself.
+
+A popped-out tab has no dock, so none of the docking commands apply. What
+it can do instead is switch which of its views is in front, spawn a
+further tab, and hand its views back — which it does by closing, the same
+path a user closing the tab by hand takes.
+
+**Parameters**
+
+- `here` — `string[]` — The panel ids this tab holds.
+- `front` — `string` — The view currently showing.
+
+**Returns**
+
+- `Array<object>` — Item descriptors.
+
+**Reads external mutable state**
+
+- the current settings, to leave out views gated behind one.
+
+### `ContextMenu > popoutItems > onClick()`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+Bring this view to the front of the tab.
+
+**Returns**
+
+- `void`
+
+**Side effects**
+
+- Writes store state and closes the menu.
+
+### `ContextMenu > popoutItems > onClick()`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+Open a further browser tab showing this view.
+
+**Returns**
+
+- `void`
+
+**Side effects**
+
+- Opens a browser window and closes the menu.
+
+### `ContextMenu > popoutItems > onClick()`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+Close this tab, which hands its views back to the main window.
+
+The handover is the tab's own closing announcement rather than
+anything done here — the same path a user closing the tab by hand
+takes, so there is only one way it can happen.
+
+**Returns**
+
+- `void`
+
+**Side effects**
+
+- Closes the browser tab.
+
 ### `ContextMenu > windowItems()`
 
 - **Reachability:** UNREACHABLE
 - **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
 
-The items common to every click inside a docked window.
+The items describing whichever window the click landed in.
 
-Empty when the click did not land in one — a popped-out tab, or a
-maximized panel — so the same builder can be used from every target.
+A docked stack gets the docking commands; a popped-out tab gets its own
+set; a maximized panel gets neither, since the stack it would name is not
+what is on screen. One builder, so every target can end with "and whatever
+this window can do" without caring which kind it is.
 
 **Returns**
 
-- `Array<object>` — Item descriptors, or an empty list outside the dock.
+- `Array<object>` — Item descriptors, empty when the click belongs to no window.
 
 **Reads external mutable state**
 
-- the clicked stack and the current layout.
+- the clicked stack, the current layout and the window's own URL.
 
 ### `ContextMenu > windowItems > onClick()`
 
