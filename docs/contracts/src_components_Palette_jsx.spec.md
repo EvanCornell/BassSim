@@ -3,6 +3,21 @@
 > Generated from method contracts. This file contains **no implementation code**.
 > Write tests against what is claimed here, not against what you expect the code to do.
 
+## Exported constants
+
+Names this module publishes that are not methods. The method contracts
+above and below refer to these by role — a command, a node type, a panel —
+so this is the vocabulary they assume.
+
+### `NODE_KINDS`
+
+The draggable node types, with the descriptions shown in the palette.
+
+Exported because the canvas's right-click menu offers the same list under
+Add Node, and two copies of it would drift the moment an element is added.
+
+An array of 5 entries.
+
 ## EXPORTED (1)
 
 ### `Palette()`

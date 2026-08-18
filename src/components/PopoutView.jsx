@@ -1,64 +1,91 @@
-// The whole page when AcouSim is loaded at /panel?id=<panel>: one panel,
-// full-window, for dragging onto a second monitor.
+// The whole page when AcouSim is loaded at panel?id=…: one panel — or one
+// docked window's worth of them — full-window, for dragging onto a second
+// monitor.
 //
 // No menu bar, no dock, no quick bar — those belong to the main window. State
-// arrives over the BroadcastChannel wired up in store.js, so the panel behaves
-// exactly as it does when docked.
-import React, { useEffect } from 'react'
+// arrives over the BroadcastChannel wired up in store.js, so the panels behave
+// exactly as they do when docked.
+//
+// A tab strip appears only when the window holds more than one panel. It is
+// deliberately not a dock: tabs here cannot be dragged, split or closed,
+// because the arrangement lives in the main window and a second authority over
+// it would be a second thing to keep in step.
+import React, { useEffect, useState } from 'react'
 import { useStore } from '../store'
-import { popoutPanelId } from '../popout'
+import { popoutPanelId, popoutPanelIds } from '../popout'
 import { panelTitle } from '../panelMeta'
 import { PANELS } from './dock/panels'
+import ContextMenu from './ContextMenu'
 
 /**
- * The whole page when a single panel is opened in its own browser tab.
+ * The whole page when panels are opened in their own browser tab.
  *
- * Renders one panel full-window with no menu bar, dock or quick bar — those
- * belong to the main window. State arrives over the BroadcastChannel wired
- * up in store.js, so the panel behaves exactly as it does when docked.
+ * Renders one panel full-window, or a tab strip over several when a whole
+ * docked window was popped out. Inactive panels stay mounted — hidden rather
+ * than unmounted — so a chart keeps its zoom when you tab away and back, which
+ * is what the dock does too.
  *
- * An unknown panel id renders an explanation rather than a blank page,
- * since a stale bookmark to a removed panel is the likely cause.
+ * An unknown panel id renders an explanation rather than a blank page, since a
+ * stale bookmark to a removed panel is the likely cause.
  *
- * @returns {React.ReactElement} The panel, or a message naming the unknown panel.
+ * @returns {React.ReactElement} The panels, or a message naming the unknown one.
  * @sideEffect Subscribes to the store, reads `window.location`, and sets `document.title` to track the project name.
  */
 export default function PopoutView() {
-  const id = popoutPanelId()
-  const def = PANELS[id]
+  const ids = popoutPanelIds().filter((id) => PANELS[id]?.component)
+  const [active, setActive] = useState(() => {
+    const front = popoutPanelId()
+    return ids.includes(front) ? front : ids[0]
+  })
   const projectName = useStore((s) => s.projectName)
   const results = useStore((s) => s.results)
 
   useEffect(() => {
-    document.title = `${panelTitle(id)} — ${projectName || 'AcouSim'}`
-  }, [id, projectName])
+    document.title = `${active ? panelTitle(active) : 'Panel'} — ${projectName || 'AcouSim'}`
+  }, [active, projectName])
 
-  if (!def?.component) {
+  if (!ids.length) {
     return (
       <div className="popout">
         <div className="popout-title"><span>Unknown panel</span></div>
         <div className="popout-body" style={{ padding: 24, color: 'var(--text-3)' }}>
-          No panel named “{id}”. Open one from the View menu in the main AcouSim window.
+          No panel named “{popoutPanelIds().join(', ') || '?'}”. Open one from the View menu in the main AcouSim window.
         </div>
       </div>
     )
   }
 
-  const Component = def.component
   return (
     <div className="popout">
       <div className="popout-title">
-        <span className="pt-name">{panelTitle(id)}</span>
+        <span className="pt-name">{panelTitle(active)}</span>
         <span className="pt-project">{projectName}</span>
         {/* Nothing arrives until the main window broadcasts, which is instant
             in practice but worth saying out loud if that window is gone. */}
         {!results && <span className="pt-wait">waiting for the main AcouSim window…</span>}
       </div>
-      <div className="popout-body">
-        <div className="dock-panel" style={{ display: 'flex' }}>
-          <Component />
+      {ids.length > 1 && (
+        <div className="popout-tabs">
+          {ids.map((id) => (
+            <button
+              key={id}
+              className={`popout-tab ${id === active ? 'active' : ''}`}
+              onClick={() => { setActive(id); useStore.getState().focusPanel(id) }}
+            >{panelTitle(id)}</button>
+          ))}
         </div>
+      )}
+      <div className="popout-body">
+        {ids.map((id) => {
+          const Component = PANELS[id].component
+          return (
+            <div key={id} className="dock-panel" style={{ display: id === active ? 'flex' : 'none' }}>
+              <Component />
+            </div>
+          )
+        })}
       </div>
+      <ContextMenu />
     </div>
   )
 }

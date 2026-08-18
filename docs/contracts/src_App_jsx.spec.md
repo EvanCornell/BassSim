@@ -12,9 +12,8 @@
 
 The application root.
 
-Routes before rendering anything: the password-reset page and a
-popped-out panel are whole-page modes that share none of the workspace
-chrome.
+Routes before rendering anything: a popped-out panel is a whole-page mode
+that shares none of the workspace chrome.
 
 Two effects run once on mount. The first loads the demo project and, if a
 different auto-save exists, offers to restore it — skipped entirely in a
@@ -54,7 +53,7 @@ Offer to restore the previous session's auto-saved project.
 - **Reachability:** UNREACHABLE
 - **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
 
-Report that the server-side simulation service is unreachable.
+Report that the simulation could not be run.
 
 An app-level banner rather than a per-chart message, because the charts
 are separate panels and any of them may be closed — the user would
@@ -62,7 +61,7 @@ otherwise get no indication at all.
 
 **Returns**
 
-- `React.ReactElement|null` — The banner, or `null` when the service is reachable.
+- `React.ReactElement|null` — The banner, or `null` when the last run succeeded.
 
 **Side effects**
 

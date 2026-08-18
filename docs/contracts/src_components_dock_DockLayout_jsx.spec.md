@@ -92,7 +92,7 @@ rather than waiting for an event that will not arrive.
 
 - Writes store state, if the flag was set.
 
-## UNREACHABLE (11)
+## UNREACHABLE (12)
 
 ### `PanelBody(props)`
 
@@ -196,6 +196,29 @@ Dock the dragged panel into this stack at the cursor's zone.
 **Side effects**
 
 - Restructures and persists the layout, and clears the drag flag. Ignores drops that are not panel drags.
+
+### `DockStack > onContextMenu(e, panelId)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+Raise the right-click menu against this stack, or against one of its tabs.
+
+The event is consumed so a click on a tab does not also raise the window's
+own menu on the way up.
+
+**Parameters**
+
+- `e` — `React.MouseEvent` — The contextmenu event.
+- `panelId` — `string|null` _(optional, default `null`)_ — The tab that was clicked, or `null` for the window itself.
+
+**Returns**
+
+- `void`
+
+**Side effects**
+
+- Focuses the stack's front panel and opens the context menu.
 
 ### `Splitter(props)`
 

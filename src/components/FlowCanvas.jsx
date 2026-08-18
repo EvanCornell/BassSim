@@ -1,7 +1,9 @@
-import React, { useCallback, useEffect, useRef } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import ReactFlow, { Background, Controls, MiniMap, useReactFlow, ReactFlowProvider } from 'reactflow'
 import { useStore } from '../store'
 import { nodeTypes } from './nodes'
+import { useStackId } from './dock/stackContext'
+import { distance, marqueeRect, nodesInMarquee, MARQUEE_THRESHOLD } from '../selection'
 
 /**
  * Whether a proposed edge is allowed.
@@ -19,6 +21,36 @@ function isValidConnection(conn) {
 }
 
 /**
+ * Discard the one `contextmenu` event that trails a completed right-drag.
+ *
+ * The browser fires it whatever the drag was for, and on whatever element the
+ * pointer happened to be over when the button came up — which after a sweep
+ * across the workspace is often not the canvas at all. Left alone it raises
+ * that element's menu on top of the selection just made.
+ *
+ * Swallowed at the window in the capture phase, so the event never reaches the
+ * handler that would act on it, and only ever once: the listener stands down
+ * on the next turn of the loop whether or not the event arrived, which is what
+ * keeps a drag that ends outside the window from eating a later, deliberate
+ * right-click.
+ *
+ * @returns {void}
+ * @sideEffect Registers a one-shot window contextmenu listener and schedules its removal.
+ */
+function swallowNextContextMenu() {
+  /**
+   * Consume the trailing event.
+   *
+   * @param {MouseEvent} e - The contextmenu event.
+   * @returns {void}
+   * @sideEffect Prevents the event's default and stops it propagating.
+   */
+  const eat = (e) => { e.preventDefault(); e.stopPropagation() }
+  window.addEventListener('contextmenu', eat, { capture: true, once: true })
+  setTimeout(() => window.removeEventListener('contextmenu', eat, true), 0)
+}
+
+/**
  * The node editor canvas.
  *
  * Must render inside a `ReactFlowProvider`, which is why `FlowCanvas` wraps
@@ -27,6 +59,11 @@ function isValidConnection(conn) {
  * Tracks the pointer so a keyboard-added node can land where the user is
  * looking, and publishes that as `_flowApi` on the store for
  * `addNodeAtCursor` to read.
+ *
+ * The right mouse button does two jobs here, told apart by how far it travels:
+ * a click raises the context menu, a drag sweeps a marquee over the elements
+ * it crosses. Panning is therefore restricted to the left and middle buttons,
+ * so a right-drag is unambiguously a selection.
  *
  * @returns {React.ReactElement} The canvas.
  * @sideEffect Subscribes to the store, writes `_flowApi` into it on mount and clears it on unmount, and tracks pointer position in a ref.
@@ -40,8 +77,14 @@ function CanvasInner() {
   const addNode = useStore((s) => s.addNode)
   const setSelected = useStore((s) => s.setSelected)
   const { screenToFlowPosition } = useReactFlow()
+  const stackId = useStackId()
   const wrapper = useRef(null)
   const pointer = useRef(null)
+  // The marquee in wrapper-relative pixels, for the overlay. The selection
+  // itself is computed in canvas coordinates, so it stays correct under a zoom
+  // that changes mid-drag.
+  const [marquee, setMarquee] = useState(null)
+  const lasso = useRef(null)
 
   useEffect(() => {
     /**
@@ -84,12 +127,124 @@ function CanvasInner() {
     useStore.getState().focusPanel('canvas')
   }, [screenToFlowPosition, addNode])
 
+  /**
+   * Begin a right-drag, which may turn out to be a marquee or a click.
+   *
+   * Nothing is committed at mousedown: which of the two this is only becomes
+   * clear once the pointer has moved, or failed to. Listeners go on the window
+   * rather than the canvas so the drag survives the cursor leaving it, which a
+   * sweep across the whole graph routinely does.
+   *
+   * @param {React.MouseEvent} e - The mousedown event.
+   * @returns {void}
+   * @sideEffect Reads live element geometry and registers window mousemove and mouseup listeners, both removed when the drag ends.
+   */
+  const onRightDown = (e) => {
+    if (e.button !== 2) return
+    // A right-press on an element is aimed at that element's menu, not at a
+    // marquee that would start underneath it.
+    if (e.target?.closest?.('.react-flow__node, .react-flow__edge')) return
+    const rect = wrapper.current?.getBoundingClientRect()
+    if (!rect) return
+    const start = { x: e.clientX, y: e.clientY }
+    lasso.current = { start, startFlow: screenToFlowPosition(start), rect, moved: false, additive: e.shiftKey }
+
+    /**
+     * Grow the marquee, once the pointer has moved far enough to mean one.
+     *
+     * @param {MouseEvent} ev - The mousemove event.
+     * @returns {void}
+     * @sideEffect Updates the overlay rectangle.
+     * @mutates The in-progress drag record.
+     */
+    const onMove = (ev) => {
+      const d = lasso.current
+      if (!d) return
+      const here = { x: ev.clientX, y: ev.clientY }
+      if (!d.moved && distance(d.start, here) < MARQUEE_THRESHOLD) return
+      d.moved = true
+      setMarquee(marqueeRect(
+        { x: d.start.x - d.rect.left, y: d.start.y - d.rect.top },
+        { x: here.x - d.rect.left, y: here.y - d.rect.top },
+      ))
+    }
+    /**
+     * Finish the gesture: select what the marquee caught, or let the menu open.
+     *
+     * @param {MouseEvent} ev - The mouseup event.
+     * @returns {void}
+     * @sideEffect Removes the window listeners, clears the overlay, swallows the trailing contextmenu event and — for a drag — replaces the node selection.
+     * @mutates The in-progress drag record.
+     */
+    const onUp = (ev) => {
+      window.removeEventListener('mousemove', onMove)
+      window.removeEventListener('mouseup', onUp)
+      const d = lasso.current
+      lasso.current = null
+      setMarquee(null)
+      const st = useStore.getState()
+      if (!d?.moved) {
+        // A plain right-click. On platforms that fire `contextmenu` at
+        // mousedown the event has already been held back by `openMenu`, and
+        // raising the menu is this handler's job; where it fires at mouseup it
+        // has not arrived yet and will raise the menu itself.
+        if (d?.held) st.openContextMenu(d.held.x, d.held.y, d.held.target)
+        return
+      }
+      swallowNextContextMenu()
+      const rect = marqueeRect(d.startFlow, screenToFlowPosition({ x: ev.clientX, y: ev.clientY }))
+      st.setSelection(nodesInMarquee(st.nodes, rect), d.additive)
+      st.focusPanel('canvas')
+    }
+    window.addEventListener('mousemove', onMove)
+    window.addEventListener('mouseup', onUp)
+  }
+
+  /**
+   * Raise the context menu against something on the canvas.
+   *
+   * Held back rather than raised when a right-press on the background is still
+   * in progress, because the two platforms disagree about when `contextmenu`
+   * arrives: Windows fires it once the button comes up, by which time a drag
+   * has declared itself, but Linux and macOS fire it at mousedown — before
+   * anyone can know whether this is a click or the start of a marquee. Raising
+   * it there would put a menu over every sweep the user drew. So when a gesture
+   * is pending the menu is stashed on it, and the mouseup that finds no
+   * movement is what finally opens it.
+   *
+   * The event is consumed either way, so the docked window's own menu does not
+   * open behind this one on the way up.
+   *
+   * @param {React.MouseEvent} e - The contextmenu event.
+   * @param {object} target - What was clicked: `{kind: 'pane'|'node'|'edge', …}`.
+   * @returns {void}
+   * @sideEffect Focuses the canvas and either opens the context menu or defers it to the pending gesture.
+   * @mutates The in-progress drag record, when there is one.
+   */
+  const openMenu = (e, target) => {
+    e.preventDefault()
+    e.stopPropagation()
+    const st = useStore.getState()
+    st.focusPanel('canvas')
+    const full = {
+      ...target,
+      stackId,
+      flowPos: screenToFlowPosition({ x: e.clientX, y: e.clientY }),
+    }
+    if (lasso.current) {
+      lasso.current.held = { x: e.clientX, y: e.clientY, target: full }
+      return
+    }
+    st.openContextMenu(e.clientX, e.clientY, full)
+  }
+
   return (
     <div
       ref={wrapper}
-      style={{ width: '100%', height: '100%' }}
+      style={{ width: '100%', height: '100%', position: 'relative' }}
       onPointerMove={(e) => { pointer.current = { x: e.clientX, y: e.clientY } }}
       onPointerLeave={() => { pointer.current = null }}
+      onMouseDown={onRightDown}
     >
       <ReactFlow
         nodes={nodes}
@@ -102,9 +257,21 @@ function CanvasInner() {
         onDrop={onDrop}
         onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move' }}
         onNodeClick={(_, n) => setSelected(n.id)}
-        onNodeContextMenu={(e, n) => { e.preventDefault(); setSelected(n.id) }}
+        onNodeContextMenu={(e, n) => {
+          // Right-clicking outside the current selection retargets it, so Cut,
+          // Copy and Delete act on the node under the cursor rather than on
+          // whatever happened to be selected before.
+          if (!n.selected) useStore.getState().setSelection([n.id])
+          else setSelected(n.id)
+          openMenu(e, { kind: 'node', nodeId: n.id })
+        }}
+        onEdgeContextMenu={(e, ed) => openMenu(e, { kind: 'edge', edgeId: ed.id })}
+        onPaneContextMenu={(e) => openMenu(e, { kind: 'pane' })}
         onPaneClick={() => setSelected(null)}
         deleteKeyCode={null}
+        // The right button draws the marquee, so panning is left and middle
+        // only — sharing the button would make every sweep also move the view.
+        panOnDrag={[0, 1]}
         // React Flow defaults additive selection to Meta alone, which leaves
         // Windows and Linux with no way to click a second node — and without a
         // multi-node selection, copying a subgraph is unreachable.
@@ -127,6 +294,12 @@ function CanvasInner() {
           maskColor="rgba(13,17,23,0.7)"
         />
       </ReactFlow>
+      {marquee && (
+        <div
+          className="rf-marquee"
+          style={{ left: marquee.x, top: marquee.y, width: marquee.w, height: marquee.h }}
+        />
+      )}
     </div>
   )
 }

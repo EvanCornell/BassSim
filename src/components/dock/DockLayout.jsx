@@ -11,6 +11,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { useStore } from '../../store'
 import { PANELS, panelTitle } from './panels'
+import { StackContext } from './stackContext'
 
 /**
  * The dataTransfer type marking a panel tab drag.
@@ -149,13 +150,35 @@ function DockStack({ node }) {
     endPanelDrag()
   }
 
+  /**
+   * Raise the right-click menu against this stack, or against one of its tabs.
+   *
+   * The event is consumed so a click on a tab does not also raise the window's
+   * own menu on the way up.
+   *
+   * @param {React.MouseEvent} e - The contextmenu event.
+   * @param {string|null} [panelId=null] - The tab that was clicked, or `null` for the window itself.
+   * @returns {void}
+   * @sideEffect Focuses the stack's front panel and opens the context menu.
+   */
+  const onContextMenu = (e, panelId = null) => {
+    e.preventDefault()
+    e.stopPropagation()
+    const st = useStore.getState()
+    if (active) st.focusPanel(active)
+    st.openContextMenu(e.clientX, e.clientY, panelId
+      ? { kind: 'tab', stackId: node.id, panelId }
+      : { kind: 'stack', stackId: node.id })
+  }
+
   return (
+    <StackContext.Provider value={node.id}>
     <div
       className={`dock-stack ${hasFocus ? 'focused' : ''}`}
       style={{ flex: `${node.size} 1 0%` }}
       onMouseDownCapture={() => active && useStore.getState().focusPanel(active)}
     >
-      <div className="dock-tabs">
+      <div className="dock-tabs" onContextMenu={onContextMenu}>
         <div className="dock-tabscroll">
         {node.panels.map((pid, idx) => (
           <div
@@ -183,6 +206,7 @@ function DockStack({ node }) {
             }}
             onClick={() => { layoutOps.activate(node.id, pid); useStore.getState().focusPanel(pid) }}
             onDoubleClick={() => useStore.getState().toggleMaximize(pid)}
+            onContextMenu={(e) => onContextMenu(e, pid)}
           >
             <span className="dt-title">{panelTitle(pid)}</span>
             {PANELS[pid]?.closable !== false && (
@@ -210,6 +234,7 @@ function DockStack({ node }) {
         onDragOver={onBodyDragOver}
         onDragLeave={() => setZone(null)}
         onDrop={onBodyDrop}
+        onContextMenu={onContextMenu}
       >
         {node.panels.map((pid) => (
           <div key={pid} className="dock-panel" style={{ display: pid === active ? 'flex' : 'none' }}>
@@ -219,6 +244,7 @@ function DockStack({ node }) {
         {dragging && zone && <div className={`drop-hint zone-${zone}`} />}
       </div>
     </div>
+    </StackContext.Provider>
   )
 }
 

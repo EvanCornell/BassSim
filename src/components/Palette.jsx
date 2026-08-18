@@ -3,8 +3,11 @@ import { useStore } from '../store'
 
 /**
  * The draggable node types, with the descriptions shown in the palette.
+ *
+ * Exported because the canvas's right-click menu offers the same list under
+ * Add Node, and two copies of it would drift the moment an element is added.
  */
-const ITEMS = [
+export const NODE_KINDS = [
   { type: 'driver', color: 'var(--s1)', name: 'Driver', desc: 'Loudspeaker motor system with T/S parameters, amplifier coupling and array options.' },
   { type: 'chamber', color: 'var(--s2)', name: 'Chamber', desc: 'Enclosed air volume modeled as a transmission line — standing waves included.' },
   { type: 'waveguide', color: 'var(--s3)', name: 'Waveguide Segment', desc: 'Duct, port or horn segment. Straight port when S1 = S2. Unconnected mouth = open end; cap with a Rigid wall Radiation node to close it.' },
@@ -38,7 +41,7 @@ export default function Palette() {
   return (
     <div className="panel-scroll">
       <h3>Node Palette</h3>
-      {ITEMS.map((it) => (
+      {NODE_KINDS.map((it) => (
         <div key={it.type} className="palette-item" draggable onDragStart={(e) => onDragStart(e, it.type)}>
           <div className="pi-title"><span className="pi-dot" style={{ background: it.color }} />{it.name}</div>
           <div className="pi-desc">{it.desc}</div>

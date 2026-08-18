@@ -8,6 +8,7 @@ import TSCalc from './components/TSCalc'
 import ProjectManager from './components/ProjectManager'
 import SettingsWindow from './components/SettingsWindow'
 import PopoutView from './components/PopoutView'
+import ContextMenu from './components/ContextMenu'
 import { isPopout } from './popout'
 import { COMMANDS, comboFromEvent, resolve } from './keymap'
 
@@ -163,6 +164,7 @@ export default function App() {
       <TSCalc />
       <ProjectManager />
       <SettingsWindow />
+      <ContextMenu />
     </div>
   )
 }

@@ -30,7 +30,7 @@ import * as L from './layout'
 import { PANEL_META, PANEL_IDS } from './panelMeta'
 import { exportProjectJSON } from './utils/export'
 import { DEFAULT_TOOLBAR, sanitizeToolbar } from './toolbarItems'
-import { channel, isPopout, openPanelWindow, popoutPanelId, SHARED_KEYS, SIM_INPUT_KEYS } from './popout'
+import { channel, isPopout, openPanelWindow, openPanelGroupWindow, popoutPanelId, popoutPanelIds, SHARED_KEYS, SIM_INPUT_KEYS } from './popout'
 import { loadBindings, saveBindings, DEFAULT_BINDINGS, COMMAND_IDS, findConflict } from './keymap'
 
 const POPOUT = isPopout()
@@ -281,6 +281,34 @@ export const useStore = create((rawSet, get) => {
   showSettings: false,      // floating settings window
   settingsSection: 'keyboard',
   clipboard: null,
+  // The open context menu, as `{x, y, target}` in viewport coordinates, or
+  // null. Only the *target* is recorded — which stack, node or edge was
+  // right-clicked — never the menu's contents: what a target offers is a
+  // rendering decision, and baking it into state would freeze the menu against
+  // any change made while it is open.
+  contextMenu: null,
+
+  /**
+   * Open the context menu at a point, against whatever was right-clicked.
+   *
+   * @param {number} x - Viewport x, where the menu's corner goes.
+   * @param {number} y - Viewport y.
+   * @param {{kind: string}} target - What was right-clicked: `{kind: 'pane'|'node'|'edge'|'stack'|'tab', …}` with the ids that kind needs.
+   * @returns {void}
+   * @sideEffect Writes store state. The field is local to the window — `SHARED_KEYS` deliberately excludes it, so a right-click does not open a menu in another window.
+   */
+  openContextMenu: (x, y, target) => set({ contextMenu: { x, y, target } }),
+  /**
+   * Dismiss the context menu.
+   *
+   * Guarded against redundant writes: closing is attempted on every click
+   * anywhere, and an unconditional write would re-render the workspace on each
+   * one.
+   *
+   * @returns {void}
+   * @sideEffect Writes store state, when a menu was open.
+   */
+  closeContextMenu: () => { if (get().contextMenu) set({ contextMenu: null }) },
 
   /**
    * Record which panel is mid tab-drag, which drives the drop targets.
@@ -862,6 +890,29 @@ export const useStore = create((rawSet, get) => {
    */
   selectAll: () => set({ nodes: get().nodes.map((n) => ({ ...n, selected: true })) }),
 
+  /**
+   * Replace — or extend — the node selection.
+   *
+   * The write path for the right-drag marquee. `selectedNodeId`, which is what
+   * the Parameters panel edits, follows the last node in the new selection, so
+   * lassoing a group leaves something concrete to edit rather than an empty
+   * panel. An empty selection clears it.
+   *
+   * @param {string[]} ids - Node ids to select.
+   * @param {boolean} [additive=false] - Keep the existing selection and add to it, which is what a modifier-held lasso means.
+   * @returns {void}
+   * @sideEffect Writes store state, mirrored to other windows. Does not record history — selection is not an edit.
+   */
+  setSelection: (ids, additive = false) => {
+    const want = new Set(ids)
+    const nodes = get().nodes.map((n) => {
+      const selected = want.has(n.id) || (additive && !!n.selected)
+      return n.selected === selected ? n : { ...n, selected }
+    })
+    const last = nodes.filter((n) => n.selected).pop()
+    set({ nodes, selectedNodeId: last ? last.id : null })
+  },
+
   // ---- clipboard ----
   // An in-app clipboard rather than the system one: the graph is a structure,
   // not text, and reading the system clipboard needs a permission prompt on
@@ -916,20 +967,30 @@ export const useStore = create((rawSet, get) => {
     get().deleteSelected()
   },
   /**
-   * Paste the clipboard as new nodes, offset down-right.
+   * Paste the clipboard as new nodes, at a point or offset down-right.
    *
    * Every pasted node gets a fresh id, and the copied edges are rewired
    * through a remap table so they connect the copies rather than the
    * originals. Params are merged over the current defaults, so pasting into a
    * newer build fills in any parameter added since the copy was made.
    *
+   * With a position — what the canvas's right-click Paste supplies — the whole
+   * copied group is translated so its top-left corner lands there, preserving
+   * the relative arrangement. Without one it lands offset from the original,
+   * which is what a keyboard paste has always done.
+   *
+   * @param {{x: number, y: number}} [at] - Canvas position for the group's top-left corner.
    * @returns {void}
    * @sideEffect Records history, writes store state and schedules a resimulation. Does nothing when the clipboard is empty.
    */
-  pasteClipboard: () => {
+  pasteClipboard: (at) => {
     const clip = get().clipboard
     if (!clip?.nodes?.length) return
     get().pushHistory()
+    // A single offset for the whole group, so pasting keeps the shape of what
+    // was copied rather than collapsing every node onto the cursor.
+    const dx = at ? at.x - Math.min(...clip.nodes.map((n) => n.position.x)) : 40
+    const dy = at ? at.y - Math.min(...clip.nodes.map((n) => n.position.y)) : 40
     const remap = {}
     const fresh = clip.nodes.map((n) => {
       const id = nextId(n.type)
@@ -937,7 +998,7 @@ export const useStore = create((rawSet, get) => {
       return {
         id,
         type: n.type,
-        position: { x: n.position.x + 40, y: n.position.y + 40 },
+        position: { x: n.position.x + dx, y: n.position.y + dy },
         selected: true,
         data: { params: { ...DEFAULT_PARAMS[n.type], ...JSON.parse(JSON.stringify(n.params)) } },
       }
@@ -1326,6 +1387,51 @@ export const useStore = create((rawSet, get) => {
     get()._detachPanel(id)
   },
   /**
+   * Send a whole docked window — every tab in one stack — to a single browser tab.
+   *
+   * The new tab reproduces the stack: the same panels, the same tab order, the
+   * same one in front. Panels that cannot leave the dock stay in it, so popping
+   * out the window holding the Node Editor gives you the group in a tab and
+   * leaves the editor where it is rather than emptying the workspace.
+   *
+   * @param {string} stackId - Id of the stack to pop out. An unknown id is a no-op.
+   * @returns {void}
+   * @sideEffect Opens a browser window, writes store state and persists the layout.
+   */
+  popOutStack: (stackId) => {
+    const node = L.findNode(get().layout, stackId)
+    if (node?.type !== 'stack' || !node.panels.length) return
+    const panels = [...node.panels]
+    openPanelGroupWindow(panels, node.active)
+    // Detach after opening, since detaching rebuilds the tree the ids came from.
+    for (const id of panels) get()._detachPanel(id)
+  },
+  /**
+   * Add a view as a new tab in one named docked window.
+   *
+   * This is the injection the right-click menu offers: unlike `layoutOps.open`,
+   * which consults the panel's own placement hint, the caller chooses the
+   * destination. A panel already open elsewhere moves rather than being
+   * duplicated — a panel exists once in the workspace.
+   *
+   * A panel currently in its own browser tab is taken back first, so it does
+   * not end up counted as both docked and popped out.
+   *
+   * @param {string} panelId - Panel to add.
+   * @param {string} stackId - Stack to add it to. An unknown id is a no-op.
+   * @returns {void}
+   * @sideEffect Writes store state and persists the layout.
+   */
+  addViewToStack: (panelId, stackId) => {
+    if (L.findNode(get().layout, stackId)?.type !== 'stack') return
+    if (get().poppedOut.includes(panelId)) {
+      set({ poppedOut: get().poppedOut.filter((p) => p !== panelId) })
+    }
+    set({ maximized: null })
+    get()._commitLayout(L.dockPanel(get().layout, panelId, stackId, 'center'))
+    get().focusPanel(panelId)
+  },
+  /**
    * Mark a panel as popped out and close it in this window's dock.
    *
    * Called both when this window pops a panel out and when another window
@@ -1387,10 +1493,10 @@ export const useStore = create((rawSet, get) => {
 //
 // Protocol, deliberately small:
 //   patch   a shared-state delta, mirrored both ways
-//   hello   a popped-out tab announcing itself; the main window answers with
-//           a full snapshot and lets go of that panel in its dock
+//   hello   a popped-out tab announcing itself and the panels it took; the main
+//           window answers with a full snapshot and lets go of those panels
 //   full    that snapshot
-//   bye     the tab closing; the main window takes the panel back
+//   bye     the tab closing; the main window takes its panels back
 if (channel) {
   /**
    * Handle a message from another window.
@@ -1433,17 +1539,20 @@ if (channel) {
 
     if (data.type === 'hello') {
       channel.postMessage({ type: 'full', patch: st._sharedSnapshot() })
-      st._detachPanel(data.panel)
+      for (const id of data.panels || [data.panel]) st._detachPanel(id)
     } else if (data.type === 'bye') {
-      st._reattachPanel(data.panel)
+      for (const id of data.panels || [data.panel]) st._reattachPanel(id)
     }
   }
 
   if (POPOUT) {
-    const id = popoutPanelId()
-    channel.postMessage({ type: 'hello', panel: id })
+    // One message for the whole tab rather than one per panel: a tab holding a
+    // popped-out window announces every panel it took, and the main window
+    // answers with a single snapshot instead of one per tab.
+    const panels = popoutPanelIds()
+    channel.postMessage({ type: 'hello', panel: popoutPanelId(), panels })
     // pagehide fires on close and on navigation, where unload is unreliable
-    window.addEventListener('pagehide', () => channel.postMessage({ type: 'bye', panel: id }))
+    window.addEventListener('pagehide', () => channel.postMessage({ type: 'bye', panel: popoutPanelId(), panels }))
   }
 }
 

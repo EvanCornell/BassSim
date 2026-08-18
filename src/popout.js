@@ -1,9 +1,14 @@
-// Popped-out panels: any panel can be sent to its own browser tab, which the
-// user then drags onto a second monitor.
+// Popped-out panels: any panel — or any whole docked window, tabs and all —
+// can be sent to its own browser tab, which the user then drags onto a second
+// monitor.
 //
 // The tab loads the same app at panel?id=<panel> — relative to wherever the
-// app is served from — and renders that one panel
-// full-window. Both windows run the same store; a BroadcastChannel keeps the
+// app is served from — and renders that panel full-window. `id` may name
+// several panels, comma-separated, in which case the tab reproduces the docked
+// window it came from: the same tab strip over the same panels, with `active`
+// naming which one is in front.
+//
+// Both windows run the same store; a BroadcastChannel keeps the
 // shared slice of that store identical between them, so a parameter edited in
 // one window redraws the chart in the other.
 //
@@ -37,19 +42,42 @@ export const SHARED_KEYS = [
 export const SIM_INPUT_KEYS = ['nodes', 'edges', 'settings']
 
 /**
- * The panel id this window was opened to show, if it is a popped-out tab.
+ * Every panel id this window was opened to show.
  *
  * Checked against the path as well as the query string, so a stray `?id=` on
  * the main app cannot convince it that it is a panel window. The path is
  * matched by suffix because the app may be served from a subdirectory.
  *
+ * One id is a single popped-out panel; several are a whole docked window
+ * reproduced in a tab. Blank entries are dropped so a trailing comma in a
+ * hand-edited URL cannot produce a nameless panel.
+ *
+ * @returns {string[]} The panel ids in tab order, empty in the main window or outside a browser.
+ * @sideEffect Reads `window.location`.
+ */
+export function popoutPanelIds() {
+  if (typeof window === 'undefined') return []
+  if (!window.location.pathname.endsWith(`/${PANEL_PATH}`)) return []
+  const raw = new URLSearchParams(window.location.search).get('id')
+  return raw ? raw.split(',').map((s) => s.trim()).filter(Boolean) : []
+}
+
+/**
+ * The panel this window is currently showing, if it is a popped-out tab.
+ *
+ * For a single-panel tab this is that panel. For a whole-window tab it is
+ * whichever panel the `active` parameter names, falling back to the first —
+ * so the answer is always a panel the window actually holds, which is what
+ * makes it safe to use as the initial keyboard focus.
+ *
  * @returns {string|null} The panel id, or `null` in the main window or outside a browser.
  * @sideEffect Reads `window.location`.
  */
 export function popoutPanelId() {
-  if (typeof window === 'undefined') return null
-  if (!window.location.pathname.endsWith(`/${PANEL_PATH}`)) return null
-  return new URLSearchParams(window.location.search).get('id')
+  const ids = popoutPanelIds()
+  if (!ids.length) return null
+  const active = new URLSearchParams(window.location.search).get('active')
+  return ids.includes(active) ? active : ids[0]
 }
 
 /**
@@ -79,6 +107,31 @@ export const isPopout = () => popoutPanelId() != null
  */
 export function openPanelWindow(id) {
   const w = window.open(`${PANEL_PATH}?id=${encodeURIComponent(id)}`, `acousim-panel-${id}`)
+  w?.focus()
+  return w
+}
+
+/**
+ * Open — or focus — a browser tab showing a whole docked window's worth of panels.
+ *
+ * The tab reproduces the group it came from: the same panels, in the same tab
+ * order, with `active` in front.
+ *
+ * The window name is keyed on the group's members rather than its order, so
+ * re-popping the same set of panels focuses the tab already showing them
+ * instead of opening a second copy of it.
+ *
+ * @param {string[]} ids - Panel ids in tab order. An empty list opens nothing.
+ * @param {string} [active] - Panel to show first. Defaults to the first id.
+ * @returns {Window|null} The panel window, or `null` when the browser blocked it or the list was empty.
+ * @sideEffect Opens a browser window and moves focus to it.
+ */
+export function openPanelGroupWindow(ids, active) {
+  if (!ids.length) return null
+  const front = ids.includes(active) ? active : ids[0]
+  const query = `id=${encodeURIComponent(ids.join(','))}&active=${encodeURIComponent(front)}`
+  const name = `acousim-group-${[...ids].sort().join('-')}`
+  const w = window.open(`${PANEL_PATH}?${query}`, name)
   w?.focus()
   return w
 }

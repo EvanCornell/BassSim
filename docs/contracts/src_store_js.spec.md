@@ -20,7 +20,7 @@ where:
              settingsSection, restorePrompt, velocityPopupNodeId
 
 Fields prefixed with an underscore are solver and persistence bookkeeping
-(`_lastSig`, `_abort`, `_computeTimer`, `_flowApi`, `_lastSavedName`,
+(`_lastSig`, `_simToken`, `_computeTimer`, `_flowApi`, `_lastSavedName`,
 `_nameTimer`) and are not part of any action's observable contract.
 
 LocalStorage keys, all prefixed `acousim:` — `acousim:layout`,
@@ -192,7 +192,47 @@ around the canvas does not re-run the sweep.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
-## STORE ACTION (67)
+## STORE ACTION (72)
+
+### `openContextMenu(x, y, target)`
+
+- **Reachability:** STORE ACTION
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().openContextMenu(…)
+
+Open the context menu at a point, against whatever was right-clicked.
+
+**Parameters**
+
+- `x` — `number` — Viewport x, where the menu's corner goes.
+- `y` — `number` — Viewport y.
+- `target` — `{kind: string}` — What was right-clicked: `{kind: 'pane'|'node'|'edge'|'stack'|'tab', …}` with the ids that kind needs.
+
+**Returns**
+
+- `void`
+
+**Side effects**
+
+- Writes store state. The field is local to the window — `SHARED_KEYS` deliberately excludes it, so a right-click does not open a menu in another window.
+
+### `closeContextMenu()`
+
+- **Reachability:** STORE ACTION
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().closeContextMenu(…)
+
+Dismiss the context menu.
+
+Guarded against redundant writes: closing is attempted on every click
+anywhere, and an unconditional write would re-render the workspace on each
+one.
+
+**Returns**
+
+- `void`
+
+**Side effects**
+
+- Writes store state, when a menu was open.
 
 ### `setDraggingPanel(id)`
 
@@ -977,6 +1017,31 @@ Select every node on the canvas.
 
 - Writes store state, mirrored to other windows.
 
+### `setSelection(ids, additive)`
+
+- **Reachability:** STORE ACTION
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().setSelection(…)
+
+Replace — or extend — the node selection.
+
+The write path for the right-drag marquee. `selectedNodeId`, which is what
+the Parameters panel edits, follows the last node in the new selection, so
+lassoing a group leaves something concrete to edit rather than an empty
+panel. An empty selection clears it.
+
+**Parameters**
+
+- `ids` — `string[]` — Node ids to select.
+- `additive` — `boolean` _(optional, default `false`)_ — Keep the existing selection and add to it, which is what a modifier-held lasso means.
+
+**Returns**
+
+- `void`
+
+**Side effects**
+
+- Writes store state, mirrored to other windows. Does not record history — selection is not an edit.
+
 ### `copySelection()`
 
 - **Reachability:** STORE ACTION
@@ -1022,17 +1087,26 @@ delete anything.
 
 - Records history, writes store state and schedules a resimulation.
 
-### `pasteClipboard()`
+### `pasteClipboard(at)`
 
 - **Reachability:** STORE ACTION
 - **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().pasteClipboard(…)
 
-Paste the clipboard as new nodes, offset down-right.
+Paste the clipboard as new nodes, at a point or offset down-right.
 
 Every pasted node gets a fresh id, and the copied edges are rewired
 through a remap table so they connect the copies rather than the
 originals. Params are merged over the current defaults, so pasting into a
 newer build fills in any parameter added since the copy was made.
+
+With a position — what the canvas's right-click Paste supplies — the whole
+copied group is translated so its top-left corner lands there, preserving
+the relative arrangement. Without one it lands offset from the original,
+which is what a keyboard paste has always done.
+
+**Parameters**
+
+- `at` — `{x: number, y: number}` _(optional)_ — Canvas position for the group's top-left corner.
 
 **Returns**
 
@@ -1308,14 +1382,17 @@ Set the prompt offering to restore an auto-saved project.
 
 Schedule a debounced simulation run.
 
-Simulation runs **server-side** — the engine never ships to the browser —
-so this is an HTTP round-trip, and three mechanisms keep it from
-thrashing. The 150 ms debounce collapses slider drags into one request.
-The graph signature skips the request when nothing that affects the
-result changed. An AbortController cancels the in-flight request when a
-newer edit supersedes it, and the response is checked against the current
-controller before being applied, so a slow reply cannot overwrite a
-newer result.
+Simulation runs in a Web Worker — see `src/engine/worker.js` — so the
+canvas stays responsive through a large sweep, and three mechanisms keep
+the pipeline from thrashing. The 150 ms debounce collapses slider drags
+into one run. The graph signature skips the run when nothing that affects
+the result changed. A token marks the newest request, and the reply is
+checked against it before being applied, so a slow reply cannot overwrite
+a newer result.
+
+A superseded run is left to finish rather than cancelled. Tearing down and
+respawning a worker costs more than the sweep it would save, and the reply
+is discarded either way.
 
 A popped-out tab returns immediately: results arrive from the main window
 over the sync channel, and a second sweep would duplicate the work.
@@ -1326,7 +1403,7 @@ over the sync channel, and a second sweep would duplicate the work.
 
 **Side effects**
 
-- Sets a timer, issues a POST to /api/simulate, aborts any in-flight request, writes store state, and on success triggers an auto-save. A transport failure is recorded in `simError` and retried on the next edit rather than thrown.
+- Sets a timer, posts to the simulation worker, writes store state, and on success triggers an auto-save. A structurally invalid project is recorded in `simError` and retried on the next edit rather than thrown.
 
 ### `serialize()`
 
@@ -1470,6 +1547,58 @@ Send a panel to its own browser tab and remove it from the dock.
 
 - Opens a browser window, writes store state and persists the layout.
 
+### `popOutStack(stackId)`
+
+- **Reachability:** STORE ACTION
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().popOutStack(…)
+
+Send a whole docked window — every tab in one stack — to a single browser tab.
+
+The new tab reproduces the stack: the same panels, the same tab order, the
+same one in front. Panels that cannot leave the dock stay in it, so popping
+out the window holding the Node Editor gives you the group in a tab and
+leaves the editor where it is rather than emptying the workspace.
+
+**Parameters**
+
+- `stackId` — `string` — Id of the stack to pop out. An unknown id is a no-op.
+
+**Returns**
+
+- `void`
+
+**Side effects**
+
+- Opens a browser window, writes store state and persists the layout.
+
+### `addViewToStack(panelId, stackId)`
+
+- **Reachability:** STORE ACTION
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().addViewToStack(…)
+
+Add a view as a new tab in one named docked window.
+
+This is the injection the right-click menu offers: unlike `layoutOps.open`,
+which consults the panel's own placement hint, the caller chooses the
+destination. A panel already open elsewhere moves rather than being
+duplicated — a panel exists once in the workspace.
+
+A panel currently in its own browser tab is taken back first, so it does
+not end up counted as both docked and popped out.
+
+**Parameters**
+
+- `panelId` — `string` — Panel to add.
+- `stackId` — `string` — Stack to add it to. An unknown id is a no-op.
+
+**Returns**
+
+- `void`
+
+**Side effects**
+
+- Writes store state and persists the layout.
+
 ### `_detachPanel(id)`
 
 - **Reachability:** STORE ACTION
@@ -1555,7 +1684,52 @@ The full shared slice, sent to a popped-out tab when it announces itself.
 
 - Current store state.
 
-## UNREACHABLE (3)
+## UNREACHABLE (5)
+
+### `simulateInWorker(project)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+Run one sweep in the simulation worker.
+
+Each request carries an id and resolves its own promise, so several runs may
+be in flight without their replies being confused. Replies whose id is no
+longer pending are dropped, which is what makes a superseded run harmless.
+
+**Parameters**
+
+- `project` — `object` — A serialized project: `{nodes, edges, settings}`.
+
+**Returns**
+
+- `Promise<{id: number, ok: boolean, results?: object, metrics?: object|null, error?: string, projectErrors?: string[]|null}>` — The worker's reply.
+
+**Side effects**
+
+- Spawns the worker on first call and posts a message to it.
+
+### `simulateInWorker > simWorker.onmessage(e)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+Resolve the request a worker reply belongs to.
+
+An unrecognised id is dropped rather than treated as an error: it means
+the request was superseded and its entry already removed.
+
+**Parameters**
+
+- `e` — `MessageEvent` — The reply, carrying the `id` of its request.
+
+**Returns**
+
+- `void`
+
+**Side effects**
+
+- Removes the request from `simPending` and resolves its promise.
 
 ### `freeSpotNear > taken(x, y)`
 

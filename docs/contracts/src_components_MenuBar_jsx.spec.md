@@ -37,35 +37,7 @@ current state.
 
 - Subscribes to the store. Registers window mousedown and keydown listeners while a menu is open.
 
-## UNREACHABLE (30)
-
-### `Item(props)`
-
-- **Reachability:** UNREACHABLE
-- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
-
-One dropdown row: a command, a separator, or a submenu parent.
-
-A label of `-` renders a separator instead of an item. Clicking a submenu
-parent is swallowed rather than treated as a command, since the submenu
-opens on hover and a click there means "I am on my way to the child".
-
-**Parameters**
-
-- `props` — `object` — Component props.
-- `props.label` — `string` — Display text, or `-` for a separator.
-- `props.hint` — `string` _(optional)_ — Shortcut hint shown on the right.
-- `props.onClick` — `Function` _(optional)_ — Command to run.
-- `props.disabled` — `boolean` _(optional)_ — Render inert.
-- `props.checked` — `boolean` _(optional)_ — Show a check mark.
-- `props.danger` — `boolean` _(optional)_ — Style as destructive.
-- `props.submenu` — `Array<object>` _(optional)_ — Child items; makes this a submenu parent.
-
-**Returns**
-
-- `React.ReactElement` — The menu row.
-
-**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
+## UNREACHABLE (29)
 
 ### `Menu(props)`
 

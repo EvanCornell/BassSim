@@ -24,9 +24,9 @@
     "pure": "flag"
   },
   "stats": {
-    "modules": 53,
-    "methods": 543,
-    "documented": 543
+    "modules": 55,
+    "methods": 570,
+    "documented": 570
   },
   "modules": [
     {
@@ -6557,403 +6557,6 @@
       ]
     },
     {
-      "file": "server/auth.js",
-      "module": {
-        "summary": "Authentication: Better Auth on SQLite, mounted at /api/auth/* by index.js.",
-        "description": "Authentication: Better Auth on SQLite, mounted at /api/auth/* by index.js.\n\nMethods enabled:\n - email + password (with password reset; change password when signed in)\n - social sign-in for any provider whose credentials are present in env:\n     GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET\n     FACEBOOK_CLIENT_ID / FACEBOOK_CLIENT_SECRET\n     APPLE_CLIENT_ID / APPLE_CLIENT_SECRET\n     GITHUB_CLIENT_ID / GITHUB_CLIENT_SECRET\n - account linking: a signed-in user can attach/detach social logins\n\nReset emails go through SMTP when SMTP_HOST is configured; otherwise the\nreset link is printed to the server log (dev mode)."
-      },
-      "constants": [
-        {
-          "name": "enabledProviders",
-          "line": 46,
-          "shape": null,
-          "summary": "Social provider names that are configured and therefore offered in the UI.",
-          "description": "Social provider names that are configured and therefore offered in the UI.\n\nA provider appears automatically once both its client id and secret are\npresent in the environment, so enabling one is a deployment change rather\nthan a code change."
-        },
-        {
-          "name": "auth",
-          "line": 77,
-          "shape": null,
-          "summary": null,
-          "description": null
-        }
-      ],
-      "methods": [
-        {
-          "name": "sendEmail",
-          "qualified": "sendEmail",
-          "kind": "function",
-          "exported": false,
-          "async": true,
-          "generator": false,
-          "line": 62,
-          "signature": [
-            "arg0"
-          ],
-          "documented": true,
-          "summary": "Send a transactional email, or log it when no SMTP host is configured.",
-          "description": "Send a transactional email, or log it when no SMTP host is configured.\n\nFalling back to the log rather than throwing keeps password reset usable\nin development: the reset link is printed to the server output instead of\nbeing delivered.",
-          "params": [
-            {
-              "name": "msg",
-              "type": "object",
-              "optional": false,
-              "default": null,
-              "desc": "The message."
-            },
-            {
-              "name": "msg.to",
-              "type": "string",
-              "optional": false,
-              "default": null,
-              "desc": "Recipient address."
-            },
-            {
-              "name": "msg.subject",
-              "type": "string",
-              "optional": false,
-              "default": null,
-              "desc": "Subject line."
-            },
-            {
-              "name": "msg.text",
-              "type": "string",
-              "optional": false,
-              "default": null,
-              "desc": "Plain-text body."
-            }
-          ],
-          "returns": {
-            "type": "Promise<void>",
-            "desc": "Resolves once the message is sent or logged."
-          },
-          "throws": [],
-          "contract": {
-            "pre": [],
-            "post": [],
-            "invariant": [],
-            "mutates": [],
-            "sideEffect": [
-              "Sends mail over SMTP, or writes to the server log. Reads SMTP configuration from the environment."
-            ],
-            "reads": [],
-            "pure": false
-          },
-          "other": []
-        },
-        {
-          "name": "sendResetPassword",
-          "qualified": "emailAndPassword > sendResetPassword",
-          "kind": "method",
-          "exported": false,
-          "async": true,
-          "generator": false,
-          "line": 94,
-          "signature": [
-            "arg0"
-          ],
-          "documented": true,
-          "summary": "Email a password-reset link.",
-          "description": "Email a password-reset link.",
-          "params": [
-            {
-              "name": "req",
-              "type": "object",
-              "optional": false,
-              "default": null,
-              "desc": "Reset request from Better Auth."
-            },
-            {
-              "name": "req.user",
-              "type": "object",
-              "optional": false,
-              "default": null,
-              "desc": "The account requesting the reset."
-            },
-            {
-              "name": "req.url",
-              "type": "string",
-              "optional": false,
-              "default": null,
-              "desc": "The single-use reset link."
-            }
-          ],
-          "returns": {
-            "type": "Promise<void>",
-            "desc": "Resolves once the message is sent or logged."
-          },
-          "throws": [],
-          "contract": {
-            "pre": [],
-            "post": [],
-            "invariant": [],
-            "mutates": [],
-            "sideEffect": [
-              "Sends an email."
-            ],
-            "reads": [],
-            "pure": false
-          },
-          "other": []
-        },
-        {
-          "name": "migrateAuthDb",
-          "qualified": "migrateAuthDb",
-          "kind": "function",
-          "exported": true,
-          "async": true,
-          "generator": false,
-          "line": 126,
-          "signature": [],
-          "documented": true,
-          "summary": "Create or upgrade the auth tables.",
-          "description": "Create or upgrade the auth tables.\n\nIdempotent, and run on every start, so a deployment never needs a\nseparate migration step.",
-          "params": [],
-          "returns": {
-            "type": "Promise<void>",
-            "desc": "Resolves once the schema is current."
-          },
-          "throws": [],
-          "contract": {
-            "pre": [],
-            "post": [],
-            "invariant": [],
-            "mutates": [],
-            "sideEffect": [
-              "Writes to the SQLite database."
-            ],
-            "reads": [],
-            "pure": false
-          },
-          "other": []
-        }
-      ]
-    },
-    {
-      "file": "server/index.js",
-      "module": {
-        "summary": "AcouSim production server: one process serving / the built web app (dist/) /api/simulate the simulation engine (POST project → results + metrics) /mcp the MCP endpoint for AI agents (streamable HTTP) /healthz liveness probe",
-        "description": "AcouSim production server: one process serving\n  /               the built web app (dist/)\n  /api/simulate   the simulation engine (POST project → results + metrics)\n  /mcp            the MCP endpoint for AI agents (streamable HTTP)\n  /healthz        liveness probe\n\nThe engine runs ONLY here — the browser bundle contains no solver code.\n  PORT=8788 ACOUSIM_TOKEN=secret node server/index.js"
-      },
-      "constants": [],
-      "methods": [
-        {
-          "name": "sendJson",
-          "qualified": "sendJson",
-          "kind": "function",
-          "exported": false,
-          "async": false,
-          "generator": false,
-          "line": 49,
-          "signature": [
-            "res",
-            "code",
-            "body"
-          ],
-          "documented": true,
-          "summary": "Send a JSON response.",
-          "description": "Send a JSON response.",
-          "params": [
-            {
-              "name": "res",
-              "type": "import('node:http').ServerResponse",
-              "optional": false,
-              "default": null,
-              "desc": "The response."
-            },
-            {
-              "name": "code",
-              "type": "number",
-              "optional": false,
-              "default": null,
-              "desc": "HTTP status."
-            },
-            {
-              "name": "body",
-              "type": "any",
-              "optional": false,
-              "default": null,
-              "desc": "Serializable payload."
-            }
-          ],
-          "returns": {
-            "type": "void",
-            "desc": ""
-          },
-          "throws": [],
-          "contract": {
-            "pre": [],
-            "post": [],
-            "invariant": [],
-            "mutates": [],
-            "sideEffect": [
-              "Writes the response head and ends it."
-            ],
-            "reads": [],
-            "pure": false
-          },
-          "other": []
-        },
-        {
-          "name": "readBody",
-          "qualified": "readBody",
-          "kind": "function",
-          "exported": false,
-          "async": true,
-          "generator": false,
-          "line": 66,
-          "signature": [
-            "req",
-            "limit"
-          ],
-          "documented": true,
-          "summary": "Read and parse a JSON request body.",
-          "description": "Read and parse a JSON request body.\n\nThe size limit is checked as the body streams, so an oversized request is\nrejected before it is fully buffered.",
-          "params": [
-            {
-              "name": "req",
-              "type": "import('node:http').IncomingMessage",
-              "optional": false,
-              "default": null,
-              "desc": "The request."
-            },
-            {
-              "name": "limit",
-              "type": "number",
-              "optional": true,
-              "default": "4e6",
-              "desc": "Maximum body size in bytes."
-            }
-          ],
-          "returns": {
-            "type": "Promise<object>",
-            "desc": "The parsed body, or `{}` when it was empty."
-          },
-          "throws": [
-            {
-              "type": "Error",
-              "desc": "When the body exceeds the limit or is not valid JSON."
-            }
-          ],
-          "contract": {
-            "pre": [],
-            "post": [],
-            "invariant": [],
-            "mutates": [],
-            "sideEffect": [
-              "Consumes the request stream."
-            ],
-            "reads": [],
-            "pure": false
-          },
-          "other": []
-        },
-        {
-          "name": "handleSimulate",
-          "qualified": "handleSimulate",
-          "kind": "function",
-          "exported": false,
-          "async": false,
-          "generator": false,
-          "line": 88,
-          "signature": [
-            "body"
-          ],
-          "documented": true,
-          "summary": "Run a simulation for the `/api/simulate` endpoint.",
-          "description": "Run a simulation for the `/api/simulate` endpoint.\n\nThe browser bundle contains no engine code, so every result the app shows\ncomes through here. Point count is capped regardless of what the request\nasks for, since this endpoint is unauthenticated in the default\ndeployment and a large sweep is expensive.",
-          "params": [
-            {
-              "name": "body",
-              "type": "object",
-              "optional": false,
-              "default": null,
-              "desc": "A serialized project."
-            }
-          ],
-          "returns": {
-            "type": "{results: object, metrics: object|null}",
-            "desc": "The raw sweep result and its derived metrics, `metrics` being `null` when the simulation failed."
-          },
-          "throws": [
-            {
-              "type": "Error",
-              "desc": "When the project is structurally invalid; the error carries `projectErrors` for the 422 response."
-            }
-          ],
-          "contract": {
-            "pre": [],
-            "post": [],
-            "invariant": [],
-            "mutates": [],
-            "sideEffect": [
-              "Runs the solver."
-            ],
-            "reads": [],
-            "pure": false
-          },
-          "other": []
-        },
-        {
-          "name": "serveStatic",
-          "qualified": "serveStatic",
-          "kind": "function",
-          "exported": false,
-          "async": false,
-          "generator": false,
-          "line": 117,
-          "signature": [
-            "req",
-            "res",
-            "pathname"
-          ],
-          "documented": true,
-          "summary": "Serve a built asset, falling back to the SPA entry point.",
-          "description": "Serve a built asset, falling back to the SPA entry point.\n\nTwo things matter here. The resolved path is checked to be inside `dist/`\nbefore anything is read, so a `../` in the URL cannot escape the served\ndirectory. And content-hashed assets get a one-year immutable cache while\neverything else is `no-cache` — the hash in the filename is what makes\nthe long cache safe, since a changed file is a changed URL.\n\nAny path that is not a real file falls through to `index.html`, which is\nwhat lets client-side routes like `/panel` load on a hard refresh.",
-          "params": [
-            {
-              "name": "req",
-              "type": "import('node:http').IncomingMessage",
-              "optional": false,
-              "default": null,
-              "desc": "The request."
-            },
-            {
-              "name": "res",
-              "type": "import('node:http').ServerResponse",
-              "optional": false,
-              "default": null,
-              "desc": "The response."
-            },
-            {
-              "name": "pathname",
-              "type": "string",
-              "optional": false,
-              "default": null,
-              "desc": "Requested path."
-            }
-          ],
-          "returns": {
-            "type": "void",
-            "desc": ""
-          },
-          "throws": [],
-          "contract": {
-            "pre": [],
-            "post": [],
-            "invariant": [],
-            "mutates": [],
-            "sideEffect": [
-              "Reads from disk and streams the file to the response."
-            ],
-            "reads": [],
-            "pure": false
-          },
-          "other": []
-        }
-      ]
-    },
-    {
       "file": "src/App.jsx",
       "module": null,
       "constants": [],
@@ -6965,7 +6568,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 44,
+          "line": 45,
           "signature": [],
           "documented": true,
           "summary": "Offer to restore the previous session's auto-saved project.",
@@ -6996,15 +6599,15 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 68,
+          "line": 69,
           "signature": [],
           "documented": true,
-          "summary": "Report that the server-side simulation service is unreachable.",
-          "description": "Report that the server-side simulation service is unreachable.\n\nAn app-level banner rather than a per-chart message, because the charts\nare separate panels and any of them may be closed — the user would\notherwise get no indication at all.",
+          "summary": "Report that the simulation could not be run.",
+          "description": "Report that the simulation could not be run.\n\nAn app-level banner rather than a per-chart message, because the charts\nare separate panels and any of them may be closed — the user would\notherwise get no indication at all.",
           "params": [],
           "returns": {
             "type": "React.ReactElement|null",
-            "desc": "The banner, or `null` when the service is reachable."
+            "desc": "The banner, or `null` when the last run succeeded."
           },
           "throws": [],
           "contract": {
@@ -7027,7 +6630,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 80,
+          "line": 81,
           "signature": [],
           "documented": true,
           "summary": "Report graph errors that prevent the simulation from running.",
@@ -7062,7 +6665,7 @@
           "signature": [],
           "documented": true,
           "summary": "The application root.",
-          "description": "The application root.\n\nRoutes before rendering anything: the password-reset page and a\npopped-out panel are whole-page modes that share none of the workspace\nchrome.\n\nTwo effects run once on mount. The first loads the demo project and, if a\ndifferent auto-save exists, offers to restore it — skipped entirely in a\npopped-out tab, which owns no project and would otherwise broadcast one\nover whatever the main window has open. The second installs the global\nkey handler, which resolves every combo through `src/keymap.js` so the\nmenus, the rebinding UI and this handler can never disagree, and which\nignores keys while a text field has focus.",
+          "description": "The application root.\n\nRoutes before rendering anything: a popped-out panel is a whole-page mode\nthat shares none of the workspace chrome.\n\nTwo effects run once on mount. The first loads the demo project and, if a\ndifferent auto-save exists, offers to restore it — skipped entirely in a\npopped-out tab, which owns no project and would otherwise broadcast one\nover whatever the main window has open. The second installs the global\nkey handler, which resolves every combo through `src/keymap.js` so the\nmenus, the rebinding UI and this handler can never disagree, and which\nignores keys while a text field has focus.",
           "params": [],
           "returns": {
             "type": "React.ReactElement",
@@ -7126,37 +6729,856 @@
       ]
     },
     {
-      "file": "src/auth.js",
+      "file": "src/components/ContextMenu.jsx",
       "module": {
-        "summary": "Better Auth client: session hook + sign-in/up/out, password flows, and social account linking. Same-origin /api/auth (vite proxies in dev).",
-        "description": "Better Auth client: session hook + sign-in/up/out, password flows, and\nsocial account linking. Same-origin /api/auth (vite proxies in dev)."
+        "summary": "The right-click menu.",
+        "description": "The right-click menu.\n\nOne component for every context in the app. The store records only *what*\nwas right-clicked — a node, an edge, the canvas background, a docked window,\none of its tabs — and this module decides what that target can do. Keeping\nthe menu's contents out of state is what lets an item's enabled or checked\nstate be correct at the moment it is drawn rather than at the moment the menu\nopened.\n\nRows come from MenuItem.jsx, shared with the menu bar, so a command offered\nin both places looks the same in both.\n\nThe browser's own menu is suppressed everywhere except in text fields, where\nit is genuinely the better menu: spell-check suggestions and the system\nclipboard are things this app cannot offer."
       },
       "constants": [
         {
-          "name": "authClient",
-          "line": 5,
-          "shape": null,
-          "summary": null,
-          "description": null
-        },
-        {
-          "name": "PROVIDER_LABELS",
-          "line": 7,
+          "name": "__internals",
+          "line": 428,
           "shape": {
             "kind": "object",
             "keys": [
-              "google",
-              "facebook",
-              "apple",
-              "github",
-              "credential"
+              "isTextField",
+              "offerable"
             ]
           },
           "summary": null,
           "description": null
         }
       ],
-      "methods": []
+      "methods": [
+        {
+          "name": "isTextField",
+          "qualified": "isTextField",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 38,
+          "signature": [
+            "el"
+          ],
+          "documented": true,
+          "summary": "Whether an element takes typed input, and so keeps the browser's own menu.",
+          "description": "Whether an element takes typed input, and so keeps the browser's own menu.\n\nThe native menu is the better menu in a text field — it offers spell-check\ncorrections and the system clipboard, neither of which this app has — so it\nis left alone there rather than replaced with something less useful.",
+          "params": [
+            {
+              "name": "el",
+              "type": "EventTarget|null",
+              "optional": false,
+              "default": null,
+              "desc": "The right-clicked element."
+            }
+          ],
+          "returns": {
+            "type": "boolean",
+            "desc": "True when the native menu should be left alone."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "offerable",
+          "qualified": "offerable",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 55,
+          "signature": [
+            "ids",
+            "settings"
+          ],
+          "documented": true,
+          "summary": "Panels that may be offered as a new view, given the current settings.",
+          "description": "Panels that may be offered as a new view, given the current settings.\n\nExperimental panels are hidden rather than shown disabled: a panel gated\nbehind a setting the user has not turned on is not a thing they are meant to\nbe reaching for yet.",
+          "params": [
+            {
+              "name": "ids",
+              "type": "string[]",
+              "optional": false,
+              "default": null,
+              "desc": "Candidate panel ids."
+            },
+            {
+              "name": "settings",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "Current sweep and feature settings."
+            }
+          ],
+          "returns": {
+            "type": "string[]",
+            "desc": "The offerable ids."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "ContextMenu",
+          "qualified": "ContextMenu",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 69,
+          "signature": [],
+          "documented": true,
+          "summary": "The floating right-click menu.",
+          "description": "The floating right-click menu.\n\nRenders nothing until something opens it. While open it closes on Escape, on\nany pointer press outside itself, and on a scroll or resize — all three being\nways the menu would otherwise end up pointing at something that has moved.",
+          "params": [],
+          "returns": {
+            "type": "React.ReactElement|null",
+            "desc": "The menu, or `null` when none is open."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Subscribes to the store, and registers window listeners for the suppression of the native menu and for dismissal."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "suppress",
+          "qualified": "ContextMenu > suppress",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 87,
+          "signature": [
+            "e"
+          ],
+          "documented": true,
+          "summary": "Take the browser's context menu away outside text fields.",
+          "description": "Take the browser's context menu away outside text fields.",
+          "params": [
+            {
+              "name": "e",
+              "type": "MouseEvent",
+              "optional": false,
+              "default": null,
+              "desc": "The contextmenu event."
+            }
+          ],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Prevents the event's default, which is what stops the native menu appearing."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "away",
+          "qualified": "ContextMenu > away",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 113,
+          "signature": [
+            "e"
+          ],
+          "documented": true,
+          "summary": "Close the menu when the pointer goes down outside it.",
+          "description": "Close the menu when the pointer goes down outside it.",
+          "params": [
+            {
+              "name": "e",
+              "type": "MouseEvent",
+              "optional": false,
+              "default": null,
+              "desc": "The pointerdown event."
+            }
+          ],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Closes the menu."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "esc",
+          "qualified": "ContextMenu > esc",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 121,
+          "signature": [
+            "e"
+          ],
+          "documented": true,
+          "summary": "Close the menu on Escape.",
+          "description": "Close the menu on Escape.",
+          "params": [
+            {
+              "name": "e",
+              "type": "KeyboardEvent",
+              "optional": false,
+              "default": null,
+              "desc": "The keydown event."
+            }
+          ],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Closes the menu."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "key",
+          "qualified": "ContextMenu > key",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 149,
+          "signature": [
+            "id"
+          ],
+          "documented": true,
+          "summary": "The display hint for a command's first binding.",
+          "description": "The display hint for a command's first binding.\n\nRead live rather than baked in, so rebinding a command in Settings updates\nthe right-click menu too.",
+          "params": [
+            {
+              "name": "id",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Command id."
+            }
+          ],
+          "returns": {
+            "type": "string",
+            "desc": "The formatted combo, or `''` when unbound."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [
+              "the current bindings from the store."
+            ],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "addViewItems",
+          "qualified": "ContextMenu > addViewItems",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 168,
+          "signature": [],
+          "documented": true,
+          "summary": "Submenu offering every view that could be added to the clicked window.",
+          "description": "Submenu offering every view that could be added to the clicked window.\n\nPanels already in this stack are left out — adding one where it already is\nwould be a no-op the user had to discover by trying it. Charts are nested\none level down, matching the View menu, because there are nine of them.",
+          "params": [],
+          "returns": {
+            "type": "Array<object>",
+            "desc": "Item descriptors for the Add View submenu."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [
+              "the current layout and settings."
+            ],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "row",
+          "qualified": "ContextMenu > addViewItems > row",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 176,
+          "signature": [
+            "id"
+          ],
+          "documented": true,
+          "summary": "One Add View row.",
+          "description": "One Add View row.",
+          "params": [
+            {
+              "name": "id",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Panel id."
+            }
+          ],
+          "returns": {
+            "type": "object",
+            "desc": "An item descriptor that docks the panel into the clicked stack."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [
+              "the clicked stack id."
+            ],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "onClick",
+          "qualified": "ContextMenu > addViewItems > row > onClick",
+          "kind": "method",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 185,
+          "signature": [],
+          "documented": true,
+          "summary": "Add this view to the clicked window.",
+          "description": "Add this view to the clicked window.",
+          "params": [],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Changes and persists the layout, and closes the menu."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "windowItems",
+          "qualified": "ContextMenu > windowItems",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 206,
+          "signature": [],
+          "documented": true,
+          "summary": "The items common to every click inside a docked window.",
+          "description": "The items common to every click inside a docked window.\n\nEmpty when the click did not land in one — a popped-out tab, or a\nmaximized panel — so the same builder can be used from every target.",
+          "params": [],
+          "returns": {
+            "type": "Array<object>",
+            "desc": "Item descriptors, or an empty list outside the dock."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [
+              "the clicked stack and the current layout."
+            ],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "onClick",
+          "qualified": "ContextMenu > windowItems > onClick",
+          "kind": "method",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 219,
+          "signature": [],
+          "documented": true,
+          "summary": "Send the whole clicked window, tabs and all, to one browser tab.",
+          "description": "Send the whole clicked window, tabs and all, to one browser tab.",
+          "params": [],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Opens a browser window, changes and persists the layout, and closes the menu."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "onClick",
+          "qualified": "ContextMenu > windowItems > onClick",
+          "kind": "method",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 231,
+          "signature": [],
+          "documented": true,
+          "summary": "Send this one view to its own browser tab.",
+          "description": "Send this one view to its own browser tab.",
+          "params": [],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Opens a browser window, changes and persists the layout, and closes the menu."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "run",
+          "qualified": "ContextMenu > run",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 247,
+          "signature": [
+            "fn"
+          ],
+          "documented": true,
+          "summary": "Run a store action and dismiss the menu.",
+          "description": "Run a store action and dismiss the menu.\n\nEvery command in this menu ends the same way, so the pairing is written\nonce rather than at each call site.",
+          "params": [
+            {
+              "name": "fn",
+              "type": "Function",
+              "optional": false,
+              "default": null,
+              "desc": "The action to run."
+            }
+          ],
+          "returns": {
+            "type": "Function",
+            "desc": "A click handler."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "The returned handler runs the action and closes the menu."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "items",
+          "qualified": "ContextMenu > items",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 255,
+          "signature": [],
+          "documented": true,
+          "summary": "The rows for whatever was right-clicked.",
+          "description": "The rows for whatever was right-clicked.",
+          "params": [],
+          "returns": {
+            "type": "Array<object>",
+            "desc": "Item descriptors, in display order."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [
+              "the whole store — nearly every row's enabled or checked state depends on current state."
+            ],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "onClick",
+          "qualified": "ContextMenu > items > onClick",
+          "kind": "method",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 274,
+          "signature": [],
+          "documented": true,
+          "summary": "Paste the clipboard where the menu was opened.",
+          "description": "Paste the clipboard where the menu was opened.",
+          "params": [],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Adds nodes, schedules a resimulation and closes the menu."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "onClick",
+          "qualified": "ContextMenu > items > onClick",
+          "kind": "method",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 295,
+          "signature": [],
+          "documented": true,
+          "summary": "Create this element where the menu was opened.",
+          "description": "Create this element where the menu was opened.",
+          "params": [],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Adds a node, schedules a resimulation and closes the menu."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "onClick",
+          "qualified": "ContextMenu > items > onClick",
+          "kind": "method",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 313,
+          "signature": [],
+          "documented": true,
+          "summary": "Remove the right-clicked edge.",
+          "description": "Remove the right-clicked edge.",
+          "params": [],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Changes the graph, schedules a resimulation and closes the menu."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "onClick",
+          "qualified": "ContextMenu > items > onClick",
+          "kind": "method",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 330,
+          "signature": [],
+          "documented": true,
+          "summary": "Send the right-clicked view to its own browser tab.",
+          "description": "Send the right-clicked view to its own browser tab.",
+          "params": [],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Opens a browser window, changes and persists the layout, and closes the menu."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "onClick",
+          "qualified": "ContextMenu > items > onClick",
+          "kind": "method",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 341,
+          "signature": [],
+          "documented": true,
+          "summary": "Maximize the right-clicked view, or restore the layout.",
+          "description": "Maximize the right-clicked view, or restore the layout.",
+          "params": [],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Changes the dock layout and closes the menu."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "onClick",
+          "qualified": "ContextMenu > items > onClick",
+          "kind": "method",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 354,
+          "signature": [],
+          "documented": true,
+          "summary": "Close the right-clicked view.",
+          "description": "Close the right-clicked view.",
+          "params": [],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Changes and persists the layout, and closes the menu."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "onClick",
+          "qualified": "ContextMenu > items > onClick",
+          "kind": "method",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 365,
+          "signature": [],
+          "documented": true,
+          "summary": "Close every other view in this window.",
+          "description": "Close every other view in this window.",
+          "params": [],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Changes and persists the layout, and closes the menu."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "onClick",
+          "qualified": "ContextMenu > items > onClick",
+          "kind": "method",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 387,
+          "signature": [],
+          "documented": true,
+          "summary": "Maximize the window's front view, or restore the layout.",
+          "description": "Maximize the window's front view, or restore the layout.",
+          "params": [],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Changes the dock layout and closes the menu."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "onClick",
+          "qualified": "ContextMenu > items > onClick",
+          "kind": "method",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 397,
+          "signature": [],
+          "documented": true,
+          "summary": "Restore the default workspace arrangement.",
+          "description": "Restore the default workspace arrangement.",
+          "params": [],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Replaces and persists the layout, and closes the menu."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        }
+      ]
     },
     {
       "file": "src/components/DriverDB.jsx",
@@ -7452,7 +7874,7 @@
       "constants": [
         {
           "name": "__internals",
-          "line": 151,
+          "line": 324,
           "shape": {
             "kind": "object",
             "keys": [
@@ -7471,7 +7893,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 17,
+          "line": 19,
           "signature": [
             "conn"
           ],
@@ -7504,17 +7926,89 @@
           "other": []
         },
         {
+          "name": "swallowNextContextMenu",
+          "qualified": "swallowNextContextMenu",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 40,
+          "signature": [],
+          "documented": true,
+          "summary": "Discard the one `contextmenu` event that trails a completed right-drag.",
+          "description": "Discard the one `contextmenu` event that trails a completed right-drag.\n\nThe browser fires it whatever the drag was for, and on whatever element the\npointer happened to be over when the button came up — which after a sweep\nacross the workspace is often not the canvas at all. Left alone it raises\nthat element's menu on top of the selection just made.\n\nSwallowed at the window in the capture phase, so the event never reaches the\nhandler that would act on it, and only ever once: the listener stands down\non the next turn of the loop whether or not the event arrived, which is what\nkeeps a drag that ends outside the window from eating a later, deliberate\nright-click.",
+          "params": [],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Registers a one-shot window contextmenu listener and schedules its removal."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "eat",
+          "qualified": "swallowNextContextMenu > eat",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 48,
+          "signature": [
+            "e"
+          ],
+          "documented": true,
+          "summary": "Consume the trailing event.",
+          "description": "Consume the trailing event.",
+          "params": [
+            {
+              "name": "e",
+              "type": "MouseEvent",
+              "optional": false,
+              "default": null,
+              "desc": "The contextmenu event."
+            }
+          ],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Prevents the event's default and stops it propagating."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
           "name": "CanvasInner",
           "qualified": "CanvasInner",
           "kind": "function",
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 34,
+          "line": 71,
           "signature": [],
           "documented": true,
           "summary": "The node editor canvas.",
-          "description": "The node editor canvas.\n\nMust render inside a `ReactFlowProvider`, which is why `FlowCanvas` wraps\nit — `useReactFlow` is only available below the provider.\n\nTracks the pointer so a keyboard-added node can land where the user is\nlooking, and publishes that as `_flowApi` on the store for\n`addNodeAtCursor` to read.",
+          "description": "The node editor canvas.\n\nMust render inside a `ReactFlowProvider`, which is why `FlowCanvas` wraps\nit — `useReactFlow` is only available below the provider.\n\nTracks the pointer so a keyboard-added node can land where the user is\nlooking, and publishes that as `_flowApi` on the store for\n`addNodeAtCursor` to read.\n\nThe right mouse button does two jobs here, told apart by how far it travels:\na click raises the context menu, a drag sweeps a marquee over the elements\nit crosses. Panning is therefore restricted to the left and middle buttons,\nso a right-drag is unambiguously a selection.",
           "params": [],
           "returns": {
             "type": "React.ReactElement",
@@ -7541,7 +8035,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 57,
+          "line": 100,
           "signature": [],
           "documented": true,
           "summary": "Where a keyboard-added node should land, in canvas coordinates.",
@@ -7566,13 +8060,191 @@
           "other": []
         },
         {
+          "name": "onRightDown",
+          "qualified": "CanvasInner > onRightDown",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 142,
+          "signature": [
+            "e"
+          ],
+          "documented": true,
+          "summary": "Begin a right-drag, which may turn out to be a marquee or a click.",
+          "description": "Begin a right-drag, which may turn out to be a marquee or a click.\n\nNothing is committed at mousedown: which of the two this is only becomes\nclear once the pointer has moved, or failed to. Listeners go on the window\nrather than the canvas so the drag survives the cursor leaving it, which a\nsweep across the whole graph routinely does.",
+          "params": [
+            {
+              "name": "e",
+              "type": "React.MouseEvent",
+              "optional": false,
+              "default": null,
+              "desc": "The mousedown event."
+            }
+          ],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Reads live element geometry and registers window mousemove and mouseup listeners, both removed when the drag ends."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "onMove",
+          "qualified": "CanvasInner > onRightDown > onMove",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 160,
+          "signature": [
+            "ev"
+          ],
+          "documented": true,
+          "summary": "Grow the marquee, once the pointer has moved far enough to mean one.",
+          "description": "Grow the marquee, once the pointer has moved far enough to mean one.",
+          "params": [
+            {
+              "name": "ev",
+              "type": "MouseEvent",
+              "optional": false,
+              "default": null,
+              "desc": "The mousemove event."
+            }
+          ],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [
+              "The in-progress drag record."
+            ],
+            "sideEffect": [
+              "Updates the overlay rectangle."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "onUp",
+          "qualified": "CanvasInner > onRightDown > onUp",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 179,
+          "signature": [
+            "ev"
+          ],
+          "documented": true,
+          "summary": "Finish the gesture: select what the marquee caught, or let the menu open.",
+          "description": "Finish the gesture: select what the marquee caught, or let the menu open.",
+          "params": [
+            {
+              "name": "ev",
+              "type": "MouseEvent",
+              "optional": false,
+              "default": null,
+              "desc": "The mouseup event."
+            }
+          ],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [
+              "The in-progress drag record."
+            ],
+            "sideEffect": [
+              "Removes the window listeners, clears the overlay, swallows the trailing contextmenu event and — for a drag — replaces the node selection."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "openMenu",
+          "qualified": "CanvasInner > openMenu",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 224,
+          "signature": [
+            "e",
+            "target"
+          ],
+          "documented": true,
+          "summary": "Raise the context menu against something on the canvas.",
+          "description": "Raise the context menu against something on the canvas.\n\nHeld back rather than raised when a right-press on the background is still\nin progress, because the two platforms disagree about when `contextmenu`\narrives: Windows fires it once the button comes up, by which time a drag\nhas declared itself, but Linux and macOS fire it at mousedown — before\nanyone can know whether this is a click or the start of a marquee. Raising\nit there would put a menu over every sweep the user drew. So when a gesture\nis pending the menu is stashed on it, and the mouseup that finds no\nmovement is what finally opens it.\n\nThe event is consumed either way, so the docked window's own menu does not\nopen behind this one on the way up.",
+          "params": [
+            {
+              "name": "e",
+              "type": "React.MouseEvent",
+              "optional": false,
+              "default": null,
+              "desc": "The contextmenu event."
+            },
+            {
+              "name": "target",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "What was clicked: `{kind: 'pane'|'node'|'edge', …}`."
+            }
+          ],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [
+              "The in-progress drag record, when there is one."
+            ],
+            "sideEffect": [
+              "Focuses the canvas and either opens the context menu or defers it to the pending gesture."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
           "name": "FlowCanvas",
           "qualified": "FlowCanvas",
           "kind": "function",
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 140,
+          "line": 313,
           "signature": [],
           "documented": true,
           "summary": "The Node Editor panel, wrapping the canvas in its React Flow provider.",
@@ -7605,101 +8277,13 @@
       "constants": [],
       "methods": [
         {
-          "name": "Item",
-          "qualified": "Item",
-          "kind": "function",
-          "exported": false,
-          "async": false,
-          "generator": false,
-          "line": 35,
-          "signature": [
-            "arg0"
-          ],
-          "documented": true,
-          "summary": "One dropdown row: a command, a separator, or a submenu parent.",
-          "description": "One dropdown row: a command, a separator, or a submenu parent.\n\nA label of `-` renders a separator instead of an item. Clicking a submenu\nparent is swallowed rather than treated as a command, since the submenu\nopens on hover and a click there means \"I am on my way to the child\".",
-          "params": [
-            {
-              "name": "props",
-              "type": "object",
-              "optional": false,
-              "default": null,
-              "desc": "Component props."
-            },
-            {
-              "name": "props.label",
-              "type": "string",
-              "optional": false,
-              "default": null,
-              "desc": "Display text, or `-` for a separator."
-            },
-            {
-              "name": "props.hint",
-              "type": "string",
-              "optional": true,
-              "default": null,
-              "desc": "Shortcut hint shown on the right."
-            },
-            {
-              "name": "props.onClick",
-              "type": "Function",
-              "optional": true,
-              "default": null,
-              "desc": "Command to run."
-            },
-            {
-              "name": "props.disabled",
-              "type": "boolean",
-              "optional": true,
-              "default": null,
-              "desc": "Render inert."
-            },
-            {
-              "name": "props.checked",
-              "type": "boolean",
-              "optional": true,
-              "default": null,
-              "desc": "Show a check mark."
-            },
-            {
-              "name": "props.danger",
-              "type": "boolean",
-              "optional": true,
-              "default": null,
-              "desc": "Style as destructive."
-            },
-            {
-              "name": "props.submenu",
-              "type": "Array<object>",
-              "optional": true,
-              "default": null,
-              "desc": "Child items; makes this a submenu parent."
-            }
-          ],
-          "returns": {
-            "type": "React.ReactElement",
-            "desc": "The menu row."
-          },
-          "throws": [],
-          "contract": {
-            "pre": [],
-            "post": [],
-            "invariant": [],
-            "mutates": [],
-            "sideEffect": [],
-            "reads": [],
-            "pure": true
-          },
-          "other": []
-        },
-        {
           "name": "Menu",
           "qualified": "Menu",
           "kind": "function",
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 77,
+          "line": 36,
           "signature": [
             "arg0"
           ],
@@ -7773,7 +8357,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 110,
+          "line": 69,
           "signature": [],
           "documented": true,
           "summary": "The application menu bar.",
@@ -7804,7 +8388,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 128,
+          "line": 87,
           "signature": [
             "id"
           ],
@@ -7845,7 +8429,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 141,
+          "line": 100,
           "signature": [
             "id"
           ],
@@ -7886,7 +8470,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 153,
+          "line": 112,
           "signature": [],
           "documented": true,
           "summary": "Bring a popped-out panel's tab to the front, or toggle a docked one.",
@@ -7917,7 +8501,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 165,
+          "line": 124,
           "signature": [
             "e"
           ],
@@ -7958,7 +8542,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 173,
+          "line": 132,
           "signature": [
             "e"
           ],
@@ -7999,7 +8583,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 193,
+          "line": 152,
           "signature": [
             "e"
           ],
@@ -8040,7 +8624,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 203,
+          "line": 162,
           "signature": [],
           "documented": true,
           "summary": "Parse the loaded file and replace the current project with it.",
@@ -8071,7 +8655,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 224,
+          "line": 183,
           "signature": [],
           "documented": true,
           "summary": "Save the current window arrangement under a prompted name.",
@@ -8102,7 +8686,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 242,
+          "line": 201,
           "signature": [],
           "documented": true,
           "summary": "Open the saved-project browser.",
@@ -8133,7 +8717,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 254,
+          "line": 213,
           "signature": [],
           "documented": true,
           "summary": "Open the file picker to import a project.",
@@ -8164,7 +8748,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 268,
+          "line": 227,
           "signature": [],
           "documented": true,
           "summary": "Download every result series as a CSV.",
@@ -8195,7 +8779,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 278,
+          "line": 237,
           "signature": [],
           "documented": true,
           "summary": "Download a PNG of the node canvas.",
@@ -8226,7 +8810,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 288,
+          "line": 247,
           "signature": [],
           "documented": true,
           "summary": "Download a plain-text metrics summary.",
@@ -8257,7 +8841,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 317,
+          "line": 276,
           "signature": [],
           "documented": true,
           "summary": "Pop the focused panel out into its own browser tab.",
@@ -8288,7 +8872,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 332,
+          "line": 291,
           "signature": [],
           "documented": true,
           "summary": "Pop this specific panel out into its own browser tab.",
@@ -8319,7 +8903,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 345,
+          "line": 304,
           "signature": [],
           "documented": true,
           "summary": "Maximize the focused panel, or restore the one already maximized.",
@@ -8350,7 +8934,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 356,
+          "line": 315,
           "signature": [],
           "documented": true,
           "summary": "Restore the default workspace arrangement.",
@@ -8381,7 +8965,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 371,
+          "line": 330,
           "signature": [],
           "documented": true,
           "summary": "Apply this saved arrangement.",
@@ -8412,7 +8996,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 388,
+          "line": 347,
           "signature": [],
           "documented": true,
           "summary": "Delete this saved arrangement.",
@@ -8443,7 +9027,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 404,
+          "line": 363,
           "signature": [],
           "documented": true,
           "summary": "Toggle resonance masking, which lumps chambers to hide standing-wave artifacts.",
@@ -8474,7 +9058,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 415,
+          "line": 374,
           "signature": [],
           "documented": true,
           "summary": "Toggle phase unwrapping on the phase chart.",
@@ -8505,7 +9089,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 433,
+          "line": 392,
           "signature": [],
           "documented": true,
           "summary": "Discard every reference overlay.",
@@ -8536,7 +9120,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 448,
+          "line": 407,
           "signature": [],
           "documented": true,
           "summary": "Open the driver library browser.",
@@ -8567,7 +9151,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 458,
+          "line": 417,
           "signature": [],
           "documented": true,
           "summary": "Open the Thiele/Small parameter solver.",
@@ -8598,7 +9182,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 471,
+          "line": 430,
           "signature": [],
           "documented": true,
           "summary": "Open the Nonlinear Lab panel.",
@@ -8629,7 +9213,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 486,
+          "line": 445,
           "signature": [],
           "documented": true,
           "summary": "Turn experimental features on or off.",
@@ -8660,7 +9244,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 505,
+          "line": 464,
           "signature": [],
           "documented": true,
           "summary": "Open Settings at the keyboard section.",
@@ -8691,7 +9275,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 515,
+          "line": 474,
           "signature": [],
           "documented": true,
           "summary": "Show the about dialog.",
@@ -8712,6 +9296,164 @@
             ],
             "reads": [],
             "pure": false
+          },
+          "other": []
+        }
+      ]
+    },
+    {
+      "file": "src/components/MenuItem.jsx",
+      "module": {
+        "summary": "The dropdown row, shared by the menu bar and the right-click menu.",
+        "description": "The dropdown row, shared by the menu bar and the right-click menu.\n\nOne implementation rather than two so the two menus cannot drift: a command\noffered in both places gets the same check mark, the same shortcut hint and\nthe same disabled styling without anyone having to keep a copy in step.\n\nAn item descriptor is plain data — `{label, hint, onClick, disabled,\nchecked, danger, submenu}` — which is what lets a menu be built by whoever\nknows the context and rendered by code that knows nothing about it."
+      },
+      "constants": [],
+      "methods": [
+        {
+          "name": "Item",
+          "qualified": "Item",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 31,
+          "signature": [
+            "arg0"
+          ],
+          "documented": true,
+          "summary": "One dropdown row: a command, a separator, or a submenu parent.",
+          "description": "One dropdown row: a command, a separator, or a submenu parent.\n\nA label of `-` renders a separator instead of an item. Clicking a submenu\nparent is swallowed rather than treated as a command, since the submenu\nopens on hover and a click there means \"I am on my way to the child\".",
+          "params": [
+            {
+              "name": "props",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "Component props."
+            },
+            {
+              "name": "props.label",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Display text, or `-` for a separator."
+            },
+            {
+              "name": "props.hint",
+              "type": "string",
+              "optional": true,
+              "default": null,
+              "desc": "Shortcut hint shown on the right."
+            },
+            {
+              "name": "props.onClick",
+              "type": "Function",
+              "optional": true,
+              "default": null,
+              "desc": "Command to run."
+            },
+            {
+              "name": "props.disabled",
+              "type": "boolean",
+              "optional": true,
+              "default": null,
+              "desc": "Render inert."
+            },
+            {
+              "name": "props.checked",
+              "type": "boolean",
+              "optional": true,
+              "default": null,
+              "desc": "Show a check mark."
+            },
+            {
+              "name": "props.danger",
+              "type": "boolean",
+              "optional": true,
+              "default": null,
+              "desc": "Style as destructive."
+            },
+            {
+              "name": "props.submenu",
+              "type": "Array<object>",
+              "optional": true,
+              "default": null,
+              "desc": "Child items; makes this a submenu parent."
+            },
+            {
+              "name": "props.submenuSide",
+              "type": "'right'|'left'",
+              "optional": true,
+              "default": "'right'",
+              "desc": "Which way submenus open. A menu near the right edge of the window opens them leftward so they stay on screen."
+            }
+          ],
+          "returns": {
+            "type": "React.ReactElement",
+            "desc": "The menu row."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "ItemList",
+          "qualified": "ItemList",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 72,
+          "signature": [
+            "arg0"
+          ],
+          "documented": true,
+          "summary": "A list of dropdown rows.",
+          "description": "A list of dropdown rows.\n\nSeparators repeat their label, so they are keyed by position; everything\nelse is keyed by label, which is unique within one menu.",
+          "params": [
+            {
+              "name": "props",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "Component props."
+            },
+            {
+              "name": "props.items",
+              "type": "Array<object>",
+              "optional": false,
+              "default": null,
+              "desc": "Item descriptors, in display order."
+            },
+            {
+              "name": "props.submenuSide",
+              "type": "'right'|'left'",
+              "optional": true,
+              "default": "'right'",
+              "desc": "Which way submenus open."
+            }
+          ],
+          "returns": {
+            "type": "React.ReactElement[]",
+            "desc": "The rendered rows."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
           },
           "other": []
         }
@@ -11271,7 +12013,18 @@
     {
       "file": "src/components/Palette.jsx",
       "module": null,
-      "constants": [],
+      "constants": [
+        {
+          "name": "NODE_KINDS",
+          "line": 10,
+          "shape": {
+            "kind": "array",
+            "length": 5
+          },
+          "summary": "The draggable node types, with the descriptions shown in the palette.",
+          "description": "The draggable node types, with the descriptions shown in the palette.\n\nExported because the canvas's right-click menu offers the same list under\nAdd Node, and two copies of it would drift the moment an element is added."
+        }
+      ],
       "methods": [
         {
           "name": "Palette",
@@ -11280,7 +12033,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 21,
+          "line": 24,
           "signature": [],
           "documented": true,
           "summary": "The node palette: draggable element types and the driver library button.",
@@ -11311,7 +12064,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 34,
+          "line": 37,
           "signature": [
             "e",
             "type"
@@ -12114,8 +12867,8 @@
     {
       "file": "src/components/PopoutView.jsx",
       "module": {
-        "summary": "The whole page when AcouSim is loaded at /panel?id=<panel>: one panel, full-window, for dragging onto a second monitor.",
-        "description": "The whole page when AcouSim is loaded at /panel?id=<panel>: one panel,\nfull-window, for dragging onto a second monitor.\n\nNo menu bar, no dock, no quick bar — those belong to the main window. State\narrives over the BroadcastChannel wired up in store.js, so the panel behaves\nexactly as it does when docked."
+        "summary": "The whole page when AcouSim is loaded at panel?id=…: one panel — or one docked window's worth of them — full-window, for dragging onto a second monitor.",
+        "description": "The whole page when AcouSim is loaded at panel?id=…: one panel — or one\ndocked window's worth of them — full-window, for dragging onto a second\nmonitor.\n\nNo menu bar, no dock, no quick bar — those belong to the main window. State\narrives over the BroadcastChannel wired up in store.js, so the panels behave\nexactly as they do when docked.\n\nA tab strip appears only when the window holds more than one panel. It is\ndeliberately not a dock: tabs here cannot be dragged, split or closed,\nbecause the arrangement lives in the main window and a second authority over\nit would be a second thing to keep in step."
       },
       "constants": [],
       "methods": [
@@ -12126,15 +12879,15 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 26,
+          "line": 34,
           "signature": [],
           "documented": true,
-          "summary": "The whole page when a single panel is opened in its own browser tab.",
-          "description": "The whole page when a single panel is opened in its own browser tab.\n\nRenders one panel full-window with no menu bar, dock or quick bar — those\nbelong to the main window. State arrives over the BroadcastChannel wired\nup in store.js, so the panel behaves exactly as it does when docked.\n\nAn unknown panel id renders an explanation rather than a blank page,\nsince a stale bookmark to a removed panel is the likely cause.",
+          "summary": "The whole page when panels are opened in their own browser tab.",
+          "description": "The whole page when panels are opened in their own browser tab.\n\nRenders one panel full-window, or a tab strip over several when a whole\ndocked window was popped out. Inactive panels stay mounted — hidden rather\nthan unmounted — so a chart keeps its zoom when you tab away and back, which\nis what the dock does too.\n\nAn unknown panel id renders an explanation rather than a blank page, since a\nstale bookmark to a removed panel is the likely cause.",
           "params": [],
           "returns": {
             "type": "React.ReactElement",
-            "desc": "The panel, or a message naming the unknown panel."
+            "desc": "The panels, or a message naming the unknown one."
           },
           "throws": [],
           "contract": {
@@ -12396,509 +13149,13 @@
       "constants": [],
       "methods": [
         {
-          "name": "useServerConfig",
-          "qualified": "useServerConfig",
-          "kind": "function",
-          "exported": false,
-          "async": false,
-          "generator": false,
-          "line": 38,
-          "signature": [],
-          "documented": true,
-          "summary": "Fetch the server's capabilities: which social providers and whether mail is configured.",
-          "description": "Fetch the server's capabilities: which social providers and whether mail is configured.\n\nFailures are swallowed and leave the defaults in place, so a server that\ncannot answer degrades to email-and-password rather than an error.",
-          "params": [],
-          "returns": {
-            "type": "{providers: string[], smtp: boolean}",
-            "desc": "The configuration, initially empty until the fetch resolves."
-          },
-          "throws": [],
-          "contract": {
-            "pre": [],
-            "post": [],
-            "invariant": [],
-            "mutates": [],
-            "sideEffect": [
-              "Issues a GET to /api/config on mount."
-            ],
-            "reads": [],
-            "pure": false
-          },
-          "other": []
-        },
-        {
-          "name": "SocialButtons",
-          "qualified": "SocialButtons",
-          "kind": "function",
-          "exported": false,
-          "async": false,
-          "generator": false,
-          "line": 56,
-          "signature": [
-            "arg0"
-          ],
-          "documented": true,
-          "summary": "A row of social provider buttons.",
-          "description": "A row of social provider buttons.",
-          "params": [
-            {
-              "name": "props",
-              "type": "object",
-              "optional": false,
-              "default": null,
-              "desc": "Component props."
-            },
-            {
-              "name": "props.providers",
-              "type": "string[]",
-              "optional": false,
-              "default": null,
-              "desc": "Provider ids to offer."
-            },
-            {
-              "name": "props.action",
-              "type": "(provider: string) => void",
-              "optional": false,
-              "default": null,
-              "desc": "Called with the chosen provider."
-            },
-            {
-              "name": "props.label",
-              "type": "string",
-              "optional": false,
-              "default": null,
-              "desc": "Verb prefixing each provider name, e.g. \"Sign in with\"."
-            }
-          ],
-          "returns": {
-            "type": "React.ReactElement|null",
-            "desc": "The button row, or `null` when no providers are configured."
-          },
-          "throws": [],
-          "contract": {
-            "pre": [],
-            "post": [],
-            "invariant": [],
-            "mutates": [],
-            "sideEffect": [],
-            "reads": [],
-            "pure": true
-          },
-          "other": []
-        },
-        {
-          "name": "AuthForms",
-          "qualified": "AuthForms",
-          "kind": "function",
-          "exported": false,
-          "async": false,
-          "generator": false,
-          "line": 80,
-          "signature": [],
-          "documented": true,
-          "summary": "The signed-out pane: sign in, create account, or request a password reset.",
-          "description": "The signed-out pane: sign in, create account, or request a password reset.\n\nOne component for all three modes, since they share the same fields and\ndiffer only in which are shown and which call is made.",
-          "params": [],
-          "returns": {
-            "type": "React.ReactElement",
-            "desc": "The auth forms."
-          },
-          "throws": [],
-          "contract": {
-            "pre": [],
-            "post": [],
-            "invariant": [],
-            "mutates": [],
-            "sideEffect": [
-              "Fetches server config, and its actions call the auth service."
-            ],
-            "reads": [],
-            "pure": false
-          },
-          "other": []
-        },
-        {
-          "name": "submit",
-          "qualified": "AuthForms > submit",
-          "kind": "function",
-          "exported": false,
-          "async": true,
-          "generator": false,
-          "line": 100,
-          "signature": [],
-          "documented": true,
-          "summary": "Run the current mode's auth request and report the outcome.",
-          "description": "Run the current mode's auth request and report the outcome.\n\nThe reset path deliberately does not reveal whether the address is\nregistered. Without a mail server it says so and points at the server\nlog, rather than claiming a message was sent.",
-          "params": [],
-          "returns": {
-            "type": "Promise<void>",
-            "desc": "Resolves once the request has completed and the result is on screen."
-          },
-          "throws": [],
-          "contract": {
-            "pre": [],
-            "post": [],
-            "invariant": [],
-            "mutates": [],
-            "sideEffect": [
-              "Calls the auth service, which may create a session, and updates component state."
-            ],
-            "reads": [],
-            "pure": false
-          },
-          "other": []
-        },
-        {
-          "name": "social",
-          "qualified": "AuthForms > social",
-          "kind": "function",
-          "exported": false,
-          "async": false,
-          "generator": false,
-          "line": 127,
-          "signature": [
-            "provider"
-          ],
-          "documented": true,
-          "summary": "Begin a social sign-in, returning here afterwards.",
-          "description": "Begin a social sign-in, returning here afterwards.",
-          "params": [
-            {
-              "name": "provider",
-              "type": "string",
-              "optional": false,
-              "default": null,
-              "desc": "Provider id."
-            }
-          ],
-          "returns": {
-            "type": "Promise<any>",
-            "desc": "The auth client's result; the redirect usually happens first."
-          },
-          "throws": [],
-          "contract": {
-            "pre": [],
-            "post": [],
-            "invariant": [],
-            "mutates": [],
-            "sideEffect": [
-              "Navigates away to the provider's consent screen."
-            ],
-            "reads": [],
-            "pure": false
-          },
-          "other": []
-        },
-        {
-          "name": "LinkedAccounts",
-          "qualified": "LinkedAccounts",
-          "kind": "function",
-          "exported": false,
-          "async": false,
-          "generator": false,
-          "line": 191,
-          "signature": [
-            "arg0"
-          ],
-          "documented": true,
-          "summary": "Manage which sign-in methods are attached to the account.",
-          "description": "Manage which sign-in methods are attached to the account.\n\nThe last remaining method cannot be unlinked — doing so would lock the\nuser out of their own account — so its button is disabled and says why.",
-          "params": [
-            {
-              "name": "props",
-              "type": "object",
-              "optional": false,
-              "default": null,
-              "desc": "Component props."
-            },
-            {
-              "name": "props.providers",
-              "type": "string[]",
-              "optional": false,
-              "default": null,
-              "desc": "Provider ids the server has configured."
-            }
-          ],
-          "returns": {
-            "type": "React.ReactElement",
-            "desc": "The linked-accounts pane."
-          },
-          "throws": [],
-          "contract": {
-            "pre": [],
-            "post": [],
-            "invariant": [],
-            "mutates": [],
-            "sideEffect": [
-              "Fetches the account list on mount, and its actions call the auth service."
-            ],
-            "reads": [],
-            "pure": false
-          },
-          "other": []
-        },
-        {
-          "name": "refresh",
-          "qualified": "LinkedAccounts > refresh",
-          "kind": "function",
-          "exported": false,
-          "async": false,
-          "generator": false,
-          "line": 203,
-          "signature": [],
-          "documented": true,
-          "summary": "Reload the linked account list.",
-          "description": "Reload the linked account list.\n\nA failure resolves to an empty list rather than leaving the pane in its\nloading state forever.",
-          "params": [],
-          "returns": {
-            "type": "Promise<void>",
-            "desc": "Resolves once the list has been replaced."
-          },
-          "throws": [],
-          "contract": {
-            "pre": [],
-            "post": [],
-            "invariant": [],
-            "mutates": [],
-            "sideEffect": [
-              "Calls the auth service and updates component state."
-            ],
-            "reads": [],
-            "pure": false
-          },
-          "other": []
-        },
-        {
-          "name": "unlink",
-          "qualified": "LinkedAccounts > unlink",
-          "kind": "function",
-          "exported": false,
-          "async": true,
-          "generator": false,
-          "line": 217,
-          "signature": [
-            "a"
-          ],
-          "documented": true,
-          "summary": "Detach one sign-in method from the account.",
-          "description": "Detach one sign-in method from the account.",
-          "params": [
-            {
-              "name": "a",
-              "type": "object",
-              "optional": false,
-              "default": null,
-              "desc": "The linked account record."
-            }
-          ],
-          "returns": {
-            "type": "Promise<void>",
-            "desc": "Resolves once the list has been refreshed."
-          },
-          "throws": [],
-          "contract": {
-            "pre": [],
-            "post": [],
-            "invariant": [],
-            "mutates": [],
-            "sideEffect": [
-              "Calls the auth service and refreshes the list."
-            ],
-            "reads": [],
-            "pure": false
-          },
-          "other": []
-        },
-        {
-          "name": "link",
-          "qualified": "LinkedAccounts > link",
-          "kind": "function",
-          "exported": false,
-          "async": false,
-          "generator": false,
-          "line": 232,
-          "signature": [
-            "provider"
-          ],
-          "documented": true,
-          "summary": "Attach an additional social sign-in method, returning here afterwards.",
-          "description": "Attach an additional social sign-in method, returning here afterwards.",
-          "params": [
-            {
-              "name": "provider",
-              "type": "string",
-              "optional": false,
-              "default": null,
-              "desc": "Provider id."
-            }
-          ],
-          "returns": {
-            "type": "Promise<any>",
-            "desc": "The auth client's result; the redirect usually happens first."
-          },
-          "throws": [],
-          "contract": {
-            "pre": [],
-            "post": [],
-            "invariant": [],
-            "mutates": [],
-            "sideEffect": [
-              "Navigates away to the provider's consent screen."
-            ],
-            "reads": [],
-            "pure": false
-          },
-          "other": []
-        },
-        {
-          "name": "ChangePassword",
-          "qualified": "ChangePassword",
-          "kind": "function",
-          "exported": false,
-          "async": false,
-          "generator": false,
-          "line": 275,
-          "signature": [],
-          "documented": true,
-          "summary": "Change the account password, signing out other sessions.",
-          "description": "Change the account password, signing out other sessions.\n\nRevoking other sessions is deliberate: a password change is often a\nresponse to suspecting one is compromised.",
-          "params": [],
-          "returns": {
-            "type": "React.ReactElement",
-            "desc": "The change-password form."
-          },
-          "throws": [],
-          "contract": {
-            "pre": [],
-            "post": [],
-            "invariant": [],
-            "mutates": [],
-            "sideEffect": [
-              "Its action calls the auth service."
-            ],
-            "reads": [],
-            "pure": false
-          },
-          "other": []
-        },
-        {
-          "name": "submit",
-          "qualified": "ChangePassword > submit",
-          "kind": "function",
-          "exported": false,
-          "async": true,
-          "generator": false,
-          "line": 286,
-          "signature": [],
-          "documented": true,
-          "summary": "Submit the password change.",
-          "description": "Submit the password change.",
-          "params": [],
-          "returns": {
-            "type": "Promise<void>",
-            "desc": "Resolves once the result is on screen."
-          },
-          "throws": [],
-          "contract": {
-            "pre": [],
-            "post": [],
-            "invariant": [],
-            "mutates": [],
-            "sideEffect": [
-              "Calls the auth service, revoking other sessions on success."
-            ],
-            "reads": [],
-            "pure": false
-          },
-          "other": []
-        },
-        {
-          "name": "AccountManage",
-          "qualified": "AccountManage",
-          "kind": "function",
-          "exported": false,
-          "async": false,
-          "generator": false,
-          "line": 315,
-          "signature": [
-            "arg0"
-          ],
-          "documented": true,
-          "summary": "The signed-in pane: profile, password, linked logins and account deletion.",
-          "description": "The signed-in pane: profile, password, linked logins and account deletion.",
-          "params": [
-            {
-              "name": "props",
-              "type": "object",
-              "optional": false,
-              "default": null,
-              "desc": "Component props."
-            },
-            {
-              "name": "props.session",
-              "type": "object",
-              "optional": false,
-              "default": null,
-              "desc": "The active session."
-            }
-          ],
-          "returns": {
-            "type": "React.ReactElement",
-            "desc": "The account pane."
-          },
-          "throws": [],
-          "contract": {
-            "pre": [],
-            "post": [],
-            "invariant": [],
-            "mutates": [],
-            "sideEffect": [
-              "Fetches server config, and its actions call the auth service."
-            ],
-            "reads": [],
-            "pure": false
-          },
-          "other": []
-        },
-        {
-          "name": "AccountSection",
-          "qualified": "AccountSection",
-          "kind": "function",
-          "exported": false,
-          "async": false,
-          "generator": false,
-          "line": 379,
-          "signature": [],
-          "documented": true,
-          "summary": "The Account section: the auth forms or the account manager, by session state.",
-          "description": "The Account section: the auth forms or the account manager, by session state.",
-          "params": [],
-          "returns": {
-            "type": "React.ReactElement",
-            "desc": "The section."
-          },
-          "throws": [],
-          "contract": {
-            "pre": [],
-            "post": [],
-            "invariant": [],
-            "mutates": [],
-            "sideEffect": [
-              "Subscribes to the auth session."
-            ],
-            "reads": [],
-            "pure": false
-          },
-          "other": []
-        },
-        {
           "name": "ApplicationSection",
           "qualified": "ApplicationSection",
           "kind": "function",
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 393,
+          "line": 33,
           "signature": [],
           "documented": true,
           "summary": "The Application section: sweep range, display options and experimental features.",
@@ -12929,7 +13186,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 470,
+          "line": 110,
           "signature": [],
           "documented": true,
           "summary": "The Quick bar section: choose and reorder the items in the quick bar.",
@@ -12960,7 +13217,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 538,
+          "line": 178,
           "signature": [
             "arg0"
           ],
@@ -13020,7 +13277,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 562,
+          "line": 202,
           "signature": [],
           "documented": true,
           "summary": "The Keyboard section: view and rebind every command's shortcuts.",
@@ -13051,7 +13308,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 579,
+          "line": 219,
           "signature": [
             "e"
           ],
@@ -13092,7 +13349,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 603,
+          "line": 243,
           "signature": [
             "id"
           ],
@@ -13133,7 +13390,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 689,
+          "line": 328,
           "signature": [],
           "documented": true,
           "summary": "The settings window: a floating, draggable panel rather than a dock panel.",
@@ -13164,7 +13421,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 705,
+          "line": 344,
           "signature": [
             "e"
           ],
@@ -13205,7 +13462,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 721,
+          "line": 360,
           "signature": [
             "e"
           ],
@@ -13246,7 +13503,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 732,
+          "line": 371,
           "signature": [
             "ev"
           ],
@@ -13287,7 +13544,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 739,
+          "line": 378,
           "signature": [],
           "documented": true,
           "summary": "End the window drag and remove its listeners.",
@@ -13305,68 +13562,6 @@
             "mutates": [],
             "sideEffect": [
               "Removes the window listeners."
-            ],
-            "reads": [],
-            "pure": false
-          },
-          "other": []
-        },
-        {
-          "name": "ResetPasswordPage",
-          "qualified": "ResetPasswordPage",
-          "kind": "function",
-          "exported": true,
-          "async": false,
-          "generator": false,
-          "line": 788,
-          "signature": [],
-          "documented": true,
-          "summary": "The `/reset-password` landing page, linked from the reset email.",
-          "description": "The `/reset-password` landing page, linked from the reset email.\n\nA whole-page route rather than part of the settings window: the user\narriving here is signed out and following a link, not navigating the app.",
-          "params": [],
-          "returns": {
-            "type": "React.ReactElement",
-            "desc": "The page."
-          },
-          "throws": [],
-          "contract": {
-            "pre": [],
-            "post": [],
-            "invariant": [],
-            "mutates": [],
-            "sideEffect": [
-              "Reads the reset token from `window.location`."
-            ],
-            "reads": [],
-            "pure": false
-          },
-          "other": []
-        },
-        {
-          "name": "submit",
-          "qualified": "ResetPasswordPage > submit",
-          "kind": "function",
-          "exported": false,
-          "async": true,
-          "generator": false,
-          "line": 800,
-          "signature": [],
-          "documented": true,
-          "summary": "Submit the new password.",
-          "description": "Submit the new password.",
-          "params": [],
-          "returns": {
-            "type": "Promise<any>|void",
-            "desc": "The auth client's promise, or nothing when the two entries disagree."
-          },
-          "throws": [],
-          "contract": {
-            "pre": [],
-            "post": [],
-            "invariant": [],
-            "mutates": [],
-            "sideEffect": [
-              "Calls the auth service, which signs the user in on success."
             ],
             "reads": [],
             "pure": false
@@ -14112,7 +14307,7 @@
       "constants": [
         {
           "name": "__internals",
-          "line": 442,
+          "line": 468,
           "shape": {
             "kind": "object",
             "keys": [
@@ -14132,7 +14327,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 39,
+          "line": 40,
           "signature": [
             "e"
           ],
@@ -14171,7 +14366,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 52,
+          "line": 53,
           "signature": [],
           "documented": true,
           "summary": "Clear the panel-drag flag.",
@@ -14202,7 +14397,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 67,
+          "line": 68,
           "signature": [
             "arg0"
           ],
@@ -14248,7 +14443,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 88,
+          "line": 89,
           "signature": [
             "arg0"
           ],
@@ -14296,7 +14491,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 111,
+          "line": 112,
           "signature": [
             "e"
           ],
@@ -14337,7 +14532,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 129,
+          "line": 130,
           "signature": [
             "e"
           ],
@@ -14378,7 +14573,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 143,
+          "line": 144,
           "signature": [
             "e"
           ],
@@ -14413,13 +14608,62 @@
           "other": []
         },
         {
+          "name": "onContextMenu",
+          "qualified": "DockStack > onContextMenu",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 164,
+          "signature": [
+            "e",
+            "panelId"
+          ],
+          "documented": true,
+          "summary": "Raise the right-click menu against this stack, or against one of its tabs.",
+          "description": "Raise the right-click menu against this stack, or against one of its tabs.\n\nThe event is consumed so a click on a tab does not also raise the window's\nown menu on the way up.",
+          "params": [
+            {
+              "name": "e",
+              "type": "React.MouseEvent",
+              "optional": false,
+              "default": null,
+              "desc": "The contextmenu event."
+            },
+            {
+              "name": "panelId",
+              "type": "string|null",
+              "optional": true,
+              "default": "null",
+              "desc": "The tab that was clicked, or `null` for the window itself."
+            }
+          ],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Focuses the stack's front panel and opens the context menu."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
           "name": "Splitter",
           "qualified": "Splitter",
           "kind": "function",
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 238,
+          "line": 264,
           "signature": [
             "arg0"
           ],
@@ -14488,7 +14732,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 279,
+          "line": 305,
           "signature": [
             "ev"
           ],
@@ -14531,7 +14775,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 291,
+          "line": 317,
           "signature": [],
           "documented": true,
           "summary": "End the splitter drag and remove its listeners.",
@@ -14562,7 +14806,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 317,
+          "line": 343,
           "signature": [
             "arg0"
           ],
@@ -14608,7 +14852,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 344,
+          "line": 370,
           "signature": [],
           "documented": true,
           "summary": "The four drop strips along the outer edges of the workspace.",
@@ -14639,7 +14883,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 387,
+          "line": 413,
           "signature": [],
           "documented": true,
           "summary": "The workspace dock: renders the layout tree, or the maximized panel alone.",
@@ -14670,7 +14914,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 398,
+          "line": 424,
           "signature": [],
           "documented": true,
           "summary": "Clear the drag flag once any drag ends anywhere in the window.",
@@ -14738,6 +14982,55 @@
             "sideEffect": [],
             "reads": [],
             "pure": true
+          },
+          "other": []
+        }
+      ]
+    },
+    {
+      "file": "src/components/dock/stackContext.js",
+      "module": {
+        "summary": "Which docked window a panel is rendered inside.",
+        "description": "Which docked window a panel is rendered inside.\n\nA panel is written without knowing where it sits — that is the point of the\ndock — but the right-click menu needs to know, because \"add a view to *this*\nwindow\" and \"open *this* window in a browser tab\" are both statements about\nthe stack the click landed in. Passing the stack id down as a prop would mean\nthreading it through every panel component that might contain a right-click\ntarget, so it travels as context instead: set once by the stack, read only by\nwhoever asks.\n\nThe value is `null` in a popped-out browser tab, which has no dock — the menu\nomits the window-scoped items there rather than offering something that\ncannot work."
+      },
+      "constants": [
+        {
+          "name": "StackContext",
+          "line": 17,
+          "shape": null,
+          "summary": "Carries the id of the stack a panel is rendered inside, or `null` outside the dock.",
+          "description": "Carries the id of the stack a panel is rendered inside, or `null` outside the dock."
+        }
+      ],
+      "methods": [
+        {
+          "name": "useStackId",
+          "qualified": "useStackId",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 25,
+          "signature": [],
+          "documented": true,
+          "summary": "The id of the docked window the calling panel is rendered inside.",
+          "description": "The id of the docked window the calling panel is rendered inside.",
+          "params": [],
+          "returns": {
+            "type": "string|null",
+            "desc": "The stack id, or `null` when there is no dock — a popped-out browser tab, or a maximized panel rendered outside the tree."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [
+              "React context, so the value tracks whichever stack currently holds the panel."
+            ],
+            "pure": false
           },
           "other": []
         }
@@ -18933,6 +19226,103 @@
       ]
     },
     {
+      "file": "src/engine/worker.js",
+      "module": {
+        "summary": "Simulation worker: the engine's host in the browser.",
+        "description": "Simulation worker: the engine's host in the browser.\n\nThe solver is pure and knows nothing about where it runs, so this module is\nthe whole of what makes it usable from the UI thread. It replaces the\n`/api/simulate` endpoint the app used to POST to; the request/response shape\nis deliberately the same, minus the transport.\n\nA sweep is fast enough that cancellation is not worth the cost of tearing\ndown and respawning a worker: the store tags every request with an id and\nignores replies it no longer wants. What the worker buys is that a long\nsweep — a large `npts`, or the iterating large-signal path — cannot freeze\nthe canvas mid-drag."
+      },
+      "constants": [],
+      "methods": [
+        {
+          "name": "simulate",
+          "qualified": "simulate",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 34,
+          "signature": [
+            "project"
+          ],
+          "documented": true,
+          "summary": "Run one sweep and derive its metrics.",
+          "description": "Run one sweep and derive its metrics.\n\nMirrors what the former `/api/simulate` handler did, so a project that\nsimulated through the server simulates identically here.",
+          "params": [
+            {
+              "name": "project",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "A serialized project: `{nodes, edges, settings}`."
+            }
+          ],
+          "returns": {
+            "type": "{results: object, metrics: object|null}",
+            "desc": "The raw sweep and its derived metrics, `metrics` being `null` when the simulation failed."
+          },
+          "throws": [
+            {
+              "type": "Error",
+              "desc": "When the project is structurally invalid; the error carries `projectErrors`."
+            }
+          ],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Runs the solver."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "self.onmessage",
+          "qualified": "self.onmessage",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 56,
+          "signature": [
+            "e"
+          ],
+          "documented": true,
+          "summary": "Handle one simulation request from the store.",
+          "description": "Handle one simulation request from the store.\n\nStructural errors come back as a failed reply rather than an exception, so\nthe caller sees a hand-edited project's problems the same way it saw the\nserver's 422 — as a list on `projectErrors`.",
+          "params": [
+            {
+              "name": "e",
+              "type": "MessageEvent",
+              "optional": false,
+              "default": null,
+              "desc": "The request, `{id, project}`."
+            }
+          ],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Posts a reply back to the main thread."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        }
+      ]
+    },
+    {
       "file": "src/keymap.js",
       "module": {
         "summary": "Keyboard commands and their bindings.",
@@ -21763,13 +22153,13 @@
     {
       "file": "src/popout.js",
       "module": {
-        "summary": "Popped-out panels: any panel can be sent to its own browser tab, which the user then drags onto a second monitor.",
-        "description": "Popped-out panels: any panel can be sent to its own browser tab, which the\nuser then drags onto a second monitor.\n\nThe tab loads the same app at /panel?id=<panel> and renders that one panel\nfull-window. Both windows run the same store; a BroadcastChannel keeps the\nshared slice of that store identical between them, so a parameter edited in\none window redraws the chart in the other.\n\nThe main window stays the authority for two things it makes no sense to do\ntwice: running the simulation and writing the LocalStorage auto-save."
+        "summary": "Popped-out panels: any panel — or any whole docked window, tabs and all — can be sent to its own browser tab, which the user then drags onto a second monitor.",
+        "description": "Popped-out panels: any panel — or any whole docked window, tabs and all —\ncan be sent to its own browser tab, which the user then drags onto a second\nmonitor.\n\nThe tab loads the same app at panel?id=<panel> — relative to wherever the\napp is served from — and renders that panel full-window. `id` may name\nseveral panels, comma-separated, in which case the tab reproduces the docked\nwindow it came from: the same tab strip over the same panels, with `active`\nnaming which one is in front.\n\nBoth windows run the same store; a BroadcastChannel keeps the\nshared slice of that store identical between them, so a parameter edited in\none window redraws the chart in the other.\n\nThe main window stays the authority for two things it makes no sense to do\ntwice: running the simulation and writing the LocalStorage auto-save."
       },
       "constants": [
         {
           "name": "SYNC_CHANNEL",
-          "line": 15,
+          "line": 26,
           "shape": {
             "kind": "literal",
             "value": "acousim-sync"
@@ -21779,7 +22169,7 @@
         },
         {
           "name": "SHARED_KEYS",
-          "line": 24,
+          "line": 35,
           "shape": {
             "kind": "array",
             "length": 12,
@@ -21803,7 +22193,7 @@
         },
         {
           "name": "SIM_INPUT_KEYS",
-          "line": 31,
+          "line": 42,
           "shape": {
             "kind": "array",
             "length": 3,
@@ -21818,7 +22208,7 @@
         },
         {
           "name": "channel",
-          "line": 81,
+          "line": 145,
           "shape": null,
           "summary": "The shared BroadcastChannel, or `null` where the API is unavailable.",
           "description": "The shared BroadcastChannel, or `null` where the API is unavailable.\n\nNull-checked at every use rather than polyfilled: without it the app still\nworks, it just cannot mirror state between windows."
@@ -21826,17 +22216,48 @@
       ],
       "methods": [
         {
+          "name": "popoutPanelIds",
+          "qualified": "popoutPanelIds",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 58,
+          "signature": [],
+          "documented": true,
+          "summary": "Every panel id this window was opened to show.",
+          "description": "Every panel id this window was opened to show.\n\nChecked against the path as well as the query string, so a stray `?id=` on\nthe main app cannot convince it that it is a panel window. The path is\nmatched by suffix because the app may be served from a subdirectory.\n\nOne id is a single popped-out panel; several are a whole docked window\nreproduced in a tab. Blank entries are dropped so a trailing comma in a\nhand-edited URL cannot produce a nameless panel.",
+          "params": [],
+          "returns": {
+            "type": "string[]",
+            "desc": "The panel ids in tab order, empty in the main window or outside a browser."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Reads `window.location`."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
           "name": "popoutPanelId",
           "qualified": "popoutPanelId",
           "kind": "function",
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 42,
+          "line": 76,
           "signature": [],
           "documented": true,
-          "summary": "The panel id this window was opened to show, if it is a popped-out tab.",
-          "description": "The panel id this window was opened to show, if it is a popped-out tab.\n\nChecked against the path as well as the query string, so a stray `?id=` on\nthe main app cannot convince it that it is a panel window.",
+          "summary": "The panel this window is currently showing, if it is a popped-out tab.",
+          "description": "The panel this window is currently showing, if it is a popped-out tab.\n\nFor a single-panel tab this is that panel. For a whole-window tab it is\nwhichever panel the `active` parameter names, falling back to the first —\nso the answer is always a panel the window actually holds, which is what\nmakes it safe to use as the initial keyboard focus.",
           "params": [],
           "returns": {
             "type": "string|null",
@@ -21863,7 +22284,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 57,
+          "line": 92,
           "signature": [],
           "documented": true,
           "summary": "Whether this window is a popped-out panel rather than the main workspace.",
@@ -21894,13 +22315,13 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 69,
+          "line": 108,
           "signature": [
             "id"
           ],
           "documented": true,
           "summary": "Open — or focus — the browser tab showing one panel.",
-          "description": "Open — or focus — the browser tab showing one panel.\n\nThe window name is keyed on the panel id, so a second click focuses the\nexisting tab instead of opening a duplicate.",
+          "description": "Open — or focus — the browser tab showing one panel.\n\nThe window name is keyed on the panel id, so a second click focuses the\nexisting tab instead of opening a duplicate.\n\nThe URL is relative — `panel?id=<panel>`, not `/panel?id=<panel>` — so it\nresolves against wherever the app is served from rather than the domain\nroot.",
           "params": [
             {
               "name": "id",
@@ -21927,6 +22348,303 @@
             "pure": false
           },
           "other": []
+        },
+        {
+          "name": "openPanelGroupWindow",
+          "qualified": "openPanelGroupWindow",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 129,
+          "signature": [
+            "ids",
+            "active"
+          ],
+          "documented": true,
+          "summary": "Open — or focus — a browser tab showing a whole docked window's worth of panels.",
+          "description": "Open — or focus — a browser tab showing a whole docked window's worth of panels.\n\nThe tab reproduces the group it came from: the same panels, in the same tab\norder, with `active` in front.\n\nThe window name is keyed on the group's members rather than its order, so\nre-popping the same set of panels focuses the tab already showing them\ninstead of opening a second copy of it.",
+          "params": [
+            {
+              "name": "ids",
+              "type": "string[]",
+              "optional": false,
+              "default": null,
+              "desc": "Panel ids in tab order. An empty list opens nothing."
+            },
+            {
+              "name": "active",
+              "type": "string",
+              "optional": true,
+              "default": null,
+              "desc": "Panel to show first. Defaults to the first id."
+            }
+          ],
+          "returns": {
+            "type": "Window|null",
+            "desc": "The panel window, or `null` when the browser blocked it or the list was empty."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Opens a browser window and moves focus to it."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        }
+      ]
+    },
+    {
+      "file": "src/selection.js",
+      "module": {
+        "summary": "Marquee selection geometry — the arithmetic behind a right-drag lasso on the node editor.",
+        "description": "Marquee selection geometry — the arithmetic behind a right-drag lasso on the\nnode editor.\n\nKept out of the canvas component because it is the part worth being sure\nabout: a rectangle dragged up-and-left has a negative width, a node that has\nnever been measured has no size, and \"inside the box\" is really \"overlaps the\nbox\" in every editor users have met. None of that needs React to be checked.\n\nAll coordinates here are canvas coordinates, not screen pixels. The caller\nconverts through React Flow's `screenToFlowPosition` before calling in."
+      },
+      "constants": [
+        {
+          "name": "MARQUEE_THRESHOLD",
+          "line": 116,
+          "shape": {
+            "kind": "literal",
+            "value": 4
+          },
+          "summary": "Smallest right-drag, in pixels, that counts as a marquee rather than a click.",
+          "description": "Smallest right-drag, in pixels, that counts as a marquee rather than a click.\n\nBelow this the gesture opens the context menu. Three pixels of travel is\nwithin the slop of a deliberate click on a trackpad, so the threshold sits\njust above it."
+        }
+      ],
+      "methods": [
+        {
+          "name": "marqueeRect",
+          "qualified": "marqueeRect",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 33,
+          "signature": [
+            "a",
+            "b"
+          ],
+          "documented": true,
+          "summary": "The axis-aligned rectangle spanned by two corners.",
+          "description": "The axis-aligned rectangle spanned by two corners.\n\nA drag may run in any direction, so the corners are sorted rather than\nassumed — dragging up-and-left is as ordinary as down-and-right.",
+          "params": [
+            {
+              "name": "a",
+              "type": "{x: number, y: number}",
+              "optional": false,
+              "default": null,
+              "desc": "One corner, where the drag began."
+            },
+            {
+              "name": "b",
+              "type": "{x: number, y: number}",
+              "optional": false,
+              "default": null,
+              "desc": "The opposite corner, where it is now."
+            }
+          ],
+          "returns": {
+            "type": "{x: number, y: number, w: number, h: number}",
+            "desc": "The rectangle, with non-negative width and height."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "nodeBox",
+          "qualified": "nodeBox",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 53,
+          "signature": [
+            "node"
+          ],
+          "documented": true,
+          "summary": "A node's bounding box in canvas coordinates.",
+          "description": "A node's bounding box in canvas coordinates.\n\nReact Flow writes measured dimensions back onto each node once it has been\nlaid out; until then it falls back to a nominal size so a just-created node\nis still catchable.",
+          "params": [
+            {
+              "name": "node",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "A React Flow node, with `position` and optionally measured `width`/`height`."
+            }
+          ],
+          "returns": {
+            "type": "{x: number, y: number, w: number, h: number}",
+            "desc": "The node's box."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "overlaps",
+          "qualified": "overlaps",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 74,
+          "signature": [
+            "a",
+            "b"
+          ],
+          "documented": true,
+          "summary": "Whether two rectangles overlap at all.",
+          "description": "Whether two rectangles overlap at all.\n\nTouching edges do not count: a zero-area intersection is what a lasso drawn\nexactly along a node's border produces, and catching the node then would be\nindistinguishable from a stray click.",
+          "params": [
+            {
+              "name": "a",
+              "type": "{x: number, y: number, w: number, h: number}",
+              "optional": false,
+              "default": null,
+              "desc": "First rectangle."
+            },
+            {
+              "name": "b",
+              "type": "{x: number, y: number, w: number, h: number}",
+              "optional": false,
+              "default": null,
+              "desc": "Second rectangle."
+            }
+          ],
+          "returns": {
+            "type": "boolean",
+            "desc": "True when the two overlap."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "nodesInMarquee",
+          "qualified": "nodesInMarquee",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 90,
+          "signature": [
+            "nodes",
+            "rect"
+          ],
+          "documented": true,
+          "summary": "Which nodes a marquee has caught.",
+          "description": "Which nodes a marquee has caught.\n\nOverlap rather than containment, matching every drawing tool the user has\nmet: sweeping across a row of nodes selects them without having to enclose\nthe last one completely.",
+          "params": [
+            {
+              "name": "nodes",
+              "type": "Array<object>",
+              "optional": false,
+              "default": null,
+              "desc": "The graph's nodes."
+            },
+            {
+              "name": "rect",
+              "type": "{x: number, y: number, w: number, h: number}",
+              "optional": false,
+              "default": null,
+              "desc": "The marquee, in canvas coordinates."
+            }
+          ],
+          "returns": {
+            "type": "string[]",
+            "desc": "Ids of the caught nodes, in graph order."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "distance",
+          "qualified": "distance",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 105,
+          "signature": [
+            "a",
+            "b"
+          ],
+          "documented": true,
+          "summary": "How far apart two screen points are, in pixels.",
+          "description": "How far apart two screen points are, in pixels.\n\nUsed to tell a right-*click* from a right-*drag*: below the threshold the\ngesture is a click and must open the context menu instead.",
+          "params": [
+            {
+              "name": "a",
+              "type": "{x: number, y: number}",
+              "optional": false,
+              "default": null,
+              "desc": "First point."
+            },
+            {
+              "name": "b",
+              "type": "{x: number, y: number}",
+              "optional": false,
+              "default": null,
+              "desc": "Second point."
+            }
+          ],
+          "returns": {
+            "type": "number",
+            "desc": "The distance between them."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
         }
       ]
     },
@@ -21934,19 +22652,19 @@
       "file": "src/store.js",
       "module": {
         "summary": "Application state: the project graph, the workspace, and everything the UI reads. One Zustand store, deliberately flat.",
-        "description": "Application state: the project graph, the workspace, and everything the UI\nreads. One Zustand store, deliberately flat.\n\nState fields, since the action contracts below name what changes rather than\nwhere:\n\n  project    nodes, edges, projectName, selectedNodeId, settings\n  results    results, metrics, snapshots, simError\n  history    history, future, clipboard\n  workspace  layout, layoutPresets, maximized, focusedPanel, draggingPanel,\n             poppedOut, toolbar, bindings, xZoom\n  modals     showDriverDB, showProjectManager, showTSCalc, showSettings,\n             settingsSection, restorePrompt, velocityPopupNodeId\n\nFields prefixed with an underscore are solver and persistence bookkeeping\n(`_lastSig`, `_abort`, `_computeTimer`, `_flowApi`, `_lastSavedName`,\n`_nameTimer`) and are not part of any action's observable contract.\n\nLocalStorage keys, all prefixed `acousim:` — `acousim:layout`,\n`acousim:layoutPresets`, `acousim:toolbar`, `acousim:keymap`,\n`acousim:project:<name>` and `acousim:lastProject`.\n\nA subset of the state is mirrored to popped-out panel windows over a\nBroadcastChannel; see src/popout.js for which keys and why."
+        "description": "Application state: the project graph, the workspace, and everything the UI\nreads. One Zustand store, deliberately flat.\n\nState fields, since the action contracts below name what changes rather than\nwhere:\n\n  project    nodes, edges, projectName, selectedNodeId, settings\n  results    results, metrics, snapshots, simError\n  history    history, future, clipboard\n  workspace  layout, layoutPresets, maximized, focusedPanel, draggingPanel,\n             poppedOut, toolbar, bindings, xZoom\n  modals     showDriverDB, showProjectManager, showTSCalc, showSettings,\n             settingsSection, restorePrompt, velocityPopupNodeId\n\nFields prefixed with an underscore are solver and persistence bookkeeping\n(`_lastSig`, `_simToken`, `_computeTimer`, `_flowApi`, `_lastSavedName`,\n`_nameTimer`) and are not part of any action's observable contract.\n\nLocalStorage keys, all prefixed `acousim:` — `acousim:layout`,\n`acousim:layoutPresets`, `acousim:toolbar`, `acousim:keymap`,\n`acousim:project:<name>` and `acousim:lastProject`.\n\nA subset of the state is mirrored to popped-out panel windows over a\nBroadcastChannel; see src/popout.js for which keys and why."
       },
       "constants": [
         {
           "name": "useStore",
-          "line": 177,
+          "line": 223,
           "shape": null,
           "summary": null,
           "description": null
         },
         {
           "name": "__internals",
-          "line": 1435,
+          "line": 1585,
           "shape": {
             "kind": "object",
             "keys": [
@@ -21963,13 +22681,95 @@
       ],
       "methods": [
         {
+          "name": "simulateInWorker",
+          "qualified": "simulateInWorker",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 57,
+          "signature": [
+            "project"
+          ],
+          "documented": true,
+          "summary": "Run one sweep in the simulation worker.",
+          "description": "Run one sweep in the simulation worker.\n\nEach request carries an id and resolves its own promise, so several runs may\nbe in flight without their replies being confused. Replies whose id is no\nlonger pending are dropped, which is what makes a superseded run harmless.",
+          "params": [
+            {
+              "name": "project",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "A serialized project: `{nodes, edges, settings}`."
+            }
+          ],
+          "returns": {
+            "type": "Promise<{id: number, ok: boolean, results?: object, metrics?: object|null, error?: string, projectErrors?: string[]|null}>",
+            "desc": "The worker's reply."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Spawns the worker on first call and posts a message to it."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "simWorker.onmessage",
+          "qualified": "simulateInWorker > simWorker.onmessage",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 70,
+          "signature": [
+            "e"
+          ],
+          "documented": true,
+          "summary": "Resolve the request a worker reply belongs to.",
+          "description": "Resolve the request a worker reply belongs to.\n\nAn unrecognised id is dropped rather than treated as an error: it means\nthe request was superseded and its entry already removed.",
+          "params": [
+            {
+              "name": "e",
+              "type": "MessageEvent",
+              "optional": false,
+              "default": null,
+              "desc": "The reply, carrying the `id` of its request."
+            }
+          ],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Removes the request from `simPending` and resolves its promise."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
           "name": "loadLayout",
           "qualified": "loadLayout",
           "kind": "function",
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 54,
+          "line": 100,
           "signature": [],
           "documented": true,
           "summary": "Load the persisted dock layout, falling back to the default.",
@@ -22000,7 +22800,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 72,
+          "line": 118,
           "signature": [],
           "documented": true,
           "summary": "Load the user's saved layout arrangements.",
@@ -22031,7 +22831,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 92,
+          "line": 138,
           "signature": [],
           "documented": true,
           "summary": "Load the quick-bar arrangement.",
@@ -22062,7 +22862,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 112,
+          "line": 158,
           "signature": [
             "type"
           ],
@@ -22103,7 +22903,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 132,
+          "line": 178,
           "signature": [
             "spot",
             "nodes",
@@ -22168,7 +22968,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 140,
+          "line": 186,
           "signature": [
             "x",
             "y"
@@ -22217,7 +23017,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 159,
+          "line": 205,
           "signature": [
             "nodes",
             "edges",
@@ -22272,7 +23072,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 197,
+          "line": 243,
           "signature": [
             "partial",
             "replace"
@@ -22317,13 +23117,101 @@
           "other": []
         },
         {
+          "name": "openContextMenu",
+          "qualified": "openContextMenu",
+          "kind": "method",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 300,
+          "signature": [
+            "x",
+            "y",
+            "target"
+          ],
+          "documented": true,
+          "summary": "Open the context menu at a point, against whatever was right-clicked.",
+          "description": "Open the context menu at a point, against whatever was right-clicked.",
+          "params": [
+            {
+              "name": "x",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Viewport x, where the menu's corner goes."
+            },
+            {
+              "name": "y",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Viewport y."
+            },
+            {
+              "name": "target",
+              "type": "{kind: string}",
+              "optional": false,
+              "default": null,
+              "desc": "What was right-clicked: `{kind: 'pane'|'node'|'edge'|'stack'|'tab', …}` with the ids that kind needs."
+            }
+          ],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Writes store state. The field is local to the window — `SHARED_KEYS` deliberately excludes it, so a right-click does not open a menu in another window."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "closeContextMenu",
+          "qualified": "closeContextMenu",
+          "kind": "method",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 311,
+          "signature": [],
+          "documented": true,
+          "summary": "Dismiss the context menu.",
+          "description": "Dismiss the context menu.\n\nGuarded against redundant writes: closing is attempted on every click\nanywhere, and an unconditional write would re-render the workspace on each\none.",
+          "params": [],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Writes store state, when a menu was open."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
           "name": "setDraggingPanel",
           "qualified": "setDraggingPanel",
           "kind": "method",
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 246,
+          "line": 320,
           "signature": [
             "id"
           ],
@@ -22364,7 +23252,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 257,
+          "line": 331,
           "signature": [
             "id"
           ],
@@ -22405,7 +23293,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 265,
+          "line": 339,
           "signature": [
             "id"
           ],
@@ -22446,7 +23334,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 274,
+          "line": 348,
           "signature": [
             "v",
             "section"
@@ -22495,7 +23383,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 282,
+          "line": 356,
           "signature": [
             "id"
           ],
@@ -22536,7 +23424,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 294,
+          "line": 368,
           "signature": [
             "id",
             "combos"
@@ -22585,7 +23473,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 311,
+          "line": 385,
           "signature": [
             "id",
             "combo"
@@ -22634,7 +23522,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 329,
+          "line": 403,
           "signature": [
             "id",
             "combo"
@@ -22683,7 +23571,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 336,
+          "line": 410,
           "signature": [],
           "documented": true,
           "summary": "Restore every command to its default combos.",
@@ -22714,7 +23602,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 353,
+          "line": 427,
           "signature": [
             "tree"
           ],
@@ -22755,7 +23643,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 370,
+          "line": 444,
           "signature": [
             "stackId",
             "panelId"
@@ -22804,7 +23692,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 380,
+          "line": 454,
           "signature": [
             "panelId",
             "stackId",
@@ -22861,7 +23749,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 389,
+          "line": 463,
           "signature": [
             "panelId",
             "edge"
@@ -22910,7 +23798,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 400,
+          "line": 474,
           "signature": [
             "splitId",
             "index",
@@ -22975,7 +23863,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 414,
+          "line": 488,
           "signature": [
             "panelId",
             "stackId",
@@ -23032,7 +23920,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 435,
+          "line": 509,
           "signature": [
             "panelId"
           ],
@@ -23073,7 +23961,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 452,
+          "line": 526,
           "signature": [
             "panelId"
           ],
@@ -23114,7 +24002,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 464,
+          "line": 538,
           "signature": [
             "panelId"
           ],
@@ -23155,7 +24043,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 475,
+          "line": 549,
           "signature": [],
           "documented": true,
           "summary": "Restore the default workspace arrangement.",
@@ -23186,7 +24074,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 485,
+          "line": 559,
           "signature": [
             "name"
           ],
@@ -23227,7 +24115,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 504,
+          "line": 578,
           "signature": [
             "name"
           ],
@@ -23268,7 +24156,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 528,
+          "line": 602,
           "signature": [
             "ids"
           ],
@@ -23309,7 +24197,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 544,
+          "line": 618,
           "signature": [
             "id"
           ],
@@ -23350,7 +24238,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 556,
+          "line": 630,
           "signature": [
             "id",
             "delta"
@@ -23399,7 +24287,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 570,
+          "line": 644,
           "signature": [],
           "documented": true,
           "summary": "Restore the default quick-bar arrangement.",
@@ -23430,7 +24318,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 579,
+          "line": 653,
           "signature": [
             "name"
           ],
@@ -23471,7 +24359,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 597,
+          "line": 671,
           "signature": [
             "id",
             "range"
@@ -23520,7 +24408,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 613,
+          "line": 687,
           "signature": [],
           "documented": true,
           "summary": "Record the current graph as an undo point.",
@@ -23551,7 +24439,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 626,
+          "line": 700,
           "signature": [],
           "documented": true,
           "summary": "Step back one entry in the history.",
@@ -23582,7 +24470,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 643,
+          "line": 717,
           "signature": [],
           "documented": true,
           "summary": "Step forward one entry in the history.",
@@ -23613,7 +24501,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 668,
+          "line": 742,
           "signature": [
             "changes"
           ],
@@ -23654,7 +24542,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 682,
+          "line": 756,
           "signature": [
             "changes"
           ],
@@ -23695,7 +24583,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 694,
+          "line": 768,
           "signature": [
             "conn"
           ],
@@ -23736,7 +24624,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 706,
+          "line": 780,
           "signature": [
             "id"
           ],
@@ -23777,7 +24665,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 719,
+          "line": 793,
           "signature": [
             "type",
             "position"
@@ -23826,7 +24714,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 745,
+          "line": 819,
           "signature": [
             "id",
             "patch"
@@ -23875,7 +24763,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 767,
+          "line": 841,
           "signature": [],
           "documented": true,
           "summary": "Delete the selected nodes and edges.",
@@ -23906,7 +24794,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 792,
+          "line": 866,
           "signature": [],
           "documented": true,
           "summary": "Copy the selected nodes in place, offset down-right.",
@@ -23937,7 +24825,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 817,
+          "line": 891,
           "signature": [],
           "documented": true,
           "summary": "Select every node on the canvas.",
@@ -23962,13 +24850,62 @@
           "other": []
         },
         {
+          "name": "setSelection",
+          "qualified": "setSelection",
+          "kind": "method",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 906,
+          "signature": [
+            "ids",
+            "additive"
+          ],
+          "documented": true,
+          "summary": "Replace — or extend — the node selection.",
+          "description": "Replace — or extend — the node selection.\n\nThe write path for the right-drag marquee. `selectedNodeId`, which is what\nthe Parameters panel edits, follows the last node in the new selection, so\nlassoing a group leaves something concrete to edit rather than an empty\npanel. An empty selection clears it.",
+          "params": [
+            {
+              "name": "ids",
+              "type": "string[]",
+              "optional": false,
+              "default": null,
+              "desc": "Node ids to select."
+            },
+            {
+              "name": "additive",
+              "type": "boolean",
+              "optional": true,
+              "default": "false",
+              "desc": "Keep the existing selection and add to it, which is what a modifier-held lasso means."
+            }
+          ],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Writes store state, mirrored to other windows. Does not record history — selection is not an edit."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
           "name": "copySelection",
           "qualified": "copySelection",
           "kind": "method",
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 842,
+          "line": 939,
           "signature": [],
           "documented": true,
           "summary": "Copy the selected nodes and their internal edges to the in-app clipboard.",
@@ -23999,7 +24936,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 868,
+          "line": 965,
           "signature": [],
           "documented": true,
           "summary": "Copy the selection, then delete it.",
@@ -24030,12 +24967,22 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 883,
-          "signature": [],
+          "line": 986,
+          "signature": [
+            "at"
+          ],
           "documented": true,
-          "summary": "Paste the clipboard as new nodes, offset down-right.",
-          "description": "Paste the clipboard as new nodes, offset down-right.\n\nEvery pasted node gets a fresh id, and the copied edges are rewired\nthrough a remap table so they connect the copies rather than the\noriginals. Params are merged over the current defaults, so pasting into a\nnewer build fills in any parameter added since the copy was made.",
-          "params": [],
+          "summary": "Paste the clipboard as new nodes, at a point or offset down-right.",
+          "description": "Paste the clipboard as new nodes, at a point or offset down-right.\n\nEvery pasted node gets a fresh id, and the copied edges are rewired\nthrough a remap table so they connect the copies rather than the\noriginals. Params are merged over the current defaults, so pasting into a\nnewer build fills in any parameter added since the copy was made.\n\nWith a position — what the canvas's right-click Paste supplies — the whole\ncopied group is translated so its top-left corner lands there, preserving\nthe relative arrangement. Without one it lands offset from the original,\nwhich is what a keyboard paste has always done.",
+          "params": [
+            {
+              "name": "at",
+              "type": "{x: number, y: number}",
+              "optional": true,
+              "default": null,
+              "desc": "Canvas position for the group's top-left corner."
+            }
+          ],
           "returns": {
             "type": "void",
             "desc": ""
@@ -24061,7 +25008,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 927,
+          "line": 1034,
           "signature": [
             "type"
           ],
@@ -24102,7 +25049,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 943,
+          "line": 1050,
           "signature": [
             "delta"
           ],
@@ -24143,7 +25090,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 956,
+          "line": 1063,
           "signature": [],
           "documented": true,
           "summary": "Force a resimulation even though nothing has changed.",
@@ -24174,7 +25121,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 969,
+          "line": 1076,
           "signature": [
             "patch"
           ],
@@ -24215,7 +25162,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 985,
+          "line": 1092,
           "signature": [
             "field",
             "value"
@@ -24264,7 +25211,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1006,
+          "line": 1113,
           "signature": [],
           "documented": true,
           "summary": "Freeze the current result as a labelled reference overlay.",
@@ -24295,7 +25242,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1033,
+          "line": 1140,
           "signature": [
             "id"
           ],
@@ -24336,7 +25283,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1042,
+          "line": 1149,
           "signature": [
             "id",
             "label"
@@ -24385,7 +25332,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1052,
+          "line": 1159,
           "signature": [
             "id"
           ],
@@ -24426,7 +25373,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1060,
+          "line": 1167,
           "signature": [
             "v"
           ],
@@ -24467,7 +25414,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1068,
+          "line": 1175,
           "signature": [
             "v"
           ],
@@ -24508,7 +25455,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1076,
+          "line": 1183,
           "signature": [
             "v"
           ],
@@ -24549,7 +25496,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1084,
+          "line": 1191,
           "signature": [
             "v"
           ],
@@ -24590,11 +25537,11 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1112,
+          "line": 1222,
           "signature": [],
           "documented": true,
           "summary": "Schedule a debounced simulation run.",
-          "description": "Schedule a debounced simulation run.\n\nSimulation runs **server-side** — the engine never ships to the browser —\nso this is an HTTP round-trip, and three mechanisms keep it from\nthrashing. The 150 ms debounce collapses slider drags into one request.\nThe graph signature skips the request when nothing that affects the\nresult changed. An AbortController cancels the in-flight request when a\nnewer edit supersedes it, and the response is checked against the current\ncontroller before being applied, so a slow reply cannot overwrite a\nnewer result.\n\nA popped-out tab returns immediately: results arrive from the main window\nover the sync channel, and a second sweep would duplicate the work.",
+          "description": "Schedule a debounced simulation run.\n\nSimulation runs in a Web Worker — see `src/engine/worker.js` — so the\ncanvas stays responsive through a large sweep, and three mechanisms keep\nthe pipeline from thrashing. The 150 ms debounce collapses slider drags\ninto one run. The graph signature skips the run when nothing that affects\nthe result changed. A token marks the newest request, and the reply is\nchecked against it before being applied, so a slow reply cannot overwrite\na newer result.\n\nA superseded run is left to finish rather than cancelled. Tearing down and\nrespawning a worker costs more than the sweep it would save, and the reply\nis discarded either way.\n\nA popped-out tab returns immediately: results arrive from the main window\nover the sync channel, and a second sweep would duplicate the work.",
           "params": [],
           "returns": {
             "type": "void",
@@ -24607,7 +25554,7 @@
             "invariant": [],
             "mutates": [],
             "sideEffect": [
-              "Sets a timer, issues a POST to /api/simulate, aborts any in-flight request, writes store state, and on success triggers an auto-save. A transport failure is recorded in `simError` and retried on the next edit rather than thrown."
+              "Sets a timer, posts to the simulation worker, writes store state, and on success triggers an auto-save. A structurally invalid project is recorded in `simError` and retried on the next edit rather than thrown."
             ],
             "reads": [],
             "pure": false
@@ -24621,7 +25568,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1161,
+          "line": 1263,
           "signature": [],
           "documented": true,
           "summary": "Capture the project as a plain, saveable object.",
@@ -24652,7 +25599,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1187,
+          "line": 1289,
           "signature": [
             "proj"
           ],
@@ -24693,7 +25640,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1217,
+          "line": 1319,
           "signature": [
             "name"
           ],
@@ -24734,7 +25681,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1232,
+          "line": 1334,
           "signature": [],
           "documented": true,
           "summary": "Start an empty project, confirming first if there is anything to lose.",
@@ -24765,7 +25712,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1242,
+          "line": 1344,
           "signature": [],
           "documented": true,
           "summary": "Download the project as a file, auto-saving it first.",
@@ -24796,7 +25743,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1259,
+          "line": 1361,
           "signature": [],
           "documented": true,
           "summary": "Write the project to LocalStorage under its name.",
@@ -24827,7 +25774,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1283,
+          "line": 1385,
           "signature": [
             "id"
           ],
@@ -24862,13 +25809,103 @@
           "other": []
         },
         {
+          "name": "popOutStack",
+          "qualified": "popOutStack",
+          "kind": "method",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 1401,
+          "signature": [
+            "stackId"
+          ],
+          "documented": true,
+          "summary": "Send a whole docked window — every tab in one stack — to a single browser tab.",
+          "description": "Send a whole docked window — every tab in one stack — to a single browser tab.\n\nThe new tab reproduces the stack: the same panels, the same tab order, the\nsame one in front. Panels that cannot leave the dock stay in it, so popping\nout the window holding the Node Editor gives you the group in a tab and\nleaves the editor where it is rather than emptying the workspace.",
+          "params": [
+            {
+              "name": "stackId",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Id of the stack to pop out. An unknown id is a no-op."
+            }
+          ],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Opens a browser window, writes store state and persists the layout."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "addViewToStack",
+          "qualified": "addViewToStack",
+          "kind": "method",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 1425,
+          "signature": [
+            "panelId",
+            "stackId"
+          ],
+          "documented": true,
+          "summary": "Add a view as a new tab in one named docked window.",
+          "description": "Add a view as a new tab in one named docked window.\n\nThis is the injection the right-click menu offers: unlike `layoutOps.open`,\nwhich consults the panel's own placement hint, the caller chooses the\ndestination. A panel already open elsewhere moves rather than being\nduplicated — a panel exists once in the workspace.\n\nA panel currently in its own browser tab is taken back first, so it does\nnot end up counted as both docked and popped out.",
+          "params": [
+            {
+              "name": "panelId",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Panel to add."
+            },
+            {
+              "name": "stackId",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Stack to add it to. An unknown id is a no-op."
+            }
+          ],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Writes store state and persists the layout."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
           "name": "_detachPanel",
           "qualified": "_detachPanel",
           "kind": "method",
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1298,
+          "line": 1445,
           "signature": [
             "id"
           ],
@@ -24909,7 +25946,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1309,
+          "line": 1456,
           "signature": [
             "id"
           ],
@@ -24950,7 +25987,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1328,
+          "line": 1475,
           "signature": [
             "patch"
           ],
@@ -24993,7 +26030,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1338,
+          "line": 1485,
           "signature": [],
           "documented": true,
           "summary": "The full shared slice, sent to a popped-out tab when it announces itself.",
@@ -25024,7 +26061,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1375,
+          "line": 1522,
           "signature": [
             "arg0"
           ],
@@ -25074,7 +26111,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 1418,
+          "line": 1568,
           "signature": [],
           "documented": true,
           "summary": "List the auto-saved projects in LocalStorage, newest first.",

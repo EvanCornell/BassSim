@@ -10,54 +10,13 @@ import { isOpen } from '../layout'
 import { PANEL_META, PANEL_IDS, MAIN_IDS, CHART_IDS } from '../panelMeta'
 import { exportCSV, exportSchematicPNG, exportMetricsTxt } from '../utils/export'
 import { formatCombo } from '../keymap'
+import { ItemList } from './MenuItem'
 
 
 // ---------- dropdown primitives ----------
 
-/**
- * One dropdown row: a command, a separator, or a submenu parent.
- *
- * A label of `-` renders a separator instead of an item. Clicking a submenu
- * parent is swallowed rather than treated as a command, since the submenu
- * opens on hover and a click there means "I am on my way to the child".
- *
- * @param {object} props - Component props.
- * @param {string} props.label - Display text, or `-` for a separator.
- * @param {string} [props.hint] - Shortcut hint shown on the right.
- * @param {Function} [props.onClick] - Command to run.
- * @param {boolean} [props.disabled] - Render inert.
- * @param {boolean} [props.checked] - Show a check mark.
- * @param {boolean} [props.danger] - Style as destructive.
- * @param {Array<object>} [props.submenu] - Child items; makes this a submenu parent.
- * @returns {React.ReactElement} The menu row.
- * @pure
- */
-function Item({ label, hint, onClick, disabled, checked, danger, submenu }) {
-  const [openSub, setOpenSub] = useState(false)
-  if (label === '-') return <div className="menu-sep" />
-  return (
-    <div
-      className={`menu-item ${disabled ? 'disabled' : ''} ${danger ? 'danger' : ''}`}
-      onMouseEnter={() => setOpenSub(true)}
-      onMouseLeave={() => setOpenSub(false)}
-      onClick={(e) => {
-        if (disabled || submenu) { e.stopPropagation(); return }
-        onClick?.()
-      }}
-    >
-      <span className="mi-check">{checked ? '✓' : ''}</span>
-      <span className="mi-label">{label}</span>
-      {submenu
-        ? <span className="mi-hint">▸</span>
-        : <span className="mi-hint">{hint || ''}</span>}
-      {submenu && openSub && (
-        <div className="menu-dropdown submenu">
-          {submenu.map((it, i) => <Item key={it.label === '-' ? `s${i}` : it.label} {...it} />)}
-        </div>
-      )}
-    </div>
-  )
-}
+// The row itself lives in MenuItem.jsx, shared with the right-click menu, so a
+// command offered in both places renders identically in both.
 
 /**
  * One menu title with its dropdown.
@@ -84,7 +43,7 @@ function Menu({ title, items, open, onOpen, onHover }) {
       >{title}</button>
       {open && (
         <div className="menu-dropdown">
-          {items.map((it, i) => <Item key={it.label === '-' ? `s${i}` : it.label} {...it} />)}
+          <ItemList items={items} />
         </div>
       )}
     </div>
