@@ -5,8 +5,8 @@
 
 ## Module
 
-Marquee selection geometry — the arithmetic behind the lasso dragged over the
-node editor's background.
+Marquee selection geometry — the arithmetic behind a right-drag lasso on the
+node editor.
 
 Kept out of the canvas component because it is the part worth being sure
 about: a rectangle dragged up-and-left has a negative width, a node that has
@@ -24,11 +24,11 @@ so this is the vocabulary they assume.
 
 ### `MARQUEE_THRESHOLD`
 
-Smallest drag, in pixels, that counts as a marquee rather than a click.
+Smallest right-drag, in pixels, that counts as a marquee rather than a click.
 
-Below this the gesture is a plain click on empty space. Three pixels of
-travel is within the slop of a deliberate click on a trackpad, so the
-threshold sits just above it.
+Below this the gesture opens the context menu. Three pixels of travel is
+within the slop of a deliberate click on a trackpad, so the threshold sits
+just above it.
 
 Value: `4`
 
@@ -127,9 +127,8 @@ the last one completely.
 
 How far apart two screen points are, in pixels.
 
-Used to tell a *click* on empty space from a *drag* across it: below the
-threshold the gesture is a click, which clears the selection rather than
-replacing it.
+Used to tell a right-*click* from a right-*drag*: below the threshold the
+gesture is a click and must open the context menu instead.
 
 **Parameters**
 

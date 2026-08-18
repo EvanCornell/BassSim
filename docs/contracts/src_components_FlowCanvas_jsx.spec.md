@@ -51,25 +51,25 @@ a node may not connect to itself.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
-## UNREACHABLE (11)
+## UNREACHABLE (8)
 
-### `swallowNextClick()`
+### `swallowNextContextMenu()`
 
 - **Reachability:** UNREACHABLE
 - **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
 
-Discard the one `click` event that trails a completed marquee drag.
+Discard the one `contextmenu` event that trails a completed right-drag.
 
-A press and release on the same element is a click whatever happened in
-between, so the browser fires one at the end of every sweep. React Flow's
-pane handles that click by clearing the selection — which is right for a
-click on empty space and exactly wrong here, since it would wipe the
-selection the sweep had just made.
+The browser fires it whatever the drag was for, and on whatever element the
+pointer happened to be over when the button came up — which after a sweep
+across the workspace is often not the canvas at all. Left alone it raises
+that element's menu on top of the selection just made.
 
 Swallowed at the window in the capture phase, so the event never reaches the
-handler that would act on it, and only ever once: the listener stands down on
-the next turn of the loop whether or not the event arrived, so a drag that
-ends outside the window cannot eat a later, deliberate click.
+handler that would act on it, and only ever once: the listener stands down
+on the next turn of the loop whether or not the event arrived, which is what
+keeps a drag that ends outside the window from eating a later, deliberate
+right-click.
 
 **Returns**
 
@@ -77,9 +77,9 @@ ends outside the window cannot eat a later, deliberate click.
 
 **Side effects**
 
-- Registers a one-shot window click listener and schedules its removal.
+- Registers a one-shot window contextmenu listener and schedules its removal.
 
-### `swallowNextClick > eat(e)`
+### `swallowNextContextMenu > eat(e)`
 
 - **Reachability:** UNREACHABLE
 - **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
@@ -88,7 +88,7 @@ Consume the trailing event.
 
 **Parameters**
 
-- `e` — `MouseEvent` — The click event.
+- `e` — `MouseEvent` — The contextmenu event.
 
 **Returns**
 
@@ -96,7 +96,7 @@ Consume the trailing event.
 
 **Side effects**
 
-- Stops the event propagating to the handlers that would act on it.
+- Prevents the event's default and stops it propagating.
 
 ### `CanvasInner()`
 
@@ -112,11 +112,10 @@ Tracks the pointer so a keyboard-added node can land where the user is
 looking, and publishes that as `_flowApi` on the store for
 `addNodeAtCursor` to read.
 
-The mouse follows the convention every other node editor uses: dragging the
-background with the left button sweeps a marquee over the elements it
-crosses, the middle button — or the left with Space held — pans, and the
-right button raises the context menu. Left-dragging cannot both select and
-pan, so panning is what moves aside.
+The right mouse button does two jobs here, told apart by how far it travels:
+a click raises the context menu, a drag sweeps a marquee over the elements
+it crosses. Panning is therefore restricted to the left and middle buttons,
+so a right-drag is unambiguously a selection.
 
 **Returns**
 
@@ -125,62 +124,6 @@ pan, so panning is what moves aside.
 **Side effects**
 
 - Subscribes to the store, writes `_flowApi` into it on mount and clears it on unmount, and tracks pointer position in a ref.
-
-### `CanvasInner > down(e)`
-
-- **Reachability:** UNREACHABLE
-- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
-
-Note that Space is down, which makes the left button pan.
-
-**Parameters**
-
-- `e` — `KeyboardEvent` — The keydown event.
-
-**Returns**
-
-- `void`
-
-**Mutates**
-
-- The held-key flag.
-
-### `CanvasInner > up(e)`
-
-- **Reachability:** UNREACHABLE
-- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
-
-Note that Space is up.
-
-**Parameters**
-
-- `e` — `KeyboardEvent` — The keyup event.
-
-**Returns**
-
-- `void`
-
-**Mutates**
-
-- The held-key flag.
-
-### `CanvasInner > clear()`
-
-- **Reachability:** UNREACHABLE
-- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
-
-Forget the key when the window loses focus.
-
-A keyup delivered to another window never arrives here, which would
-otherwise leave the canvas convinced Space is still down.
-
-**Returns**
-
-- `void`
-
-**Mutates**
-
-- The held-key flag.
 
 ### `CanvasInner > dropPoint()`
 
@@ -201,18 +144,17 @@ the node somewhere sensible.
 
 - Reads live element geometry and the tracked pointer position.
 
-### `CanvasInner > onPaneDown(e)`
+### `CanvasInner > onRightDown(e)`
 
 - **Reachability:** UNREACHABLE
 - **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
 
-Begin a left-drag on the background, which may turn out to be a marquee.
+Begin a right-drag, which may turn out to be a marquee or a click.
 
-Nothing is committed at mousedown: whether this is a marquee or a plain
-click on empty space only becomes clear once the pointer has moved, or
-failed to. Listeners go on the window rather than the canvas so the drag
-survives the cursor leaving it, which a sweep across the whole graph
-routinely does.
+Nothing is committed at mousedown: which of the two this is only becomes
+clear once the pointer has moved, or failed to. Listeners go on the window
+rather than the canvas so the drag survives the cursor leaving it, which a
+sweep across the whole graph routinely does.
 
 **Parameters**
 
@@ -226,7 +168,7 @@ routinely does.
 
 - Reads live element geometry and registers window mousemove and mouseup listeners, both removed when the drag ends.
 
-### `CanvasInner > onPaneDown > onMove(ev)`
+### `CanvasInner > onRightDown > onMove(ev)`
 
 - **Reachability:** UNREACHABLE
 - **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
@@ -249,15 +191,12 @@ Grow the marquee, once the pointer has moved far enough to mean one.
 
 - Updates the overlay rectangle.
 
-### `CanvasInner > onPaneDown > onUp(ev)`
+### `CanvasInner > onRightDown > onUp(ev)`
 
 - **Reachability:** UNREACHABLE
 - **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
 
-Finish the gesture: select what the marquee caught, if it was one.
-
-A press that never moved is a plain click on empty space, which React
-Flow's own pane handler already treats as clearing the selection.
+Finish the gesture: select what the marquee caught, or let the menu open.
 
 **Parameters**
 
@@ -273,7 +212,7 @@ Flow's own pane handler already treats as clearing the selection.
 
 **Side effects**
 
-- Removes the window listeners, clears the overlay and — for a drag — swallows the trailing click and replaces the node selection.
+- Removes the window listeners, clears the overlay, swallows the trailing contextmenu event and — for a drag — replaces the node selection.
 
 ### `CanvasInner > openMenu(e, target)`
 
@@ -282,12 +221,17 @@ Flow's own pane handler already treats as clearing the selection.
 
 Raise the context menu against something on the canvas.
 
-The event is consumed so the docked window's own menu does not open behind
-this one on the way up.
+Held back rather than raised when a right-press on the background is still
+in progress, because the two platforms disagree about when `contextmenu`
+arrives: Windows fires it once the button comes up, by which time a drag
+has declared itself, but Linux and macOS fire it at mousedown — before
+anyone can know whether this is a click or the start of a marquee. Raising
+it there would put a menu over every sweep the user drew. So when a gesture
+is pending the menu is stashed on it, and the mouseup that finds no
+movement is what finally opens it.
 
-Nothing has to be told apart here: selection is the left button's job, so
-the right button means the menu and only the menu, whether the platform
-fires `contextmenu` at mousedown or at mouseup.
+The event is consumed either way, so the docked window's own menu does not
+open behind this one on the way up.
 
 **Parameters**
 
@@ -298,6 +242,10 @@ fires `contextmenu` at mousedown or at mouseup.
 
 - `void`
 
+**Mutates**
+
+- The in-progress drag record, when there is one.
+
 **Side effects**
 
-- Focuses the canvas and opens the context menu.
+- Focuses the canvas and either opens the context menu or defers it to the pending gesture.

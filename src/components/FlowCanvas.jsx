@@ -21,49 +21,33 @@ function isValidConnection(conn) {
 }
 
 /**
- * Elements a press must miss for it to mean "drag a box over the background".
+ * Discard the one `contextmenu` event that trails a completed right-drag.
  *
- * A press on any of these is already about that thing — moving a node, pulling
- * a connection, working the zoom controls — and starting a marquee underneath
- * it would fight whatever the user actually meant.
- */
-const NOT_BACKGROUND = [
-  '.react-flow__node',
-  '.react-flow__edge',
-  '.react-flow__handle',
-  '.react-flow__controls',
-  '.react-flow__minimap',
-  '.react-flow__panel',
-].join(', ')
-
-/**
- * Discard the one `click` event that trails a completed marquee drag.
- *
- * A press and release on the same element is a click whatever happened in
- * between, so the browser fires one at the end of every sweep. React Flow's
- * pane handles that click by clearing the selection — which is right for a
- * click on empty space and exactly wrong here, since it would wipe the
- * selection the sweep had just made.
+ * The browser fires it whatever the drag was for, and on whatever element the
+ * pointer happened to be over when the button came up — which after a sweep
+ * across the workspace is often not the canvas at all. Left alone it raises
+ * that element's menu on top of the selection just made.
  *
  * Swallowed at the window in the capture phase, so the event never reaches the
- * handler that would act on it, and only ever once: the listener stands down on
- * the next turn of the loop whether or not the event arrived, so a drag that
- * ends outside the window cannot eat a later, deliberate click.
+ * handler that would act on it, and only ever once: the listener stands down
+ * on the next turn of the loop whether or not the event arrived, which is what
+ * keeps a drag that ends outside the window from eating a later, deliberate
+ * right-click.
  *
  * @returns {void}
- * @sideEffect Registers a one-shot window click listener and schedules its removal.
+ * @sideEffect Registers a one-shot window contextmenu listener and schedules its removal.
  */
-function swallowNextClick() {
+function swallowNextContextMenu() {
   /**
    * Consume the trailing event.
    *
-   * @param {MouseEvent} e - The click event.
+   * @param {MouseEvent} e - The contextmenu event.
    * @returns {void}
-   * @sideEffect Stops the event propagating to the handlers that would act on it.
+   * @sideEffect Prevents the event's default and stops it propagating.
    */
-  const eat = (e) => { e.stopPropagation(); e.preventDefault() }
-  window.addEventListener('click', eat, { capture: true, once: true })
-  setTimeout(() => window.removeEventListener('click', eat, true), 0)
+  const eat = (e) => { e.preventDefault(); e.stopPropagation() }
+  window.addEventListener('contextmenu', eat, { capture: true, once: true })
+  setTimeout(() => window.removeEventListener('contextmenu', eat, true), 0)
 }
 
 /**
@@ -76,11 +60,10 @@ function swallowNextClick() {
  * looking, and publishes that as `_flowApi` on the store for
  * `addNodeAtCursor` to read.
  *
- * The mouse follows the convention every other node editor uses: dragging the
- * background with the left button sweeps a marquee over the elements it
- * crosses, the middle button — or the left with Space held — pans, and the
- * right button raises the context menu. Left-dragging cannot both select and
- * pan, so panning is what moves aside.
+ * The right mouse button does two jobs here, told apart by how far it travels:
+ * a click raises the context menu, a drag sweeps a marquee over the elements
+ * it crosses. Panning is therefore restricted to the left and middle buttons,
+ * so a right-drag is unambiguously a selection.
  *
  * @returns {React.ReactElement} The canvas.
  * @sideEffect Subscribes to the store, writes `_flowApi` into it on mount and clears it on unmount, and tracks pointer position in a ref.
@@ -102,46 +85,6 @@ function CanvasInner() {
   // that changes mid-drag.
   const [marquee, setMarquee] = useState(null)
   const lasso = useRef(null)
-  // Space turns the left button back into a pan, which React Flow handles
-  // itself — so the marquee has to know to stand aside for it.
-  const panKeyHeld = useRef(false)
-
-  useEffect(() => {
-    /**
-     * Note that Space is down, which makes the left button pan.
-     *
-     * @param {KeyboardEvent} e - The keydown event.
-     * @returns {void}
-     * @mutates The held-key flag.
-     */
-    const down = (e) => { if (e.code === 'Space') panKeyHeld.current = true }
-    /**
-     * Note that Space is up.
-     *
-     * @param {KeyboardEvent} e - The keyup event.
-     * @returns {void}
-     * @mutates The held-key flag.
-     */
-    const up = (e) => { if (e.code === 'Space') panKeyHeld.current = false }
-    /**
-     * Forget the key when the window loses focus.
-     *
-     * A keyup delivered to another window never arrives here, which would
-     * otherwise leave the canvas convinced Space is still down.
-     *
-     * @returns {void}
-     * @mutates The held-key flag.
-     */
-    const clear = () => { panKeyHeld.current = false }
-    window.addEventListener('keydown', down)
-    window.addEventListener('keyup', up)
-    window.addEventListener('blur', clear)
-    return () => {
-      window.removeEventListener('keydown', down)
-      window.removeEventListener('keyup', up)
-      window.removeEventListener('blur', clear)
-    }
-  }, [])
 
   useEffect(() => {
     /**
@@ -185,24 +128,22 @@ function CanvasInner() {
   }, [screenToFlowPosition, addNode])
 
   /**
-   * Begin a left-drag on the background, which may turn out to be a marquee.
+   * Begin a right-drag, which may turn out to be a marquee or a click.
    *
-   * Nothing is committed at mousedown: whether this is a marquee or a plain
-   * click on empty space only becomes clear once the pointer has moved, or
-   * failed to. Listeners go on the window rather than the canvas so the drag
-   * survives the cursor leaving it, which a sweep across the whole graph
-   * routinely does.
+   * Nothing is committed at mousedown: which of the two this is only becomes
+   * clear once the pointer has moved, or failed to. Listeners go on the window
+   * rather than the canvas so the drag survives the cursor leaving it, which a
+   * sweep across the whole graph routinely does.
    *
    * @param {React.MouseEvent} e - The mousedown event.
    * @returns {void}
    * @sideEffect Reads live element geometry and registers window mousemove and mouseup listeners, both removed when the drag ends.
    */
-  const onPaneDown = (e) => {
-    if (e.button !== 0) return
-    // Space means the user asked to pan; React Flow is already handling that
-    // drag, and a marquee drawn over it would be two gestures at once.
-    if (panKeyHeld.current) return
-    if (e.target?.closest?.(NOT_BACKGROUND)) return
+  const onRightDown = (e) => {
+    if (e.button !== 2) return
+    // A right-press on an element is aimed at that element's menu, not at a
+    // marquee that would start underneath it.
+    if (e.target?.closest?.('.react-flow__node, .react-flow__edge')) return
     const rect = wrapper.current?.getBoundingClientRect()
     if (!rect) return
     const start = { x: e.clientX, y: e.clientY }
@@ -228,14 +169,11 @@ function CanvasInner() {
       ))
     }
     /**
-     * Finish the gesture: select what the marquee caught, if it was one.
-     *
-     * A press that never moved is a plain click on empty space, which React
-     * Flow's own pane handler already treats as clearing the selection.
+     * Finish the gesture: select what the marquee caught, or let the menu open.
      *
      * @param {MouseEvent} ev - The mouseup event.
      * @returns {void}
-     * @sideEffect Removes the window listeners, clears the overlay and — for a drag — swallows the trailing click and replaces the node selection.
+     * @sideEffect Removes the window listeners, clears the overlay, swallows the trailing contextmenu event and — for a drag — replaces the node selection.
      * @mutates The in-progress drag record.
      */
     const onUp = (ev) => {
@@ -244,10 +182,17 @@ function CanvasInner() {
       const d = lasso.current
       lasso.current = null
       setMarquee(null)
-      if (!d?.moved) return
-      swallowNextClick()
-      const rect = marqueeRect(d.startFlow, screenToFlowPosition({ x: ev.clientX, y: ev.clientY }))
       const st = useStore.getState()
+      if (!d?.moved) {
+        // A plain right-click. On platforms that fire `contextmenu` at
+        // mousedown the event has already been held back by `openMenu`, and
+        // raising the menu is this handler's job; where it fires at mouseup it
+        // has not arrived yet and will raise the menu itself.
+        if (d?.held) st.openContextMenu(d.held.x, d.held.y, d.held.target)
+        return
+      }
+      swallowNextContextMenu()
+      const rect = marqueeRect(d.startFlow, screenToFlowPosition({ x: ev.clientX, y: ev.clientY }))
       st.setSelection(nodesInMarquee(st.nodes, rect), d.additive)
       st.focusPanel('canvas')
     }
@@ -258,28 +203,39 @@ function CanvasInner() {
   /**
    * Raise the context menu against something on the canvas.
    *
-   * The event is consumed so the docked window's own menu does not open behind
-   * this one on the way up.
+   * Held back rather than raised when a right-press on the background is still
+   * in progress, because the two platforms disagree about when `contextmenu`
+   * arrives: Windows fires it once the button comes up, by which time a drag
+   * has declared itself, but Linux and macOS fire it at mousedown — before
+   * anyone can know whether this is a click or the start of a marquee. Raising
+   * it there would put a menu over every sweep the user drew. So when a gesture
+   * is pending the menu is stashed on it, and the mouseup that finds no
+   * movement is what finally opens it.
    *
-   * Nothing has to be told apart here: selection is the left button's job, so
-   * the right button means the menu and only the menu, whether the platform
-   * fires `contextmenu` at mousedown or at mouseup.
+   * The event is consumed either way, so the docked window's own menu does not
+   * open behind this one on the way up.
    *
    * @param {React.MouseEvent} e - The contextmenu event.
    * @param {object} target - What was clicked: `{kind: 'pane'|'node'|'edge', …}`.
    * @returns {void}
-   * @sideEffect Focuses the canvas and opens the context menu.
+   * @sideEffect Focuses the canvas and either opens the context menu or defers it to the pending gesture.
+   * @mutates The in-progress drag record, when there is one.
    */
   const openMenu = (e, target) => {
     e.preventDefault()
     e.stopPropagation()
     const st = useStore.getState()
     st.focusPanel('canvas')
-    st.openContextMenu(e.clientX, e.clientY, {
+    const full = {
       ...target,
       stackId,
       flowPos: screenToFlowPosition({ x: e.clientX, y: e.clientY }),
-    })
+    }
+    if (lasso.current) {
+      lasso.current.held = { x: e.clientX, y: e.clientY, target: full }
+      return
+    }
+    st.openContextMenu(e.clientX, e.clientY, full)
   }
 
   return (
@@ -288,7 +244,7 @@ function CanvasInner() {
       style={{ width: '100%', height: '100%', position: 'relative' }}
       onPointerMove={(e) => { pointer.current = { x: e.clientX, y: e.clientY } }}
       onPointerLeave={() => { pointer.current = null }}
-      onMouseDown={onPaneDown}
+      onMouseDown={onRightDown}
     >
       <ReactFlow
         nodes={nodes}
@@ -313,20 +269,14 @@ function CanvasInner() {
         onPaneContextMenu={(e) => openMenu(e, { kind: 'pane' })}
         onPaneClick={() => setSelected(null)}
         deleteKeyCode={null}
-        // The left button draws the marquee, so dragging the view is the middle
-        // button's job — or the left button with Space held, which is what
-        // `panActivationKeyCode` gives for free.
-        panOnDrag={[1]}
-        panActivationKeyCode="Space"
+        // The right button draws the marquee, so panning is left and middle
+        // only — sharing the button would make every sweep also move the view.
+        panOnDrag={[0, 1]}
         // React Flow defaults additive selection to Meta alone, which leaves
         // Windows and Linux with no way to click a second node — and without a
         // multi-node selection, copying a subgraph is unreachable.
         multiSelectionKeyCode={['Meta', 'Control']}
-        // Both of React Flow's own box-selection routes are off: the marquee
-        // below owns the gesture, and it also moves `selectedNodeId` so the
-        // Parameters panel follows what was just swept up, which React Flow's
-        // selection has no way to do.
-        selectionKeyCode={null}
+        selectionKeyCode="Shift"
         selectionOnDrag={false}
         fitView
         minZoom={0.15}
