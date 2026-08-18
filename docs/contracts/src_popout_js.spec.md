@@ -8,7 +8,8 @@
 Popped-out panels: any panel can be sent to its own browser tab, which the
 user then drags onto a second monitor.
 
-The tab loads the same app at /panel?id=<panel> and renders that one panel
+The tab loads the same app at panel?id=<panel>, relative to wherever the app
+is served from, and renders that one panel
 full-window. Both windows run the same store; a BroadcastChannel keeps the
 shared slice of that store identical between them, so a parameter edited in
 one window redraws the chart in the other.
