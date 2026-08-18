@@ -2,22 +2,44 @@
 
 `FINDINGS.md` beside this file is generated — it lists every failing assertion
 grouped by the contract it contradicts. This file is the human judgement on top
-of it: which side is wrong in each case.
+of it: which side was wrong in each case.
 
-**912 tests, 889 passing, 23 failing.** Opened at 84 failing.
-
-The suite is still red, and should stay red until each remaining entry is
-decided. A green blind suite would mean the contracts had been rewritten to
-match whatever the code does, which is the one outcome that makes the exercise
-worthless.
+**914 tests, 914 passing.** Opened at 795 tests, 84 failing.
 
 Entries marked **verified** were reproduced directly against the implementation.
 
 ---
 
-## Resolved since the first triage
+## Read this before trusting the green bar
 
-### Code defects fixed — 4
+An earlier version of this file said the suite should stay red until every
+entry was decided, because *"a green blind suite would mean the contracts had
+been rewritten to match whatever the code does, which is the one outcome that
+makes the exercise worthless."* That warning still stands, and the suite is now
+green, so the burden is on this file to show the green was earned.
+
+Every failure was closed in exactly one of four ways. Only the first two are
+unambiguously good, and the third is where a sceptical reader should push:
+
+1. **The code was wrong and moved.** Eight defects, listed below.
+2. **The test was wrong and moved** — it asserted something the contract never
+   said, or tripped over its own arithmetic. Nine cases.
+3. **The contract was wrong and moved.** Roughly fifty. This is the category
+   that can hide a rewrite-to-fit, so each one is characterised below by *how*
+   it was wrong, not merely that it changed. A contract that was **false**,
+   **self-contradictory**, or **too vacuous to constrain anything** can be
+   corrected without weakening the exercise. A contract that was merely
+   *inconvenient* may not, and that distinction was applied case by case.
+4. **Not closed — recorded as unreachable or unverifiable.** Contract clauses
+   that cannot be tested from outside the module are named below and in
+   `docs/contracts/AMBIGUITIES.md` with the reason. They are not counted as
+   passing, because nothing asserts them.
+
+The two judgement calls worth re-examining are flagged inline as **JUDGEMENT**.
+
+---
+
+## Code defects fixed — 8
 
 **`radiationImpedance` returned negative radiation resistance** — verified.
 Physically impossible; it said an opening absorbs energy from the far field.
@@ -41,28 +63,81 @@ which then breaks the flex layout it is fed to. Now finiteness-checked.
 positions were rounded to a fixed three decimals while the step was smaller than
 that. Now rounds to the step's own precision.
 
+**`pushHistory` capped the history at 81, not 80** — verified. It trimmed to the
+limit and *then* pushed, so the entry it was making room for put the list one
+over.
+
+**`setToolbar` emptied the quick bar instead of falling back** — verified.
+`sanitizeToolbar` drops unknown ids individually and returns `[]`, which is
+truthy, so the documented `|| DEFAULT_TOOLBAR` fallback never fired for an
+all-unknown arrangement. A user importing a foreign layout got a blank bar and
+no way back except `resetToolbar`.
+
+> **JUDGEMENT.** The contract said only "falls back to the default", which does
+> not say what an explicitly empty `[]` should do. Reading it literally would
+> make a deliberately hidden bar impossible. The fix distinguishes "non-empty
+> request, nothing survived" (corruption → default) from "empty request"
+> (honoured), and that distinction was written *into* the contract rather than
+> left implicit. If the intended behaviour was that the bar can never be empty,
+> this is the wrong fix and the contract is now wrong with it.
+
+**`updateParams` was not the no-op its contract claims for an unknown id.** It
+mapped the node list unconditionally, so `set` installed a fresh array,
+re-rendering every node and scheduling a resimulation for an edit that changed
+nothing.
+
+**`stripDash` failed behind a leading space.** It trimmed *after* matching
+`/^-\s*/`, so `takeName`'s leftover space defeated the dash strip and every
+affected parameter description in `docs/api.json` kept its separator. This one
+was corrupting the generated documentation itself.
+
 Plus `round5` normalising `-0`, which is cosmetic but made an axis bound render
 as "−0".
 
-### Contract defects fixed — ~40
+---
 
-Every one a case where the code was correct and the documentation was
-incomplete, contradictory, or too weak to constrain anything. The full list is
-in the commit history; the categories were:
+## Contract defects fixed — ~50
 
-- **Self-contradictions.** `normQ`'s prose and its `@param` disagreed about a
+Each was a case where the code was correct and the documentation was **false,
+self-contradictory, or vacuous** — not merely inconvenient. The categories:
+
+- **Outright false.** `portLengthGuess` named "a large port on a small box" as
+  the geometry that hits the 1 cm floor. It is the opposite: that makes the port
+  *longer*, sometimes metres long. The author built the documented fixture
+  faithfully and got 9330 cm. Also `driver-fields`' header, which said
+  `driverSI()` reads eight fields "and nothing else" while `CORE_FIELDS` marks
+  nine — two published statements contradicting each other, and the header was
+  the wrong one.
+- **Self-contradictory.** `normQ`'s prose and its `@param` disagreed about a
   missing `Q`. The Bessel postconditions asserted exact float equality.
   `matIdentity` promised shared constants *and* free mutation.
-- **Undocumented behaviour.** `fitDb`'s upper bound, `optimizeProject`'s baseline
-  evaluation, `nearestIdx`'s tie-breaking, `rawEval`'s `sym` flag.
-- **Vacuous contracts.** `endCorrectionLength`, `snapLines` and `fmtVal` were all
+- **Named a concept, never the identifier.** `computeMetrics` published
+  `zPeaks` in a field list while its prose spoke of "the impedance peak count" —
+  the field is the peak *list*. `parseJsdoc` described "the contract arrays"
+  without naming a field, and its param descriptions live at `desc`, not the
+  `description` every author guessed. Ten store actions falsely claimed
+  cross-window mirroring for fields `SHARED_KEYS` deliberately excludes.
+- **Silent about a result that looks like a bug.** `runSimulation` never said
+  `splCombined` is a *complex* sum, so a bare driver radiating from both faces
+  reads as silence at every drive voltage. That is a dipole cancelling into a
+  shared far field, and the contract now says so and points at the outputs that
+  do respond to drive level.
+- **Vacuous.** `endCorrectionLength`, `snapLines` and `fmtVal` were all
   satisfiable by a constant-zero implementation.
-- **Named a concept, never the identifier.** Ten store actions falsely claimed
-  cross-window mirroring for fields `SHARED_KEYS` deliberately excludes;
-  `isPanelDrag` and `loadCustom` never named the payload type or storage key;
-  labels were never said to live at `node.data.params.label`.
 
-### Tooling defects fixed — 6
+> **JUDGEMENT.** `dockToEdge` said a joining panel takes "a quarter of the
+> average weight"; the code takes a quarter of the *total*. Unlike the cases
+> above, neither reading is absurd — this is the one place documentation was
+> changed because the code's behaviour seemed more defensible, not because the
+> documentation was demonstrably false. A quarter of the total gives the
+> newcomer a fifth of the edge whatever the sibling count, matching the 22% the
+> other branch gives; a quarter of the average shrinks toward nothing as
+> siblings accumulate. That reasoning is stated in the contract now, so the next
+> reader can disagree with it on the merits.
+
+---
+
+## Tooling defects fixed — 7
 
 All found *indirectly*, by a blind reader noticing the pack did not cohere and
 having no way to explain why:
@@ -79,58 +154,40 @@ having no way to explain why:
    "an array of 1 entries".
 6. Spread-bearing objects published their literal keys as if complete —
    `COMMANDS` showed 21 of its 26.
+7. The pack rendered "an array of **undefined** entries" for a constant whose
+   length the extractor deliberately declines to guess. Fix 5 created this one,
+   and an author dutifully asserted the undefined length.
 
 ---
 
-## Still failing — 23
+## Not closed
 
-### A. Test-harness artifacts — 6
+These pass only in the sense that nothing asserts them.
 
-**`hydrateProject` — 4.** The author writes `const err = assert.throws(...)` and
-reads `err.projectErrors`. Node's `assert.throws` returns `undefined`. Verified:
-the implementation throws correctly with `projectErrors` populated. The engine
-author was asked to fix this and corrected its throw tests; these four are the
-*non-throw* tests, which fail on the same misunderstanding of the return shape.
+**Untestable through the public API — 1.** `chamberMatrix`'s stuffing model has
+two effects: sound speed saturates at 8 g/L, resistive loss does not. Both feed
+the same `tlineMatrix` call and neither is separately exposed, so from outside
+the module you cannot hold one fixed while varying the other. The test asserts
+the observable half and records the other as unresolved. A test that pretended
+to verify it would be theatre.
 
-**`round5` — 2.** Now that `-0` is normalised, these encode a different claim
-than the current contract. Needs one more author pass.
+**Reachable only from a pristine store — 1.** No documented action empties the
+clipboard, and `loadSerialized` — the documented reset — does not clear it. So
+`pasteClipboard`'s "does nothing when the clipboard is empty" clause is
+reachable only before anything has ever copied. The test claims that state by
+running first, and **asserts its own precondition**, so reordering the file
+produces a loud, explained failure instead of a silent pass. Verified by moving
+it to the end of the file, where it fails with its own reason.
 
-### B. Contracts I have not yet decided — ~13
+**Requires the simulation server — 4.** `scheduleCompute` and the positive paths
+of the three snapshot actions.
 
-`parseJsdoc` and `stripDash` (return shape still only half-enumerated),
-`portLengthGuess`, `EXT_GROUPS`, `CORE_FIELDS`, `DEFAULT_SETTINGS`,
-`computeMetrics`, `dockToEdge`, `setToolbar`, `pushHistory`, `updateParams`,
-`pasteClipboard`.
+**Requires a browser — 1.** `popOutPanel`'s `window.open` half. The documented
+state change is tested; the browser half is not.
 
-Several of these are new — they appeared only once the exported-constants
-sections were published, because the authors could finally assert counts and key
-sets that were previously unknowable. That is the mechanism working: making the
-documentation specific creates new opportunities for it to be wrong.
-
-Two I want to single out as genuinely undecided rather than merely unexamined:
-
-- **`setToolbar`.** The contract says an arrangement of unknown ids "falls back
-  to the default". `sanitizeToolbar` returns `[]` for an all-unknown array, not
-  `null` — so a store that only falls back on `null` would produce an empty
-  toolbar. The author left this standing deliberately. It may be a real defect.
-- **`normalizeTag`.** The alias table is still not enumerated anywhere, so the
-  alias→canonical mapping cannot be tested blind at all.
-
-### C. Environment-dependent — 1
-
-**`popOutPanel`.** Needed `window.open`, which the shim lacked; now stubbed. The
-documented state half (the panel leaving the dock) is testable; the browser half
-is not.
-
-### D. Genuinely untestable, for a stated reason — 3
-
-**`recomputeNow`.** Its only synchronous effect is clearing `_lastSig`, which the
-store's own module contract declares outside any action's observable surface.
-Asserting on it would contradict the contract under test. The author refused to
-write a hollow test and said so, which is the right call.
-
-**`scheduleCompute`** and the positive paths of the three snapshot actions —
-all require the simulation server, which does not exist under test.
+**Unreachable — 61 methods.** Closures nested inside other functions, and React
+components needing a renderer. They are labelled in the spec pack, not hidden,
+but nothing tests them. This is the honest ceiling of the current harness.
 
 ---
 
@@ -138,21 +195,31 @@ all require the simulation server, which does not exist under test.
 
 | | Start | Now |
 |---|---|---|
-| Tests | 795 | 912 |
-| Failures | 84 | 23 |
+| Tests | 795 | 914 |
+| Failures | 84 | 0 |
 | Modules with a captured description | 0 / 53 | 38 / 53 |
+| Lint checks | 0 | 13 |
 
-Test count rose while failures fell, which is the signal worth trusting: authors
-strengthened assertions as contracts became specific rather than deleting the
-ones that failed. The MCP author replaced a deliberately weakened `driverParams`
-check with the exact projection boundary asserted across every library row in
-both directions. The data author rebuilt every audit fixture on discovering its
-units were wrong by three to four orders of magnitude — because the contract had
-never said whether it read SI or display units.
+Test count rose by 119 while failures fell to zero, which is the signal worth
+trusting: authors strengthened assertions as contracts became specific rather
+than deleting the ones that failed. `DEFAULT_SETTINGS` went from a relative
+1e-9 tolerance on figures the contract calls display-rounded to pinning the
+shipped numbers and requiring the published power to be the rounded one.
+`portLengthGuess` gained a test for the corrected sentence, so the claim that a
+large port on a small box runs *longer* is now checked rather than asserted in
+prose. The MCP author replaced a deliberately weakened `driverParams` check with
+the exact projection boundary asserted across every library row in both
+directions. The data author rebuilt every audit fixture on discovering its units
+were wrong by three to four orders of magnitude — because the contract had never
+said whether it read SI or display units.
 
-Four real code defects, all latent, all found because a blind author asserted a
+Eight real code defects, all latent, all found because a blind author asserted a
 documented postcondition literally instead of checking what the function
-currently returns. Six tooling defects, none of which a sighted reviewer would
-have had reason to look for. And roughly forty documentation defects, which is
+currently returns. Seven tooling defects, none of which a sighted reviewer would
+have had reason to look for. And roughly fifty documentation defects, which is
 the honest measure of how much of that documentation read well only to someone
 who already knew the answers.
+
+The blindness itself is now enforced rather than promised: the thirteenth lint
+check fails the build if any implementation line appears verbatim in the spec
+pack, and it is verified to fail as well as pass.

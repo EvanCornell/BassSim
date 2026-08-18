@@ -78,8 +78,8 @@ test('popoutPanelId: the main window with no query is not a panel window', () =>
   })
 })
 
-// CONTRACT (module): "The tab loads the same app at /panel?id=<panel> and renders that one
-// panel full-window."
+// CONTRACT (module): "The tab loads the same app at panel?id=<panel> — relative to wherever
+// the app is served from — and renders that one panel full-window."
 // CONTRACT (src/panelMeta.js constants): "`PANEL_META` — Keys: `palette`, `canvas`, `params`,
 // `nllab`, `spl`, `zin`, `exc`, `vel`, `int`, `pow`, `eff`, `pe`, `ph`"
 test('popoutPanelId: reads the panel id out of the documented /panel?id= URL', () => {
@@ -122,7 +122,7 @@ test('popoutPanelId: always answers with a string or null', () => {
 // ---------------------------------------------------------------------------
 
 // CONTRACT: "`boolean` — True in a panel tab."
-// CONTRACT (module): "The tab loads the same app at /panel?id=<panel>"
+// CONTRACT (module): "The tab loads the same app at panel?id=<panel>"
 test('isPopout: true in a panel tab', () => {
   const { win } = makeWindow('/panel', '?id=spl')
   withWindow(win, () => {
@@ -200,9 +200,9 @@ test('openPanelWindow: the window name is keyed on the panel id', () => {
   assert.ok(opened[2].name.includes('impedance'), 'the name must be keyed on the panel id')
 })
 
-// CONTRACT (module): "The tab loads the same app at /panel?id=<panel> and renders that one panel
-// full-window."
-test('openPanelWindow: opens the documented /panel?id= URL', () => {
+// CONTRACT (module): "The tab loads the same app at panel?id=<panel> — relative to wherever
+// the app is served from — and renders that one panel full-window."
+test('openPanelWindow: opens the documented relative panel?id= URL', () => {
   const fake = { focus: () => {} }
   const { win, opened } = makeWindow('/', '', () => fake)
   withWindow(win, () => {
@@ -211,12 +211,12 @@ test('openPanelWindow: opens the documented /panel?id= URL', () => {
   })
   assert.equal(typeof opened[0].url, 'string')
   assert.ok(
-    opened[0].url.includes('/panel?id=spl'),
-    `the URL must be the documented /panel?id=<panel>, got ${opened[0].url}`,
+    opened[0].url === 'panel?id=spl',
+    `the URL must be the documented relative panel?id=<panel>, got ${opened[0].url}`,
   )
   assert.ok(
-    opened[1].url.includes('/panel?id=canvas'),
-    `the URL must be the documented /panel?id=<panel>, got ${opened[1].url}`,
+    opened[1].url === 'panel?id=canvas',
+    `the URL must be the documented relative panel?id=<panel>, got ${opened[1].url}`,
   )
 })
 
@@ -232,6 +232,23 @@ test('openPanelWindow: the URL it opens round-trips through popoutPanelId', () =
   const { win: tab } = makeWindow(url.pathname, url.search)
   withWindow(tab, () => {
     assert.equal(popoutPanelId(), 'zin')
+    assert.equal(isPopout(), true)
+  })
+})
+
+// CONTRACT (module): "relative to wherever the app is served from" — the same relative URL must
+// resolve correctly whether the app sits at a domain root or in a subdirectory.
+test('openPanelWindow: the URL round-trips when the app is served from a subdirectory', () => {
+  const fake = { focus: () => {} }
+  const { win, opened } = makeWindow('/acousim/', '', () => fake)
+  withWindow(win, () => {
+    openPanelWindow('spl')
+  })
+  const url = new URL(opened[0].url, 'http://localhost/acousim/')
+  assert.equal(url.pathname, '/acousim/panel', 'must stay under the deployment directory')
+  const { win: tab } = makeWindow(url.pathname, url.search)
+  withWindow(tab, () => {
+    assert.equal(popoutPanelId(), 'spl')
     assert.equal(isPopout(), true)
   })
 })

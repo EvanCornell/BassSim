@@ -195,7 +195,12 @@ function renderModule(mod) {
         L.push(`Values: ${sh.values.map((v) => `\`${v}\``).join(', ')}`)
         L.push('')
       } else if (sh?.kind === 'array') {
-        L.push(`An array of ${sh.length} entries.`)
+        // No length when the extractor could not count one — a spread or a call
+        // expands to any number at runtime. Say so rather than printing
+        // "an array of undefined entries", which a reader will take literally.
+        L.push(sh.length === undefined
+          ? 'An array. Its length is computed at load time and is not published here.'
+          : `An array of ${sh.length} entries.`)
         L.push('')
       } else if (sh?.kind === 'literal') {
         L.push(`Value: \`${JSON.stringify(sh.value)}\``)

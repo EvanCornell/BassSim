@@ -37,7 +37,23 @@ Contradictions fixed: `normQ`'s prose versus its `@param`; the Bessel
 postconditions asserting exact float equality; `matIdentity` promising both
 shared constants and free mutation; ten store actions falsely claiming
 cross-window mirroring; `EXT_GROUPS` published with the wrong count; `COMMANDS`
-published with 21 of its 26 keys.
+published with 21 of its 26 keys; the `driver-fields` header saying `driverSI`
+reads eight fields "and nothing else" while `CORE_FIELDS` marked nine.
+
+Statements that were simply **false** — the worst kind, because a blind author
+implements them faithfully and gets a number nobody can explain:
+`portLengthGuess` named a large port on a small box as the geometry that hits
+the 1 cm floor, when that makes the port *longer*; `dockToEdge` said a quarter
+of the average sibling weight where the code takes a quarter of the total.
+
+Return shapes enumerated: `parseJsdoc`'s every field, including that a param
+description lives at `desc` and not `description`; `computeMetrics`' `zPeaks`,
+which is the peak *list* while the prose called it "the impedance peak count".
+
+Results that look like defects, now explained: `runSimulation`'s `splCombined`
+is a complex sum, so a bare driver radiating from both faces cancels to the
+−146 dB floor at every drive voltage; `copySelection` leaves the previous
+clipboard alone when the selection is empty.
 
 Undocumented behaviour now stated: `fitDb`'s upper bound; `optimizeProject`'s
 baseline evaluation; `nearestIdx`'s tie-breaking; `rawEval`'s `sym` flag and its
@@ -56,6 +72,21 @@ LocalStorage keys, the driver library's exports, the core T/S field set.
 ---
 
 ## Still open
+
+### Cannot be tested through the public API
+
+- **`chamberMatrix`'s sound-speed saturation.** Stuffing does two things and the
+  contract is explicit that only one saturates at 8 g/L. Both feed the same
+  `tlineMatrix` call, and neither the speed nor the loss factor is separately
+  exposed, so there is no way from outside the module to hold one fixed while
+  varying the other. The loss half — the matrix keeps changing above 8 g/L — is
+  asserted; the speed half is not.
+- **`pasteClipboard` on an empty clipboard.** No documented action empties the
+  clipboard once it holds something, and `loadSerialized` does not clear it, so
+  the state is reachable only before anything has copied. The test claims it by
+  running first *and* asserts its own precondition, so reordering the file fails
+  loudly with the reason rather than silently testing nothing. A
+  `clearClipboard` action would remove the whole problem.
 
 ### Cannot be tested blind at all
 
@@ -90,9 +121,6 @@ LocalStorage keys, the driver library's exports, the core T/S field set.
 - **`serialize`'s `modified` format** — "string" only.
 - **`driverToParams`'s label source** — now says it reads `model`, but the
   record's own field list is documented in a different module.
-- **`parseJsdoc`'s return shape** — "the contract arrays" is still not
-  enumerated, and whether `throws` is a list is unstated.
-- **`takeType`'s remaining-text whitespace** — trimmed or not?
 
 ### Structural
 

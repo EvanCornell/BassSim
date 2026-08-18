@@ -13,7 +13,7 @@
 //              settingsSection, restorePrompt, velocityPopupNodeId
 //
 // Fields prefixed with an underscore are solver and persistence bookkeeping
-// (`_lastSig`, `_abort`, `_computeTimer`, `_flowApi`, `_lastSavedName`,
+// (`_lastSig`, `_simToken`, `_computeTimer`, `_flowApi`, `_lastSavedName`,
 // `_nameTimer`) and are not part of any action's observable contract.
 //
 // LocalStorage keys, all prefixed `acousim:` — `acousim:layout`,
@@ -34,6 +34,52 @@ import { channel, isPopout, openPanelWindow, popoutPanelId, SHARED_KEYS, SIM_INP
 import { loadBindings, saveBindings, DEFAULT_BINDINGS, COMMAND_IDS, findConflict } from './keymap'
 
 const POPOUT = isPopout()
+
+// ---- simulation worker ----
+// Spawned on first use rather than at module load, so a popped-out panel — or
+// any code path that imports the store without ever simulating — does not pay
+// for a worker it will not use.
+let simWorker = null
+let simReqId = 0
+const simPending = new Map()
+
+/**
+ * Run one sweep in the simulation worker.
+ *
+ * Each request carries an id and resolves its own promise, so several runs may
+ * be in flight without their replies being confused. Replies whose id is no
+ * longer pending are dropped, which is what makes a superseded run harmless.
+ *
+ * @param {object} project - A serialized project: `{nodes, edges, settings}`.
+ * @returns {Promise<{id: number, ok: boolean, results?: object, metrics?: object|null, error?: string, projectErrors?: string[]|null}>} The worker's reply.
+ * @sideEffect Spawns the worker on first call and posts a message to it.
+ */
+function simulateInWorker(project) {
+  if (!simWorker) {
+    simWorker = new Worker(new URL('./engine/worker.js', import.meta.url), { type: 'module' })
+    /**
+     * Resolve the request a worker reply belongs to.
+     *
+     * An unrecognised id is dropped rather than treated as an error: it means
+     * the request was superseded and its entry already removed.
+     *
+     * @param {MessageEvent} e - The reply, carrying the `id` of its request.
+     * @returns {void}
+     * @sideEffect Removes the request from `simPending` and resolves its promise.
+     */
+    simWorker.onmessage = (e) => {
+      const resolve = simPending.get(e.data.id)
+      if (!resolve) return // superseded and already discarded
+      simPending.delete(e.data.id)
+      resolve(e.data)
+    }
+  }
+  const id = ++simReqId
+  return new Promise((resolve) => {
+    simPending.set(id, resolve)
+    simWorker.postMessage({ id, project })
+  })
+}
 
 const LAYOUT_KEY = 'acousim:layout'
 const PRESETS_KEY = 'acousim:layoutPresets'
@@ -233,7 +279,7 @@ export const useStore = create((rawSet, get) => {
   focusedPanel: POPOUT ? popoutPanelId() : 'canvas', // which panel owns the keyboard
   draggingPanel: null,      // panel id mid tab-drag (drives the drop targets)
   showSettings: false,      // floating settings window
-  settingsSection: 'account',
+  settingsSection: 'keyboard',
   clipboard: null,
 
   /**
@@ -515,14 +561,19 @@ export const useStore = create((rawSet, get) => {
    * Replace the quick-bar arrangement.
    *
    * Sanitized on the way in, so an arrangement carrying unknown ids falls
-   * back to the default rather than rendering a broken bar.
+   * back to the default rather than rendering a broken bar. Unknown ids are
+   * dropped individually; the fallback fires only when nothing survives, since
+   * a non-empty request sanitizing to nothing means the whole arrangement was
+   * foreign. An explicitly empty `ids` is honoured — that is a deliberately
+   * hidden bar, not corruption.
    *
-   * @param {string[]} ids - Item ids in display order.
+   * @param {string[]} ids - Item ids in display order. A non-array falls back to the default.
    * @returns {void}
    * @sideEffect Writes store state and LocalStorage. A quota failure is swallowed.
    */
   setToolbar: (ids) => {
-    const clean = sanitizeToolbar(ids) || DEFAULT_TOOLBAR
+    const kept = sanitizeToolbar(ids)
+    const clean = !kept || (kept.length === 0 && ids.length > 0) ? DEFAULT_TOOLBAR : kept
     set({ toolbar: clean })
     try { localStorage.setItem(TOOLBAR_KEY, JSON.stringify(clean)) } catch { /* quota */ }
   },
@@ -608,7 +659,9 @@ export const useStore = create((rawSet, get) => {
   pushHistory: () => {
     const { nodes, edges, history } = get()
     const snap = { nodes: JSON.parse(JSON.stringify(nodes)), edges: JSON.parse(JSON.stringify(edges)) }
-    set({ history: [...history.slice(-HISTORY_LIMIT), snap], future: [] })
+    // slice to one *below* the limit: the new entry is about to take the last
+    // slot, so trimming to the limit first would leave 81.
+    set({ history: [...history.slice(-(HISTORY_LIMIT - 1)), snap], future: [] })
   },
   /**
    * Step back one entry in the history.
@@ -736,8 +789,13 @@ export const useStore = create((rawSet, get) => {
    * @sideEffect Writes store state and schedules a resimulation.
    */
   updateParams: (id, patch) => {
+    const nodes = get().nodes
+    // Return before writing rather than mapping to an identical list: `set`
+    // installs a fresh array either way, which re-renders every node and
+    // schedules a resimulation for an edit that changed nothing.
+    if (!nodes.some((n) => n.id === id)) return
     set({
-      nodes: get().nodes.map((n) =>
+      nodes: nodes.map((n) =>
         n.id === id ? { ...n, data: { ...n.data, params: { ...n.data.params, ...patch } } } : n),
     })
     get().scheduleCompute()
@@ -819,6 +877,10 @@ export const useStore = create((rawSet, get) => {
    *
    * Only edges wholly inside the selection are taken — a dangling half-edge
    * would have nothing to reconnect to on paste.
+   *
+   * An empty selection leaves the previous clipboard in place rather than
+   * clearing it, so a stray copy with nothing selected cannot lose what you
+   * copied a moment ago. There is no action that empties the clipboard.
    *
    * @returns {number} How many nodes were copied; 0 when the selection was empty.
    * @sideEffect Writes store state, mirrored to other windows.
@@ -1068,30 +1130,33 @@ export const useStore = create((rawSet, get) => {
   setRestorePrompt: (v) => set({ restorePrompt: v }),
 
   // ---- compute pipeline (debounced 150 ms) ----
-  // Simulation runs SERVER-SIDE: the engine never ships to the browser.
-  // The debounce collapses slider drags; an AbortController cancels the
-  // in-flight request when a newer edit supersedes it.
+  // Simulation runs in a Web Worker: the engine ships with the app, but off
+  // the UI thread. The debounce collapses slider drags; a token identifies
+  // the newest request so a slow reply cannot overwrite a newer result.
   _computeTimer: null,
   _lastSig: '',
-  _abort: null,
+  _simToken: null,
   simError: null,
   /**
    * Schedule a debounced simulation run.
    *
-   * Simulation runs **server-side** — the engine never ships to the browser —
-   * so this is an HTTP round-trip, and three mechanisms keep it from
-   * thrashing. The 150 ms debounce collapses slider drags into one request.
-   * The graph signature skips the request when nothing that affects the
-   * result changed. An AbortController cancels the in-flight request when a
-   * newer edit supersedes it, and the response is checked against the current
-   * controller before being applied, so a slow reply cannot overwrite a
-   * newer result.
+   * Simulation runs in a Web Worker — see `src/engine/worker.js` — so the
+   * canvas stays responsive through a large sweep, and three mechanisms keep
+   * the pipeline from thrashing. The 150 ms debounce collapses slider drags
+   * into one run. The graph signature skips the run when nothing that affects
+   * the result changed. A token marks the newest request, and the reply is
+   * checked against it before being applied, so a slow reply cannot overwrite
+   * a newer result.
+   *
+   * A superseded run is left to finish rather than cancelled. Tearing down and
+   * respawning a worker costs more than the sweep it would save, and the reply
+   * is discarded either way.
    *
    * A popped-out tab returns immediately: results arrive from the main window
    * over the sync channel, and a second sweep would duplicate the work.
    *
    * @returns {void}
-   * @sideEffect Sets a timer, issues a POST to /api/simulate, aborts any in-flight request, writes store state, and on success triggers an auto-save. A transport failure is recorded in `simError` and retried on the next edit rather than thrown.
+   * @sideEffect Sets a timer, posts to the simulation worker, writes store state, and on success triggers an auto-save. A structurally invalid project is recorded in `simError` and retried on the next edit rather than thrown.
    */
   scheduleCompute: () => {
     // Results arrive from the main window over the sync channel; a popped-out
@@ -1104,28 +1169,20 @@ export const useStore = create((rawSet, get) => {
       if (!nodes.length) return
       const sig = graphSignature(nodes, edges, settings)
       if (sig === get()._lastSig && get().results) return
-      get()._abort?.abort()
-      const ctrl = new AbortController()
-      set({ _abort: ctrl })
-      try {
-        const r = await fetch('/api/simulate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          signal: ctrl.signal,
-          body: JSON.stringify({
-            nodes: nodes.map((n) => ({ id: n.id, type: n.type, params: n.data.params })),
-            edges: edges.map((e) => ({ source: e.source, sourceHandle: e.sourceHandle, target: e.target, targetHandle: e.targetHandle })),
-            settings,
-          }),
-        })
-        if (!r.ok) throw new Error(`server responded ${r.status}`)
-        const { results, metrics } = await r.json()
-        if (get()._abort !== ctrl) return // a newer request superseded this one
-        set({ results, metrics, _lastSig: sig, simError: null })
+      const token = {}
+      set({ _simToken: token })
+      const reply = await simulateInWorker({
+        nodes: nodes.map((n) => ({ id: n.id, type: n.type, params: n.data.params })),
+        edges: edges.map((e) => ({ source: e.source, sourceHandle: e.sourceHandle, target: e.target, targetHandle: e.targetHandle })),
+        settings,
+      })
+      if (get()._simToken !== token) return // a newer request superseded this one
+      if (reply.ok) {
+        set({ results: reply.results, metrics: reply.metrics, _lastSig: sig, simError: null })
         get().autoSave()
-      } catch (e) {
-        if (e.name === 'AbortError' || get()._abort !== ctrl) return
-        set({ simError: `Simulation service unreachable (${e.message}). Retrying on next edit.`, _lastSig: '' })
+      } else {
+        const detail = reply.projectErrors?.length ? reply.projectErrors.join('; ') : reply.error
+        set({ simError: `Simulation failed: ${detail}`, _lastSig: '' })
       }
     }, 150)
     set({ _computeTimer: timer })

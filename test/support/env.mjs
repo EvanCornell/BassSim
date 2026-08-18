@@ -1,10 +1,10 @@
 // Minimal browser-environment shims, installed before any app module loads.
 //
-// Several modules read `localStorage`, `window` or `BroadcastChannel` at import
-// time — the store hydrates its layout, keymap and toolbar from storage as the
-// module initialises. Without these the import throws and the whole file's
-// contracts become untestable, so this supplies the smallest surface that lets
-// those modules load. It is not a DOM: nothing here renders.
+// Several modules read `localStorage`, `window`, `BroadcastChannel` or `Worker`
+// at import time — the store hydrates its layout, keymap and toolbar from
+// storage as the module initialises. Without these the import throws and the
+// whole file's contracts become untestable, so this supplies the smallest
+// surface that lets those modules load. It is not a DOM: nothing here renders.
 //
 // Storage is in-memory and per-process, so tests that write to it do not leak
 // into the developer's browser or into each other across runs.
@@ -67,16 +67,42 @@ class InertChannel {
 }
 
 /**
+ * A Worker that never replies, so a scheduled sweep stays pending forever.
+ *
+ * The store spawns one of these to run the solver off the UI thread. Tests
+ * cover the compute pipeline's bookkeeping — the debounce, the graph
+ * signature, the supersede token — rather than the sweep itself, which is
+ * tested directly against the engine. Dropping the message leaves the request
+ * promise unresolved, which is inert: an unsettled promise schedules no work
+ * and so cannot outlive the test that created it.
+ */
+class InertWorker {
+  /**
+   * @param {URL|string} url - Module URL of the worker script.
+   * @returns {void}
+   * @mutates Initialises the instance.
+   */
+  constructor(url) { this.url = url; this.onmessage = null }
+
+  /** @returns {void} @sideEffect None — messages are intentionally dropped. */
+  postMessage() {}
+
+  /** @returns {void} @sideEffect None. */
+  terminate() {}
+}
+
+/**
  * Install the shims on globalThis, replacing any already present.
  *
  * @returns {void}
- * @sideEffect Defines localStorage, window, document, navigator, BroadcastChannel and performance on the global object.
+ * @sideEffect Defines localStorage, window, document, navigator, BroadcastChannel, Worker and performance on the global object.
  */
 export function installEnv() {
   const storage = new MemoryStorage()
   globalThis.localStorage = storage
   globalThis.sessionStorage = new MemoryStorage()
   globalThis.BroadcastChannel = InertChannel
+  globalThis.Worker = InertWorker
   globalThis.navigator ??= { platform: 'Linux x86_64', userAgent: 'node' }
   globalThis.performance ??= { now: () => Date.now() }
   globalThis.window = globalThis

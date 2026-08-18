@@ -122,6 +122,14 @@ curves, the whole sweep runs four times, refining per-frequency Bl/Cms/Le
 scale factors from the previous pass's excursion by damped fixed-point
 iteration. This is experimental and roughly quadruples the solve time.
 
+`splCombined` is the *complex* sum of every radiating outlet, so radiators
+that oppose each other cancel. A bare driver with both faces wired straight
+to radiation nodes is the extreme case: front and rear are exactly out of
+phase into the same far field, the sum is identically zero, and the reported
+level sits at the −146 dB floor at every frequency and every drive voltage.
+That is the physics, not a failure — a dipole needs a baffle, and the drive
+level is visible in `splDriver`, `excursion` and `zinMag` regardless.
+
 **Parameters**
 
 - `nodes` — `Array<object>` — Graph nodes, each `{id, type, data: {params}}`.

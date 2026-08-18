@@ -1,7 +1,8 @@
 // Popped-out panels: any panel can be sent to its own browser tab, which the
 // user then drags onto a second monitor.
 //
-// The tab loads the same app at /panel?id=<panel> and renders that one panel
+// The tab loads the same app at panel?id=<panel> — relative to wherever the
+// app is served from — and renders that one panel
 // full-window. Both windows run the same store; a BroadcastChannel keeps the
 // shared slice of that store identical between them, so a parameter edited in
 // one window redraws the chart in the other.
@@ -9,8 +10,13 @@
 // The main window stays the authority for two things it makes no sense to do
 // twice: running the simulation and writing the LocalStorage auto-save.
 
-/** Path a popped-out panel is served from. */
-const PANEL_PATH = '/panel'
+// Relative rather than absolute, so the app works wherever it is deployed.
+// `window.open('panel?…')` resolves against the current directory, which puts a
+// panel at /panel when served from a domain root and at /acousim/panel when
+// served from a subdirectory — a GitHub Pages project site, say. An absolute
+// '/panel' would escape to the domain root and 404 in the second case.
+/** Path segment a popped-out panel is served from, relative to the app root. */
+const PANEL_PATH = 'panel'
 /** BroadcastChannel name the windows use to mirror shared state. */
 export const SYNC_CHANNEL = 'acousim-sync'
 
@@ -34,14 +40,15 @@ export const SIM_INPUT_KEYS = ['nodes', 'edges', 'settings']
  * The panel id this window was opened to show, if it is a popped-out tab.
  *
  * Checked against the path as well as the query string, so a stray `?id=` on
- * the main app cannot convince it that it is a panel window.
+ * the main app cannot convince it that it is a panel window. The path is
+ * matched by suffix because the app may be served from a subdirectory.
  *
  * @returns {string|null} The panel id, or `null` in the main window or outside a browser.
  * @sideEffect Reads `window.location`.
  */
 export function popoutPanelId() {
   if (typeof window === 'undefined') return null
-  if (window.location.pathname !== PANEL_PATH) return null
+  if (!window.location.pathname.endsWith(`/${PANEL_PATH}`)) return null
   return new URLSearchParams(window.location.search).get('id')
 }
 
@@ -61,6 +68,10 @@ export const isPopout = () => popoutPanelId() != null
  *
  * The window name is keyed on the panel id, so a second click focuses the
  * existing tab instead of opening a duplicate.
+ *
+ * The URL is relative — `panel?id=<panel>`, not `/panel?id=<panel>` — so it
+ * resolves against wherever the app is served from rather than the domain
+ * root.
  *
  * @param {string} id - Panel id to show.
  * @returns {Window|null} The panel window, or `null` when the browser blocked it.

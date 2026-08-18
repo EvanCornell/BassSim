@@ -13,7 +13,7 @@ no implementation. This is the sole input to the blind contract test suite.
 | [`scripts/build-spec-pack.mjs`](scripts_build-spec-pack_mjs.spec.md) | 4 | 0 | 4 |
 | [`scripts/contracts-lib.mjs`](scripts_contracts-lib_mjs.spec.md) | 16 | 13 | 3 |
 | [`scripts/import-catalog.mjs`](scripts_import-catalog_mjs.spec.md) | 48 | 0 | 48 |
-| [`scripts/triage-contracts.mjs`](scripts_triage-contracts_mjs.spec.md) | 3 | 0 | 3 |
+| [`scripts/triage-contracts.mjs`](scripts_triage-contracts_mjs.spec.md) | 5 | 0 | 5 |
 | [`server/auth.js`](server_auth_js.spec.md) | 3 | 1 | 2 |
 | [`server/index.js`](server_index_js.spec.md) | 4 | 0 | 4 |
 | [`src/App.jsx`](src_App_jsx.spec.md) | 5 | 1 | 4 |
@@ -53,4 +53,4 @@ no implementation. This is the sole input to the blind contract test suite.
 | [`test/contracts.mjs`](test_contracts_mjs.spec.md) | 2 | 0 | 2 |
 | [`test/drivers.mjs`](test_drivers_mjs.spec.md) | 2 | 0 | 2 |
 | [`test/support/loader.mjs`](test_support_loader_mjs.spec.md) | 2 | 2 | 0 |
-| **Total** | **541** | **271** | **270** |
+| **Total** | **543** | **271** | **272** |

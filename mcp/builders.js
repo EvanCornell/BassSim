@@ -237,7 +237,7 @@ const edge = (p, source, sourceHandle, target, targetHandle) =>
  * @param {number} volumeL - Box volume, litres.
  * @param {number} areaCm2 - Total port area, cm².
  * @param {number} [ecFactor=0.732] - End-correction coefficient, applied to both ends.
- * @returns {number} Port length in cm. Never below 1: the end correction alone can exceed the required length for a large port on a small box, and a negative length is not a port. A returned 1 therefore means "this geometry cannot reach that tuning", not "1 cm will do it".
+ * @returns {number} Port length in cm. Never below 1: the required length falls as the port narrows, as the box grows and as the target tuning rises, so a *small* port on a *large* box at a high tuning drives it below the end correction and a negative length is not a port. A returned 1 therefore means "this geometry cannot reach that tuning", not "1 cm will do it". The converse case — a large port on a small box — makes the port longer, not shorter, and can run to metres.
  * @pure
  */
 export function portLengthGuess(fb, volumeL, areaCm2, ecFactor = 0.732) {
