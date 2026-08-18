@@ -56,13 +56,13 @@ function RestoreBanner() {
 }
 
 /**
- * Report that the server-side simulation service is unreachable.
+ * Report that the simulation could not be run.
  *
  * An app-level banner rather than a per-chart message, because the charts
  * are separate panels and any of them may be closed — the user would
  * otherwise get no indication at all.
  *
- * @returns {React.ReactElement|null} The banner, or `null` when the service is reachable.
+ * @returns {React.ReactElement|null} The banner, or `null` when the last run succeeded.
  * @sideEffect Subscribes to the store.
  */
 function SimErrorBanner() {
@@ -86,9 +86,8 @@ function ErrorBanner() {
 /**
  * The application root.
  *
- * Routes before rendering anything: the password-reset page and a
- * popped-out panel are whole-page modes that share none of the workspace
- * chrome.
+ * Routes before rendering anything: a popped-out panel is a whole-page mode
+ * that shares none of the workspace chrome.
  *
  * Two effects run once on mount. The first loads the demo project and, if a
  * different auto-save exists, offers to restore it — skipped entirely in a
