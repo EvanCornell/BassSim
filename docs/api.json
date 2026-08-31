@@ -24,9 +24,9 @@
     "pure": "flag"
   },
   "stats": {
-    "modules": 57,
-    "methods": 625,
-    "documented": 625
+    "modules": 58,
+    "methods": 635,
+    "documented": 635
   },
   "modules": [
     {
@@ -6969,15 +6969,15 @@
           "qualified": "FileBrowser > onImportFile",
           "kind": "function",
           "exported": false,
-          "async": false,
+          "async": true,
           "generator": false,
-          "line": 424,
+          "line": 427,
           "signature": [
             "e"
           ],
           "documented": true,
           "summary": "Read a chosen workspace file and load it.",
-          "description": "Read a chosen workspace file and load it.\n\nConfirmed first: importing replaces every project in the browser, and the\ncopy being replaced may be the only one that exists.",
+          "description": "Read a chosen workspace file and load it.\n\nConfirmed first: importing replaces every project in the browser, and the\ncopy being replaced may be the only one that exists.\n\nBoth an archive and the single JSON document earlier builds produced are\naccepted; the store decides which by looking at the file.",
           "params": [
             {
               "name": "e",
@@ -6988,8 +6988,8 @@
             }
           ],
           "returns": {
-            "type": "void",
-            "desc": ""
+            "type": "Promise<void>",
+            "desc": "Resolves once the import has been attempted."
           },
           "throws": [],
           "contract": {
@@ -7006,75 +7006,13 @@
           "other": []
         },
         {
-          "name": "reader.onload",
-          "qualified": "FileBrowser > onImportFile > reader.onload",
-          "kind": "function",
-          "exported": false,
-          "async": false,
-          "generator": false,
-          "line": 436,
-          "signature": [],
-          "documented": true,
-          "summary": "Hand the file's text to the store and report a rejection in the panel.",
-          "description": "Hand the file's text to the store and report a rejection in the panel.",
-          "params": [],
-          "returns": {
-            "type": "void",
-            "desc": ""
-          },
-          "throws": [],
-          "contract": {
-            "pre": [],
-            "post": [],
-            "invariant": [],
-            "mutates": [],
-            "sideEffect": [
-              "Replaces the workspace on success; writes component state either way."
-            ],
-            "reads": [],
-            "pure": false
-          },
-          "other": []
-        },
-        {
-          "name": "reader.onerror",
-          "qualified": "FileBrowser > onImportFile > reader.onerror",
-          "kind": "function",
-          "exported": false,
-          "async": false,
-          "generator": false,
-          "line": 446,
-          "signature": [],
-          "documented": true,
-          "summary": "Report a file that could not be read at all.",
-          "description": "Report a file that could not be read at all.",
-          "params": [],
-          "returns": {
-            "type": "void",
-            "desc": ""
-          },
-          "throws": [],
-          "contract": {
-            "pre": [],
-            "post": [],
-            "invariant": [],
-            "mutates": [],
-            "sideEffect": [
-              "Writes component state."
-            ],
-            "reads": [],
-            "pure": false
-          },
-          "other": []
-        },
-        {
           "name": "renderRow",
           "qualified": "FileBrowser > renderRow",
           "kind": "function",
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 457,
+          "line": 446,
           "signature": [
             "row"
           ],
@@ -7895,7 +7833,7 @@
           "qualified": "MenuBar > onLoadWorkspace",
           "kind": "function",
           "exported": false,
-          "async": false,
+          "async": true,
           "generator": false,
           "line": 196,
           "signature": [
@@ -7914,8 +7852,8 @@
             }
           ],
           "returns": {
-            "type": "void",
-            "desc": ""
+            "type": "Promise<void>",
+            "desc": "Resolves once the import has been attempted."
           },
           "throws": [],
           "contract": {
@@ -7932,44 +7870,13 @@
           "other": []
         },
         {
-          "name": "reader.onload",
-          "qualified": "MenuBar > onLoadWorkspace > reader.onload",
-          "kind": "function",
-          "exported": false,
-          "async": false,
-          "generator": false,
-          "line": 208,
-          "signature": [],
-          "documented": true,
-          "summary": "Hand the file's text to the store and report a rejection.",
-          "description": "Hand the file's text to the store and report a rejection.",
-          "params": [],
-          "returns": {
-            "type": "void",
-            "desc": ""
-          },
-          "throws": [],
-          "contract": {
-            "pre": [],
-            "post": [],
-            "invariant": [],
-            "mutates": [],
-            "sideEffect": [
-              "Replaces the workspace, or alerts when the file is not a workspace."
-            ],
-            "reads": [],
-            "pure": false
-          },
-          "other": []
-        },
-        {
           "name": "savePreset",
           "qualified": "MenuBar > savePreset",
           "kind": "function",
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 221,
+          "line": 212,
           "signature": [],
           "documented": true,
           "summary": "Save the current window arrangement under a prompted name.",
@@ -8000,7 +7907,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 239,
+          "line": 230,
           "signature": [],
           "documented": true,
           "summary": "Open the saved-project browser.",
@@ -8031,7 +7938,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 251,
+          "line": 242,
           "signature": [],
           "documented": true,
           "summary": "Open the file picker to import a project.",
@@ -8062,7 +7969,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 262,
+          "line": 253,
           "signature": [],
           "documented": true,
           "summary": "Download the whole workspace as one file.",
@@ -8093,7 +8000,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 272,
+          "line": 263,
           "signature": [],
           "documented": true,
           "summary": "Open the file picker to replace the workspace.",
@@ -8124,7 +8031,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 286,
+          "line": 277,
           "signature": [],
           "documented": true,
           "summary": "Download every result series as a CSV.",
@@ -8155,7 +8062,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 296,
+          "line": 287,
           "signature": [],
           "documented": true,
           "summary": "Download a PNG of the node canvas.",
@@ -8186,7 +8093,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 306,
+          "line": 297,
           "signature": [],
           "documented": true,
           "summary": "Download a plain-text metrics summary.",
@@ -8217,7 +8124,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 335,
+          "line": 326,
           "signature": [],
           "documented": true,
           "summary": "Pop the focused panel out into its own browser tab.",
@@ -8248,7 +8155,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 350,
+          "line": 341,
           "signature": [],
           "documented": true,
           "summary": "Pop this specific panel out into its own browser tab.",
@@ -8279,7 +8186,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 363,
+          "line": 354,
           "signature": [],
           "documented": true,
           "summary": "Maximize the focused panel, or restore the one already maximized.",
@@ -8310,7 +8217,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 374,
+          "line": 365,
           "signature": [],
           "documented": true,
           "summary": "Restore the default workspace arrangement.",
@@ -8341,7 +8248,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 389,
+          "line": 380,
           "signature": [],
           "documented": true,
           "summary": "Apply this saved arrangement.",
@@ -8372,7 +8279,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 406,
+          "line": 397,
           "signature": [],
           "documented": true,
           "summary": "Delete this saved arrangement.",
@@ -8403,7 +8310,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 422,
+          "line": 413,
           "signature": [],
           "documented": true,
           "summary": "Toggle resonance masking, which lumps chambers to hide standing-wave artifacts.",
@@ -8434,7 +8341,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 433,
+          "line": 424,
           "signature": [],
           "documented": true,
           "summary": "Toggle phase unwrapping on the phase chart.",
@@ -8465,7 +8372,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 451,
+          "line": 442,
           "signature": [],
           "documented": true,
           "summary": "Discard every reference overlay.",
@@ -8496,7 +8403,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 466,
+          "line": 457,
           "signature": [],
           "documented": true,
           "summary": "Open the driver library browser.",
@@ -8527,7 +8434,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 476,
+          "line": 467,
           "signature": [],
           "documented": true,
           "summary": "Open the Thiele/Small parameter solver.",
@@ -8558,7 +8465,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 489,
+          "line": 480,
           "signature": [],
           "documented": true,
           "summary": "Open the Nonlinear Lab panel.",
@@ -8589,7 +8496,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 504,
+          "line": 495,
           "signature": [],
           "documented": true,
           "summary": "Turn experimental features on or off.",
@@ -8620,7 +8527,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 523,
+          "line": 514,
           "signature": [],
           "documented": true,
           "summary": "Open Settings at the keyboard section.",
@@ -8651,7 +8558,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 533,
+          "line": 524,
           "signature": [],
           "documented": true,
           "summary": "Show the about dialog.",
@@ -22098,14 +22005,14 @@
       "constants": [
         {
           "name": "useStore",
-          "line": 289,
+          "line": 290,
           "shape": null,
           "summary": null,
           "description": null
         },
         {
           "name": "__internals",
-          "line": 2208,
+          "line": 2239,
           "shape": {
             "kind": "object",
             "keys": [
@@ -22128,7 +22035,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 58,
+          "line": 59,
           "signature": [
             "project"
           ],
@@ -22169,7 +22076,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 71,
+          "line": 72,
           "signature": [
             "e"
           ],
@@ -22210,7 +22117,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 101,
+          "line": 102,
           "signature": [
             "ids",
             "active"
@@ -22259,7 +22166,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 128,
+          "line": 129,
           "signature": [],
           "documented": true,
           "summary": "Load the persisted workspace, or build a first-run one.",
@@ -22290,7 +22197,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 166,
+          "line": 167,
           "signature": [],
           "documented": true,
           "summary": "Load the persisted dock layout, falling back to the default.",
@@ -22321,7 +22228,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 184,
+          "line": 185,
           "signature": [],
           "documented": true,
           "summary": "Load the user's saved layout arrangements.",
@@ -22352,7 +22259,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 204,
+          "line": 205,
           "signature": [],
           "documented": true,
           "summary": "Load the quick-bar arrangement.",
@@ -22383,7 +22290,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 224,
+          "line": 225,
           "signature": [
             "type"
           ],
@@ -22424,7 +22331,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 244,
+          "line": 245,
           "signature": [
             "spot",
             "nodes",
@@ -22489,7 +22396,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 252,
+          "line": 253,
           "signature": [
             "x",
             "y"
@@ -22538,7 +22445,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 271,
+          "line": 272,
           "signature": [
             "nodes",
             "edges",
@@ -22593,7 +22500,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 309,
+          "line": 310,
           "signature": [
             "partial",
             "replace"
@@ -22644,7 +22551,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 377,
+          "line": 378,
           "signature": [
             "x",
             "y",
@@ -22701,7 +22608,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 388,
+          "line": 389,
           "signature": [],
           "documented": true,
           "summary": "Dismiss the context menu.",
@@ -22732,7 +22639,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 397,
+          "line": 398,
           "signature": [
             "id"
           ],
@@ -22773,7 +22680,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 408,
+          "line": 409,
           "signature": [
             "id"
           ],
@@ -22814,7 +22721,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 416,
+          "line": 417,
           "signature": [
             "id"
           ],
@@ -22855,7 +22762,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 425,
+          "line": 426,
           "signature": [
             "v",
             "section"
@@ -22904,7 +22811,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 433,
+          "line": 434,
           "signature": [
             "id"
           ],
@@ -22945,7 +22852,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 445,
+          "line": 446,
           "signature": [
             "id",
             "combos"
@@ -22994,7 +22901,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 462,
+          "line": 463,
           "signature": [
             "id",
             "combo"
@@ -23043,7 +22950,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 480,
+          "line": 481,
           "signature": [
             "id",
             "combo"
@@ -23092,7 +22999,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 487,
+          "line": 488,
           "signature": [],
           "documented": true,
           "summary": "Restore every command to its default combos.",
@@ -23123,7 +23030,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 504,
+          "line": 505,
           "signature": [
             "tree"
           ],
@@ -23164,7 +23071,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 521,
+          "line": 522,
           "signature": [
             "stackId",
             "panelId"
@@ -23213,7 +23120,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 531,
+          "line": 532,
           "signature": [
             "panelId",
             "stackId",
@@ -23270,7 +23177,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 540,
+          "line": 541,
           "signature": [
             "panelId",
             "edge"
@@ -23319,7 +23226,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 551,
+          "line": 552,
           "signature": [
             "splitId",
             "index",
@@ -23384,7 +23291,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 565,
+          "line": 566,
           "signature": [
             "panelId",
             "stackId",
@@ -23441,7 +23348,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 586,
+          "line": 587,
           "signature": [
             "panelId"
           ],
@@ -23482,7 +23389,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 603,
+          "line": 604,
           "signature": [
             "panelId"
           ],
@@ -23523,7 +23430,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 615,
+          "line": 616,
           "signature": [
             "panelId"
           ],
@@ -23564,7 +23471,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 626,
+          "line": 627,
           "signature": [],
           "documented": true,
           "summary": "Restore the default workspace arrangement.",
@@ -23595,7 +23502,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 636,
+          "line": 637,
           "signature": [
             "name"
           ],
@@ -23636,7 +23543,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 655,
+          "line": 656,
           "signature": [
             "name"
           ],
@@ -23677,7 +23584,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 679,
+          "line": 680,
           "signature": [
             "ids"
           ],
@@ -23718,7 +23625,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 695,
+          "line": 696,
           "signature": [
             "id"
           ],
@@ -23759,7 +23666,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 707,
+          "line": 708,
           "signature": [
             "id",
             "delta"
@@ -23808,7 +23715,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 721,
+          "line": 722,
           "signature": [],
           "documented": true,
           "summary": "Restore the default quick-bar arrangement.",
@@ -23839,7 +23746,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 730,
+          "line": 731,
           "signature": [
             "name"
           ],
@@ -23880,7 +23787,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 748,
+          "line": 749,
           "signature": [
             "id",
             "range"
@@ -23929,7 +23836,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 764,
+          "line": 765,
           "signature": [],
           "documented": true,
           "summary": "Record the current graph as an undo point.",
@@ -23960,7 +23867,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 777,
+          "line": 778,
           "signature": [],
           "documented": true,
           "summary": "Step back one entry in the history.",
@@ -23991,7 +23898,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 794,
+          "line": 795,
           "signature": [],
           "documented": true,
           "summary": "Step forward one entry in the history.",
@@ -24022,7 +23929,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 819,
+          "line": 820,
           "signature": [
             "changes"
           ],
@@ -24063,7 +23970,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 833,
+          "line": 834,
           "signature": [
             "changes"
           ],
@@ -24104,7 +24011,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 845,
+          "line": 846,
           "signature": [
             "conn"
           ],
@@ -24145,7 +24052,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 857,
+          "line": 858,
           "signature": [
             "id"
           ],
@@ -24186,7 +24093,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 870,
+          "line": 871,
           "signature": [
             "type",
             "position"
@@ -24235,7 +24142,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 896,
+          "line": 897,
           "signature": [
             "id",
             "patch"
@@ -24284,7 +24191,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 918,
+          "line": 919,
           "signature": [],
           "documented": true,
           "summary": "Delete the selected nodes and edges.",
@@ -24315,7 +24222,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 943,
+          "line": 944,
           "signature": [],
           "documented": true,
           "summary": "Copy the selected nodes in place, offset down-right.",
@@ -24346,7 +24253,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 968,
+          "line": 969,
           "signature": [],
           "documented": true,
           "summary": "Select every node on the canvas.",
@@ -24377,7 +24284,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 983,
+          "line": 984,
           "signature": [
             "ids",
             "additive"
@@ -24426,7 +24333,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1016,
+          "line": 1017,
           "signature": [],
           "documented": true,
           "summary": "Copy the selected nodes and their internal edges to the in-app clipboard.",
@@ -24457,7 +24364,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1042,
+          "line": 1043,
           "signature": [],
           "documented": true,
           "summary": "Copy the selection, then delete it.",
@@ -24488,7 +24395,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1063,
+          "line": 1064,
           "signature": [
             "at"
           ],
@@ -24529,7 +24436,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1111,
+          "line": 1112,
           "signature": [
             "type"
           ],
@@ -24570,7 +24477,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1127,
+          "line": 1128,
           "signature": [
             "delta"
           ],
@@ -24611,7 +24518,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1140,
+          "line": 1141,
           "signature": [],
           "documented": true,
           "summary": "Force a resimulation even though nothing has changed.",
@@ -24642,7 +24549,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1153,
+          "line": 1154,
           "signature": [
             "patch"
           ],
@@ -24683,7 +24590,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1169,
+          "line": 1170,
           "signature": [
             "field",
             "value"
@@ -24732,7 +24639,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1190,
+          "line": 1191,
           "signature": [],
           "documented": true,
           "summary": "Freeze the current result as a labelled reference overlay.",
@@ -24763,7 +24670,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1217,
+          "line": 1218,
           "signature": [
             "id"
           ],
@@ -24804,7 +24711,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1226,
+          "line": 1227,
           "signature": [
             "id",
             "label"
@@ -24853,7 +24760,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1236,
+          "line": 1237,
           "signature": [
             "id"
           ],
@@ -24894,7 +24801,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1244,
+          "line": 1245,
           "signature": [
             "v"
           ],
@@ -24935,7 +24842,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1252,
+          "line": 1253,
           "signature": [
             "v"
           ],
@@ -24976,7 +24883,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1260,
+          "line": 1261,
           "signature": [
             "v"
           ],
@@ -25017,7 +24924,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1268,
+          "line": 1269,
           "signature": [
             "v"
           ],
@@ -25058,7 +24965,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1299,
+          "line": 1300,
           "signature": [],
           "documented": true,
           "summary": "Schedule a debounced simulation run.",
@@ -25089,7 +24996,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1340,
+          "line": 1341,
           "signature": [],
           "documented": true,
           "summary": "Capture the project as a plain, saveable object.",
@@ -25120,7 +25027,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1366,
+          "line": 1367,
           "signature": [
             "proj"
           ],
@@ -25161,7 +25068,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1401,
+          "line": 1402,
           "signature": [
             "name"
           ],
@@ -25202,7 +25109,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1422,
+          "line": 1423,
           "signature": [],
           "documented": true,
           "summary": "Start an empty project, confirming first if there is anything to lose.",
@@ -25233,7 +25140,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1432,
+          "line": 1433,
           "signature": [],
           "documented": true,
           "summary": "Download the project as a file, auto-saving it first.",
@@ -25264,7 +25171,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1449,
+          "line": 1450,
           "signature": [],
           "documented": true,
           "summary": "Write the project to LocalStorage under its name.",
@@ -25295,7 +25202,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1483,
+          "line": 1484,
           "signature": [
             "ws"
           ],
@@ -25336,7 +25243,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1498,
+          "line": 1499,
           "signature": [
             "name"
           ],
@@ -25377,7 +25284,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1512,
+          "line": 1513,
           "signature": [],
           "documented": true,
           "summary": "Write the editor's current project back into its file.",
@@ -25408,7 +25315,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1530,
+          "line": 1531,
           "signature": [
             "path"
           ],
@@ -25449,7 +25356,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1546,
+          "line": 1547,
           "signature": [
             "folder"
           ],
@@ -25490,7 +25397,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1567,
+          "line": 1568,
           "signature": [
             "parent"
           ],
@@ -25531,7 +25438,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1590,
+          "line": 1591,
           "signature": [
             "from",
             "to"
@@ -25580,7 +25487,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1627,
+          "line": 1628,
           "signature": [
             "path"
           ],
@@ -25619,17 +25526,17 @@
           "qualified": "downloadWorkspace",
           "kind": "method",
           "exported": false,
-          "async": false,
+          "async": true,
           "generator": false,
-          "line": 1659,
+          "line": 1660,
           "signature": [],
           "documented": true,
           "summary": "Download the whole workspace, and record that it happened.",
           "description": "Download the whole workspace, and record that it happened.\n\nThe stamp is the point as much as the file is: browser storage can be\ncleared without warning, so the file browser shows how long it has been\nsince a copy existed anywhere else.",
           "params": [],
           "returns": {
-            "type": "void",
-            "desc": ""
+            "type": "Promise<void>",
+            "desc": "Resolves once the archive has been handed to the browser."
           },
           "throws": [],
           "contract": {
@@ -25638,7 +25545,7 @@
             "invariant": [],
             "mutates": [],
             "sideEffect": [
-              "Saves the open file, triggers a browser download, then writes store state and persists the workspace."
+              "Saves the open file, builds and downloads an archive, then writes store state and persists the workspace."
             ],
             "reads": [],
             "pure": false
@@ -25646,31 +25553,31 @@
           "other": []
         },
         {
-          "name": "importWorkspaceText",
-          "qualified": "importWorkspaceText",
+          "name": "importWorkspaceFile",
+          "qualified": "importWorkspaceFile",
           "kind": "method",
           "exported": false,
-          "async": false,
+          "async": true,
           "generator": false,
-          "line": 1682,
+          "line": 1689,
           "signature": [
-            "text"
+            "file"
           ],
           "documented": true,
           "summary": "Replace the workspace with an imported one.",
-          "description": "Replace the workspace with an imported one.\n\nWholesale replacement rather than a merge. Merging two workspaces raises a\nquestion per colliding path that the user has no way to answer usefully in\na dialog, and the honest workflow — download the current workspace first —\nis one click away.\n\nThe imported workspace is stored exactly as it arrived. If it has no\nsystem folder, it does not gain one here; the first write of app data\ncreates it.",
+          "description": "Replace the workspace with an imported one.\n\nWholesale replacement rather than a merge. Merging two workspaces raises a\nquestion per colliding path that the user has no way to answer usefully in\na dialog, and the honest workflow — download the current workspace first —\nis one click away.\n\nThe imported workspace is stored exactly as it arrived. If it has no\nsystem folder, it does not gain one here; the first write of app data\ncreates it.\n\nBoth shapes a workspace can arrive in are accepted: the archive of folders\nand files this build downloads, and the single JSON document an earlier\none did. Deciding by signature rather than by file extension, since the\npicker hands over whatever the user chose and the extension is the least\nreliable thing about it.",
           "params": [
             {
-              "name": "text",
-              "type": "string",
+              "name": "file",
+              "type": "File",
               "optional": false,
               "default": null,
-              "desc": "Contents of a downloaded workspace file."
+              "desc": "The chosen file."
             }
           ],
           "returns": {
-            "type": "{ok: boolean, error?: string}",
-            "desc": "Whether the import succeeded, and why not when it did not."
+            "type": "Promise<{ok: boolean, error?: string, skipped?: string[]}>",
+            "desc": "Whether the import succeeded, which files were unreadable, and why it failed when it did."
           },
           "throws": [],
           "contract": {
@@ -25679,7 +25586,48 @@
             "invariant": [],
             "mutates": [],
             "sideEffect": [
-              "On success, writes store state, persists the workspace and replaces what is on the canvas."
+              "Reads the file. On success, writes store state, persists the workspace and replaces what is on the canvas."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "_adoptWorkspace",
+          "qualified": "_adoptWorkspace",
+          "kind": "method",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 1713,
+          "signature": [
+            "ws"
+          ],
+          "documented": true,
+          "summary": "Make an imported workspace the current one and open something from it.",
+          "description": "Make an imported workspace the current one and open something from it.",
+          "params": [
+            {
+              "name": "ws",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "The workspace to adopt."
+            }
+          ],
+          "returns": {
+            "type": "{ok: boolean}",
+            "desc": "Always a success; the caller has already validated."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Writes store state, persists the workspace and replaces what is on the canvas."
             ],
             "reads": [],
             "pure": false
@@ -25693,7 +25641,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1716,
+          "line": 1747,
           "signature": [
             "paths"
           ],
@@ -25734,7 +25682,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1726,
+          "line": 1757,
           "signature": [
             "path",
             "open"
@@ -25783,7 +25731,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1740,
+          "line": 1771,
           "signature": [],
           "documented": true,
           "summary": "Collapse every folder in the explorer.",
@@ -25814,7 +25762,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1755,
+          "line": 1786,
           "signature": [
             "mode",
             "path"
@@ -25863,7 +25811,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1766,
+          "line": 1797,
           "signature": [],
           "documented": true,
           "summary": "Dismiss the explorer's inline editor.",
@@ -25894,7 +25842,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1781,
+          "line": 1812,
           "signature": [
             "paths",
             "cut"
@@ -25943,7 +25891,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1794,
+          "line": 1825,
           "signature": [
             "folder"
           ],
@@ -25984,7 +25932,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1821,
+          "line": 1852,
           "signature": [
             "path"
           ],
@@ -26025,7 +25973,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1837,
+          "line": 1868,
           "signature": [
             "from",
             "folder"
@@ -26074,7 +26022,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1859,
+          "line": 1890,
           "signature": [
             "mode",
             "parent",
@@ -26131,7 +26079,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1893,
+          "line": 1924,
           "signature": [
             "drivers"
           ],
@@ -26172,7 +26120,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1915,
+          "line": 1946,
           "signature": [
             "id"
           ],
@@ -26213,7 +26161,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1931,
+          "line": 1962,
           "signature": [
             "id"
           ],
@@ -26254,7 +26202,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1954,
+          "line": 1985,
           "signature": [
             "id"
           ],
@@ -26295,7 +26243,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1981,
+          "line": 2012,
           "signature": [
             "id"
           ],
@@ -26336,7 +26284,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1997,
+          "line": 2028,
           "signature": [
             "stackId"
           ],
@@ -26377,7 +26325,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2021,
+          "line": 2052,
           "signature": [
             "panelId",
             "stackId"
@@ -26426,7 +26374,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2041,
+          "line": 2072,
           "signature": [
             "id"
           ],
@@ -26467,7 +26415,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2052,
+          "line": 2083,
           "signature": [
             "id"
           ],
@@ -26508,7 +26456,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2071,
+          "line": 2102,
           "signature": [
             "patch"
           ],
@@ -26551,7 +26499,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2081,
+          "line": 2112,
           "signature": [],
           "documented": true,
           "summary": "The full shared slice, sent to a popped-out tab when it announces itself.",
@@ -26582,7 +26530,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2139,
+          "line": 2170,
           "signature": [
             "arg0"
           ],
@@ -26632,7 +26580,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 2191,
+          "line": 2222,
           "signature": [],
           "documented": true,
           "summary": "List the auto-saved projects in LocalStorage, newest first.",
@@ -27112,7 +27060,7 @@
       "constants": [
         {
           "name": "__internals",
-          "line": 196,
+          "line": 198,
           "shape": {
             "kind": "object",
             "keys": [
@@ -27131,7 +27079,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 17,
+          "line": 18,
           "signature": [
             "filename",
             "content",
@@ -27188,7 +27136,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 35,
+          "line": 36,
           "signature": [
             "proj"
           ],
@@ -27230,31 +27178,31 @@
           "other": []
         },
         {
-          "name": "exportWorkspaceJSON",
-          "qualified": "exportWorkspaceJSON",
+          "name": "exportWorkspaceZip",
+          "qualified": "exportWorkspaceZip",
           "kind": "function",
           "exported": true,
-          "async": false,
+          "async": true,
           "generator": false,
-          "line": 50,
+          "line": 52,
           "signature": [
             "ws"
           ],
           "documented": true,
-          "summary": "Download a whole workspace as one JSON file.",
-          "description": "Download a whole workspace as one JSON file.\n\nOne file rather than an archive: a workspace is already a single JSON\nobject, and a zip would add a dependency and cost the user the ability to\nread, diff or hand-edit what they downloaded.",
+          "summary": "Download a whole workspace as an archive of folders and files.",
+          "description": "Download a whole workspace as an archive of folders and files.\n\nUnzipped it is the tree the explorer shows: each project a readable JSON\ndocument where the user filed it, and `.acousim` holding the app's own data.\nA single blob would download faster and be worth less — this one can be\nbrowsed, edited in a text editor, diffed and committed.",
           "params": [
             {
               "name": "ws",
               "type": "object",
               "optional": false,
               "default": null,
-              "desc": "The workspace to serialize."
+              "desc": "The workspace to archive."
             }
           ],
           "returns": {
-            "type": "void",
-            "desc": ""
+            "type": "Promise<void>",
+            "desc": "Resolves once the download has been handed to the browser."
           },
           "throws": [],
           "contract": {
@@ -27263,7 +27211,7 @@
             "invariant": [],
             "mutates": [],
             "sideEffect": [
-              "Triggers a browser download."
+              "Compresses through the platform's streams and triggers a browser download."
             ],
             "reads": [],
             "pure": false
@@ -27277,7 +27225,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 72,
+          "line": 74,
           "signature": [
             "results",
             "nodes",
@@ -27334,7 +27282,7 @@
           "exported": true,
           "async": true,
           "generator": false,
-          "line": 126,
+          "line": 128,
           "signature": [
             "projectName"
           ],
@@ -27375,7 +27323,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 140,
+          "line": 142,
           "signature": [
             "n"
           ],
@@ -27414,7 +27362,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 163,
+          "line": 165,
           "signature": [
             "metrics",
             "settings",
@@ -27471,7 +27419,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 177,
+          "line": 179,
           "signature": [
             "k",
             "v"
@@ -27508,6 +27456,432 @@
               "Appends to the enclosing `l` line buffer."
             ],
             "sideEffect": [],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        }
+      ]
+    },
+    {
+      "file": "src/utils/zip.js",
+      "module": {
+        "summary": "A minimal ZIP reader and writer.",
+        "description": "A minimal ZIP reader and writer.\n\nWritten by hand rather than pulled from a package because the whole of what\nis needed here is one archive shape: a flat list of paths, each holding a\nsmall JSON document. That is a few hundred lines of well-documented format,\nagainst a dependency in a project that otherwise has none for this.\n\nCompression is the browser's. `CompressionStream('deflate-raw')` and its\ndecompressing twin are built in, which leaves this module responsible only\nfor the container — headers, the central directory, and the CRC. Where the\nstreams are unavailable, entries are stored uncompressed; a ZIP with stored\nentries is still a perfectly ordinary ZIP.\n\nDeliberately not supported: encryption, ZIP64, multi-disk archives, and the\ncompression methods older than deflate. An archive using any of them is\nrejected by name rather than half-read. Workspaces are tens of kilobytes of\nJSON, so the 4 GB and 65,535-entry ceilings that ZIP64 exists to lift are\nnot ceilings this will meet."
+      },
+      "constants": [],
+      "methods": [
+        {
+          "name": "crc32",
+          "qualified": "crc32",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 63,
+          "signature": [
+            "bytes"
+          ],
+          "documented": true,
+          "summary": "The CRC-32 checksum ZIP stores for each entry.",
+          "description": "The CRC-32 checksum ZIP stores for each entry.",
+          "params": [
+            {
+              "name": "bytes",
+              "type": "Uint8Array",
+              "optional": false,
+              "default": null,
+              "desc": "The uncompressed data."
+            }
+          ],
+          "returns": {
+            "type": "number",
+            "desc": "The checksum, as an unsigned 32-bit integer."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "u16",
+          "qualified": "u16",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 76,
+          "signature": [
+            "n"
+          ],
+          "documented": true,
+          "summary": "A 16-bit little-endian value, as bytes.",
+          "description": "A 16-bit little-endian value, as bytes.",
+          "params": [
+            {
+              "name": "n",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "The value."
+            }
+          ],
+          "returns": {
+            "type": "number[]",
+            "desc": "Two bytes, least significant first."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "u32",
+          "qualified": "u32",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 85,
+          "signature": [
+            "n"
+          ],
+          "documented": true,
+          "summary": "A 32-bit little-endian value, as bytes.",
+          "description": "A 32-bit little-endian value, as bytes.",
+          "params": [
+            {
+              "name": "n",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "The value."
+            }
+          ],
+          "returns": {
+            "type": "number[]",
+            "desc": "Four bytes, least significant first."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "dosStamp",
+          "qualified": "dosStamp",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 99,
+          "signature": [
+            "date"
+          ],
+          "documented": true,
+          "summary": "A timestamp in the two 16-bit fields MS-DOS used.",
+          "description": "A timestamp in the two 16-bit fields MS-DOS used.\n\nSeconds are stored in units of two, and years count from 1980, both being\nwhat the format has recorded since it was designed for floppies. Dates\noutside its range are clamped rather than allowed to wrap into a\nnonsensical year.",
+          "params": [
+            {
+              "name": "date",
+              "type": "Date",
+              "optional": false,
+              "default": null,
+              "desc": "The time to encode."
+            }
+          ],
+          "returns": {
+            "type": "{time: number, date: number}",
+            "desc": "The two packed fields."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "deflate",
+          "qualified": "deflate",
+          "kind": "function",
+          "exported": false,
+          "async": true,
+          "generator": false,
+          "line": 118,
+          "signature": [
+            "bytes"
+          ],
+          "documented": true,
+          "summary": "Compress bytes with raw deflate, if the browser can.",
+          "description": "Compress bytes with raw deflate, if the browser can.\n\nReturns the input unchanged when compression is unavailable or fails to pay\nfor itself — a JSON document that deflates larger than it started, which\nhappens for very short files, is better stored.",
+          "params": [
+            {
+              "name": "bytes",
+              "type": "Uint8Array",
+              "optional": false,
+              "default": null,
+              "desc": "The data to compress."
+            }
+          ],
+          "returns": {
+            "type": "Promise<{method: number, data: Uint8Array}>",
+            "desc": "The chosen method and the bytes to write."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Uses the platform's compression streams when present."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "inflate",
+          "qualified": "inflate",
+          "kind": "function",
+          "exported": false,
+          "async": true,
+          "generator": false,
+          "line": 139,
+          "signature": [
+            "bytes"
+          ],
+          "documented": true,
+          "summary": "Decompress raw deflate bytes.",
+          "description": "Decompress raw deflate bytes.",
+          "params": [
+            {
+              "name": "bytes",
+              "type": "Uint8Array",
+              "optional": false,
+              "default": null,
+              "desc": "The compressed data."
+            }
+          ],
+          "returns": {
+            "type": "Promise<Uint8Array>",
+            "desc": "The original bytes."
+          },
+          "throws": [
+            {
+              "type": "Error",
+              "desc": "When the platform cannot decompress, or the data is corrupt."
+            }
+          ],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Uses the platform's decompression streams."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "createZip",
+          "qualified": "createZip",
+          "kind": "function",
+          "exported": true,
+          "async": true,
+          "generator": false,
+          "line": 159,
+          "signature": [
+            "entries",
+            "stamp"
+          ],
+          "documented": true,
+          "summary": "Build a ZIP archive.",
+          "description": "Build a ZIP archive.\n\nFolders are written as their own zero-length entries with a trailing\nseparator, which is how a ZIP records a folder that holds nothing. Without\nthem an empty folder would simply not survive the round trip.",
+          "params": [
+            {
+              "name": "entries",
+              "type": "Array<{path: string, data?: Uint8Array|string, folder?: boolean}>",
+              "optional": false,
+              "default": null,
+              "desc": "What to archive. A `folder` entry needs no data."
+            },
+            {
+              "name": "stamp",
+              "type": "Date",
+              "optional": true,
+              "default": null,
+              "desc": "Modification time recorded for every entry; defaults to now."
+            }
+          ],
+          "returns": {
+            "type": "Promise<Blob>",
+            "desc": "The archive."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Compresses through the platform's streams; reads the clock when no stamp is given."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "isZip",
+          "qualified": "isZip",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 218,
+          "signature": [
+            "buffer"
+          ],
+          "documented": true,
+          "summary": "Whether a buffer looks like a ZIP archive.",
+          "description": "Whether a buffer looks like a ZIP archive.\n\nChecked by signature rather than by filename, because the file picker will\nhand over whatever the user chose and the extension is the least reliable\nthing about it.",
+          "params": [
+            {
+              "name": "buffer",
+              "type": "ArrayBuffer",
+              "optional": false,
+              "default": null,
+              "desc": "The file's bytes."
+            }
+          ],
+          "returns": {
+            "type": "boolean",
+            "desc": "True when the buffer starts with a local file header."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "findEnd",
+          "qualified": "findEnd",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 235,
+          "signature": [
+            "view"
+          ],
+          "documented": true,
+          "summary": "Locate the end-of-central-directory record.",
+          "description": "Locate the end-of-central-directory record.\n\nSearched backwards from the end, because the record is last but may be\nfollowed by a variable-length comment. The scan is bounded by the largest\ncomment the format allows.",
+          "params": [
+            {
+              "name": "view",
+              "type": "DataView",
+              "optional": false,
+              "default": null,
+              "desc": "The whole archive."
+            }
+          ],
+          "returns": {
+            "type": "number",
+            "desc": "The record's offset, or `-1` when there is none."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "readZip",
+          "qualified": "readZip",
+          "kind": "function",
+          "exported": true,
+          "async": true,
+          "generator": false,
+          "line": 256,
+          "signature": [
+            "buffer"
+          ],
+          "documented": true,
+          "summary": "Read a ZIP archive.",
+          "description": "Read a ZIP archive.\n\nThe central directory is the index — entries are read from there rather than\nby walking local headers, because only the directory is authoritative about\nwhat the archive contains. Folder entries are reported with `folder: true`\nand no data.",
+          "params": [
+            {
+              "name": "buffer",
+              "type": "ArrayBuffer",
+              "optional": false,
+              "default": null,
+              "desc": "The archive's bytes."
+            }
+          ],
+          "returns": {
+            "type": "Promise<Array<{path: string, data: Uint8Array|null, folder: boolean}>>",
+            "desc": "One record per entry, in directory order."
+          },
+          "throws": [
+            {
+              "type": "Error",
+              "desc": "When the archive is malformed, or uses a feature this does not read."
+            }
+          ],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Decompresses through the platform's streams."
+            ],
             "reads": [],
             "pure": false
           },
@@ -27580,8 +27954,15 @@
           "description": "Name given to the project a first-time user lands in."
         },
         {
+          "name": "META_PATH",
+          "line": 600,
+          "shape": null,
+          "summary": "Path of the workspace's metadata inside a downloaded archive.",
+          "description": "Path of the workspace's metadata inside a downloaded archive."
+        },
+        {
           "name": "STALE_DOWNLOAD_MS",
-          "line": 678,
+          "line": 803,
           "shape": null,
           "summary": "How long a downloaded workspace can go unsaved before it is worth a warning.",
           "description": "How long a downloaded workspace can go unsaved before it is worth a warning.\n\nBrowser storage is not a filing cabinet: clearing site data, a private\nwindow, or an eviction under storage pressure all take it without asking.\nA week is long enough not to nag someone mid-session and short enough that\nthe loss, if it comes, is a week of work rather than a year of it."
@@ -28822,19 +29203,19 @@
           "other": []
         },
         {
-          "name": "serializeWorkspace",
-          "qualified": "serializeWorkspace",
+          "name": "workspaceToEntries",
+          "qualified": "workspaceToEntries",
           "kind": "function",
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 592,
+          "line": 613,
           "signature": [
             "ws"
           ],
           "documented": true,
-          "summary": "A workspace serialized for download.",
-          "description": "A workspace serialized for download.",
+          "summary": "The archive entries for a workspace.",
+          "description": "The archive entries for a workspace.\n\nEvery folder gets an entry of its own, not only the empty ones. Unpackers\ncope either way, but an archive that lists its folders is the one that\nsurvives being opened by something that is not this app.",
           "params": [
             {
               "name": "ws",
@@ -28845,8 +29226,8 @@
             }
           ],
           "returns": {
-            "type": "string",
-            "desc": "Formatted JSON, indented so a downloaded workspace is readable and diffable."
+            "type": "Array<{path: string, data?: string, folder?: boolean}>",
+            "desc": "Entries for `createZip`, folders first."
           },
           "throws": [],
           "contract": {
@@ -28861,13 +29242,101 @@
           "other": []
         },
         {
+          "name": "kindForPath",
+          "qualified": "kindForPath",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 648,
+          "signature": [
+            "path"
+          ],
+          "documented": true,
+          "summary": "What kind of file a path holds.",
+          "description": "What kind of file a path holds.\n\nBy path, since that is all an archive from outside the app gives us. A file\ndropped into a workspace by hand is still recognisable as a project if it is\nnamed like one.",
+          "params": [
+            {
+              "name": "path",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "The file's path in the workspace."
+            }
+          ],
+          "returns": {
+            "type": "string",
+            "desc": "`'project'`, `'drivers'`, or `'json'`."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "entriesToWorkspace",
+          "qualified": "entriesToWorkspace",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 671,
+          "signature": [
+            "entries",
+            "fallbackName"
+          ],
+          "documented": true,
+          "summary": "Rebuild a workspace from archive entries.",
+          "description": "Rebuild a workspace from archive entries.\n\nTolerant on purpose: the archive may have been unzipped, edited and zipped\nback up, or may be a plain folder of project files that this app never\nproduced. Unreadable files are skipped rather than failing the import, since\none bad file should not cost the user the other forty.\n\nThe system folder is not created here. An archive that arrives without one\nkeeps the shape it arrived in — that is the whole point of creating it\nlazily — so a folder of `.acousim` files imports as exactly those files.",
+          "params": [
+            {
+              "name": "entries",
+              "type": "Array<{path: string, data: Uint8Array|null, folder: boolean}>",
+              "optional": false,
+              "default": null,
+              "desc": "Entries from `readZip`."
+            },
+            {
+              "name": "fallbackName",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Workspace name to use when the archive carries no metadata."
+            }
+          ],
+          "returns": {
+            "type": "{ok: boolean, workspace?: object, error?: string, skipped?: string[]}",
+            "desc": "The workspace, the paths that could not be read, or the reason nothing could be."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Reads the current time to stamp a workspace whose metadata is absent."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
           "name": "workspaceFilename",
           "qualified": "workspaceFilename",
           "kind": "function",
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 603,
+          "line": 728,
           "signature": [
             "ws"
           ],
@@ -28906,7 +29375,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 624,
+          "line": 749,
           "signature": [
             "text"
           ],
@@ -28947,7 +29416,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 708,
+          "line": 833,
           "signature": [
             "iso",
             "now"
@@ -28994,7 +29463,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 732,
+          "line": 857,
           "signature": [
             "ws",
             "now"

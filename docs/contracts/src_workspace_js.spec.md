@@ -80,6 +80,10 @@ Name given to the project a first-time user lands in.
 
 Value: `"project"`
 
+### `META_PATH`
+
+Path of the workspace's metadata inside a downloaded archive.
+
 ### `STALE_DOWNLOAD_MS`
 
 How long a downloaded workspace can go unsaved before it is worth a warning.
@@ -89,7 +93,7 @@ window, or an eviction under storage pressure all take it without asking.
 A week is long enough not to nag someone mid-session and short enough that
 the loss, if it comes, is a week of work rather than a year of it.
 
-## EXPORTED (29)
+## EXPORTED (31)
 
 ### `normalizePath(path)`
 
@@ -600,12 +604,16 @@ created if it is missing.
 
 - Reads the current time for the modification stamps.
 
-### `serializeWorkspace(ws)`
+### `workspaceToEntries(ws)`
 
 - **Reachability:** EXPORTED
-- **Obtain via:** import { serializeWorkspace } from '../../src/workspace.js'
+- **Obtain via:** import { workspaceToEntries } from '../../src/workspace.js'
 
-A workspace serialized for download.
+The archive entries for a workspace.
+
+Every folder gets an entry of its own, not only the empty ones. Unpackers
+cope either way, but an archive that lists its folders is the one that
+survives being opened by something that is not this app.
 
 **Parameters**
 
@@ -613,9 +621,59 @@ A workspace serialized for download.
 
 **Returns**
 
-- `string` — Formatted JSON, indented so a downloaded workspace is readable and diffable.
+- `Array<{path: string, data?: string, folder?: boolean}>` — Entries for `createZip`, folders first.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
+
+### `kindForPath(path)`
+
+- **Reachability:** EXPORTED
+- **Obtain via:** import { kindForPath } from '../../src/workspace.js'
+
+What kind of file a path holds.
+
+By path, since that is all an archive from outside the app gives us. A file
+dropped into a workspace by hand is still recognisable as a project if it is
+named like one.
+
+**Parameters**
+
+- `path` — `string` — The file's path in the workspace.
+
+**Returns**
+
+- `string` — `'project'`, `'drivers'`, or `'json'`.
+
+**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
+
+### `entriesToWorkspace(entries, fallbackName)`
+
+- **Reachability:** EXPORTED
+- **Obtain via:** import { entriesToWorkspace } from '../../src/workspace.js'
+
+Rebuild a workspace from archive entries.
+
+Tolerant on purpose: the archive may have been unzipped, edited and zipped
+back up, or may be a plain folder of project files that this app never
+produced. Unreadable files are skipped rather than failing the import, since
+one bad file should not cost the user the other forty.
+
+The system folder is not created here. An archive that arrives without one
+keeps the shape it arrived in — that is the whole point of creating it
+lazily — so a folder of `.acousim` files imports as exactly those files.
+
+**Parameters**
+
+- `entries` — `Array<{path: string, data: Uint8Array|null, folder: boolean}>` — Entries from `readZip`.
+- `fallbackName` — `string` — Workspace name to use when the archive carries no metadata.
+
+**Returns**
+
+- `{ok: boolean, workspace?: object, error?: string, skipped?: string[]}` — The workspace, the paths that could not be read, or the reason nothing could be.
+
+**Side effects**
+
+- Reads the current time to stamp a workspace whose metadata is absent.
 
 ### `workspaceFilename(ws)`
 

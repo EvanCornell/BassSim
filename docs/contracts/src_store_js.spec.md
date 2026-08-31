@@ -192,7 +192,7 @@ around the canvas does not re-run the sweep.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
-## STORE ACTION (96)
+## STORE ACTION (97)
 
 ### `openContextMenu(x, y, target)`
 
@@ -1715,6 +1715,7 @@ question.
 
 - **Reachability:** STORE ACTION
 - **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().downloadWorkspace(…)
+- **Async:** returns a Promise
 
 Download the whole workspace, and record that it happened.
 
@@ -1724,16 +1725,17 @@ since a copy existed anywhere else.
 
 **Returns**
 
-- `void`
+- `Promise<void>` — Resolves once the archive has been handed to the browser.
 
 **Side effects**
 
-- Saves the open file, triggers a browser download, then writes store state and persists the workspace.
+- Saves the open file, builds and downloads an archive, then writes store state and persists the workspace.
 
-### `importWorkspaceText(text)`
+### `importWorkspaceFile(file)`
 
 - **Reachability:** STORE ACTION
-- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().importWorkspaceText(…)
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().importWorkspaceFile(…)
+- **Async:** returns a Promise
 
 Replace the workspace with an imported one.
 
@@ -1746,17 +1748,42 @@ The imported workspace is stored exactly as it arrived. If it has no
 system folder, it does not gain one here; the first write of app data
 creates it.
 
+Both shapes a workspace can arrive in are accepted: the archive of folders
+and files this build downloads, and the single JSON document an earlier
+one did. Deciding by signature rather than by file extension, since the
+picker hands over whatever the user chose and the extension is the least
+reliable thing about it.
+
 **Parameters**
 
-- `text` — `string` — Contents of a downloaded workspace file.
+- `file` — `File` — The chosen file.
 
 **Returns**
 
-- `{ok: boolean, error?: string}` — Whether the import succeeded, and why not when it did not.
+- `Promise<{ok: boolean, error?: string, skipped?: string[]}>` — Whether the import succeeded, which files were unreadable, and why it failed when it did.
 
 **Side effects**
 
-- On success, writes store state, persists the workspace and replaces what is on the canvas.
+- Reads the file. On success, writes store state, persists the workspace and replaces what is on the canvas.
+
+### `_adoptWorkspace(ws)`
+
+- **Reachability:** STORE ACTION
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState()._adoptWorkspace(…)
+
+Make an imported workspace the current one and open something from it.
+
+**Parameters**
+
+- `ws` — `object` — The workspace to adopt.
+
+**Returns**
+
+- `{ok: boolean}` — Always a success; the caller has already validated.
+
+**Side effects**
+
+- Writes store state, persists the workspace and replaces what is on the canvas.
 
 ### `setWsSelection(paths)`
 

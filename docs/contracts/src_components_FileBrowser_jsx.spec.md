@@ -42,7 +42,7 @@ The workspace explorer panel.
 
 - Subscribes to the store. Its commands rename, move, copy and delete workspace entries, trigger downloads, and read imported files.
 
-## UNREACHABLE (19)
+## UNREACHABLE (17)
 
 ### `Chevron(props)`
 
@@ -363,11 +363,15 @@ Move the dragged row into the folder it was dropped on.
 
 - **Reachability:** UNREACHABLE
 - **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+- **Async:** returns a Promise
 
 Read a chosen workspace file and load it.
 
 Confirmed first: importing replaces every project in the browser, and the
 copy being replaced may be the only one that exists.
+
+Both an archive and the single JSON document earlier builds produced are
+accepted; the store decides which by looking at the file.
 
 **Parameters**
 
@@ -375,41 +379,11 @@ copy being replaced may be the only one that exists.
 
 **Returns**
 
-- `void`
+- `Promise<void>` — Resolves once the import has been attempted.
 
 **Side effects**
 
 - Shows a confirmation, reads the chosen file, replaces the workspace on success, and clears the input so choosing the same file twice still fires.
-
-### `FileBrowser > onImportFile > reader.onload()`
-
-- **Reachability:** UNREACHABLE
-- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
-
-Hand the file's text to the store and report a rejection in the panel.
-
-**Returns**
-
-- `void`
-
-**Side effects**
-
-- Replaces the workspace on success; writes component state either way.
-
-### `FileBrowser > onImportFile > reader.onerror()`
-
-- **Reachability:** UNREACHABLE
-- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
-
-Report a file that could not be read at all.
-
-**Returns**
-
-- `void`
-
-**Side effects**
-
-- Writes component state.
 
 ### `FileBrowser > renderRow(row)`
 

@@ -28,8 +28,9 @@ import { applyNodeChanges, applyEdgeChanges, addEdge } from 'reactflow'
 import { SCHEMA_VERSION, DEFAULT_PARAMS } from './engine/project'
 import * as L from './layout'
 import { PANEL_META, PANEL_IDS } from './panelMeta'
-import { exportProjectJSON, exportWorkspaceJSON } from './utils/export'
+import { exportProjectJSON, exportWorkspaceZip } from './utils/export'
 import * as W from './workspace'
+import * as Z from './utils/zip'
 import { DEFAULT_TOOLBAR, sanitizeToolbar } from './toolbarItems'
 import { channel, isPopout, openPanelWindow, openPanelGroupWindow, popoutPanelId, popoutPanelIds, SHARED_KEYS, SIM_INPUT_KEYS } from './popout'
 import { loadBindings, saveBindings, DEFAULT_BINDINGS, COMMAND_IDS, findConflict } from './keymap'
@@ -1653,13 +1654,13 @@ export const useStore = create((rawSet, get) => {
    * cleared without warning, so the file browser shows how long it has been
    * since a copy existed anywhere else.
    *
-   * @returns {void}
-   * @sideEffect Saves the open file, triggers a browser download, then writes store state and persists the workspace.
+   * @returns {Promise<void>} Resolves once the archive has been handed to the browser.
+   * @sideEffect Saves the open file, builds and downloads an archive, then writes store state and persists the workspace.
    */
-  downloadWorkspace: () => {
+  downloadWorkspace: async () => {
     get().saveActiveFile()
     const ws = { ...get().workspace, downloaded: new Date().toISOString() }
-    exportWorkspaceJSON(ws)
+    await exportWorkspaceZip(ws)
     get()._commitWorkspace(ws)
   },
 
@@ -1675,15 +1676,45 @@ export const useStore = create((rawSet, get) => {
    * system folder, it does not gain one here; the first write of app data
    * creates it.
    *
-   * @param {string} text - Contents of a downloaded workspace file.
-   * @returns {{ok: boolean, error?: string}} Whether the import succeeded, and why not when it did not.
-   * @sideEffect On success, writes store state, persists the workspace and replaces what is on the canvas.
+   * Both shapes a workspace can arrive in are accepted: the archive of folders
+   * and files this build downloads, and the single JSON document an earlier
+   * one did. Deciding by signature rather than by file extension, since the
+   * picker hands over whatever the user chose and the extension is the least
+   * reliable thing about it.
+   *
+   * @param {File} file - The chosen file.
+   * @returns {Promise<{ok: boolean, error?: string, skipped?: string[]}>} Whether the import succeeded, which files were unreadable, and why it failed when it did.
+   * @sideEffect Reads the file. On success, writes store state, persists the workspace and replaces what is on the canvas.
    */
-  importWorkspaceText: (text) => {
-    const parsed = W.parseWorkspace(text)
+  importWorkspaceFile: async (file) => {
+    let parsed
+    try {
+      const buffer = await file.arrayBuffer()
+      if (Z.isZip(buffer)) {
+        const stem = file.name.replace(/\.zip$/i, '').replace(/\.acousim$/i, '')
+        parsed = W.entriesToWorkspace(await Z.readZip(buffer), stem || W.DEFAULT_WORKSPACE_NAME)
+      } else {
+        parsed = W.parseWorkspace(new TextDecoder().decode(buffer))
+      }
+    } catch (err) {
+      return { ok: false, error: err?.message || 'Could not read that file.' }
+    }
     if (!parsed.ok) return { ok: false, error: parsed.error }
-    const ws = parsed.workspace
+    return { ...get()._adoptWorkspace(parsed.workspace), skipped: parsed.skipped }
+  },
+
+  /**
+   * Make an imported workspace the current one and open something from it.
+   *
+   * @param {object} ws - The workspace to adopt.
+   * @returns {{ok: boolean}} Always a success; the caller has already validated.
+   * @sideEffect Writes store state, persists the workspace and replaces what is on the canvas.
+   */
+  _adoptWorkspace: (ws) => {
     get()._commitWorkspace(ws)
+    // Every explorer path just changed. Keeping a selection or a half-typed
+    // rename across that would leave both pointing at a workspace that is gone.
+    set({ wsSelection: [], wsCollapsed: [], wsEdit: null, fileClipboard: null })
 
     const first = W.listProjects(ws)[0] || null
     set({ activeFile: first })

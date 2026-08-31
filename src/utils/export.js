@@ -1,5 +1,6 @@
 import { toPng } from 'html-to-image'
-import { serializeWorkspace, workspaceFilename } from '../workspace'
+import { workspaceToEntries, workspaceFilename } from '../workspace'
+import { createZip } from './zip'
 
 /**
  * Push content to the user as a file download.
@@ -37,18 +38,19 @@ export function exportProjectJSON(proj) {
 }
 
 /**
- * Download a whole workspace as one JSON file.
+ * Download a whole workspace as an archive of folders and files.
  *
- * One file rather than an archive: a workspace is already a single JSON
- * object, and a zip would add a dependency and cost the user the ability to
- * read, diff or hand-edit what they downloaded.
+ * Unzipped it is the tree the explorer shows: each project a readable JSON
+ * document where the user filed it, and `.acousim` holding the app's own data.
+ * A single blob would download faster and be worth less — this one can be
+ * browsed, edited in a text editor, diffed and committed.
  *
- * @param {object} ws - The workspace to serialize.
- * @returns {void}
- * @sideEffect Triggers a browser download.
+ * @param {object} ws - The workspace to archive.
+ * @returns {Promise<void>} Resolves once the download has been handed to the browser.
+ * @sideEffect Compresses through the platform's streams and triggers a browser download.
  */
-export function exportWorkspaceJSON(ws) {
-  download(workspaceFilename(ws), serializeWorkspace(ws), 'application/json')
+export async function exportWorkspaceZip(ws) {
+  download(workspaceFilename(ws), await createZip(workspaceToEntries(ws)), 'application/zip')
 }
 
 /**

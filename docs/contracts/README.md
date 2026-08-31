@@ -16,9 +16,9 @@ no implementation. This is the sole input to the blind contract test suite.
 | [`src/App.jsx`](src_App_jsx.spec.md) | 5 | 1 | 4 |
 | [`src/components/ContextMenu.jsx`](src_components_ContextMenu_jsx.spec.md) | 44 | 3 | 41 |
 | [`src/components/DriverDB.jsx`](src_components_DriverDB_jsx.spec.md) | 6 | 1 | 5 |
-| [`src/components/FileBrowser.jsx`](src_components_FileBrowser_jsx.spec.md) | 20 | 1 | 19 |
+| [`src/components/FileBrowser.jsx`](src_components_FileBrowser_jsx.spec.md) | 18 | 1 | 17 |
 | [`src/components/FlowCanvas.jsx`](src_components_FlowCanvas_jsx.spec.md) | 10 | 2 | 8 |
-| [`src/components/MenuBar.jsx`](src_components_MenuBar_jsx.spec.md) | 34 | 1 | 33 |
+| [`src/components/MenuBar.jsx`](src_components_MenuBar_jsx.spec.md) | 33 | 1 | 32 |
 | [`src/components/MenuItem.jsx`](src_components_MenuItem_jsx.spec.md) | 2 | 2 | 0 |
 | [`src/components/NLLab.jsx`](src_components_NLLab_jsx.spec.md) | 23 | 4 | 19 |
 | [`src/components/NodePalette.jsx`](src_components_NodePalette_jsx.spec.md) | 2 | 1 | 1 |
@@ -50,11 +50,12 @@ no implementation. This is the sole input to the blind contract test suite.
 | [`src/panelMeta.js`](src_panelMeta_js.spec.md) | 1 | 1 | 0 |
 | [`src/popout.js`](src_popout_js.spec.md) | 5 | 5 | 0 |
 | [`src/selection.js`](src_selection_js.spec.md) | 5 | 5 | 0 |
-| [`src/store.js`](src_store_js.spec.md) | 110 | 103 | 7 |
+| [`src/store.js`](src_store_js.spec.md) | 111 | 104 | 7 |
 | [`src/toolbarItems.js`](src_toolbarItems_js.spec.md) | 6 | 4 | 2 |
 | [`src/utils/export.js`](src_utils_export_js.spec.md) | 8 | 6 | 2 |
-| [`src/workspace.js`](src_workspace_js.spec.md) | 32 | 29 | 3 |
+| [`src/utils/zip.js`](src_utils_zip_js.spec.md) | 10 | 5 | 5 |
+| [`src/workspace.js`](src_workspace_js.spec.md) | 34 | 31 | 3 |
 | [`test/contracts.mjs`](test_contracts_mjs.spec.md) | 2 | 0 | 2 |
 | [`test/drivers.mjs`](test_drivers_mjs.spec.md) | 2 | 0 | 2 |
 | [`test/support/loader.mjs`](test_support_loader_mjs.spec.md) | 2 | 2 | 0 |
-| **Total** | **625** | **341** | **284** |
+| **Total** | **635** | **349** | **286** |

@@ -190,26 +190,17 @@ export default function MenuBar() {
    * browser, and the copy being replaced may be the only one that exists.
    *
    * @param {React.ChangeEvent} e - The file input change event.
-   * @returns {void}
+   * @returns {Promise<void>} Resolves once the import has been attempted.
    * @sideEffect Reads the file, may show a confirmation, replaces the workspace, and alerts when the file is not one.
    */
-  const onLoadWorkspace = (e) => {
+  const onLoadWorkspace = async (e) => {
     const file = e.target.files?.[0]
     e.target.value = ''
     if (!file) return
     if (!confirm('Importing replaces the workspace in this browser, including every project in it. Download the current one first if you have not.')) return
-    const reader = new FileReader()
-    /**
-     * Hand the file's text to the store and report a rejection.
-     *
-     * @returns {void}
-     * @sideEffect Replaces the workspace, or alerts when the file is not a workspace.
-     */
-    reader.onload = () => {
-      const result = store.importWorkspaceText(String(reader.result))
-      if (!result.ok) alert(result.error)
-    }
-    reader.readAsText(file)
+    const result = await store.importWorkspaceFile(file)
+    if (!result.ok) alert(result.error)
+    else if (result.skipped?.length) alert(`Imported. These files could not be read and were skipped:\n\n${result.skipped.join('\n')}`)
   }
 
   /**
@@ -561,7 +552,7 @@ export default function MenuBar() {
         onMouseEnter={() => { if (open) setOpen(null) }}
       >Settings</button>
       <input ref={fileRef} type="file" accept=".json,application/json" style={{ display: 'none' }} onChange={onLoadFile} />
-      <input ref={workspaceRef} type="file" accept=".json,application/json" style={{ display: 'none' }} onChange={onLoadWorkspace} />
+      <input ref={workspaceRef} type="file" accept=".zip,.json,application/zip,application/json" style={{ display: 'none' }} onChange={onLoadWorkspace} />
 
       {showExpWarning && (
         <div className="modal-backdrop" onClick={() => setShowExpWarning(false)}>

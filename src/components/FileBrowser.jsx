@@ -417,34 +417,23 @@ export default function FileBrowser() {
    * Confirmed first: importing replaces every project in the browser, and the
    * copy being replaced may be the only one that exists.
    *
+   * Both an archive and the single JSON document earlier builds produced are
+   * accepted; the store decides which by looking at the file.
+   *
    * @param {React.ChangeEvent} e - The file input's change event.
-   * @returns {void}
+   * @returns {Promise<void>} Resolves once the import has been attempted.
    * @sideEffect Shows a confirmation, reads the chosen file, replaces the workspace on success, and clears the input so choosing the same file twice still fires.
    */
-  const onImportFile = (e) => {
+  const onImportFile = async (e) => {
     const file = e.target.files?.[0]
     e.target.value = ''
     if (!file) return
     if (!confirm(`Replace “${workspace.name}” with the contents of “${file.name}”? Every project in this browser is replaced.`)) return
-    const reader = new FileReader()
-    /**
-     * Hand the file's text to the store and report a rejection in the panel.
-     *
-     * @returns {void}
-     * @sideEffect Replaces the workspace on success; writes component state either way.
-     */
-    reader.onload = () => {
-      const result = useStore.getState().importWorkspaceText(String(reader.result))
-      setError(result.ok ? null : result.error)
-    }
-    /**
-     * Report a file that could not be read at all.
-     *
-     * @returns {void}
-     * @sideEffect Writes component state.
-     */
-    reader.onerror = () => setError('Could not read that file.')
-    reader.readAsText(file)
+    const result = await useStore.getState().importWorkspaceFile(file)
+    if (!result.ok) { setError(result.error); return }
+    setError(result.skipped?.length
+      ? `Imported. ${result.skipped.length} file${result.skipped.length === 1 ? '' : 's'} could not be read and were skipped: ${result.skipped.join(', ')}`
+      : null)
   }
 
   /**
@@ -538,7 +527,7 @@ export default function FileBrowser() {
       <input
         ref={fileInput}
         type="file"
-        accept="application/json,.json"
+        accept=".zip,.json,application/zip,application/json"
         style={{ display: 'none' }}
         onChange={onImportFile}
       />

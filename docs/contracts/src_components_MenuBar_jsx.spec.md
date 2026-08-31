@@ -37,7 +37,7 @@ current state.
 
 - Subscribes to the store. Registers window mousedown and keydown listeners while a menu is open.
 
-## UNREACHABLE (33)
+## UNREACHABLE (32)
 
 ### `Menu(props)`
 
@@ -207,6 +207,7 @@ Parse the loaded file and replace the current project with it.
 
 - **Reachability:** UNREACHABLE
 - **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+- **Async:** returns a Promise
 
 Read a chosen workspace file and replace the current workspace with it.
 
@@ -219,26 +220,11 @@ browser, and the copy being replaced may be the only one that exists.
 
 **Returns**
 
-- `void`
+- `Promise<void>` — Resolves once the import has been attempted.
 
 **Side effects**
 
 - Reads the file, may show a confirmation, replaces the workspace, and alerts when the file is not one.
-
-### `MenuBar > onLoadWorkspace > reader.onload()`
-
-- **Reachability:** UNREACHABLE
-- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
-
-Hand the file's text to the store and report a rejection.
-
-**Returns**
-
-- `void`
-
-**Side effects**
-
-- Replaces the workspace, or alerts when the file is not a workspace.
 
 ### `MenuBar > savePreset()`
 

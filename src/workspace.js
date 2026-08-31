@@ -581,16 +581,141 @@ export function writeDrivers(ws, drivers) {
 }
 
 // ---------- transport ----------
+//
+// A workspace downloads as an archive of real folders and real files, not as
+// one blob. Unzipped it is exactly the tree the explorer shows: projects where
+// the user filed them, each a readable JSON document, and `.acousim` holding
+// the app's own data. It can be browsed, edited in a text editor, diffed,
+// committed to a repository, and zipped back up.
+//
+// The workspace's own metadata — its name, when it was created, when it was
+// last downloaded — is a file in the archive like everything else, at
+// `.acousim/workspace.json`. It is lifted back out into the workspace's fields
+// on import rather than left in the file map, so there is one place the name
+// lives and both routes to editing it agree.
 
 /**
- * A workspace serialized for download.
+ * Path of the workspace's metadata inside a downloaded archive.
+ */
+export const META_PATH = `${SYSTEM_FOLDER}/workspace.json`
+
+/**
+ * The archive entries for a workspace.
+ *
+ * Every folder gets an entry of its own, not only the empty ones. Unpackers
+ * cope either way, but an archive that lists its folders is the one that
+ * survives being opened by something that is not this app.
  *
  * @param {object} ws - The workspace.
- * @returns {string} Formatted JSON, indented so a downloaded workspace is readable and diffable.
+ * @returns {Array<{path: string, data?: string, folder?: boolean}>} Entries for `createZip`, folders first.
  * @pure
  */
-export function serializeWorkspace(ws) {
-  return JSON.stringify(ws, null, 2)
+export function workspaceToEntries(ws) {
+  const meta = {
+    schemaVersion: WORKSPACE_VERSION,
+    app: 'AcouSim',
+    kind: 'workspace',
+    name: ws.name || DEFAULT_WORKSPACE_NAME,
+    created: ws.created,
+    modified: ws.modified,
+    downloaded: ws.downloaded,
+  }
+  // The system folder is listed only when the workspace actually has one. The
+  // metadata file inside it still gets written — every unpacker creates the
+  // parent — but a workspace that has never needed app data must not acquire
+  // an empty `.acousim` just by being downloaded and opened again.
+  return [
+    ...listFolders(ws).map((path) => ({ path, folder: true })),
+    { path: META_PATH, data: JSON.stringify(meta, null, 2) },
+    ...Object.keys(ws.files).sort().map((path) => ({
+      path,
+      data: JSON.stringify(ws.files[path].data, null, 2),
+    })),
+  ]
+}
+
+/**
+ * What kind of file a path holds.
+ *
+ * By path, since that is all an archive from outside the app gives us. A file
+ * dropped into a workspace by hand is still recognisable as a project if it is
+ * named like one.
+ *
+ * @param {string} path - The file's path in the workspace.
+ * @returns {string} `'project'`, `'drivers'`, or `'json'`.
+ * @pure
+ */
+export function kindForPath(path) {
+  if (path === DRIVERS_PATH) return 'drivers'
+  if (path.endsWith(PROJECT_EXT)) return 'project'
+  return 'json'
+}
+
+/**
+ * Rebuild a workspace from archive entries.
+ *
+ * Tolerant on purpose: the archive may have been unzipped, edited and zipped
+ * back up, or may be a plain folder of project files that this app never
+ * produced. Unreadable files are skipped rather than failing the import, since
+ * one bad file should not cost the user the other forty.
+ *
+ * The system folder is not created here. An archive that arrives without one
+ * keeps the shape it arrived in — that is the whole point of creating it
+ * lazily — so a folder of `.acousim` files imports as exactly those files.
+ *
+ * @param {Array<{path: string, data: Uint8Array|null, folder: boolean}>} entries - Entries from `readZip`.
+ * @param {string} fallbackName - Workspace name to use when the archive carries no metadata.
+ * @returns {{ok: boolean, workspace?: object, error?: string, skipped?: string[]}} The workspace, the paths that could not be read, or the reason nothing could be.
+ * @sideEffect Reads the current time to stamp a workspace whose metadata is absent.
+ */
+export function entriesToWorkspace(entries, fallbackName) {
+  const decoder = new TextDecoder()
+  const now = new Date().toISOString()
+  const files = {}
+  const folders = new Set()
+  const skipped = []
+  let meta = null
+
+  for (const entry of entries) {
+    const path = normalizePath(entry.path)
+    if (!path) continue
+    if (entry.folder) { folders.add(path); continue }
+
+    let parsed
+    try { parsed = JSON.parse(decoder.decode(entry.data)) } catch { skipped.push(path); continue }
+    if (path === META_PATH) { meta = parsed; continue }
+    files[path] = { kind: kindForPath(path), modified: now, data: parsed }
+  }
+
+  if (!Object.keys(files).length && !folders.size) {
+    return { ok: false, error: 'That archive holds no workspace files.' }
+  }
+  if (meta && Number(meta.schemaVersion) > WORKSPACE_VERSION) {
+    return { ok: false, error: 'This workspace was saved by a newer version of AcouSim.' }
+  }
+
+  // Folders that only ever held the metadata file have no contents left to
+  // imply them, so their archive entries are what keeps them.
+  for (const path of Object.keys(files)) {
+    let parent = parentOf(path)
+    while (parent) { folders.delete(parent); parent = parentOf(parent) }
+  }
+
+  return {
+    ok: true,
+    skipped,
+    workspace: {
+      schemaVersion: WORKSPACE_VERSION,
+      app: 'AcouSim',
+      kind: 'workspace',
+      name: typeof meta?.name === 'string' && meta.name.trim() ? meta.name.trim() : fallbackName,
+      created: typeof meta?.created === 'string' ? meta.created : now,
+      modified: typeof meta?.modified === 'string' ? meta.modified : now,
+      downloaded: typeof meta?.downloaded === 'string' ? meta.downloaded : null,
+      folders: [...folders].sort(),
+      files,
+    },
+  }
 }
 
 /**
@@ -601,7 +726,7 @@ export function serializeWorkspace(ws) {
  * @pure
  */
 export function workspaceFilename(ws) {
-  return `${ws.name || DEFAULT_WORKSPACE_NAME}.acousim-workspace.json`
+  return `${ws.name || DEFAULT_WORKSPACE_NAME}.acousim.zip`
 }
 
 /**
