@@ -24,9 +24,9 @@
     "pure": "flag"
   },
   "stats": {
-    "modules": 55,
-    "methods": 582,
-    "documented": 582
+    "modules": 58,
+    "methods": 638,
+    "documented": 638
   },
   "modules": [
     {
@@ -6692,7 +6692,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 136,
+          "line": 152,
           "signature": [
             "e"
           ],
@@ -7844,52 +7844,8 @@
     {
       "file": "src/components/DriverDB.jsx",
       "module": null,
-      "constants": [
-        {
-          "name": "__internals",
-          "line": 268,
-          "shape": {
-            "kind": "object",
-            "keys": [
-              "loadCustom"
-            ]
-          },
-          "summary": null,
-          "description": null
-        }
-      ],
+      "constants": [],
       "methods": [
-        {
-          "name": "loadCustom",
-          "qualified": "loadCustom",
-          "kind": "function",
-          "exported": false,
-          "async": false,
-          "generator": false,
-          "line": 18,
-          "signature": [],
-          "documented": true,
-          "summary": "Load the user's saved custom drivers.",
-          "description": "Load the user's saved custom drivers.",
-          "params": [],
-          "returns": {
-            "type": "Array<object>",
-            "desc": "Custom driver records, or an empty list when absent or corrupt."
-          },
-          "throws": [],
-          "contract": {
-            "pre": [],
-            "post": [],
-            "invariant": [],
-            "mutates": [],
-            "sideEffect": [
-              "Reads LocalStorage key `acousim:customDrivers`. Anything that is not parseable JSON, and anything that parses to a falsy value, yields an empty list rather than throwing."
-            ],
-            "reads": [],
-            "pure": false
-          },
-          "other": []
-        },
         {
           "name": "ExtDetail",
           "qualified": "ExtDetail",
@@ -7897,7 +7853,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 35,
+          "line": 21,
           "signature": [
             "arg0"
           ],
@@ -7943,11 +7899,11 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 82,
+          "line": 70,
           "signature": [],
           "documented": true,
           "summary": "The driver library browser.",
-          "description": "The driver library browser.\n\nFilters by brand, search text, and Fs/Vas/Xmax thresholds. Clicking a row\napplies it to the selected Driver node, or creates one if there is none.\n\nCustom entries are listed ahead of the built-ins so the user's own\ndrivers are easy to find, and only they can be deleted.\n\nThe ⚠ marks a row whose published Q or Vas figures contradict the\nBl/Re/Mms/Cms the solver actually runs on — the simulation follows the\nlatter, so the headline Qts may not be what you get.",
+          "description": "The driver library browser.\n\nFilters by brand, search text, and Fs/Vas/Xmax thresholds. Clicking a row\napplies it to the selected Driver node, or creates one if there is none.\n\nCustom entries are listed ahead of the built-ins so the user's own\ndrivers are easy to find, and only they can be deleted. They live in the\nworkspace rather than in a key of their own, which is what makes them travel\nwith a downloaded workspace and show up as a file in the workspace panel.\n\nThe ⚠ marks a row whose published Q or Vas figures contradict the\nBl/Re/Mms/Cms the solver actually runs on — the simulation follows the\nlatter, so the headline Qts may not be what you get.",
           "params": [],
           "returns": {
             "type": "React.ReactElement|null",
@@ -7960,7 +7916,7 @@
             "invariant": [],
             "mutates": [],
             "sideEffect": [
-              "Subscribes to the store and reads LocalStorage for custom entries."
+              "Subscribes to the store."
             ],
             "reads": [],
             "pure": false
@@ -7974,7 +7930,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 128,
+          "line": 120,
           "signature": [
             "d"
           ],
@@ -8015,7 +7971,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 144,
+          "line": 136,
           "signature": [],
           "documented": true,
           "summary": "Store the selected Driver node's parameters as a custom database entry.",
@@ -8032,7 +7988,7 @@
             "invariant": [],
             "mutates": [],
             "sideEffect": [
-              "Writes LocalStorage and updates component state. Alerts and does nothing when no driver node is selected."
+              "Writes the workspace, creating its system folder if this is the first thing to be stored there. Alerts and does nothing when no driver node is selected."
             ],
             "reads": [],
             "pure": false
@@ -8046,7 +8002,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 163,
+          "line": 153,
           "signature": [
             "i"
           ],
@@ -8073,7 +8029,7 @@
             "invariant": [],
             "mutates": [],
             "sideEffect": [
-              "Writes LocalStorage and updates component state."
+              "Writes the workspace."
             ],
             "reads": [],
             "pure": false
@@ -8087,7 +8043,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 181,
+          "line": 169,
           "signature": [
             "d",
             "i"
@@ -8130,12 +8086,522 @@
       ]
     },
     {
+      "file": "src/components/FileBrowser.jsx",
+      "module": {
+        "summary": "The workspace panel: what used to be the node palette's dock slot.",
+        "description": "The workspace panel: what used to be the node palette's dock slot.\n\nA workspace holds projects, the folders a user sorts them into, and the app\ndata under `.acousim` — custom drivers today. It lives in the browser, which\nis convenient and not durable: clearing site data takes it, a private window\nnever had it, and storage pressure can evict it without asking. So the panel\nleads with how long it has been since a copy left the browser, and the\ndownload button sits beside that sentence rather than buried in a menu.\n\nEverything here is browser-side. There is no account, no server and nothing\nuploaded; a workspace leaves as a file the user can read and comes back the\nsame way."
+      },
+      "constants": [],
+      "methods": [
+        {
+          "name": "kindLabel",
+          "qualified": "kindLabel",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 27,
+          "signature": [
+            "entry"
+          ],
+          "documented": true,
+          "summary": "Label for one file's kind, shown beside its name.",
+          "description": "Label for one file's kind, shown beside its name.",
+          "params": [
+            {
+              "name": "entry",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "The stored file record."
+            }
+          ],
+          "returns": {
+            "type": "string",
+            "desc": "A short description of what the file holds."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "FreshnessBox",
+          "qualified": "FreshnessBox",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 47,
+          "signature": [
+            "arg0"
+          ],
+          "documented": true,
+          "summary": "How long a workspace has gone without leaving the browser.",
+          "description": "How long a workspace has gone without leaving the browser.\n\nDeliberately the first thing in the panel. Every other file manager a user\nhas met is backed by a disk that remembers; this one is backed by storage\nthe browser may reclaim, and the only honest response is to keep saying so.",
+          "params": [
+            {
+              "name": "props",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "Component props."
+            },
+            {
+              "name": "props.workspace",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "The workspace being described."
+            },
+            {
+              "name": "props.onDownload",
+              "type": "() => void",
+              "optional": false,
+              "default": null,
+              "desc": "Called when the user asks for a download."
+            },
+            {
+              "name": "props.onImport",
+              "type": "() => void",
+              "optional": false,
+              "default": null,
+              "desc": "Called when the user asks to import one."
+            }
+          ],
+          "returns": {
+            "type": "React.ReactElement",
+            "desc": "The freshness box."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Reads the current time to phrase the interval."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "Row",
+          "qualified": "Row",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 85,
+          "signature": [
+            "arg0"
+          ],
+          "documented": true,
+          "summary": "One row of the workspace tree, and — for a folder — everything beneath it.",
+          "description": "One row of the workspace tree, and — for a folder — everything beneath it.\n\nRecursive rather than flattened, because indentation and collapsing are both\nquestions about depth and a flat list would have to re-derive it per row.",
+          "params": [
+            {
+              "name": "props",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "Component props."
+            },
+            {
+              "name": "props.node",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "A node from `buildTree`."
+            },
+            {
+              "name": "props.depth",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Nesting depth, driving the indent."
+            },
+            {
+              "name": "props.ctl",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "Callbacks and state shared by every row: `activeFile`, `collapsed`, `toggle`, `open`, `rename`, `remove`, `addTo`."
+            }
+          ],
+          "returns": {
+            "type": "React.ReactElement",
+            "desc": "The row, with its children when it is an expanded folder."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "FileBrowser",
+          "qualified": "FileBrowser",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 140,
+          "signature": [],
+          "documented": true,
+          "summary": "The workspace file browser.",
+          "description": "The workspace file browser.\n\nOpening a project switches the canvas to it, saving the outgoing one first.\nRenaming a project file renames the project inside it, so the two never\ndisagree. `.acousim` is shown rather than hidden — a user who can see where\ntheir custom drivers live is not surprised when those drivers travel with a\ndownloaded workspace — but it cannot be renamed, since the app finds its\ncontents by path.",
+          "params": [],
+          "returns": {
+            "type": "React.ReactElement",
+            "desc": "The panel."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Subscribes to the store. The buttons prompt, confirm, read files and trigger downloads."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "toggle",
+          "qualified": "FileBrowser > toggle",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 156,
+          "signature": [
+            "path"
+          ],
+          "documented": true,
+          "summary": "Expand or collapse a folder.",
+          "description": "Expand or collapse a folder.",
+          "params": [
+            {
+              "name": "path",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "The folder's path."
+            }
+          ],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Writes component state."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "rename",
+          "qualified": "FileBrowser > rename",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 173,
+          "signature": [
+            "path"
+          ],
+          "documented": true,
+          "summary": "Ask for a new name and apply it.",
+          "description": "Ask for a new name and apply it.\n\nThe prompt is seeded with the current name so a small correction is a\nsmall edit, and the result is placed back in the same folder — this is a\nrename, not a move.",
+          "params": [
+            {
+              "name": "path",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Path of the entry to rename."
+            }
+          ],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Shows a prompt, then writes store state. Reports a refused rename in the panel."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "remove",
+          "qualified": "FileBrowser > remove",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 191,
+          "signature": [
+            "path"
+          ],
+          "documented": true,
+          "summary": "Delete an entry after confirming.",
+          "description": "Delete an entry after confirming.\n\nA folder names how much is going with it, since the number is the whole\ndifference between a routine delete and a costly one.",
+          "params": [
+            {
+              "name": "path",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Path of the entry to delete."
+            }
+          ],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Shows a confirmation dialog, then writes store state. Does nothing if declined."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "onImportFile",
+          "qualified": "FileBrowser > onImportFile",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 212,
+          "signature": [
+            "e"
+          ],
+          "documented": true,
+          "summary": "Read a chosen workspace file and load it.",
+          "description": "Read a chosen workspace file and load it.\n\nConfirmed first: importing replaces every project in the browser, and the\ncopy being replaced may be the only one that exists.",
+          "params": [
+            {
+              "name": "e",
+              "type": "React.ChangeEvent",
+              "optional": false,
+              "default": null,
+              "desc": "The file input's change event."
+            }
+          ],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Shows a confirmation, reads the chosen file, replaces the workspace on success, and clears the input so choosing the same file twice still fires."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "reader.onload",
+          "qualified": "FileBrowser > onImportFile > reader.onload",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 224,
+          "signature": [],
+          "documented": true,
+          "summary": "Hand the file's text to the store and report a rejection in the panel.",
+          "description": "Hand the file's text to the store and report a rejection in the panel.",
+          "params": [],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Replaces the workspace on success; writes component state either way."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "reader.onerror",
+          "qualified": "FileBrowser > onImportFile > reader.onerror",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 234,
+          "signature": [],
+          "documented": true,
+          "summary": "Report a file that could not be read at all.",
+          "description": "Report a file that could not be read at all.",
+          "params": [],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Writes component state."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "open",
+          "qualified": "FileBrowser > open",
+          "kind": "method",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 251,
+          "signature": [
+            "path"
+          ],
+          "documented": true,
+          "summary": "Open a project file on the canvas.",
+          "description": "Open a project file on the canvas.",
+          "params": [
+            {
+              "name": "path",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Path of the file to open."
+            }
+          ],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Writes store state, replacing what is on the canvas."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "addTo",
+          "qualified": "FileBrowser > addTo",
+          "kind": "method",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 259,
+          "signature": [
+            "folder"
+          ],
+          "documented": true,
+          "summary": "Create a project inside a folder.",
+          "description": "Create a project inside a folder.",
+          "params": [
+            {
+              "name": "folder",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "The folder's path."
+            }
+          ],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Writes store state, replacing what is on the canvas."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        }
+      ]
+    },
+    {
       "file": "src/components/FlowCanvas.jsx",
       "module": null,
       "constants": [
         {
           "name": "__internals",
-          "line": 324,
+          "line": 325,
           "shape": {
             "kind": "object",
             "keys": [
@@ -8154,7 +8620,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 19,
+          "line": 20,
           "signature": [
             "conn"
           ],
@@ -8193,7 +8659,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 40,
+          "line": 41,
           "signature": [],
           "documented": true,
           "summary": "Discard the one `contextmenu` event that trails a completed right-drag.",
@@ -8224,7 +8690,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 48,
+          "line": 49,
           "signature": [
             "e"
           ],
@@ -8265,7 +8731,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 71,
+          "line": 72,
           "signature": [],
           "documented": true,
           "summary": "The node editor canvas.",
@@ -8296,7 +8762,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 100,
+          "line": 101,
           "signature": [],
           "documented": true,
           "summary": "Where a keyboard-added node should land, in canvas coordinates.",
@@ -8327,7 +8793,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 142,
+          "line": 143,
           "signature": [
             "e"
           ],
@@ -8368,7 +8834,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 160,
+          "line": 161,
           "signature": [
             "ev"
           ],
@@ -8411,7 +8877,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 179,
+          "line": 180,
           "signature": [
             "ev"
           ],
@@ -8454,7 +8920,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 224,
+          "line": 225,
           "signature": [
             "e",
             "target"
@@ -8505,7 +8971,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 313,
+          "line": 314,
           "signature": [],
           "documented": true,
           "summary": "The Node Editor panel, wrapping the canvas in its React Flow provider.",
@@ -8649,7 +9115,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 87,
+          "line": 88,
           "signature": [
             "id"
           ],
@@ -8690,7 +9156,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 100,
+          "line": 101,
           "signature": [
             "id"
           ],
@@ -8731,7 +9197,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 112,
+          "line": 113,
           "signature": [],
           "documented": true,
           "summary": "Bring a popped-out panel's tab to the front, or toggle a docked one.",
@@ -8762,7 +9228,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 124,
+          "line": 125,
           "signature": [
             "e"
           ],
@@ -8803,7 +9269,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 132,
+          "line": 133,
           "signature": [
             "e"
           ],
@@ -8844,7 +9310,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 152,
+          "line": 153,
           "signature": [
             "e"
           ],
@@ -8885,7 +9351,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 162,
+          "line": 163,
           "signature": [],
           "documented": true,
           "summary": "Parse the loaded file and replace the current project with it.",
@@ -8910,13 +9376,85 @@
           "other": []
         },
         {
+          "name": "onLoadWorkspace",
+          "qualified": "MenuBar > onLoadWorkspace",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 196,
+          "signature": [
+            "e"
+          ],
+          "documented": true,
+          "summary": "Read a chosen workspace file and replace the current workspace with it.",
+          "description": "Read a chosen workspace file and replace the current workspace with it.\n\nConfirmed first, and pointedly: importing replaces every project in the\nbrowser, and the copy being replaced may be the only one that exists.",
+          "params": [
+            {
+              "name": "e",
+              "type": "React.ChangeEvent",
+              "optional": false,
+              "default": null,
+              "desc": "The file input change event."
+            }
+          ],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Reads the file, may show a confirmation, replaces the workspace, and alerts when the file is not one."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "reader.onload",
+          "qualified": "MenuBar > onLoadWorkspace > reader.onload",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 208,
+          "signature": [],
+          "documented": true,
+          "summary": "Hand the file's text to the store and report a rejection.",
+          "description": "Hand the file's text to the store and report a rejection.",
+          "params": [],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Replaces the workspace, or alerts when the file is not a workspace."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
           "name": "savePreset",
           "qualified": "MenuBar > savePreset",
           "kind": "function",
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 183,
+          "line": 221,
           "signature": [],
           "documented": true,
           "summary": "Save the current window arrangement under a prompted name.",
@@ -8947,7 +9485,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 201,
+          "line": 239,
           "signature": [],
           "documented": true,
           "summary": "Open the saved-project browser.",
@@ -8978,7 +9516,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 213,
+          "line": 251,
           "signature": [],
           "documented": true,
           "summary": "Open the file picker to import a project.",
@@ -9009,7 +9547,69 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 227,
+          "line": 262,
+          "signature": [],
+          "documented": true,
+          "summary": "Download the whole workspace as one file.",
+          "description": "Download the whole workspace as one file.",
+          "params": [],
+          "returns": {
+            "type": "*",
+            "desc": "Whatever the action returns; the menu ignores it."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Triggers a browser download and records when it happened."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "onClick",
+          "qualified": "MenuBar > onClick",
+          "kind": "method",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 272,
+          "signature": [],
+          "documented": true,
+          "summary": "Open the file picker to replace the workspace.",
+          "description": "Open the file picker to replace the workspace.",
+          "params": [],
+          "returns": {
+            "type": "*",
+            "desc": "Whatever the action returns; the menu ignores it."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Clicks the hidden workspace file input."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "onClick",
+          "qualified": "MenuBar > onClick",
+          "kind": "method",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 286,
           "signature": [],
           "documented": true,
           "summary": "Download every result series as a CSV.",
@@ -9040,7 +9640,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 237,
+          "line": 296,
           "signature": [],
           "documented": true,
           "summary": "Download a PNG of the node canvas.",
@@ -9071,7 +9671,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 247,
+          "line": 306,
           "signature": [],
           "documented": true,
           "summary": "Download a plain-text metrics summary.",
@@ -9102,7 +9702,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 276,
+          "line": 335,
           "signature": [],
           "documented": true,
           "summary": "Pop the focused panel out into its own browser tab.",
@@ -9133,7 +9733,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 291,
+          "line": 350,
           "signature": [],
           "documented": true,
           "summary": "Pop this specific panel out into its own browser tab.",
@@ -9164,7 +9764,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 304,
+          "line": 363,
           "signature": [],
           "documented": true,
           "summary": "Maximize the focused panel, or restore the one already maximized.",
@@ -9195,7 +9795,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 315,
+          "line": 374,
           "signature": [],
           "documented": true,
           "summary": "Restore the default workspace arrangement.",
@@ -9226,7 +9826,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 330,
+          "line": 389,
           "signature": [],
           "documented": true,
           "summary": "Apply this saved arrangement.",
@@ -9257,7 +9857,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 347,
+          "line": 406,
           "signature": [],
           "documented": true,
           "summary": "Delete this saved arrangement.",
@@ -9288,7 +9888,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 363,
+          "line": 422,
           "signature": [],
           "documented": true,
           "summary": "Toggle resonance masking, which lumps chambers to hide standing-wave artifacts.",
@@ -9319,7 +9919,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 374,
+          "line": 433,
           "signature": [],
           "documented": true,
           "summary": "Toggle phase unwrapping on the phase chart.",
@@ -9350,7 +9950,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 392,
+          "line": 451,
           "signature": [],
           "documented": true,
           "summary": "Discard every reference overlay.",
@@ -9381,7 +9981,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 407,
+          "line": 466,
           "signature": [],
           "documented": true,
           "summary": "Open the driver library browser.",
@@ -9412,7 +10012,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 417,
+          "line": 476,
           "signature": [],
           "documented": true,
           "summary": "Open the Thiele/Small parameter solver.",
@@ -9443,7 +10043,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 430,
+          "line": 489,
           "signature": [],
           "documented": true,
           "summary": "Open the Nonlinear Lab panel.",
@@ -9474,7 +10074,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 445,
+          "line": 504,
           "signature": [],
           "documented": true,
           "summary": "Turn experimental features on or off.",
@@ -9505,7 +10105,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 464,
+          "line": 523,
           "signature": [],
           "documented": true,
           "summary": "Open Settings at the keyboard section.",
@@ -9536,7 +10136,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 474,
+          "line": 533,
           "signature": [],
           "documented": true,
           "summary": "Show the about dialog.",
@@ -10747,6 +11347,94 @@
             "sideEffect": [
               "Updates the driver's params, or alerts when the file is unusable."
             ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        }
+      ]
+    },
+    {
+      "file": "src/components/NodePalette.jsx",
+      "module": {
+        "summary": "The element palette, floating over the top-left of the node editor.",
+        "description": "The element palette, floating over the top-left of the node editor.\n\nIt used to be a docked panel with a paragraph of explanation under every\nentry. That paragraph is read once and then occupies a column of the screen\nforever, and the column was the most valuable one — right beside the canvas.\nWhat a user actually needs while building is the shortest possible answer to\n\"which one is the chamber\": its colour, which is the same colour the node\nwill be, and its name.\n\nFloating rather than docked because the palette is part of the canvas, not a\nneighbour of it. It travels with the canvas when the panel is popped out,\nand it costs the graph no space that the graph was using — the container\nignores pointer events, so only the cubes themselves are in the way."
+      },
+      "constants": [],
+      "methods": [
+        {
+          "name": "NodePalette",
+          "qualified": "NodePalette",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 26,
+          "signature": [],
+          "documented": true,
+          "summary": "The floating stack of draggable element cubes.",
+          "description": "The floating stack of draggable element cubes.\n\nEach cube carries its element's theme colour and name; the long description\nsurvives as the tooltip, where it costs nothing until it is wanted.",
+          "params": [],
+          "returns": {
+            "type": "React.ReactElement",
+            "desc": "The palette overlay."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "onDragStart",
+          "qualified": "NodePalette > onDragStart",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 39,
+          "signature": [
+            "e",
+            "type"
+          ],
+          "documented": true,
+          "summary": "Start a palette drag, tagging it with the node type to create.",
+          "description": "Start a palette drag, tagging it with the node type to create.\n\nThe canvas reads `NODE_DRAG_TYPE` on drop, which is what keeps a palette\ndrag from being confused with a panel tab or a file dragged in from the\ndesktop.",
+          "params": [
+            {
+              "name": "e",
+              "type": "React.DragEvent",
+              "optional": false,
+              "default": null,
+              "desc": "The drag event."
+            },
+            {
+              "name": "type",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Node type being dragged."
+            }
+          ],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [
+              "Sets data and the allowed effect on the event's dataTransfer."
+            ],
+            "sideEffect": [],
             "reads": [],
             "pure": false
           },
@@ -12268,104 +12956,6 @@
             "sideEffect": [],
             "reads": [],
             "pure": true
-          },
-          "other": []
-        }
-      ]
-    },
-    {
-      "file": "src/components/Palette.jsx",
-      "module": null,
-      "constants": [
-        {
-          "name": "NODE_KINDS",
-          "line": 10,
-          "shape": {
-            "kind": "array",
-            "length": 5
-          },
-          "summary": "The draggable node types, with the descriptions shown in the palette.",
-          "description": "The draggable node types, with the descriptions shown in the palette.\n\nExported because the canvas's right-click menu offers the same list under\nAdd Node, and two copies of it would drift the moment an element is added."
-        }
-      ],
-      "methods": [
-        {
-          "name": "Palette",
-          "qualified": "Palette",
-          "kind": "function",
-          "exported": true,
-          "async": false,
-          "generator": false,
-          "line": 24,
-          "signature": [],
-          "documented": true,
-          "summary": "The node palette: draggable element types and the driver library button.",
-          "description": "The node palette: draggable element types and the driver library button.",
-          "params": [],
-          "returns": {
-            "type": "React.ReactElement",
-            "desc": "The palette panel."
-          },
-          "throws": [],
-          "contract": {
-            "pre": [],
-            "post": [],
-            "invariant": [],
-            "mutates": [],
-            "sideEffect": [
-              "Subscribes to the store."
-            ],
-            "reads": [],
-            "pure": false
-          },
-          "other": []
-        },
-        {
-          "name": "onDragStart",
-          "qualified": "Palette > onDragStart",
-          "kind": "function",
-          "exported": false,
-          "async": false,
-          "generator": false,
-          "line": 37,
-          "signature": [
-            "e",
-            "type"
-          ],
-          "documented": true,
-          "summary": "Start a palette drag, tagging it with the node type to create.",
-          "description": "Start a palette drag, tagging it with the node type to create.\n\nThe canvas reads the `application/acousim-node` type on drop, which is\nwhat keeps a palette drag from being confused with any other drag.",
-          "params": [
-            {
-              "name": "e",
-              "type": "React.DragEvent",
-              "optional": false,
-              "default": null,
-              "desc": "The drag event."
-            },
-            {
-              "name": "type",
-              "type": "string",
-              "optional": false,
-              "default": null,
-              "desc": "Node type being dragged."
-            }
-          ],
-          "returns": {
-            "type": "void",
-            "desc": ""
-          },
-          "throws": [],
-          "contract": {
-            "pre": [],
-            "post": [],
-            "invariant": [],
-            "mutates": [
-              "Sets data and the allowed effect on the event's dataTransfer."
-            ],
-            "sideEffect": [],
-            "reads": [],
-            "pure": false
           },
           "other": []
         }
@@ -15253,7 +15843,7 @@
       "constants": [
         {
           "name": "PANELS",
-          "line": 53,
+          "line": 56,
           "shape": null,
           "summary": "The panel registry: each panel's metadata paired with its component.",
           "description": "The panel registry: each panel's metadata paired with its component.\n\nAdding a panel means one entry in `PANEL_META` plus one line in\n`COMPONENTS` — the dock, the View menu and the saved-layout sanitizer all\nread from these, so nothing else needs to learn about it."
@@ -15267,11 +15857,11 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 25,
+          "line": 27,
           "signature": [],
           "documented": true,
-          "summary": "The Node Editor panel: the canvas with the velocity popup layered over it.",
-          "description": "The Node Editor panel: the canvas with the velocity popup layered over it.\n\nThe popup lives here rather than at app level so it is clipped to the\ncanvas and travels with it when the panel is popped out.",
+          "summary": "The Node Editor panel: the canvas with the palette and popup layered over it.",
+          "description": "The Node Editor panel: the canvas with the palette and popup layered over it.\n\nBoth overlays live here rather than at app level so they are clipped to the\ncanvas and travel with it when the panel is popped out — a popped-out node\neditor that could not add nodes would be a strange thing to hand someone.",
           "params": [],
           "returns": {
             "type": "React.ReactElement",
@@ -21293,7 +21883,7 @@
           "signature": [],
           "documented": true,
           "summary": "The default workspace arrangement.",
-          "description": "The default workspace arrangement.\n\nPalette on the left, canvas over the four charts most designs are judged by,\nparameters on the right — the classic three-column IDE arrangement. The\nremaining plots are opened from View ▸ Charts.",
+          "description": "The default workspace arrangement.\n\nWorkspace files on the left, canvas over the four charts most designs are\njudged by, parameters on the right — the classic three-column IDE arrangement. The\nremaining plots are opened from View ▸ Charts.",
           "params": [],
           "returns": {
             "type": "object",
@@ -22297,6 +22887,36 @@
       "methods": []
     },
     {
+      "file": "src/nodeKinds.js",
+      "module": {
+        "summary": "The element types a user can drop onto the canvas.",
+        "description": "The element types a user can drop onto the canvas.\n\nPlain data, no React, so the floating palette on the canvas, the canvas's\nright-click Add Node submenu and anything added later all read one list. Two\ncopies of it would drift the moment an element type is added."
+      },
+      "constants": [
+        {
+          "name": "NODE_KINDS",
+          "line": 15,
+          "shape": {
+            "kind": "array",
+            "length": 5
+          },
+          "summary": "The draggable node types.",
+          "description": "The draggable node types.\n\n`color` is the element's theme colour — the only thing the floating palette\nshows besides the name. `desc` is the long form, kept for tooltips and for\nanywhere a fuller explanation is wanted; the palette deliberately does not\nrender it."
+        },
+        {
+          "name": "NODE_DRAG_TYPE",
+          "line": 29,
+          "shape": {
+            "kind": "literal",
+            "value": "application/acousim-node"
+          },
+          "summary": "The MIME-ish drag type marking a drag as coming from the node palette.",
+          "description": "The MIME-ish drag type marking a drag as coming from the node palette.\n\nNamed rather than inferred so the canvas can tell a palette drag from a\npanel-tab drag, a file drag, or anything the OS hands it."
+        }
+      ],
+      "methods": []
+    },
+    {
       "file": "src/panelMeta.js",
       "module": {
         "summary": "Panel metadata — plain data, no React. Kept separate from panels.jsx so the store can read it (titles, dock hints, which panels exist for sanitizing a saved layout) without importing components that import the store back.",
@@ -22309,7 +22929,7 @@
           "shape": {
             "kind": "object",
             "keys": [
-              "palette",
+              "files",
               "canvas",
               "params",
               "nllab",
@@ -22324,7 +22944,7 @@
               "ph"
             ],
             "nested": {
-              "palette": [
+              "files": [
                 "title",
                 "group",
                 "closable",
@@ -22476,12 +23096,14 @@
           "line": 35,
           "shape": {
             "kind": "array",
-            "length": 12,
+            "length": 14,
             "values": [
               "nodes",
               "edges",
               "projectName",
               "settings",
+              "workspace",
+              "activeFile",
               "results",
               "metrics",
               "snapshots",
@@ -22956,19 +23578,19 @@
       "file": "src/store.js",
       "module": {
         "summary": "Application state: the project graph, the workspace, and everything the UI reads. One Zustand store, deliberately flat.",
-        "description": "Application state: the project graph, the workspace, and everything the UI\nreads. One Zustand store, deliberately flat.\n\nState fields, since the action contracts below name what changes rather than\nwhere:\n\n  project    nodes, edges, projectName, selectedNodeId, settings\n  results    results, metrics, snapshots, simError\n  history    history, future, clipboard\n  workspace  layout, layoutPresets, maximized, focusedPanel, draggingPanel,\n             poppedOut, toolbar, bindings, xZoom\n  modals     showDriverDB, showProjectManager, showTSCalc, showSettings,\n             settingsSection, restorePrompt, velocityPopupNodeId\n\nFields prefixed with an underscore are solver and persistence bookkeeping\n(`_lastSig`, `_simToken`, `_computeTimer`, `_flowApi`, `_lastSavedName`,\n`_nameTimer`) and are not part of any action's observable contract.\n\nLocalStorage keys, all prefixed `acousim:` — `acousim:layout`,\n`acousim:layoutPresets`, `acousim:toolbar`, `acousim:keymap`,\n`acousim:project:<name>` and `acousim:lastProject`.\n\nA subset of the state is mirrored to popped-out panel windows over a\nBroadcastChannel; see src/popout.js for which keys and why."
+        "description": "Application state: the project graph, the workspace, and everything the UI\nreads. One Zustand store, deliberately flat.\n\nState fields, since the action contracts below name what changes rather than\nwhere:\n\n  project    nodes, edges, projectName, selectedNodeId, settings\n  results    results, metrics, snapshots, simError\n  history    history, future, clipboard\n  workspace  layout, layoutPresets, maximized, focusedPanel, draggingPanel,\n             poppedOut, toolbar, bindings, xZoom\n  modals     showDriverDB, showProjectManager, showTSCalc, showSettings,\n             settingsSection, restorePrompt, velocityPopupNodeId\n\nFields prefixed with an underscore are solver and persistence bookkeeping\n(`_lastSig`, `_simToken`, `_computeTimer`, `_flowApi`, `_lastSavedName`,\n`_nameTimer`) and are not part of any action's observable contract.\n\nLocalStorage keys, all prefixed `acousim:` — `acousim:layout`,\n`acousim:layoutPresets`, `acousim:toolbar`, `acousim:keymap`,\n`acousim:project:<name>`, `acousim:lastProject` and `acousim:workspace`.\n\nA subset of the state is mirrored to popped-out panel windows over a\nBroadcastChannel; see src/popout.js for which keys and why."
       },
       "constants": [
         {
           "name": "useStore",
-          "line": 245,
+          "line": 289,
           "shape": null,
           "summary": null,
           "description": null
         },
         {
           "name": "__internals",
-          "line": 1688,
+          "line": 2013,
           "shape": {
             "kind": "object",
             "keys": [
@@ -22991,7 +23613,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 57,
+          "line": 58,
           "signature": [
             "project"
           ],
@@ -23032,7 +23654,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 70,
+          "line": 71,
           "signature": [
             "e"
           ],
@@ -23073,7 +23695,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 100,
+          "line": 101,
           "signature": [
             "ids",
             "active"
@@ -23116,13 +23738,44 @@
           "other": []
         },
         {
+          "name": "loadWorkspace",
+          "qualified": "loadWorkspace",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 128,
+          "signature": [],
+          "documented": true,
+          "summary": "Load the persisted workspace, or build a first-run one.",
+          "description": "Load the persisted workspace, or build a first-run one.\n\nA workspace that fails to parse is replaced rather than repaired: the file\nbrowser cannot show something it cannot read, and a half-recovered workspace\nwould be harder to reason about than an empty one.\n\nCustom drivers saved by a build that predates workspaces are adopted into\nthe new one. That only happens on a genuine first run — an existing\nworkspace is never modified on load, since the system folder is supposed to\nappear when something writes to it, not when the app starts.",
+          "params": [],
+          "returns": {
+            "type": "object",
+            "desc": "A usable workspace."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Reads LocalStorage and the current time."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
           "name": "loadLayout",
           "qualified": "loadLayout",
           "kind": "function",
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 122,
+          "line": 166,
           "signature": [],
           "documented": true,
           "summary": "Load the persisted dock layout, falling back to the default.",
@@ -23153,7 +23806,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 140,
+          "line": 184,
           "signature": [],
           "documented": true,
           "summary": "Load the user's saved layout arrangements.",
@@ -23184,7 +23837,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 160,
+          "line": 204,
           "signature": [],
           "documented": true,
           "summary": "Load the quick-bar arrangement.",
@@ -23215,7 +23868,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 180,
+          "line": 224,
           "signature": [
             "type"
           ],
@@ -23256,7 +23909,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 200,
+          "line": 244,
           "signature": [
             "spot",
             "nodes",
@@ -23321,7 +23974,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 208,
+          "line": 252,
           "signature": [
             "x",
             "y"
@@ -23370,7 +24023,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 227,
+          "line": 271,
           "signature": [
             "nodes",
             "edges",
@@ -23425,7 +24078,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 265,
+          "line": 309,
           "signature": [
             "partial",
             "replace"
@@ -23476,7 +24129,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 322,
+          "line": 371,
           "signature": [
             "x",
             "y",
@@ -23533,7 +24186,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 333,
+          "line": 382,
           "signature": [],
           "documented": true,
           "summary": "Dismiss the context menu.",
@@ -23564,7 +24217,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 342,
+          "line": 391,
           "signature": [
             "id"
           ],
@@ -23605,7 +24258,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 353,
+          "line": 402,
           "signature": [
             "id"
           ],
@@ -23646,7 +24299,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 361,
+          "line": 410,
           "signature": [
             "id"
           ],
@@ -23687,7 +24340,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 370,
+          "line": 419,
           "signature": [
             "v",
             "section"
@@ -23736,7 +24389,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 378,
+          "line": 427,
           "signature": [
             "id"
           ],
@@ -23777,7 +24430,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 390,
+          "line": 439,
           "signature": [
             "id",
             "combos"
@@ -23826,7 +24479,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 407,
+          "line": 456,
           "signature": [
             "id",
             "combo"
@@ -23875,7 +24528,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 425,
+          "line": 474,
           "signature": [
             "id",
             "combo"
@@ -23924,7 +24577,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 432,
+          "line": 481,
           "signature": [],
           "documented": true,
           "summary": "Restore every command to its default combos.",
@@ -23955,7 +24608,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 449,
+          "line": 498,
           "signature": [
             "tree"
           ],
@@ -23996,7 +24649,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 466,
+          "line": 515,
           "signature": [
             "stackId",
             "panelId"
@@ -24045,7 +24698,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 476,
+          "line": 525,
           "signature": [
             "panelId",
             "stackId",
@@ -24102,7 +24755,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 485,
+          "line": 534,
           "signature": [
             "panelId",
             "edge"
@@ -24151,7 +24804,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 496,
+          "line": 545,
           "signature": [
             "splitId",
             "index",
@@ -24216,7 +24869,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 510,
+          "line": 559,
           "signature": [
             "panelId",
             "stackId",
@@ -24273,7 +24926,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 531,
+          "line": 580,
           "signature": [
             "panelId"
           ],
@@ -24314,7 +24967,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 548,
+          "line": 597,
           "signature": [
             "panelId"
           ],
@@ -24355,7 +25008,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 560,
+          "line": 609,
           "signature": [
             "panelId"
           ],
@@ -24396,7 +25049,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 571,
+          "line": 620,
           "signature": [],
           "documented": true,
           "summary": "Restore the default workspace arrangement.",
@@ -24427,7 +25080,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 581,
+          "line": 630,
           "signature": [
             "name"
           ],
@@ -24468,7 +25121,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 600,
+          "line": 649,
           "signature": [
             "name"
           ],
@@ -24509,7 +25162,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 624,
+          "line": 673,
           "signature": [
             "ids"
           ],
@@ -24550,7 +25203,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 640,
+          "line": 689,
           "signature": [
             "id"
           ],
@@ -24591,7 +25244,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 652,
+          "line": 701,
           "signature": [
             "id",
             "delta"
@@ -24640,7 +25293,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 666,
+          "line": 715,
           "signature": [],
           "documented": true,
           "summary": "Restore the default quick-bar arrangement.",
@@ -24671,7 +25324,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 675,
+          "line": 724,
           "signature": [
             "name"
           ],
@@ -24712,7 +25365,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 693,
+          "line": 742,
           "signature": [
             "id",
             "range"
@@ -24761,7 +25414,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 709,
+          "line": 758,
           "signature": [],
           "documented": true,
           "summary": "Record the current graph as an undo point.",
@@ -24792,7 +25445,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 722,
+          "line": 771,
           "signature": [],
           "documented": true,
           "summary": "Step back one entry in the history.",
@@ -24823,7 +25476,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 739,
+          "line": 788,
           "signature": [],
           "documented": true,
           "summary": "Step forward one entry in the history.",
@@ -24854,7 +25507,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 764,
+          "line": 813,
           "signature": [
             "changes"
           ],
@@ -24895,7 +25548,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 778,
+          "line": 827,
           "signature": [
             "changes"
           ],
@@ -24936,7 +25589,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 790,
+          "line": 839,
           "signature": [
             "conn"
           ],
@@ -24977,7 +25630,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 802,
+          "line": 851,
           "signature": [
             "id"
           ],
@@ -25018,7 +25671,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 815,
+          "line": 864,
           "signature": [
             "type",
             "position"
@@ -25067,7 +25720,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 841,
+          "line": 890,
           "signature": [
             "id",
             "patch"
@@ -25116,7 +25769,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 863,
+          "line": 912,
           "signature": [],
           "documented": true,
           "summary": "Delete the selected nodes and edges.",
@@ -25147,7 +25800,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 888,
+          "line": 937,
           "signature": [],
           "documented": true,
           "summary": "Copy the selected nodes in place, offset down-right.",
@@ -25178,7 +25831,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 913,
+          "line": 962,
           "signature": [],
           "documented": true,
           "summary": "Select every node on the canvas.",
@@ -25209,7 +25862,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 928,
+          "line": 977,
           "signature": [
             "ids",
             "additive"
@@ -25258,7 +25911,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 961,
+          "line": 1010,
           "signature": [],
           "documented": true,
           "summary": "Copy the selected nodes and their internal edges to the in-app clipboard.",
@@ -25289,7 +25942,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 987,
+          "line": 1036,
           "signature": [],
           "documented": true,
           "summary": "Copy the selection, then delete it.",
@@ -25320,7 +25973,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1008,
+          "line": 1057,
           "signature": [
             "at"
           ],
@@ -25361,7 +26014,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1056,
+          "line": 1105,
           "signature": [
             "type"
           ],
@@ -25402,7 +26055,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1072,
+          "line": 1121,
           "signature": [
             "delta"
           ],
@@ -25443,7 +26096,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1085,
+          "line": 1134,
           "signature": [],
           "documented": true,
           "summary": "Force a resimulation even though nothing has changed.",
@@ -25474,7 +26127,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1098,
+          "line": 1147,
           "signature": [
             "patch"
           ],
@@ -25515,7 +26168,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1114,
+          "line": 1163,
           "signature": [
             "field",
             "value"
@@ -25564,7 +26217,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1135,
+          "line": 1184,
           "signature": [],
           "documented": true,
           "summary": "Freeze the current result as a labelled reference overlay.",
@@ -25595,7 +26248,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1162,
+          "line": 1211,
           "signature": [
             "id"
           ],
@@ -25636,7 +26289,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1171,
+          "line": 1220,
           "signature": [
             "id",
             "label"
@@ -25685,7 +26338,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1181,
+          "line": 1230,
           "signature": [
             "id"
           ],
@@ -25726,7 +26379,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1189,
+          "line": 1238,
           "signature": [
             "v"
           ],
@@ -25767,7 +26420,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1197,
+          "line": 1246,
           "signature": [
             "v"
           ],
@@ -25808,7 +26461,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1205,
+          "line": 1254,
           "signature": [
             "v"
           ],
@@ -25849,7 +26502,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1213,
+          "line": 1262,
           "signature": [
             "v"
           ],
@@ -25890,7 +26543,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1244,
+          "line": 1293,
           "signature": [],
           "documented": true,
           "summary": "Schedule a debounced simulation run.",
@@ -25921,7 +26574,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1285,
+          "line": 1334,
           "signature": [],
           "documented": true,
           "summary": "Capture the project as a plain, saveable object.",
@@ -25952,7 +26605,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1311,
+          "line": 1360,
           "signature": [
             "proj"
           ],
@@ -25993,13 +26646,13 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1341,
+          "line": 1395,
           "signature": [
             "name"
           ],
           "documented": true,
           "summary": "Rename the project, saving the new name after a pause.",
-          "description": "Rename the project, saving the new name after a pause.\n\nThe save is debounced by a second so intermediate keystrokes never\npersist — without it, typing \"Ported box\" would leave nine abandoned\nauto-saves behind.",
+          "description": "Rename the project, saving the new name after a pause.\n\nThe save is debounced by a second so intermediate keystrokes never\npersist — without it, typing \"Ported box\" would leave nine abandoned\nauto-saves behind.\n\nThe workspace file follows the project, so the two cannot end up\ndisagreeing about what the thing is called. A name a filesystem could not\nhold — one with a slash in it — leaves the filename alone rather than\nfailing the rename; the project keeps the name the user typed.",
           "params": [
             {
               "name": "name",
@@ -26020,7 +26673,7 @@
             "invariant": [],
             "mutates": [],
             "sideEffect": [
-              "Writes store state and schedules a debounced auto-save."
+              "Writes store state and schedules a debounced auto-save, which also renames the workspace file."
             ],
             "reads": [],
             "pure": false
@@ -26034,7 +26687,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1356,
+          "line": 1416,
           "signature": [],
           "documented": true,
           "summary": "Start an empty project, confirming first if there is anything to lose.",
@@ -26065,7 +26718,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1366,
+          "line": 1426,
           "signature": [],
           "documented": true,
           "summary": "Download the project as a file, auto-saving it first.",
@@ -26096,7 +26749,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1383,
+          "line": 1443,
           "signature": [],
           "documented": true,
           "summary": "Write the project to LocalStorage under its name.",
@@ -26121,13 +26774,452 @@
           "other": []
         },
         {
+          "name": "_commitWorkspace",
+          "qualified": "_commitWorkspace",
+          "kind": "method",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 1477,
+          "signature": [
+            "ws"
+          ],
+          "documented": true,
+          "summary": "Store a modified workspace.",
+          "description": "Store a modified workspace.",
+          "params": [
+            {
+              "name": "ws",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "The new workspace."
+            }
+          ],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Writes store state, which the module-level subscription then persists to LocalStorage."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "setWorkspaceName",
+          "qualified": "setWorkspaceName",
+          "kind": "method",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 1492,
+          "signature": [
+            "name"
+          ],
+          "documented": true,
+          "summary": "Rename the workspace itself.",
+          "description": "Rename the workspace itself.\n\n\nStored exactly as typed, including a momentarily empty one — rejecting\nblanks here would make the field impossible to clear and retype. A blank\nname falls back to the default when the workspace is downloaded or read\nback, which is the only point where the name has to mean something.",
+          "params": [
+            {
+              "name": "name",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "The new name."
+            }
+          ],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Writes store state and persists the workspace."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "saveActiveFile",
+          "qualified": "saveActiveFile",
+          "kind": "method",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 1506,
+          "signature": [],
+          "documented": true,
+          "summary": "Write the editor's current project back into its file.",
+          "description": "Write the editor's current project back into its file.\n\nCalled from `autoSave`, so the open file tracks the graph without the user\nhaving to save anything. A workspace whose active file has been deleted or\nwas never a project writes nothing rather than resurrecting it.",
+          "params": [],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Writes store state and persists the workspace. Skipped in a popped-out tab, which has no editor of its own to save."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "openFile",
+          "qualified": "openFile",
+          "kind": "method",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 1524,
+          "signature": [
+            "path"
+          ],
+          "documented": true,
+          "summary": "Open a project file in the editor.",
+          "description": "Open a project file in the editor.\n\nThe file on the way out is saved first, so switching files never loses the\nedits made to the one being left. Non-project files are not openable — a\ndriver library has no graph to put on the canvas — and are ignored.",
+          "params": [
+            {
+              "name": "path",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Path of the file to open."
+            }
+          ],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Writes store state, persists the workspace and schedules a resimulation."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "newFile",
+          "qualified": "newFile",
+          "kind": "method",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 1540,
+          "signature": [
+            "folder"
+          ],
+          "documented": true,
+          "summary": "Create an empty project file.",
+          "description": "Create an empty project file.",
+          "params": [
+            {
+              "name": "folder",
+              "type": "string",
+              "optional": true,
+              "default": null,
+              "desc": "Folder to create it in; the workspace root by default."
+            }
+          ],
+          "returns": {
+            "type": "string",
+            "desc": "The path of the new file."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Writes store state, persists the workspace and opens the new file, replacing what is on the canvas."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "newFolder",
+          "qualified": "newFolder",
+          "kind": "method",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 1561,
+          "signature": [
+            "parent"
+          ],
+          "documented": true,
+          "summary": "Create an empty folder.",
+          "description": "Create an empty folder.",
+          "params": [
+            {
+              "name": "parent",
+              "type": "string",
+              "optional": true,
+              "default": null,
+              "desc": "Folder to create it in; the workspace root by default."
+            }
+          ],
+          "returns": {
+            "type": "string",
+            "desc": "The path of the new folder."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Writes store state and persists the workspace."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "renamePath",
+          "qualified": "renamePath",
+          "kind": "method",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 1584,
+          "signature": [
+            "from",
+            "to"
+          ],
+          "documented": true,
+          "summary": "Rename or move a file or folder.",
+          "description": "Rename or move a file or folder.\n\nRenaming a project file renames the project inside it too. The alternative\n— a file called `Ported box` holding a project called `Untitled` — reads as\na bug every time a user meets it.\n\nThe system folder is not renamable: the app looks for its contents by\npath, and a moved `.acousim` would silently become a folder of orphaned\ndata plus a fresh empty one.",
+          "params": [
+            {
+              "name": "from",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "The existing path."
+            },
+            {
+              "name": "to",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "The new path."
+            }
+          ],
+          "returns": {
+            "type": "boolean",
+            "desc": "True when the move happened; false when the name is invalid, taken, or forbidden."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Writes store state and persists the workspace. Follows the active file if it was the one moved."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "deletePath",
+          "qualified": "deletePath",
+          "kind": "method",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 1621,
+          "signature": [
+            "path"
+          ],
+          "documented": true,
+          "summary": "Delete a file, or a folder and everything in it.",
+          "description": "Delete a file, or a folder and everything in it.\n\nDeleting the open project leaves the editor on whatever project remains,\nor on an empty canvas when none does — better than holding a file that no\nlonger exists and writing it back on the next auto-save.\n\nThe confirmation belongs to the caller. This is the operation, not the\nquestion.",
+          "params": [
+            {
+              "name": "path",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Path of the entry to delete."
+            }
+          ],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Writes store state and persists the workspace. May replace what is on the canvas."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "downloadWorkspace",
+          "qualified": "downloadWorkspace",
+          "kind": "method",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 1649,
+          "signature": [],
+          "documented": true,
+          "summary": "Download the whole workspace, and record that it happened.",
+          "description": "Download the whole workspace, and record that it happened.\n\nThe stamp is the point as much as the file is: browser storage can be\ncleared without warning, so the file browser shows how long it has been\nsince a copy existed anywhere else.",
+          "params": [],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Saves the open file, triggers a browser download, then writes store state and persists the workspace."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "importWorkspaceText",
+          "qualified": "importWorkspaceText",
+          "kind": "method",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 1672,
+          "signature": [
+            "text"
+          ],
+          "documented": true,
+          "summary": "Replace the workspace with an imported one.",
+          "description": "Replace the workspace with an imported one.\n\nWholesale replacement rather than a merge. Merging two workspaces raises a\nquestion per colliding path that the user has no way to answer usefully in\na dialog, and the honest workflow — download the current workspace first —\nis one click away.\n\nThe imported workspace is stored exactly as it arrived. If it has no\nsystem folder, it does not gain one here; the first write of app data\ncreates it.",
+          "params": [
+            {
+              "name": "text",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Contents of a downloaded workspace file."
+            }
+          ],
+          "returns": {
+            "type": "{ok: boolean, error?: string}",
+            "desc": "Whether the import succeeded, and why not when it did not."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "On success, writes store state, persists the workspace and replaces what is on the canvas."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "setCustomDrivers",
+          "qualified": "setCustomDrivers",
+          "kind": "method",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 1698,
+          "signature": [
+            "drivers"
+          ],
+          "documented": true,
+          "summary": "Replace the workspace's custom driver library.",
+          "description": "Replace the workspace's custom driver library.\n\nThe one write that creates the system folder in normal use: saving a\ndriver is a modification, and this is where the workspace discovers it has\nnowhere to put it yet.",
+          "params": [
+            {
+              "name": "drivers",
+              "type": "Array<object>",
+              "optional": false,
+              "default": null,
+              "desc": "The full driver list to store."
+            }
+          ],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Writes store state and persists the workspace."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
           "name": "setPopoutActive",
           "qualified": "setPopoutActive",
           "kind": "method",
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1414,
+          "line": 1720,
           "signature": [
             "id"
           ],
@@ -26168,7 +27260,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1430,
+          "line": 1736,
           "signature": [
             "id"
           ],
@@ -26209,7 +27301,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1453,
+          "line": 1759,
           "signature": [
             "id"
           ],
@@ -26250,7 +27342,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1480,
+          "line": 1786,
           "signature": [
             "id"
           ],
@@ -26291,7 +27383,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1496,
+          "line": 1802,
           "signature": [
             "stackId"
           ],
@@ -26332,7 +27424,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1520,
+          "line": 1826,
           "signature": [
             "panelId",
             "stackId"
@@ -26381,7 +27473,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1540,
+          "line": 1846,
           "signature": [
             "id"
           ],
@@ -26422,7 +27514,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1551,
+          "line": 1857,
           "signature": [
             "id"
           ],
@@ -26463,7 +27555,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1570,
+          "line": 1876,
           "signature": [
             "patch"
           ],
@@ -26506,7 +27598,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1580,
+          "line": 1886,
           "signature": [],
           "documented": true,
           "summary": "The full shared slice, sent to a popped-out tab when it announces itself.",
@@ -26537,7 +27629,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1619,
+          "line": 1944,
           "signature": [
             "arg0"
           ],
@@ -26587,7 +27679,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 1671,
+          "line": 1996,
           "signature": [],
           "documented": true,
           "summary": "List the auto-saved projects in LocalStorage, newest first.",
@@ -27067,7 +28159,7 @@
       "constants": [
         {
           "name": "__internals",
-          "line": 180,
+          "line": 196,
           "shape": {
             "kind": "object",
             "keys": [
@@ -27086,7 +28178,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 16,
+          "line": 17,
           "signature": [
             "filename",
             "content",
@@ -27143,7 +28235,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 34,
+          "line": 35,
           "signature": [
             "proj"
           ],
@@ -27185,13 +28277,54 @@
           "other": []
         },
         {
+          "name": "exportWorkspaceJSON",
+          "qualified": "exportWorkspaceJSON",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 50,
+          "signature": [
+            "ws"
+          ],
+          "documented": true,
+          "summary": "Download a whole workspace as one JSON file.",
+          "description": "Download a whole workspace as one JSON file.\n\nOne file rather than an archive: a workspace is already a single JSON\nobject, and a zip would add a dependency and cost the user the ability to\nread, diff or hand-edit what they downloaded.",
+          "params": [
+            {
+              "name": "ws",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "The workspace to serialize."
+            }
+          ],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Triggers a browser download."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
           "name": "exportCSV",
           "qualified": "exportCSV",
           "kind": "function",
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 56,
+          "line": 72,
           "signature": [
             "results",
             "nodes",
@@ -27248,7 +28381,7 @@
           "exported": true,
           "async": true,
           "generator": false,
-          "line": 110,
+          "line": 126,
           "signature": [
             "projectName"
           ],
@@ -27289,7 +28422,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 124,
+          "line": 140,
           "signature": [
             "n"
           ],
@@ -27328,7 +28461,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 147,
+          "line": 163,
           "signature": [
             "metrics",
             "settings",
@@ -27385,7 +28518,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 161,
+          "line": 177,
           "signature": [
             "k",
             "v"
@@ -27424,6 +28557,1311 @@
             "sideEffect": [],
             "reads": [],
             "pure": false
+          },
+          "other": []
+        }
+      ]
+    },
+    {
+      "file": "src/workspace.js",
+      "module": {
+        "summary": "The workspace model: a user's projects, folders and app data as one self-contained, downloadable object.",
+        "description": "The workspace model: a user's projects, folders and app data as one\nself-contained, downloadable object.\n\nA workspace is deliberately flat. Files are held in a map keyed by path\nrather than in a nested tree, because every interesting operation — write,\nrename, delete, \"does this exist\" — is a single map lookup on a path, while\nthe same operations on a tree are recursive walks that have to rebuild the\nspine. The tree the file browser draws is *derived*, once, at render time.\n\nFolders are implied by the paths of the files inside them, which means a\nfolder normally needs no record of its own. Empty folders are the exception:\na user who makes a folder and has not yet put anything in it would otherwise\nwatch it vanish, so those are listed explicitly and pruned as files arrive.\n\nOne folder is special. `.acousim` holds data the app itself tracks rather\nthan data the user authored — custom drivers today, more as features land.\nIt is created lazily and never eagerly: an imported workspace that predates\nthe folder, or one a user has trimmed by hand, stays exactly as imported\nuntil something actually needs to write there. Creating it on import would\nmodify a workspace the user only meant to open.\n\nNothing here touches storage or the DOM. Persistence, downloading and the\ncurrent time all belong to the caller; these are value-to-value functions so\nthat \"what does renaming a folder do\" can be answered without a browser."
+      },
+      "constants": [
+        {
+          "name": "WORKSPACE_VERSION",
+          "line": 32,
+          "shape": {
+            "kind": "literal",
+            "value": 1
+          },
+          "summary": "Version stamp written into every workspace this build produces.",
+          "description": "Version stamp written into every workspace this build produces.\n\nRead on import to decide whether a workspace needs migrating. Bumped only\nwhen the shape changes in a way an older build could not read."
+        },
+        {
+          "name": "SYSTEM_FOLDER",
+          "line": 40,
+          "shape": {
+            "kind": "literal",
+            "value": ".acousim"
+          },
+          "summary": "The folder holding app-tracked data rather than user-authored files.",
+          "description": "The folder holding app-tracked data rather than user-authored files.\n\nDot-prefixed by the same convention as `.git` and `.vscode`: it is the\nworkspace's own bookkeeping, shown in the browser but visibly not a project."
+        },
+        {
+          "name": "DRIVERS_PATH",
+          "line": 49,
+          "shape": null,
+          "summary": "Path of the custom driver library inside the system folder.",
+          "description": "Path of the custom driver library inside the system folder.\n\nDrivers the user saves appear both in the driver database and here as a\nfile, because they are workspace data like any other and travel with a\ndownloaded workspace."
+        },
+        {
+          "name": "PROJECT_EXT",
+          "line": 54,
+          "shape": {
+            "kind": "literal",
+            "value": ".acousim"
+          },
+          "summary": "Filename extension for a project file inside a workspace.",
+          "description": "Filename extension for a project file inside a workspace."
+        },
+        {
+          "name": "DEFAULT_WORKSPACE_NAME",
+          "line": 59,
+          "shape": {
+            "kind": "literal",
+            "value": "workspace"
+          },
+          "summary": "Name given to the workspace a first-time user lands in.",
+          "description": "Name given to the workspace a first-time user lands in."
+        },
+        {
+          "name": "DEFAULT_PROJECT_NAME",
+          "line": 64,
+          "shape": {
+            "kind": "literal",
+            "value": "project"
+          },
+          "summary": "Name given to the project a first-time user lands in.",
+          "description": "Name given to the project a first-time user lands in."
+        },
+        {
+          "name": "STALE_DOWNLOAD_MS",
+          "line": 590,
+          "shape": null,
+          "summary": "How long a downloaded workspace can go unsaved before it is worth a warning.",
+          "description": "How long a downloaded workspace can go unsaved before it is worth a warning.\n\nBrowser storage is not a filing cabinet: clearing site data, a private\nwindow, or an eviction under storage pressure all take it without asking.\nA week is long enough not to nag someone mid-session and short enough that\nthe loss, if it comes, is a week of work rather than a year of it."
+        }
+      ],
+      "methods": [
+        {
+          "name": "normalizePath",
+          "qualified": "normalizePath",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 90,
+          "signature": [
+            "path"
+          ],
+          "documented": true,
+          "summary": "Clean a path, or reject it.",
+          "description": "Clean a path, or reject it.\n\nCollapses repeated and trailing separators and trims each segment, so the\npaths a user types by hand normalize to the same key as the ones the app\nbuilds. Traversal segments are rejected outright rather than resolved: a\nworkspace has no parent to escape to, so `..` can only be a mistake or an\nattack in an imported file.",
+          "params": [
+            {
+              "name": "path",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "A candidate path, `/`-separated."
+            }
+          ],
+          "returns": {
+            "type": "string|null",
+            "desc": "The normalized path, or `null` when it is empty, absolute, or contains an illegal segment."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "baseName",
+          "qualified": "baseName",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 108,
+          "signature": [
+            "path"
+          ],
+          "documented": true,
+          "summary": "The last segment of a path.",
+          "description": "The last segment of a path.",
+          "params": [
+            {
+              "name": "path",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "A normalized path."
+            }
+          ],
+          "returns": {
+            "type": "string",
+            "desc": "The file or folder name, without its parent folders."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "parentOf",
+          "qualified": "parentOf",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 120,
+          "signature": [
+            "path"
+          ],
+          "documented": true,
+          "summary": "The folder containing a path.",
+          "description": "The folder containing a path.",
+          "params": [
+            {
+              "name": "path",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "A normalized path."
+            }
+          ],
+          "returns": {
+            "type": "string",
+            "desc": "The parent folder's path, or the empty string for a top-level entry."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "joinPath",
+          "qualified": "joinPath",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 133,
+          "signature": [
+            "folder",
+            "name"
+          ],
+          "documented": true,
+          "summary": "Join a folder and a name into a path.",
+          "description": "Join a folder and a name into a path.",
+          "params": [
+            {
+              "name": "folder",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Parent folder path; the empty string means the workspace root."
+            },
+            {
+              "name": "name",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Entry name."
+            }
+          ],
+          "returns": {
+            "type": "string",
+            "desc": "The combined path."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "isSystemPath",
+          "qualified": "isSystemPath",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 147,
+          "signature": [
+            "path"
+          ],
+          "documented": true,
+          "summary": "Whether a path lives in the workspace's own system folder.",
+          "description": "Whether a path lives in the workspace's own system folder.\n\nThe browser uses this to hold back the operations that would leave the app\nlooking for a file the user has moved.",
+          "params": [
+            {
+              "name": "path",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "A normalized path."
+            }
+          ],
+          "returns": {
+            "type": "boolean",
+            "desc": "True for the system folder itself and everything under it."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "isUnder",
+          "qualified": "isUnder",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 162,
+          "signature": [
+            "folder",
+            "path"
+          ],
+          "documented": true,
+          "summary": "Whether one path is the other or sits underneath it.",
+          "description": "Whether one path is the other or sits underneath it.\n\nThe prefix is compared segment-wise, so `models` does not contain\n`models-old` — a plain `startsWith` would move the wrong folder on rename.",
+          "params": [
+            {
+              "name": "folder",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "The candidate ancestor path."
+            },
+            {
+              "name": "path",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "The path being tested."
+            }
+          ],
+          "returns": {
+            "type": "boolean",
+            "desc": "True when `path` is `folder` or lies inside it."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "uniqueName",
+          "qualified": "uniqueName",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 178,
+          "signature": [
+            "ws",
+            "folder",
+            "name"
+          ],
+          "documented": true,
+          "summary": "A name not already taken in a folder.",
+          "description": "A name not already taken in a folder.\n\nAppends ` 2`, ` 3` and so on before the extension, which is what a user\nexpects a duplicate to be called and keeps the file type intact.",
+          "params": [
+            {
+              "name": "ws",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "The workspace."
+            },
+            {
+              "name": "folder",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Folder to place the entry in; the empty string means the root."
+            },
+            {
+              "name": "name",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Desired name, extension included."
+            }
+          ],
+          "returns": {
+            "type": "string",
+            "desc": "`name` if it is free, otherwise the first numbered variant that is."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "newWorkspace",
+          "qualified": "newWorkspace",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 203,
+          "signature": [
+            "name",
+            "projectName"
+          ],
+          "documented": true,
+          "summary": "An empty workspace holding one empty project.",
+          "description": "An empty workspace holding one empty project.\n\nA workspace with nothing in it would give a first-time user a file browser\nand nowhere to work, so the default project exists from the start. The\nsystem folder deliberately does not — nothing has asked to write there yet.",
+          "params": [
+            {
+              "name": "name",
+              "type": "string",
+              "optional": true,
+              "default": null,
+              "desc": "Workspace name; defaults to the standard first-run name."
+            },
+            {
+              "name": "projectName",
+              "type": "string",
+              "optional": true,
+              "default": null,
+              "desc": "Name of the project file created inside it."
+            }
+          ],
+          "returns": {
+            "type": "object",
+            "desc": "A new workspace."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Reads the current time for the creation and modification stamps."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "touch",
+          "qualified": "touch",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 234,
+          "signature": [
+            "ws"
+          ],
+          "documented": true,
+          "summary": "A copy of a workspace with a fresh modification stamp.",
+          "description": "A copy of a workspace with a fresh modification stamp.\n\nEvery mutation below ends here, so \"when did this workspace last change\" is\nanswered in one place rather than by each operation remembering to say so.",
+          "params": [
+            {
+              "name": "ws",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "The workspace."
+            }
+          ],
+          "returns": {
+            "type": "object",
+            "desc": "A shallow copy with `modified` set to now."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Reads the current time."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "hasEntry",
+          "qualified": "hasEntry",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 251,
+          "signature": [
+            "ws",
+            "path"
+          ],
+          "documented": true,
+          "summary": "Whether a workspace holds a file or folder at a path.",
+          "description": "Whether a workspace holds a file or folder at a path.\n\nFolders count whether they are explicitly listed or merely implied by the\nfiles inside them, so a new entry can never collide with an existing one.",
+          "params": [
+            {
+              "name": "ws",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "The workspace."
+            },
+            {
+              "name": "path",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "A normalized path."
+            }
+          ],
+          "returns": {
+            "type": "boolean",
+            "desc": "True when something already occupies the path."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "listFolders",
+          "qualified": "listFolders",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 268,
+          "signature": [
+            "ws"
+          ],
+          "documented": true,
+          "summary": "Every folder in a workspace.",
+          "description": "Every folder in a workspace.\n\nUnion of the explicitly recorded folders and every ancestor of every file,\nbecause a file at `boxes/ported/a.acousim` implies two folders that no one\never created by hand.",
+          "params": [
+            {
+              "name": "ws",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "The workspace."
+            }
+          ],
+          "returns": {
+            "type": "string[]",
+            "desc": "Folder paths, sorted."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "listProjects",
+          "qualified": "listProjects",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 287,
+          "signature": [
+            "ws"
+          ],
+          "documented": true,
+          "summary": "Every project file in a workspace.",
+          "description": "Every project file in a workspace.",
+          "params": [
+            {
+              "name": "ws",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "The workspace."
+            }
+          ],
+          "returns": {
+            "type": "string[]",
+            "desc": "Paths of the project files, sorted."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "buildTree",
+          "qualified": "buildTree",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 303,
+          "signature": [
+            "ws"
+          ],
+          "documented": true,
+          "summary": "The workspace as a nested tree, ready to render.",
+          "description": "The workspace as a nested tree, ready to render.\n\nFolders sort ahead of files and each group sorts by name, which is the order\nevery file browser a user has met puts them in. The system folder is sorted\nlast regardless, since it is app bookkeeping and should not sit above the\nuser's own work.",
+          "params": [
+            {
+              "name": "ws",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "The workspace."
+            }
+          ],
+          "returns": {
+            "type": "Array<object>",
+            "desc": "The root's children: folder nodes with their own `children`, and file nodes carrying the stored entry."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "build",
+          "qualified": "buildTree > build",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 322,
+          "signature": [
+            "folder"
+          ],
+          "documented": true,
+          "summary": "Order one folder's contents and recurse into the folders it holds.",
+          "description": "Order one folder's contents and recurse into the folders it holds.",
+          "params": [
+            {
+              "name": "folder",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Folder path; the empty string is the root."
+            }
+          ],
+          "returns": {
+            "type": "Array<object>",
+            "desc": "The folder's children, sorted, with folder nodes filled in."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "writeFile",
+          "qualified": "writeFile",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 349,
+          "signature": [
+            "ws",
+            "path",
+            "entry"
+          ],
+          "documented": true,
+          "summary": "Write a file into a workspace, creating it or replacing what is there.",
+          "description": "Write a file into a workspace, creating it or replacing what is there.\n\nAny folder the path implies comes into existence with the file, so a caller\nnever has to create the parents first.",
+          "params": [
+            {
+              "name": "ws",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "The workspace."
+            },
+            {
+              "name": "path",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "A normalized path."
+            },
+            {
+              "name": "entry",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "The file record: at least `kind` and `data`."
+            }
+          ],
+          "returns": {
+            "type": "object",
+            "desc": "A new workspace with the file written."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Reads the current time for the file's and the workspace's modification stamps."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "addFolder",
+          "qualified": "addFolder",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 368,
+          "signature": [
+            "ws",
+            "path"
+          ],
+          "documented": true,
+          "summary": "Create an empty folder.",
+          "description": "Create an empty folder.\n\nRecorded explicitly, because until a file lands in it there is nothing to\nimply its existence.",
+          "params": [
+            {
+              "name": "ws",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "The workspace."
+            },
+            {
+              "name": "path",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "A normalized folder path."
+            }
+          ],
+          "returns": {
+            "type": "object",
+            "desc": "A new workspace with the folder, unchanged if something already occupies the path."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Reads the current time for the modification stamp."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "deleteEntry",
+          "qualified": "deleteEntry",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 381,
+          "signature": [
+            "ws",
+            "path"
+          ],
+          "documented": true,
+          "summary": "Remove a file, or a folder and everything inside it.",
+          "description": "Remove a file, or a folder and everything inside it.",
+          "params": [
+            {
+              "name": "ws",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "The workspace."
+            },
+            {
+              "name": "path",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "A normalized path."
+            }
+          ],
+          "returns": {
+            "type": "object",
+            "desc": "A new workspace without the entry."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Reads the current time for the modification stamp."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "renameEntry",
+          "qualified": "renameEntry",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 407,
+          "signature": [
+            "ws",
+            "from",
+            "to"
+          ],
+          "documented": true,
+          "summary": "Move or rename a file or folder.",
+          "description": "Move or rename a file or folder.\n\nA folder brings its contents with it: every path underneath is rewritten by\nprefix, which is why the tree is derived rather than stored — there is no\nspine to fix up.\n\nMoving a folder into itself is refused. Nothing else would go wrong\nmechanically, but the result would be a folder that has vanished from the\nworkspace, which is indistinguishable from a bug.",
+          "params": [
+            {
+              "name": "ws",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "The workspace."
+            },
+            {
+              "name": "from",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Existing normalized path."
+            },
+            {
+              "name": "to",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "New normalized path."
+            }
+          ],
+          "returns": {
+            "type": "object",
+            "desc": "A new workspace with the entry moved, or the original when the move is a no-op, the destination is taken, or the move is into itself."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Reads the current time for the modification stamp."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "moved",
+          "qualified": "renameEntry > moved",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 420,
+          "signature": [
+            "p"
+          ],
+          "documented": true,
+          "summary": "Rewrite one path for the move, leaving unrelated paths alone.",
+          "description": "Rewrite one path for the move, leaving unrelated paths alone.",
+          "params": [
+            {
+              "name": "p",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "A path in the workspace."
+            }
+          ],
+          "returns": {
+            "type": "string",
+            "desc": "The path after the move."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "hasSystemFolder",
+          "qualified": "hasSystemFolder",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 437,
+          "signature": [
+            "ws"
+          ],
+          "documented": true,
+          "summary": "Whether the workspace's system folder is present.",
+          "description": "Whether the workspace's system folder is present.",
+          "params": [
+            {
+              "name": "ws",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "The workspace."
+            }
+          ],
+          "returns": {
+            "type": "boolean",
+            "desc": "True when the folder exists, explicitly or by implication."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "ensureSystemFolder",
+          "qualified": "ensureSystemFolder",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 453,
+          "signature": [
+            "ws"
+          ],
+          "documented": true,
+          "summary": "Make sure the system folder and its driver library exist.",
+          "description": "Make sure the system folder and its driver library exist.\n\nCalled from the write paths only. An imported workspace that arrives without\nthe folder — because it predates it, or because the user pruned it — is left\nexactly as it came until something genuinely needs to store app data, at\nwhich point the folder appears with the write that needed it.",
+          "params": [
+            {
+              "name": "ws",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "The workspace."
+            }
+          ],
+          "returns": {
+            "type": "object",
+            "desc": "A workspace whose system folder exists, unchanged when it already did."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Reads the current time when a file has to be created."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "readDrivers",
+          "qualified": "readDrivers",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 474,
+          "signature": [
+            "ws"
+          ],
+          "documented": true,
+          "summary": "The workspace's custom driver entries.",
+          "description": "The workspace's custom driver entries.",
+          "params": [
+            {
+              "name": "ws",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "The workspace."
+            }
+          ],
+          "returns": {
+            "type": "Array<object>",
+            "desc": "The saved drivers, empty when the system folder has never been written."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "writeDrivers",
+          "qualified": "writeDrivers",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 491,
+          "signature": [
+            "ws",
+            "drivers"
+          ],
+          "documented": true,
+          "summary": "Replace the workspace's custom driver entries.",
+          "description": "Replace the workspace's custom driver entries.\n\nThis is a modification, so it is one of the moments the system folder is\ncreated if it is missing.",
+          "params": [
+            {
+              "name": "ws",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "The workspace."
+            },
+            {
+              "name": "drivers",
+              "type": "Array<object>",
+              "optional": false,
+              "default": null,
+              "desc": "The full driver list to store."
+            }
+          ],
+          "returns": {
+            "type": "object",
+            "desc": "A new workspace holding the drivers."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Reads the current time for the modification stamps."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "serializeWorkspace",
+          "qualified": "serializeWorkspace",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 504,
+          "signature": [
+            "ws"
+          ],
+          "documented": true,
+          "summary": "A workspace serialized for download.",
+          "description": "A workspace serialized for download.",
+          "params": [
+            {
+              "name": "ws",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "The workspace."
+            }
+          ],
+          "returns": {
+            "type": "string",
+            "desc": "Formatted JSON, indented so a downloaded workspace is readable and diffable."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "workspaceFilename",
+          "qualified": "workspaceFilename",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 515,
+          "signature": [
+            "ws"
+          ],
+          "documented": true,
+          "summary": "Suggested filename for a downloaded workspace.",
+          "description": "Suggested filename for a downloaded workspace.",
+          "params": [
+            {
+              "name": "ws",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "The workspace."
+            }
+          ],
+          "returns": {
+            "type": "string",
+            "desc": "The filename, including its extension."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "parseWorkspace",
+          "qualified": "parseWorkspace",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 536,
+          "signature": [
+            "text"
+          ],
+          "documented": true,
+          "summary": "Read a downloaded workspace back.",
+          "description": "Read a downloaded workspace back.\n\nImported data is not trusted: it may come from an older build, a hand-edited\nfile, or something that is not a workspace at all. Every field is checked\nand anything unusable is dropped rather than allowed to reach the store,\nwhere a malformed path or a non-object file entry would surface later as an\nunexplained crash in the file browser.\n\nThe system folder is not added here. Import must reproduce what was in the\nfile — creating a folder the user did not download would make a round trip\nlossy in the one direction that is supposed to be exact.",
+          "params": [
+            {
+              "name": "text",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "The file's contents."
+            }
+          ],
+          "returns": {
+            "type": "{ok: boolean, workspace?: object, error?: string}",
+            "desc": "The parsed workspace, or the reason it was rejected."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Reads the current time to stamp a workspace whose own stamps are missing or unusable."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "timeAgo",
+          "qualified": "timeAgo",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 620,
+          "signature": [
+            "iso",
+            "now"
+          ],
+          "documented": true,
+          "summary": "A human phrase for how long ago something happened.",
+          "description": "A human phrase for how long ago something happened.\n\nCoarse on purpose — the exact minute is never the point, and \"3 days ago\"\ncarries the only fact that matters, which is roughly how much work is at\nrisk.",
+          "params": [
+            {
+              "name": "iso",
+              "type": "string|null",
+              "optional": false,
+              "default": null,
+              "desc": "An ISO timestamp, or `null` when the event has never happened."
+            },
+            {
+              "name": "now",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Current time in milliseconds, passed in so the phrase is testable."
+            }
+          ],
+          "returns": {
+            "type": "string",
+            "desc": "The phrase, or `'never'` for a missing or unparseable stamp."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "isDownloadStale",
+          "qualified": "isDownloadStale",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 644,
+          "signature": [
+            "ws",
+            "now"
+          ],
+          "documented": true,
+          "summary": "Whether a workspace has gone too long without being downloaded.",
+          "description": "Whether a workspace has gone too long without being downloaded.\n\nA workspace that has never been downloaded counts as stale from the moment\nit was created, since that is exactly the case where nothing outside the\nbrowser holds a copy.",
+          "params": [
+            {
+              "name": "ws",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "The workspace."
+            },
+            {
+              "name": "now",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Current time in milliseconds."
+            }
+          ],
+          "returns": {
+            "type": "boolean",
+            "desc": "True when the last download — or, failing that, the workspace's creation — is older than the staleness window."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
           },
           "other": []
         }

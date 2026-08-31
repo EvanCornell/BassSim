@@ -122,8 +122,8 @@ Build a split: a row or column laying its children out side by side.
 
 The default workspace arrangement.
 
-Palette on the left, canvas over the four charts most designs are judged by,
-parameters on the right — the classic three-column IDE arrangement. The
+Workspace files on the left, canvas over the four charts most designs are
+judged by, parameters on the right — the classic three-column IDE arrangement. The
 remaining plots are opened from View ▸ Charts.
 
 **Returns**

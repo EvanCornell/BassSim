@@ -33,7 +33,7 @@ export const SYNC_CHANNEL = 'acousim-sync'
  * the workspace.
  */
 export const SHARED_KEYS = [
-  'nodes', 'edges', 'projectName', 'settings',
+  'nodes', 'edges', 'projectName', 'settings', 'workspace', 'activeFile',
   'results', 'metrics', 'snapshots',
   'selectedNodeId', 'velocityPopupNodeId', 'simError', 'xZoom', 'clipboard',
 ]

@@ -13,7 +13,7 @@ so this is the vocabulary they assume.
 
 Keys: `download`
 
-## EXPORTED (4)
+## EXPORTED (5)
 
 ### `exportProjectJSON(proj)`
 
@@ -26,6 +26,29 @@ Download a project as a formatted `.acousim.json` file.
 
 - `proj` — `object` — The project to serialize.
 - `proj.name` — `string` _(optional)_ — Used for the filename; falls back to `acousim-project`.
+
+**Returns**
+
+- `void`
+
+**Side effects**
+
+- Triggers a browser download.
+
+### `exportWorkspaceJSON(ws)`
+
+- **Reachability:** EXPORTED
+- **Obtain via:** import { exportWorkspaceJSON } from '../../src/utils/export.js'
+
+Download a whole workspace as one JSON file.
+
+One file rather than an archive: a workspace is already a single JSON
+object, and a zip would add a dependency and cost the user the ability to
+read, diff or hand-edit what they downloaded.
+
+**Parameters**
+
+- `ws` — `object` — The workspace to serialize.
 
 **Returns**
 

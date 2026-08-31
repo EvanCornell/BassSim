@@ -25,7 +25,7 @@ Fields prefixed with an underscore are solver and persistence bookkeeping
 
 LocalStorage keys, all prefixed `acousim:` — `acousim:layout`,
 `acousim:layoutPresets`, `acousim:toolbar`, `acousim:keymap`,
-`acousim:project:<name>` and `acousim:lastProject`.
+`acousim:project:<name>`, `acousim:lastProject` and `acousim:workspace`.
 
 A subset of the state is mirrored to popped-out panel windows over a
 BroadcastChannel; see src/popout.js for which keys and why.
@@ -192,7 +192,7 @@ around the canvas does not re-run the sweep.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
-## STORE ACTION (75)
+## STORE ACTION (86)
 
 ### `openContextMenu(x, y, target)`
 
@@ -1461,6 +1461,11 @@ The save is debounced by a second so intermediate keystrokes never
 persist — without it, typing "Ported box" would leave nine abandoned
 auto-saves behind.
 
+The workspace file follows the project, so the two cannot end up
+disagreeing about what the thing is called. A name a filesystem could not
+hold — one with a slash in it — leaves the filename alone rather than
+failing the rename; the project keeps the name the user typed.
+
 **Parameters**
 
 - `name` — `string` — The new project name.
@@ -1471,7 +1476,7 @@ auto-saves behind.
 
 **Side effects**
 
-- Writes store state and schedules a debounced auto-save.
+- Writes store state and schedules a debounced auto-save, which also renames the workspace file.
 
 ### `newProject()`
 
@@ -1527,6 +1532,254 @@ overwrite a real save with nothing.
 **Side effects**
 
 - Writes LocalStorage. Skipped entirely in a popped-out tab — there is one writer for the auto-save. A quota failure is swallowed.
+
+### `_commitWorkspace(ws)`
+
+- **Reachability:** STORE ACTION
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState()._commitWorkspace(…)
+
+Store a modified workspace.
+
+**Parameters**
+
+- `ws` — `object` — The new workspace.
+
+**Returns**
+
+- `void`
+
+**Side effects**
+
+- Writes store state, which the module-level subscription then persists to LocalStorage.
+
+### `setWorkspaceName(name)`
+
+- **Reachability:** STORE ACTION
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().setWorkspaceName(…)
+
+Rename the workspace itself.
+
+
+Stored exactly as typed, including a momentarily empty one — rejecting
+blanks here would make the field impossible to clear and retype. A blank
+name falls back to the default when the workspace is downloaded or read
+back, which is the only point where the name has to mean something.
+
+**Parameters**
+
+- `name` — `string` — The new name.
+
+**Returns**
+
+- `void`
+
+**Side effects**
+
+- Writes store state and persists the workspace.
+
+### `saveActiveFile()`
+
+- **Reachability:** STORE ACTION
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().saveActiveFile(…)
+
+Write the editor's current project back into its file.
+
+Called from `autoSave`, so the open file tracks the graph without the user
+having to save anything. A workspace whose active file has been deleted or
+was never a project writes nothing rather than resurrecting it.
+
+**Returns**
+
+- `void`
+
+**Side effects**
+
+- Writes store state and persists the workspace. Skipped in a popped-out tab, which has no editor of its own to save.
+
+### `openFile(path)`
+
+- **Reachability:** STORE ACTION
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().openFile(…)
+
+Open a project file in the editor.
+
+The file on the way out is saved first, so switching files never loses the
+edits made to the one being left. Non-project files are not openable — a
+driver library has no graph to put on the canvas — and are ignored.
+
+**Parameters**
+
+- `path` — `string` — Path of the file to open.
+
+**Returns**
+
+- `void`
+
+**Side effects**
+
+- Writes store state, persists the workspace and schedules a resimulation.
+
+### `newFile(folder)`
+
+- **Reachability:** STORE ACTION
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().newFile(…)
+
+Create an empty project file.
+
+**Parameters**
+
+- `folder` — `string` _(optional)_ — Folder to create it in; the workspace root by default.
+
+**Returns**
+
+- `string` — The path of the new file.
+
+**Side effects**
+
+- Writes store state, persists the workspace and opens the new file, replacing what is on the canvas.
+
+### `newFolder(parent)`
+
+- **Reachability:** STORE ACTION
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().newFolder(…)
+
+Create an empty folder.
+
+**Parameters**
+
+- `parent` — `string` _(optional)_ — Folder to create it in; the workspace root by default.
+
+**Returns**
+
+- `string` — The path of the new folder.
+
+**Side effects**
+
+- Writes store state and persists the workspace.
+
+### `renamePath(from, to)`
+
+- **Reachability:** STORE ACTION
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().renamePath(…)
+
+Rename or move a file or folder.
+
+Renaming a project file renames the project inside it too. The alternative
+— a file called `Ported box` holding a project called `Untitled` — reads as
+a bug every time a user meets it.
+
+The system folder is not renamable: the app looks for its contents by
+path, and a moved `.acousim` would silently become a folder of orphaned
+data plus a fresh empty one.
+
+**Parameters**
+
+- `from` — `string` — The existing path.
+- `to` — `string` — The new path.
+
+**Returns**
+
+- `boolean` — True when the move happened; false when the name is invalid, taken, or forbidden.
+
+**Side effects**
+
+- Writes store state and persists the workspace. Follows the active file if it was the one moved.
+
+### `deletePath(path)`
+
+- **Reachability:** STORE ACTION
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().deletePath(…)
+
+Delete a file, or a folder and everything in it.
+
+Deleting the open project leaves the editor on whatever project remains,
+or on an empty canvas when none does — better than holding a file that no
+longer exists and writing it back on the next auto-save.
+
+The confirmation belongs to the caller. This is the operation, not the
+question.
+
+**Parameters**
+
+- `path` — `string` — Path of the entry to delete.
+
+**Returns**
+
+- `void`
+
+**Side effects**
+
+- Writes store state and persists the workspace. May replace what is on the canvas.
+
+### `downloadWorkspace()`
+
+- **Reachability:** STORE ACTION
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().downloadWorkspace(…)
+
+Download the whole workspace, and record that it happened.
+
+The stamp is the point as much as the file is: browser storage can be
+cleared without warning, so the file browser shows how long it has been
+since a copy existed anywhere else.
+
+**Returns**
+
+- `void`
+
+**Side effects**
+
+- Saves the open file, triggers a browser download, then writes store state and persists the workspace.
+
+### `importWorkspaceText(text)`
+
+- **Reachability:** STORE ACTION
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().importWorkspaceText(…)
+
+Replace the workspace with an imported one.
+
+Wholesale replacement rather than a merge. Merging two workspaces raises a
+question per colliding path that the user has no way to answer usefully in
+a dialog, and the honest workflow — download the current workspace first —
+is one click away.
+
+The imported workspace is stored exactly as it arrived. If it has no
+system folder, it does not gain one here; the first write of app data
+creates it.
+
+**Parameters**
+
+- `text` — `string` — Contents of a downloaded workspace file.
+
+**Returns**
+
+- `{ok: boolean, error?: string}` — Whether the import succeeded, and why not when it did not.
+
+**Side effects**
+
+- On success, writes store state, persists the workspace and replaces what is on the canvas.
+
+### `setCustomDrivers(drivers)`
+
+- **Reachability:** STORE ACTION
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().setCustomDrivers(…)
+
+Replace the workspace's custom driver library.
+
+The one write that creates the system folder in normal use: saving a
+driver is a modification, and this is where the workspace discovers it has
+nowhere to put it yet.
+
+**Parameters**
+
+- `drivers` — `Array<object>` — The full driver list to store.
+
+**Returns**
+
+- `void`
+
+**Side effects**
+
+- Writes store state and persists the workspace.
 
 ### `setPopoutActive(id)`
 
@@ -1753,7 +2006,7 @@ The full shared slice, sent to a popped-out tab when it announces itself.
 
 - Current store state.
 
-## UNREACHABLE (6)
+## UNREACHABLE (7)
 
 ### `simulateInWorker(project)`
 
@@ -1827,6 +2080,30 @@ the back button should return from.
 **Side effects**
 
 - Replaces the current history entry. Silently does nothing where the History API is unavailable.
+
+### `loadWorkspace()`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+Load the persisted workspace, or build a first-run one.
+
+A workspace that fails to parse is replaced rather than repaired: the file
+browser cannot show something it cannot read, and a half-recovered workspace
+would be harder to reason about than an empty one.
+
+Custom drivers saved by a build that predates workspaces are adopted into
+the new one. That only happens on a genuine first run — an existing
+workspace is never modified on load, since the system folder is supposed to
+appear when something writes to it, not when the app starts.
+
+**Returns**
+
+- `object` — A usable workspace.
+
+**Side effects**
+
+- Reads LocalStorage and the current time.
 
 ### `freeSpotNear > taken(x, y)`
 

@@ -18,7 +18,7 @@
 //
 // LocalStorage keys, all prefixed `acousim:` — `acousim:layout`,
 // `acousim:layoutPresets`, `acousim:toolbar`, `acousim:keymap`,
-// `acousim:project:<name>` and `acousim:lastProject`.
+// `acousim:project:<name>`, `acousim:lastProject` and `acousim:workspace`.
 //
 // A subset of the state is mirrored to popped-out panel windows over a
 // BroadcastChannel; see src/popout.js for which keys and why.
@@ -28,7 +28,8 @@ import { applyNodeChanges, applyEdgeChanges, addEdge } from 'reactflow'
 import { SCHEMA_VERSION, DEFAULT_PARAMS } from './engine/project'
 import * as L from './layout'
 import { PANEL_META, PANEL_IDS } from './panelMeta'
-import { exportProjectJSON } from './utils/export'
+import { exportProjectJSON, exportWorkspaceJSON } from './utils/export'
+import * as W from './workspace'
 import { DEFAULT_TOOLBAR, sanitizeToolbar } from './toolbarItems'
 import { channel, isPopout, openPanelWindow, openPanelGroupWindow, popoutPanelId, popoutPanelIds, SHARED_KEYS, SIM_INPUT_KEYS } from './popout'
 import { loadBindings, saveBindings, DEFAULT_BINDINGS, COMMAND_IDS, findConflict } from './keymap'
@@ -106,6 +107,49 @@ function syncPopoutUrl(ids, active) {
 const LAYOUT_KEY = 'acousim:layout'
 const PRESETS_KEY = 'acousim:layoutPresets'
 const TOOLBAR_KEY = 'acousim:toolbar'
+const WORKSPACE_KEY = 'acousim:workspace'
+const LEGACY_DRIVERS_KEY = 'acousim:customDrivers'
+
+/**
+ * Load the persisted workspace, or build a first-run one.
+ *
+ * A workspace that fails to parse is replaced rather than repaired: the file
+ * browser cannot show something it cannot read, and a half-recovered workspace
+ * would be harder to reason about than an empty one.
+ *
+ * Custom drivers saved by a build that predates workspaces are adopted into
+ * the new one. That only happens on a genuine first run — an existing
+ * workspace is never modified on load, since the system folder is supposed to
+ * appear when something writes to it, not when the app starts.
+ *
+ * @returns {object} A usable workspace.
+ * @sideEffect Reads LocalStorage and the current time.
+ */
+function loadWorkspace() {
+  try {
+    const raw = localStorage.getItem(WORKSPACE_KEY)
+    if (raw) {
+      const parsed = W.parseWorkspace(raw)
+      if (parsed.ok) return parsed.workspace
+    }
+  } catch { /* fall through to a fresh workspace */ }
+
+  const fresh = W.newWorkspace()
+  try {
+    const legacy = JSON.parse(localStorage.getItem(LEGACY_DRIVERS_KEY))
+    if (Array.isArray(legacy) && legacy.length) return W.writeDrivers(fresh, legacy)
+  } catch { /* no drivers to carry over */ }
+  return fresh
+}
+
+/**
+ * The workspace this window starts with.
+ *
+ * Read once at module load rather than per store field, so the workspace and
+ * the file opened from it cannot disagree about which workspace they came
+ * from.
+ */
+const INITIAL_WORKSPACE = loadWorkspace()
 
 /**
  * Load the persisted dock layout, falling back to the default.
@@ -277,6 +321,11 @@ export const useStore = create((rawSet, get) => {
   nodes: [],
   edges: [],
   projectName: 'Untitled',
+  // The workspace and which of its files is open in the editor. Both are
+  // shared with popped-out windows, so a popped-out file browser shows the
+  // same tree the main window does and can act on it.
+  workspace: INITIAL_WORKSPACE,
+  activeFile: W.listProjects(INITIAL_WORKSPACE)[0] || null,
   selectedNodeId: null,
   results: null,
   metrics: null,
@@ -1334,15 +1383,26 @@ export const useStore = create((rawSet, get) => {
    * persist — without it, typing "Ported box" would leave nine abandoned
    * auto-saves behind.
    *
+   * The workspace file follows the project, so the two cannot end up
+   * disagreeing about what the thing is called. A name a filesystem could not
+   * hold — one with a slash in it — leaves the filename alone rather than
+   * failing the rename; the project keeps the name the user typed.
+   *
    * @param {string} name - The new project name.
    * @returns {void}
-   * @sideEffect Writes store state and schedules a debounced auto-save.
+   * @sideEffect Writes store state and schedules a debounced auto-save, which also renames the workspace file.
    */
   setProjectName: (name) => {
     set({ projectName: name })
     const t = get()._nameTimer
     if (t) clearTimeout(t)
-    set({ _nameTimer: setTimeout(() => get().autoSave(), 1000) })
+    set({ _nameTimer: setTimeout(() => {
+      const { activeFile } = get()
+      if (activeFile) {
+        get().renamePath(activeFile, W.joinPath(W.parentOf(activeFile), `${name}${W.PROJECT_EXT}`))
+      }
+      get().autoSave()
+    }, 1000) })
   },
   /**
    * Start an empty project, confirming first if there is anything to lose.
@@ -1391,6 +1451,252 @@ export const useStore = create((rawSet, get) => {
       if (prev && prev !== proj.name) localStorage.removeItem(`acousim:project:${prev}`)
       set({ _lastSavedName: proj.name })
     } catch { /* quota */ }
+    get().saveActiveFile()
+  },
+
+  // ---- the workspace ----
+  //
+  // The workspace is the user's filing cabinet: projects, folders, and the app
+  // data under `.acousim`. It lives in LocalStorage while it is being worked
+  // on and leaves the browser as a single downloaded JSON file, which is the
+  // only copy that is actually safe — hence the freshness stamp the file
+  // browser shows.
+  //
+  // Every mutation goes through `_commitWorkspace` so persistence happens in
+  // one place. Nothing here creates the system folder for its own sake; the
+  // functions in src/workspace.js that write app data do that, at the moment
+  // they need it.
+
+  /**
+   * Store a modified workspace.
+   *
+   * @param {object} ws - The new workspace.
+   * @returns {void}
+   * @sideEffect Writes store state, which the module-level subscription then persists to LocalStorage.
+   */
+  _commitWorkspace: (ws) => set({ workspace: ws }),
+
+  /**
+   * Rename the workspace itself.
+   *
+
+   * Stored exactly as typed, including a momentarily empty one — rejecting
+   * blanks here would make the field impossible to clear and retype. A blank
+   * name falls back to the default when the workspace is downloaded or read
+   * back, which is the only point where the name has to mean something.
+   *
+   * @param {string} name - The new name.
+   * @returns {void}
+   * @sideEffect Writes store state and persists the workspace.
+   */
+  setWorkspaceName: (name) => {
+    get()._commitWorkspace({ ...W.touch(get().workspace), name })
+  },
+
+  /**
+   * Write the editor's current project back into its file.
+   *
+   * Called from `autoSave`, so the open file tracks the graph without the user
+   * having to save anything. A workspace whose active file has been deleted or
+   * was never a project writes nothing rather than resurrecting it.
+   *
+   * @returns {void}
+   * @sideEffect Writes store state and persists the workspace. Skipped in a popped-out tab, which has no editor of its own to save.
+   */
+  saveActiveFile: () => {
+    if (POPOUT) return
+    const { workspace, activeFile } = get()
+    if (!activeFile || workspace.files[activeFile]?.kind !== 'project') return
+    get()._commitWorkspace(W.writeFile(workspace, activeFile, { kind: 'project', data: get().serialize() }))
+  },
+
+  /**
+   * Open a project file in the editor.
+   *
+   * The file on the way out is saved first, so switching files never loses the
+   * edits made to the one being left. Non-project files are not openable — a
+   * driver library has no graph to put on the canvas — and are ignored.
+   *
+   * @param {string} path - Path of the file to open.
+   * @returns {void}
+   * @sideEffect Writes store state, persists the workspace and schedules a resimulation.
+   */
+  openFile: (path) => {
+    const entry = get().workspace.files[path]
+    if (!entry || entry.kind !== 'project') return
+    if (path === get().activeFile) return
+    get().saveActiveFile()
+    set({ activeFile: path })
+    get().loadSerialized({ ...entry.data, name: entry.data?.name || W.baseName(path).replace(/\.acousim$/, '') })
+  },
+
+  /**
+   * Create an empty project file.
+   *
+   * @param {string} [folder] - Folder to create it in; the workspace root by default.
+   * @returns {string} The path of the new file.
+   * @sideEffect Writes store state, persists the workspace and opens the new file, replacing what is on the canvas.
+   */
+  newFile: (folder = '') => {
+    const name = W.uniqueName(get().workspace, folder, `Untitled${W.PROJECT_EXT}`)
+    const path = W.joinPath(folder, name)
+    const stem = name.replace(/\.acousim$/, '')
+    get().saveActiveFile()
+    get()._commitWorkspace(W.writeFile(get().workspace, path, {
+      kind: 'project',
+      data: { name: stem, nodes: [], edges: [] },
+    }))
+    set({ activeFile: path })
+    get().loadSerialized({ name: stem, nodes: [], edges: [] })
+    return path
+  },
+
+  /**
+   * Create an empty folder.
+   *
+   * @param {string} [parent] - Folder to create it in; the workspace root by default.
+   * @returns {string} The path of the new folder.
+   * @sideEffect Writes store state and persists the workspace.
+   */
+  newFolder: (parent = '') => {
+    const name = W.uniqueName(get().workspace, parent, 'New folder')
+    const path = W.joinPath(parent, name)
+    get()._commitWorkspace(W.addFolder(get().workspace, path))
+    return path
+  },
+
+  /**
+   * Rename or move a file or folder.
+   *
+   * Renaming a project file renames the project inside it too. The alternative
+   * — a file called `Ported box` holding a project called `Untitled` — reads as
+   * a bug every time a user meets it.
+   *
+   * The system folder is not renamable: the app looks for its contents by
+   * path, and a moved `.acousim` would silently become a folder of orphaned
+   * data plus a fresh empty one.
+   *
+   * @param {string} from - The existing path.
+   * @param {string} to - The new path.
+   * @returns {boolean} True when the move happened; false when the name is invalid, taken, or forbidden.
+   * @sideEffect Writes store state and persists the workspace. Follows the active file if it was the one moved.
+   */
+  renamePath: (from, to) => {
+    const dest = W.normalizePath(to)
+    if (!dest || dest === from) return false
+    if (W.isSystemPath(from) || W.isSystemPath(dest)) return false
+    const ws = get().workspace
+    if (!W.hasEntry(ws, from) || W.hasEntry(ws, dest)) return false
+
+    let next = W.renameEntry(ws, from, dest)
+    if (next === ws) return false
+
+    const entry = next.files[dest]
+    if (entry?.kind === 'project') {
+      const stem = W.baseName(dest).replace(/\.acousim$/, '')
+      next = W.writeFile(next, dest, { ...entry, data: { ...entry.data, name: stem } })
+      if (get().activeFile === from) set({ projectName: stem })
+    }
+    get()._commitWorkspace(next)
+    if (get().activeFile && W.isUnder(from, get().activeFile)) {
+      set({ activeFile: dest + get().activeFile.slice(from.length) })
+    }
+    return true
+  },
+
+  /**
+   * Delete a file, or a folder and everything in it.
+   *
+   * Deleting the open project leaves the editor on whatever project remains,
+   * or on an empty canvas when none does — better than holding a file that no
+   * longer exists and writing it back on the next auto-save.
+   *
+   * The confirmation belongs to the caller. This is the operation, not the
+   * question.
+   *
+   * @param {string} path - Path of the entry to delete.
+   * @returns {void}
+   * @sideEffect Writes store state and persists the workspace. May replace what is on the canvas.
+   */
+  deletePath: (path) => {
+    const ws = get().workspace
+    if (!W.hasEntry(ws, path)) return
+    const wasActive = get().activeFile && W.isUnder(path, get().activeFile)
+    const next = W.deleteEntry(ws, path)
+    get()._commitWorkspace(next)
+    if (!wasActive) return
+
+    const fallback = W.listProjects(next)[0] || null
+    set({ activeFile: fallback })
+    if (fallback) {
+      const entry = next.files[fallback]
+      get().loadSerialized({ ...entry.data, name: entry.data?.name || W.baseName(fallback).replace(/\.acousim$/, '') })
+    } else {
+      get().loadSerialized({ name: 'Untitled', nodes: [], edges: [] })
+    }
+  },
+
+  /**
+   * Download the whole workspace, and record that it happened.
+   *
+   * The stamp is the point as much as the file is: browser storage can be
+   * cleared without warning, so the file browser shows how long it has been
+   * since a copy existed anywhere else.
+   *
+   * @returns {void}
+   * @sideEffect Saves the open file, triggers a browser download, then writes store state and persists the workspace.
+   */
+  downloadWorkspace: () => {
+    get().saveActiveFile()
+    const ws = { ...get().workspace, downloaded: new Date().toISOString() }
+    exportWorkspaceJSON(ws)
+    get()._commitWorkspace(ws)
+  },
+
+  /**
+   * Replace the workspace with an imported one.
+   *
+   * Wholesale replacement rather than a merge. Merging two workspaces raises a
+   * question per colliding path that the user has no way to answer usefully in
+   * a dialog, and the honest workflow — download the current workspace first —
+   * is one click away.
+   *
+   * The imported workspace is stored exactly as it arrived. If it has no
+   * system folder, it does not gain one here; the first write of app data
+   * creates it.
+   *
+   * @param {string} text - Contents of a downloaded workspace file.
+   * @returns {{ok: boolean, error?: string}} Whether the import succeeded, and why not when it did not.
+   * @sideEffect On success, writes store state, persists the workspace and replaces what is on the canvas.
+   */
+  importWorkspaceText: (text) => {
+    const parsed = W.parseWorkspace(text)
+    if (!parsed.ok) return { ok: false, error: parsed.error }
+    const ws = parsed.workspace
+    get()._commitWorkspace(ws)
+
+    const first = W.listProjects(ws)[0] || null
+    set({ activeFile: first })
+    const entry = first ? ws.files[first] : null
+    get().loadSerialized(entry
+      ? { ...entry.data, name: entry.data?.name || W.baseName(first).replace(/\.acousim$/, '') }
+      : { name: 'Untitled', nodes: [], edges: [] })
+    return { ok: true }
+  },
+
+  /**
+   * Replace the workspace's custom driver library.
+   *
+   * The one write that creates the system folder in normal use: saving a
+   * driver is a modification, and this is where the workspace discovers it has
+   * nowhere to put it yet.
+   *
+   * @param {Array<object>} drivers - The full driver list to store.
+   * @returns {void}
+   * @sideEffect Writes store state and persists the workspace.
+   */
+  setCustomDrivers: (drivers) => {
+    get()._commitWorkspace(W.writeDrivers(get().workspace, drivers))
   },
 
   // ---- popped-out panels ----
@@ -1583,6 +1889,25 @@ export const useStore = create((rawSet, get) => {
   },
   }
 })
+
+// ---------- workspace persistence ----------
+//
+// Subscribed rather than written inline at each mutation, because the
+// workspace also changes when a popped-out file browser edits it and that
+// arrives as a remote patch, not as a call to one of the actions above. One
+// subscription catches both; a write in every action would catch neither
+// reliably.
+//
+// Only the main window persists. Two windows writing the same key would race,
+// and the popout has nothing the main window has not already been told.
+if (!POPOUT) {
+  let last = useStore.getState().workspace
+  useStore.subscribe((st) => {
+    if (st.workspace === last) return
+    last = st.workspace
+    try { localStorage.setItem(WORKSPACE_KEY, JSON.stringify(st.workspace)) } catch { /* quota */ }
+  })
+}
 
 // ---------- cross-window wiring ----------
 //

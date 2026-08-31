@@ -77,15 +77,15 @@ export function split(dir, children, size = 1) {
 /**
  * The default workspace arrangement.
  *
- * Palette on the left, canvas over the four charts most designs are judged by,
- * parameters on the right — the classic three-column IDE arrangement. The
+ * Workspace files on the left, canvas over the four charts most designs are
+ * judged by, parameters on the right — the classic three-column IDE arrangement. The
  * remaining plots are opened from View ▸ Charts.
  *
  * @returns {object} A freshly built layout tree, safe for the caller to keep.
  * @sideEffect Consumes ids from `uid`, so two calls return trees with different node ids.
  */
 export const defaultLayout = () => split('row', [
-  stack(['palette'], { size: 16 }),
+  stack(['files'], { size: 16 }),
   split('col', [
     stack(['canvas'], { size: 60 }),
     stack(['spl', 'zin', 'exc', 'vel'], { size: 40, active: 'spl' }),

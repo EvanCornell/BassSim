@@ -1,4 +1,5 @@
 import { toPng } from 'html-to-image'
+import { serializeWorkspace, workspaceFilename } from '../workspace'
 
 /**
  * Push content to the user as a file download.
@@ -33,6 +34,21 @@ function download(filename, content, mime) {
  */
 export function exportProjectJSON(proj) {
   download(`${proj.name || 'acousim-project'}.acousim.json`, JSON.stringify(proj, null, 2), 'application/json')
+}
+
+/**
+ * Download a whole workspace as one JSON file.
+ *
+ * One file rather than an archive: a workspace is already a single JSON
+ * object, and a zip would add a dependency and cost the user the ability to
+ * read, diff or hand-edit what they downloaded.
+ *
+ * @param {object} ws - The workspace to serialize.
+ * @returns {void}
+ * @sideEffect Triggers a browser download.
+ */
+export function exportWorkspaceJSON(ws) {
+  download(workspaceFilename(ws), serializeWorkspace(ws), 'application/json')
 }
 
 /**

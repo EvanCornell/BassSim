@@ -33,10 +33,11 @@ read from these, so nothing else needs to learn about it.
 - **Reachability:** UNREACHABLE
 - **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
 
-The Node Editor panel: the canvas with the velocity popup layered over it.
+The Node Editor panel: the canvas with the palette and popup layered over it.
 
-The popup lives here rather than at app level so it is clipped to the
-canvas and travels with it when the panel is popped out.
+Both overlays live here rather than at app level so they are clipped to the
+canvas and travel with it when the panel is popped out — a popped-out node
+editor that could not add nodes would be a strange thing to hand someone.
 
 **Returns**
 

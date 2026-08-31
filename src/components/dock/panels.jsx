@@ -6,18 +6,20 @@
 // from the chart registry instead of listed one by one.
 import React from 'react'
 import { PANEL_META, CHART_IDS } from '../../panelMeta'
-import Palette from '../Palette'
+import FileBrowser from '../FileBrowser'
 import FlowCanvas from '../FlowCanvas'
+import NodePalette from '../NodePalette'
 import ParamPanel from '../ParamPanel'
 import NLLab from '../NLLab'
 import VelocityPopup from '../VelocityPopup'
 import { chartPanelComponent } from '../OutputPanel'
 
 /**
- * The Node Editor panel: the canvas with the velocity popup layered over it.
+ * The Node Editor panel: the canvas with the palette and popup layered over it.
  *
- * The popup lives here rather than at app level so it is clipped to the
- * canvas and travels with it when the panel is popped out.
+ * Both overlays live here rather than at app level so they are clipped to the
+ * canvas and travel with it when the panel is popped out — a popped-out node
+ * editor that could not add nodes would be a strange thing to hand someone.
  *
  * @returns {React.ReactElement} The canvas panel.
  * @pure
@@ -26,6 +28,7 @@ function CanvasPanel() {
   return (
     <div className="canvas-wrap">
       <FlowCanvas />
+      <NodePalette />
       <VelocityPopup />
     </div>
   )
@@ -36,7 +39,7 @@ function CanvasPanel() {
  * rather than listed one by one.
  */
 const COMPONENTS = {
-  palette: Palette,
+  files: FileBrowser,
   canvas: CanvasPanel,
   params: ParamPanel,
   nllab: NLLab,

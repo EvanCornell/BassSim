@@ -71,6 +71,7 @@ export default function MenuBar() {
   const [open, setOpen] = useState(null)
   const [showExpWarning, setShowExpWarning] = useState(false)
   const fileRef = useRef(null)
+  const workspaceRef = useRef(null)
   const barRef = useRef(null)
   const { settings, updateSettings, layout, layoutOps, layoutPresets, snapshots, poppedOut, bindings } = store
 
@@ -162,6 +163,14 @@ export default function MenuBar() {
     reader.onload = () => {
       try {
         const proj = JSON.parse(reader.result)
+        // A workspace is also valid JSON with a schemaVersion, and it has no
+        // `nodes`, so it would load as a silently empty project. Naming the
+        // mistake is the difference between "that did nothing" and knowing
+        // which menu item to use instead.
+        if (proj.kind === 'workspace') {
+          alert('That is a workspace, not a project. Use File ▸ Import Workspace… to open it.')
+          return
+        }
         if (proj.schemaVersion !== SCHEMA_VERSION) {
           if (!confirm(`This file uses schema v${proj.schemaVersion ?? '?'} but the app expects v${SCHEMA_VERSION}. Attempt to load anyway?`)) return
         }
@@ -172,6 +181,35 @@ export default function MenuBar() {
     }
     reader.readAsText(file)
     e.target.value = ''
+  }
+
+  /**
+   * Read a chosen workspace file and replace the current workspace with it.
+   *
+   * Confirmed first, and pointedly: importing replaces every project in the
+   * browser, and the copy being replaced may be the only one that exists.
+   *
+   * @param {React.ChangeEvent} e - The file input change event.
+   * @returns {void}
+   * @sideEffect Reads the file, may show a confirmation, replaces the workspace, and alerts when the file is not one.
+   */
+  const onLoadWorkspace = (e) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    if (!confirm('Importing replaces the workspace in this browser, including every project in it. Download the current one first if you have not.')) return
+    const reader = new FileReader()
+    /**
+     * Hand the file's text to the store and report a rejection.
+     *
+     * @returns {void}
+     * @sideEffect Replaces the workspace, or alerts when the file is not a workspace.
+     */
+    reader.onload = () => {
+      const result = store.importWorkspaceText(String(reader.result))
+      if (!result.ok) alert(result.error)
+    }
+    reader.readAsText(file)
   }
 
   /**
@@ -211,6 +249,27 @@ export default function MenuBar() {
          * @sideEffect Clicks the hidden file input.
          */
         onClick: () => fileRef.current?.click(),
+      },
+      { label: '-' },
+      {
+        label: 'Download Workspace…',
+        /**
+         * Download the whole workspace as one file.
+         *
+         * @returns {*} Whatever the action returns; the menu ignores it.
+         * @sideEffect Triggers a browser download and records when it happened.
+         */
+        onClick: () => store.downloadWorkspace(),
+      },
+      {
+        label: 'Import Workspace…',
+        /**
+         * Open the file picker to replace the workspace.
+         *
+         * @returns {*} Whatever the action returns; the menu ignores it.
+         * @sideEffect Clicks the hidden workspace file input.
+         */
+        onClick: () => workspaceRef.current?.click(),
       },
       { label: '-' },
       {
@@ -502,6 +561,7 @@ export default function MenuBar() {
         onMouseEnter={() => { if (open) setOpen(null) }}
       >Settings</button>
       <input ref={fileRef} type="file" accept=".json,application/json" style={{ display: 'none' }} onChange={onLoadFile} />
+      <input ref={workspaceRef} type="file" accept=".json,application/json" style={{ display: 'none' }} onChange={onLoadWorkspace} />
 
       {showExpWarning && (
         <div className="modal-backdrop" onClick={() => setShowExpWarning(false)}>

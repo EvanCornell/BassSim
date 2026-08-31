@@ -105,18 +105,34 @@ export default function App() {
   const loadSerialized = useStore((s) => s.loadSerialized)
   const setRestorePrompt = useStore((s) => s.setRestorePrompt)
 
-  // initial load: offer to restore the last auto-saved project, else demo.
+  // Initial load: open the workspace's active project. On a genuine first run
+  // that file exists but is empty, so the demo graph goes into it — a new user
+  // lands in a workspace called "workspace", in a project called "project",
+  // with something on the canvas to take apart.
+  //
+  // The restore prompt is separate and older: it offers the last auto-save
+  // from before workspaces existed, and only when it is not what is already
+  // open.
+  //
   // A popped-out tab owns no project — loading one here would broadcast it
   // over whatever the main window already has open.
   useEffect(() => {
     if (isPopout()) return
+    const st = useStore.getState()
+    const entry = st.activeFile ? st.workspace.files[st.activeFile] : null
+    const project = entry?.data
+
+    if (project?.nodes?.length) loadSerialized(project)
+    else loadSerialized({ ...DEMO, name: project?.name || DEMO.name })
+
     const last = localStorage.getItem('acousim:lastProject')
     let restored = null
     if (last) {
       try { restored = JSON.parse(localStorage.getItem(`acousim:project:${last}`)) } catch { /* ignore */ }
     }
-    loadSerialized(DEMO)
-    if (restored && restored.nodes?.length && restored.name !== DEMO.name) setRestorePrompt(restored)
+    if (restored && restored.nodes?.length && restored.name !== useStore.getState().projectName) {
+      setRestorePrompt(restored)
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 

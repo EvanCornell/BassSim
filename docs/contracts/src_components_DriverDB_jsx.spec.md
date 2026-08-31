@@ -3,16 +3,6 @@
 > Generated from method contracts. This file contains **no implementation code**.
 > Write tests against what is claimed here, not against what you expect the code to do.
 
-## Exported constants
-
-Names this module publishes that are not methods. The method contracts
-above and below refer to these by role — a command, a node type, a panel —
-so this is the vocabulary they assume.
-
-### `__internals`
-
-Keys: `loadCustom`
-
 ## EXPORTED (1)
 
 ### `DriverDB()`
@@ -26,7 +16,9 @@ Filters by brand, search text, and Fs/Vas/Xmax thresholds. Clicking a row
 applies it to the selected Driver node, or creates one if there is none.
 
 Custom entries are listed ahead of the built-ins so the user's own
-drivers are easy to find, and only they can be deleted.
+drivers are easy to find, and only they can be deleted. They live in the
+workspace rather than in a key of their own, which is what makes them travel
+with a downloaded workspace and show up as a file in the workspace panel.
 
 The ⚠ marks a row whose published Q or Vas figures contradict the
 Bl/Re/Mms/Cms the solver actually runs on — the simulation follows the
@@ -38,24 +30,7 @@ latter, so the headline Qts may not be what you get.
 
 **Side effects**
 
-- Subscribes to the store and reads LocalStorage for custom entries.
-
-## INTERNAL (1)
-
-### `loadCustom()`
-
-- **Reachability:** INTERNAL
-- **Obtain via:** import { __internals } from '../../src/components/DriverDB.jsx'  →  __internals.loadCustom
-
-Load the user's saved custom drivers.
-
-**Returns**
-
-- `Array<object>` — Custom driver records, or an empty list when absent or corrupt.
-
-**Side effects**
-
-- Reads LocalStorage key `acousim:customDrivers`. Anything that is not parseable JSON, and anything that parses to a falsy value, yields an empty list rather than throwing.
+- Subscribes to the store.
 
 ## UNREACHABLE (5)
 
@@ -120,7 +95,7 @@ to save.
 
 **Side effects**
 
-- Writes LocalStorage and updates component state. Alerts and does nothing when no driver node is selected.
+- Writes the workspace, creating its system folder if this is the first thing to be stored there. Alerts and does nothing when no driver node is selected.
 
 ### `DriverDB > removeCustom(i)`
 
@@ -139,7 +114,7 @@ Delete one custom entry.
 
 **Side effects**
 
-- Writes LocalStorage and updates component state.
+- Writes the workspace.
 
 ### `DriverDB > key(d, i)`
 

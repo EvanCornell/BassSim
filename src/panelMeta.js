@@ -16,8 +16,8 @@
  * from referencing a panel that no longer exists.
  */
 export const PANEL_META = {
-  palette: {
-    title: 'Palette',
+  files: {
+    title: 'Workspace',
     group: 'main',
     closable: true,
     dock: { edge: 'left' },

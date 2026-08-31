@@ -1,23 +1,9 @@
 import React, { useMemo, useState } from 'react'
 import { useStore } from '../store'
+import { readDrivers, DRIVERS_PATH } from '../workspace'
 import {
   BUILTIN_DRIVERS, DRIVER_BRANDS, EXT_FIELDS, EXT_GROUPS, driverToParams,
 } from '../data/drivers'
-
-/**
- * LocalStorage key holding the user's own driver entries.
- */
-const CUSTOM_KEY = 'acousim:customDrivers'
-
-/**
- * Load the user's saved custom drivers.
- *
- * @returns {Array<object>} Custom driver records, or an empty list when absent or corrupt.
- * @sideEffect Reads LocalStorage key `acousim:customDrivers`. Anything that is not parseable JSON, and anything that parses to a falsy value, yields an empty list rather than throwing.
- */
-function loadCustom() {
-  try { return JSON.parse(localStorage.getItem(CUSTOM_KEY)) || [] } catch { return [] }
-}
 
 /**
  * The expanded extended-parameter view for one driver.
@@ -70,14 +56,16 @@ function ExtDetail({ driver }) {
  * applies it to the selected Driver node, or creates one if there is none.
  *
  * Custom entries are listed ahead of the built-ins so the user's own
- * drivers are easy to find, and only they can be deleted.
+ * drivers are easy to find, and only they can be deleted. They live in the
+ * workspace rather than in a key of their own, which is what makes them travel
+ * with a downloaded workspace and show up as a file in the workspace panel.
  *
  * The ⚠ marks a row whose published Q or Vas figures contradict the
  * Bl/Re/Mms/Cms the solver actually runs on — the simulation follows the
  * latter, so the headline Qts may not be what you get.
  *
  * @returns {React.ReactElement|null} The modal, or `null` when hidden.
- * @sideEffect Subscribes to the store and reads LocalStorage for custom entries.
+ * @sideEffect Subscribes to the store.
  */
 export default function DriverDB() {
   const show = useStore((s) => s.showDriverDB)
@@ -91,7 +79,11 @@ export default function DriverDB() {
   const [vasMin, setVasMin] = useState('')
   const [xmaxMin, setXmaxMin] = useState('')
   const [open, setOpen] = useState(null)
-  const [custom, setCustom] = useState(loadCustom)
+  // Selected via the workspace rather than directly, so the list keeps one
+  // identity between renders — a selector that derives a fresh array would
+  // re-render this modal on every unrelated store change.
+  const workspace = useStore((s) => s.workspace)
+  const custom = useMemo(() => readDrivers(workspace), [workspace])
 
   const all = useMemo(() => [
     ...custom.map((d) => ({ ...d, ext: d.ext || {}, source: 'custom', custom: true })),
@@ -139,7 +131,7 @@ export default function DriverDB() {
    * to save.
    *
    * @returns {void}
-   * @sideEffect Writes LocalStorage and updates component state. Alerts and does nothing when no driver node is selected.
+   * @sideEffect Writes the workspace, creating its system folder if this is the first thing to be stored there. Alerts and does nothing when no driver node is selected.
    */
   const saveCurrentAsCustom = () => {
     if (!node || node.type !== 'driver') { alert('Select a Driver node first.'); return }
@@ -148,9 +140,7 @@ export default function DriverDB() {
     for (const k of ['Fs', 'Qts', 'Qes', 'Qms', 'Vas', 'Re', 'Bl', 'Mms', 'Cms', 'Sd', 'Le', 'Xmax', 'Rms']) {
       if (p[k] != null) entry[k] = p[k]
     }
-    const next = [...custom, entry]
-    setCustom(next)
-    localStorage.setItem(CUSTOM_KEY, JSON.stringify(next))
+    useStore.getState().setCustomDrivers([...custom, entry])
   }
 
   /**
@@ -158,12 +148,10 @@ export default function DriverDB() {
    *
    * @param {number} i - Index into the custom list.
    * @returns {void}
-   * @sideEffect Writes LocalStorage and updates component state.
+   * @sideEffect Writes the workspace.
    */
   const removeCustom = (i) => {
-    const next = custom.filter((_, k) => k !== i)
-    setCustom(next)
-    localStorage.setItem(CUSTOM_KEY, JSON.stringify(next))
+    useStore.getState().setCustomDrivers(custom.filter((_, k) => k !== i))
   }
 
   /**
@@ -193,7 +181,10 @@ export default function DriverDB() {
           <input placeholder="Fs ≤ Hz" style={{ width: 78 }} value={fsMax} onChange={(e) => setFsMax(e.target.value)} />
           <input placeholder="Vas ≥ L" style={{ width: 78 }} value={vasMin} onChange={(e) => setVasMin(e.target.value)} />
           <input placeholder="Xmax ≥ mm" style={{ width: 88 }} value={xmaxMin} onChange={(e) => setXmaxMin(e.target.value)} />
-          <button onClick={saveCurrentAsCustom} title="Store the selected Driver node's parameters as a custom database entry">+ Save current</button>
+          <button onClick={saveCurrentAsCustom} title={`Store the selected Driver node's parameters as a custom database entry, saved in the workspace as ${DRIVERS_PATH}`}>+ Save current</button>
+        </div>
+        <div style={{ fontSize: 10.5, color: 'var(--text-3)', marginTop: -4, marginBottom: 8 }}>
+          Custom drivers are stored in the workspace as <code>{DRIVERS_PATH}</code>, so they travel with a downloaded workspace.
         </div>
         <div style={{ maxHeight: '52vh', overflowY: 'auto' }}>
           <table>
@@ -261,8 +252,3 @@ export default function DriverDB() {
     </div>
   )
 }
-
-// Module-private functions, exposed for the contract test suite only
-// (test/contract/*). Not part of this module's public API — application code
-// must not import from here, and nothing outside the tests does.
-export const __internals = { loadCustom }

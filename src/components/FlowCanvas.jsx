@@ -4,6 +4,7 @@ import { useStore } from '../store'
 import { nodeTypes } from './nodes'
 import { useStackId } from './dock/stackContext'
 import { distance, marqueeRect, nodesInMarquee, MARQUEE_THRESHOLD } from '../selection'
+import { NODE_DRAG_TYPE } from '../nodeKinds'
 
 /**
  * Whether a proposed edge is allowed.
@@ -120,7 +121,7 @@ function CanvasInner() {
    */
   const onDrop = useCallback((e) => {
     e.preventDefault()
-    const type = e.dataTransfer.getData('application/acousim-node')
+    const type = e.dataTransfer.getData(NODE_DRAG_TYPE)
     if (!type) return
     const pos = screenToFlowPosition({ x: e.clientX, y: e.clientY })
     addNode(type, pos)

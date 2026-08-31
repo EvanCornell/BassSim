@@ -18,7 +18,7 @@ import { useStore } from '../store'
 import { PANEL_META, MAIN_IDS, CHART_IDS, panelTitle } from '../panelMeta'
 import { findNode, isOpen } from '../layout'
 import { formatCombo } from '../keymap'
-import { NODE_KINDS } from './Palette'
+import { NODE_KINDS } from '../nodeKinds'
 import { ItemList } from './MenuItem'
 
 /** Gap kept between the menu and the window edge when it has to be nudged back on screen. */
