@@ -97,7 +97,7 @@ be reaching for yet.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
-## UNREACHABLE (28)
+## UNREACHABLE (41)
 
 ### `ContextMenu > suppress(e)`
 
@@ -411,6 +411,215 @@ Send this one view to its own browser tab.
 **Side effects**
 
 - Opens a browser window, changes and persists the layout, and closes the menu.
+
+### `ContextMenu > workspaceItems()`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+The rows for a right-click in the workspace explorer.
+
+The set VS Code and Eclipse both offer, in their order, because a file
+navigator is the one place in an app where a user's hands already know
+where everything is. New ▸ leads; the clipboard trio sits in the middle;
+Rename and Delete are last and separated, being the two that change
+something irreversibly.
+
+The blank area below the tree gets the same menu with the row-specific
+commands dropped, which is how a right-click on empty space still reaches
+New File.
+
+**Returns**
+
+- `Array<object>` — Item descriptors, in display order.
+
+**Reads external mutable state**
+
+- The explorer's selection and clipboard, and the workspace.
+
+### `ContextMenu > workspaceItems > onClick()`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+Start naming a new project in the target folder.
+
+**Returns**
+
+- `void`
+
+**Side effects**
+
+- Opens the explorer's inline editor and closes the menu.
+
+### `ContextMenu > workspaceItems > onClick()`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+Start naming a new folder in the target folder.
+
+**Returns**
+
+- `void`
+
+**Side effects**
+
+- Opens the explorer's inline editor and closes the menu.
+
+### `ContextMenu > workspaceItems > onClick()`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+Paste the file clipboard into the workspace root.
+
+**Returns**
+
+- `void`
+
+**Side effects**
+
+- Writes the workspace and closes the menu.
+
+### `ContextMenu > workspaceItems > onClick()`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+Open the clicked project on the canvas.
+
+**Returns**
+
+- `void`
+
+**Side effects**
+
+- Replaces what is on the canvas and closes the menu.
+
+### `ContextMenu > workspaceItems > onClick()`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+Open the clicked project, then send the node editor to its own tab.
+
+The nearest thing this app has to "Open to the Side": one project is
+on the canvas at a time, so a second view of it is a second window
+on the same graph rather than a second document.
+
+**Returns**
+
+- `void`
+
+**Side effects**
+
+- Replaces what is on the canvas, opens a browser window, changes the layout, and closes the menu.
+
+### `ContextMenu > workspaceItems > onClick()`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+Hold the selection for a move.
+
+**Returns**
+
+- `void`
+
+**Side effects**
+
+- Writes the file clipboard and closes the menu.
+
+### `ContextMenu > workspaceItems > onClick()`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+Hold the selection for a copy.
+
+**Returns**
+
+- `void`
+
+**Side effects**
+
+- Writes the file clipboard and closes the menu.
+
+### `ContextMenu > workspaceItems > onClick()`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+Paste the file clipboard into the target folder.
+
+**Returns**
+
+- `void`
+
+**Side effects**
+
+- Writes the workspace and closes the menu.
+
+### `ContextMenu > workspaceItems > onClick()`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+Copy the clicked entry alongside itself.
+
+**Returns**
+
+- `void`
+
+**Side effects**
+
+- Writes the workspace and closes the menu.
+
+### `ContextMenu > workspaceItems > onClick()`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+Put the clicked entry's path on the system clipboard.
+
+**Returns**
+
+- `void`
+
+**Side effects**
+
+- Writes the system clipboard, which may be refused, and closes the menu.
+
+### `ContextMenu > workspaceItems > onClick()`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+Turn the clicked row into a text box.
+
+**Returns**
+
+- `void`
+
+**Side effects**
+
+- Opens the explorer's inline editor and closes the menu.
+
+### `ContextMenu > workspaceItems > onClick()`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+Delete the selection after confirming.
+
+**Returns**
+
+- `void`
+
+**Side effects**
+
+- Shows a confirmation dialog, then writes the workspace, and closes the menu.
 
 ### `ContextMenu > run(fn)`
 

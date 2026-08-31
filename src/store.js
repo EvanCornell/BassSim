@@ -326,6 +326,12 @@ export const useStore = create((rawSet, get) => {
   // same tree the main window does and can act on it.
   workspace: INITIAL_WORKSPACE,
   activeFile: W.listProjects(INITIAL_WORKSPACE)[0] || null,
+  // Explorer view state: window-local and unpersisted, deliberately. See the
+  // explorer actions below.
+  wsSelection: [],
+  wsCollapsed: [],
+  wsEdit: null,
+  fileClipboard: null,
   selectedNodeId: null,
   results: null,
   metrics: null,
@@ -1624,6 +1630,10 @@ export const useStore = create((rawSet, get) => {
     const wasActive = get().activeFile && W.isUnder(path, get().activeFile)
     const next = W.deleteEntry(ws, path)
     get()._commitWorkspace(next)
+    // The explorer must not keep pointing at what is gone, or the next
+    // keystroke would act on a path the workspace no longer has.
+    const kept = get().wsSelection.filter((p) => !W.isUnder(path, p))
+    if (kept.length !== get().wsSelection.length) set({ wsSelection: kept })
     if (!wasActive) return
 
     const fallback = W.listProjects(next)[0] || null
@@ -1681,6 +1691,191 @@ export const useStore = create((rawSet, get) => {
     get().loadSerialized(entry
       ? { ...entry.data, name: entry.data?.name || W.baseName(first).replace(/\.acousim$/, '') }
       : { name: 'Untitled', nodes: [], edges: [] })
+    return { ok: true }
+  },
+
+  // ---- explorer state ----
+  //
+  // Selection, expansion, the inline editor and the file clipboard are all
+  // *views* of the workspace rather than part of it, so none of them are
+  // shared with other windows or persisted: two windows showing the same tree
+  // should be able to have different things selected, and a downloaded
+  // workspace should not carry someone's collapsed folders.
+  //
+  // They live in the store rather than in the panel because the right-click
+  // menu is a separate component that has to know what is selected and be able
+  // to start an inline rename in a panel it does not contain.
+
+  /**
+   * Replace the explorer's selection.
+   *
+   * @param {string[]} paths - The paths now selected, in the order they were added.
+   * @returns {void}
+   * @sideEffect Writes store state.
+   */
+  setWsSelection: (paths) => set({ wsSelection: paths }),
+
+  /**
+   * Expand or collapse a folder in the explorer.
+   *
+   * @param {string} path - The folder's path.
+   * @param {boolean} [open] - Force a state; omitted, the folder toggles.
+   * @returns {void}
+   * @sideEffect Writes store state.
+   */
+  toggleWsFolder: (path, open) => {
+    const collapsed = get().wsCollapsed
+    const isOpen = !collapsed.includes(path)
+    const want = open === undefined ? !isOpen : open
+    if (want === isOpen) return
+    set({ wsCollapsed: want ? collapsed.filter((p) => p !== path) : [...collapsed, path] })
+  },
+
+  /**
+   * Collapse every folder in the explorer.
+   *
+   * @returns {void}
+   * @sideEffect Writes store state.
+   */
+  collapseAllWsFolders: () => set({ wsCollapsed: W.listFolders(get().workspace) }),
+
+  /**
+   * Start an inline edit in the explorer.
+   *
+   * The tree draws the text box; this only records that one is wanted, which
+   * is what lets the right-click menu — a component that contains no tree —
+   * start a rename. A folder gaining a new child is expanded first, so the row
+   * being typed into is actually on screen.
+   *
+   * @param {string} mode - `'rename'`, `'newFile'` or `'newFolder'`.
+   * @param {string} path - The entry being renamed, or the folder gaining a child; the empty string means the root.
+   * @returns {void}
+   * @sideEffect Writes store state.
+   */
+  beginWsEdit: (mode, path) => {
+    if (mode !== 'rename' && path) get().toggleWsFolder(path, true)
+    set({ wsEdit: { mode, path } })
+  },
+
+  /**
+   * Dismiss the explorer's inline editor.
+   *
+   * @returns {void}
+   * @sideEffect Writes store state.
+   */
+  endWsEdit: () => { if (get().wsEdit) set({ wsEdit: null }) },
+
+  /**
+   * Put explorer entries on the file clipboard.
+   *
+   * A cut is recorded rather than performed: nothing moves until the paste, so
+   * a cut the user abandons costs them nothing. This mirrors every file
+   * manager and is the opposite of the node clipboard, where cutting removes
+   * the nodes immediately because the graph shows the result either way.
+   *
+   * @param {string[]} paths - Paths to hold.
+   * @param {boolean} cut - True for a cut, false for a copy.
+   * @returns {void}
+   * @sideEffect Writes store state.
+   */
+  setFileClipboard: (paths, cut) => set({ fileClipboard: paths.length ? { paths, cut } : null }),
+
+  /**
+   * Paste the file clipboard into a folder.
+   *
+   * A cut becomes a move and empties the clipboard, since the entry cannot be
+   * moved to a second place. A copy leaves the clipboard loaded, so the same
+   * thing can be pasted into several folders.
+   *
+   * @param {string} folder - Destination folder; the empty string means the root.
+   * @returns {void}
+   * @sideEffect Writes store state and persists the workspace. Follows the active file when a cut moves it.
+   */
+  pasteFiles: (folder) => {
+    const clip = get().fileClipboard
+    if (!clip) return
+    let ws = get().workspace
+    let active = get().activeFile
+
+    for (const from of clip.paths) {
+      if (clip.cut) {
+        const moved = W.moveInto(ws, from, folder)
+        if (active && W.isUnder(from, active)) active = moved.path + active.slice(from.length)
+        ws = moved.ws
+      } else {
+        ws = W.copyInto(ws, from, folder)
+      }
+    }
+    get()._commitWorkspace(ws)
+    if (active !== get().activeFile) set({ activeFile: active })
+    if (clip.cut) set({ fileClipboard: null })
+  },
+
+  /**
+   * Copy an entry alongside itself.
+   *
+   * @param {string} path - Path of the entry to duplicate.
+   * @returns {void}
+   * @sideEffect Writes store state and persists the workspace.
+   */
+  duplicateFile: (path) => {
+    get()._commitWorkspace(W.copyInto(get().workspace, path, W.parentOf(path)))
+  },
+
+  /**
+   * Move an entry into a folder, keeping its name.
+   *
+   * The drag-and-drop half of the explorer. A move onto the folder an entry is
+   * already in, or into itself, is silently nothing rather than an error — a
+   * drag that lands where it started is a cancelled drag.
+   *
+   * @param {string} from - Path of the entry to move.
+   * @param {string} folder - Destination folder; the empty string means the root.
+   * @returns {void}
+   * @sideEffect Writes store state and persists the workspace. Follows the active file if it was the one moved.
+   */
+  moveFile: (from, folder) => {
+    if (W.isSystemPath(from)) return
+    const { ws, path } = W.moveInto(get().workspace, from, folder)
+    if (ws === get().workspace) return
+    get()._commitWorkspace(ws)
+    const active = get().activeFile
+    if (active && W.isUnder(from, active)) set({ activeFile: path + active.slice(from.length) })
+  },
+
+  /**
+   * Create a file or folder under a chosen name.
+   *
+   * The counterpart to `beginWsEdit`: the tree collects the name, this makes
+   * the entry. A blank or already-taken name is refused rather than silently
+   * adjusted, because the user is looking at the text box and can fix it.
+   *
+   * @param {string} mode - `'newFile'` or `'newFolder'`.
+   * @param {string} parent - Folder to create it in; the empty string means the root.
+   * @param {string} name - The name typed by the user.
+   * @returns {{ok: boolean, error?: string}} Whether it was created, and why not when it was not.
+   * @sideEffect On success, writes store state, persists the workspace, and for a file opens it on the canvas.
+   */
+  createWsEntry: (mode, parent, name) => {
+    const trimmed = name.trim()
+    if (!trimmed) return { ok: false, error: 'A name is required.' }
+    const path = W.normalizePath(W.joinPath(parent, trimmed))
+    if (!path) return { ok: false, error: `“${trimmed}” is not a usable name.` }
+    if (W.hasEntry(get().workspace, path)) return { ok: false, error: `“${trimmed}” already exists here.` }
+
+    if (mode === 'newFolder') {
+      get()._commitWorkspace(W.addFolder(get().workspace, path))
+      return { ok: true }
+    }
+
+    const stem = W.baseName(path).replace(/\.acousim$/, '')
+    get().saveActiveFile()
+    get()._commitWorkspace(W.writeFile(get().workspace, path, {
+      kind: 'project',
+      data: { name: stem, nodes: [], edges: [] },
+    }))
+    set({ activeFile: path, wsSelection: [path] })
+    get().loadSerialized({ name: stem, nodes: [], edges: [] })
     return { ok: true }
   },
 

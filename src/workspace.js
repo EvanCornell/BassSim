@@ -371,7 +371,33 @@ export function addFolder(ws, path) {
 }
 
 /**
+ * Keep folders that an operation emptied rather than removed.
+ *
+ * Most folders need no record because their contents imply them — but that
+ * means taking the last file out of one would make it disappear, and a folder
+ * vanishing because you moved a file out of it is not something any file
+ * manager does. So before an operation, the folders that survive it are noted;
+ * afterwards, any that are no longer implied get a record of their own.
+ *
+ * @param {object} before - The workspace as it was.
+ * @param {object} after - The workspace as the operation left it.
+ * @param {string} removed - The path the operation emptied or took away; folders at or under it are not preserved.
+ * @returns {object} `after`, with any newly-unimplied folder recorded explicitly.
+ * @pure
+ */
+function preserveFolders(before, after, removed) {
+  const survivors = listFolders(before).filter((f) => !isUnder(removed, f))
+  const present = new Set(listFolders(after))
+  const missing = survivors.filter((f) => !present.has(f))
+  if (!missing.length) return after
+  return { ...after, folders: [...new Set([...(after.folders || []), ...missing])].sort() }
+}
+
+/**
  * Remove a file, or a folder and everything inside it.
+ *
+ * The folders above it stay, even if this took their last file: they were
+ * there before and nothing asked for them to go.
  *
  * @param {object} ws - The workspace.
  * @param {string} path - A normalized path.
@@ -384,7 +410,7 @@ export function deleteEntry(ws, path) {
     if (!isUnder(path, p)) files[p] = entry
   }
   const folders = (ws.folders || []).filter((f) => !isUnder(path, f))
-  return { ...touch(ws), files, folders }
+  return preserveFolders(ws, { ...touch(ws), files, folders }, path)
 }
 
 /**
@@ -392,7 +418,7 @@ export function deleteEntry(ws, path) {
  *
  * A folder brings its contents with it: every path underneath is rewritten by
  * prefix, which is why the tree is derived rather than stored — there is no
- * spine to fix up.
+ * spine to fix up. The folder it *left* stays behind, empty.
  *
  * Moving a folder into itself is refused. Nothing else would go wrong
  * mechanically, but the result would be a folder that has vanished from the
@@ -422,7 +448,69 @@ export function renameEntry(ws, from, to) {
   const files = {}
   for (const [p, entry] of Object.entries(ws.files)) files[moved(p)] = entry
   const folders = (ws.folders || []).map(moved)
-  return { ...touch(ws), files, folders }
+  // The folder the entry left keeps existing, even if that was its last file.
+  return preserveFolders(ws, { ...touch(ws), files, folders }, from)
+}
+
+/**
+ * Every file at or under a path.
+ *
+ * @param {object} ws - The workspace.
+ * @param {string} path - A file or folder path.
+ * @returns {string[]} Paths of the files, sorted; a file path yields just itself.
+ * @pure
+ */
+export function filesUnder(ws, path) {
+  return Object.keys(ws.files).filter((p) => isUnder(path, p)).sort()
+}
+
+/**
+ * Copy a file or folder into another folder.
+ *
+ * The copy takes a free name in the destination rather than refusing when one
+ * is taken, which is what makes pasting into the folder you copied from
+ * produce "thing 2" instead of an error.
+ *
+ * @param {object} ws - The workspace.
+ * @param {string} from - Path of the entry to copy.
+ * @param {string} folder - Destination folder; the empty string means the root.
+ * @returns {object} A new workspace holding the copy, unchanged when the source does not exist or a folder is copied into itself.
+ * @sideEffect Reads the current time for the modification stamps.
+ */
+export function copyInto(ws, from, folder) {
+  if (!hasEntry(ws, from)) return ws
+  if (isUnder(from, folder)) return ws
+  const to = joinPath(folder, uniqueName(ws, folder, baseName(from)))
+
+  const files = { ...ws.files }
+  const now = new Date().toISOString()
+  for (const p of filesUnder(ws, from)) {
+    files[to + p.slice(from.length)] = { ...ws.files[p], modified: now }
+  }
+  const folders = [...(ws.folders || [])]
+  for (const f of ws.folders || []) {
+    if (isUnder(from, f)) folders.push(to + f.slice(from.length))
+  }
+  // A folder copied while empty has no files to imply it, so it needs its own
+  // record — exactly as it did when it was created.
+  if (!filesUnder(ws, from).length) folders.push(to)
+  return { ...touch(ws), files, folders: [...new Set(folders)].sort() }
+}
+
+/**
+ * Move a file or folder into another folder, keeping its name.
+ *
+ * @param {object} ws - The workspace.
+ * @param {string} from - Path of the entry to move.
+ * @param {string} folder - Destination folder; the empty string means the root.
+ * @returns {{ws: object, path: string}} The new workspace and the entry's new path, both unchanged when the move is refused.
+ * @sideEffect Reads the current time for the modification stamp.
+ */
+export function moveInto(ws, from, folder) {
+  const to = joinPath(folder, baseName(from))
+  if (to === from) return { ws, path: from }
+  const next = renameEntry(ws, from, to)
+  return next === ws ? { ws, path: from } : { ws: next, path: to }
 }
 
 // ---------- the system folder ----------

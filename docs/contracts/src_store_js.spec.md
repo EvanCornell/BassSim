@@ -192,7 +192,7 @@ around the canvas does not re-run the sweep.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
-## STORE ACTION (86)
+## STORE ACTION (96)
 
 ### `openContextMenu(x, y, target)`
 
@@ -1757,6 +1757,216 @@ creates it.
 **Side effects**
 
 - On success, writes store state, persists the workspace and replaces what is on the canvas.
+
+### `setWsSelection(paths)`
+
+- **Reachability:** STORE ACTION
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().setWsSelection(…)
+
+Replace the explorer's selection.
+
+**Parameters**
+
+- `paths` — `string[]` — The paths now selected, in the order they were added.
+
+**Returns**
+
+- `void`
+
+**Side effects**
+
+- Writes store state.
+
+### `toggleWsFolder(path, open)`
+
+- **Reachability:** STORE ACTION
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().toggleWsFolder(…)
+
+Expand or collapse a folder in the explorer.
+
+**Parameters**
+
+- `path` — `string` — The folder's path.
+- `open` — `boolean` _(optional)_ — Force a state; omitted, the folder toggles.
+
+**Returns**
+
+- `void`
+
+**Side effects**
+
+- Writes store state.
+
+### `collapseAllWsFolders()`
+
+- **Reachability:** STORE ACTION
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().collapseAllWsFolders(…)
+
+Collapse every folder in the explorer.
+
+**Returns**
+
+- `void`
+
+**Side effects**
+
+- Writes store state.
+
+### `beginWsEdit(mode, path)`
+
+- **Reachability:** STORE ACTION
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().beginWsEdit(…)
+
+Start an inline edit in the explorer.
+
+The tree draws the text box; this only records that one is wanted, which
+is what lets the right-click menu — a component that contains no tree —
+start a rename. A folder gaining a new child is expanded first, so the row
+being typed into is actually on screen.
+
+**Parameters**
+
+- `mode` — `string` — `'rename'`, `'newFile'` or `'newFolder'`.
+- `path` — `string` — The entry being renamed, or the folder gaining a child; the empty string means the root.
+
+**Returns**
+
+- `void`
+
+**Side effects**
+
+- Writes store state.
+
+### `endWsEdit()`
+
+- **Reachability:** STORE ACTION
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().endWsEdit(…)
+
+Dismiss the explorer's inline editor.
+
+**Returns**
+
+- `void`
+
+**Side effects**
+
+- Writes store state.
+
+### `setFileClipboard(paths, cut)`
+
+- **Reachability:** STORE ACTION
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().setFileClipboard(…)
+
+Put explorer entries on the file clipboard.
+
+A cut is recorded rather than performed: nothing moves until the paste, so
+a cut the user abandons costs them nothing. This mirrors every file
+manager and is the opposite of the node clipboard, where cutting removes
+the nodes immediately because the graph shows the result either way.
+
+**Parameters**
+
+- `paths` — `string[]` — Paths to hold.
+- `cut` — `boolean` — True for a cut, false for a copy.
+
+**Returns**
+
+- `void`
+
+**Side effects**
+
+- Writes store state.
+
+### `pasteFiles(folder)`
+
+- **Reachability:** STORE ACTION
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().pasteFiles(…)
+
+Paste the file clipboard into a folder.
+
+A cut becomes a move and empties the clipboard, since the entry cannot be
+moved to a second place. A copy leaves the clipboard loaded, so the same
+thing can be pasted into several folders.
+
+**Parameters**
+
+- `folder` — `string` — Destination folder; the empty string means the root.
+
+**Returns**
+
+- `void`
+
+**Side effects**
+
+- Writes store state and persists the workspace. Follows the active file when a cut moves it.
+
+### `duplicateFile(path)`
+
+- **Reachability:** STORE ACTION
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().duplicateFile(…)
+
+Copy an entry alongside itself.
+
+**Parameters**
+
+- `path` — `string` — Path of the entry to duplicate.
+
+**Returns**
+
+- `void`
+
+**Side effects**
+
+- Writes store state and persists the workspace.
+
+### `moveFile(from, folder)`
+
+- **Reachability:** STORE ACTION
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().moveFile(…)
+
+Move an entry into a folder, keeping its name.
+
+The drag-and-drop half of the explorer. A move onto the folder an entry is
+already in, or into itself, is silently nothing rather than an error — a
+drag that lands where it started is a cancelled drag.
+
+**Parameters**
+
+- `from` — `string` — Path of the entry to move.
+- `folder` — `string` — Destination folder; the empty string means the root.
+
+**Returns**
+
+- `void`
+
+**Side effects**
+
+- Writes store state and persists the workspace. Follows the active file if it was the one moved.
+
+### `createWsEntry(mode, parent, name)`
+
+- **Reachability:** STORE ACTION
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().createWsEntry(…)
+
+Create a file or folder under a chosen name.
+
+The counterpart to `beginWsEdit`: the tree collects the name, this makes
+the entry. A blank or already-taken name is refused rather than silently
+adjusted, because the user is looking at the text box and can fix it.
+
+**Parameters**
+
+- `mode` — `string` — `'newFile'` or `'newFolder'`.
+- `parent` — `string` — Folder to create it in; the empty string means the root.
+- `name` — `string` — The name typed by the user.
+
+**Returns**
+
+- `{ok: boolean, error?: string}` — Whether it was created, and why not when it was not.
+
+**Side effects**
+
+- On success, writes store state, persists the workspace, and for a file opens it on the canvas.
 
 ### `setCustomDrivers(drivers)`
 

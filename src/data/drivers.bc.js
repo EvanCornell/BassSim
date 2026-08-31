@@ -1,10 +1,9 @@
-// GENERATED — do not edit by hand.
-// Source: B&C Speakers online comparison matrix export
-//   data/catalogs/bc-speakers-comparison-matrix.xml
-// Regenerate: node scripts/import-catalog.mjs bc
+// Driver entries from the B&C Speakers comparison matrix, generated once and
+// kept as data. There is no importer to re-run.
 //
-// Cms and Rms are derived from the published Fs, Mms and Qms; every other
-// value is the catalog's own. See scripts/import-catalog.mjs for why.
+// Cms and Rms are derived from the published Fs, Mms and Qms rather than
+// transcribed, so the modeled driver resonates at exactly the published Fs
+// with the published mechanical Q. Every other value is the catalog's own.
 export const BC_DRIVERS = [
   { brand: "B&C", model: "4NDF34-8", Fs: 110, Qts: 0.27, Qes: 0.28, Qms: 4.2, Vas: 1.6, Re: 5.5, Bl: 9, Mms: 6.1, Sd: 57, Le: 0.23, Xmax: 3.8, Cms: 0.3432, Rms: 1, source: 'official', ext: { Xvar: 5.7, eta0: 0.7, EBP: 392, dia: 100, Znom: 8, Zmin: 6.4, pNom: 100, pCont: 200, sens: 92, fLow: 110, fHigh: 8000, vcDia: 34, vcDepth: 11, gapDepth: 7, flux: 1.25, vcWinding: "Copper", vcFormer: "Glass Fibre", magnet: "Neodymium Inside Slug", pole: "T-Pole", spider: "Single", surround: "Double Roll", cone: "Exponential", Vd: 0.022 } },
   { brand: "B&C", model: "4NDS34-8", Fs: 79, Qts: 0.24, Qes: 0.25, Qms: 8.5, Vas: 2.6, Re: 5.5, Bl: 8.8, Mms: 7.2, Sd: 57, Le: 0.21, Xmax: 3.8, Cms: 0.5637, Rms: 0.42, source: 'official', ext: { Xvar: 5, eta0: 0.5, EBP: 316, dia: 100, Znom: 8, Zmin: 6.2, pNom: 100, pCont: 200, sens: 89, fLow: 80, fHigh: 2000, vcDia: 34, vcDepth: 11, gapDepth: 7, flux: 1.25, vcWinding: "Copper", vcFormer: "Glass Fibre", magnet: "Neodymium Inside Slug", pole: "T-Pole", spider: "Single", surround: "Roll", cone: "Exponential", vRec: 3, fRec: 90, Vd: 0.022 } },

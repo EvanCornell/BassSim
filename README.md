@@ -165,12 +165,11 @@ added. `driver_fields` hands an agent the same list.
 | `official` | 172 (B&C) | Generated from the manufacturer's own catalog export; full extended parameter set. |
 | `datasheet` | 25 | Hand-transcribed from individual spec sheets; core T/S only. |
 
-Catalog imports are generated, not edited. Drop the export in `data/catalogs/`,
-add a column-mapping profile to `scripts/import-catalog.mjs`, and run
-`npm run import:catalog <brand>` — a second manufacturer lands as data, not as
-code. Cms and Rms are *derived* from the published Fs, Mms and Qms rather than
-transcribed, so the modeled driver resonates at exactly the frequency and
-mechanical Q its datasheet claims; every other value is copied verbatim.
+The catalog-sourced entries were generated once from the manufacturer's own
+export and are now plain committed data. Cms and Rms are *derived* from the
+published Fs, Mms and Qms rather than transcribed, so the modeled driver
+resonates at exactly the frequency and mechanical Q its datasheet claims;
+every other value is copied verbatim.
 
 `npm run test:drivers` checks the library: schema conformance, the identities
 the importer is responsible for, and a consistency audit. A T/S set is

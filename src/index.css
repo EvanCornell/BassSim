@@ -278,64 +278,112 @@ input[type="checkbox"] { width: auto; }
 }
 .np-name { color: var(--text-1); }
 
-/* ---- workspace panel ---- */
-.ws-panel { gap: 8px; }
-.ws-head { display: flex; }
+/* ---- workspace explorer ----
+   Modelled on the VS Code / Eclipse file navigators: 22px rows, a 16px twisty
+   column, 12px of indent per level with a guide rule down each, and the
+   section's commands in a header above. */
+.ws-explorer { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+
+.ws-header {
+  display: flex; align-items: center; gap: 2px;
+  padding: 4px 4px 4px 6px; flex: none;
+}
 .ws-title {
-  flex: 1; min-width: 0; font-weight: 600; font-size: 13px;
-  background: transparent; border: 1px solid transparent; padding: 3px 5px;
+  flex: 1; min-width: 0;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--text-2); background: transparent;
+  border: 1px solid transparent; padding: 2px 4px;
 }
 .ws-title:hover { border-color: var(--border); }
-
-.ws-freshness {
-  border: 1px solid var(--border); border-radius: 8px;
-  padding: 8px 9px; background: var(--surface-2);
+.ws-title:focus { border-color: var(--accent); text-transform: none; letter-spacing: 0; }
+.ws-tools { display: flex; gap: 1px; flex: none; opacity: 0; transition: opacity 0.1s; }
+.ws-explorer:hover .ws-tools, .ws-tools:focus-within { opacity: 1; }
+.ws-tools button {
+  padding: 0; width: 22px; height: 22px; line-height: 22px; font-size: 12px;
+  background: transparent; border: none; color: var(--text-2); border-radius: 4px;
 }
-.ws-freshness .wsf-line { display: flex; align-items: center; gap: 7px; font-size: 11.5px; }
-.ws-freshness .wsf-dot {
-  width: 7px; height: 7px; border-radius: 50%; flex: none; background: var(--s2);
-}
-.ws-freshness.stale .wsf-dot { background: var(--s3); }
-.ws-freshness.stale { border-color: var(--s3); }
-.ws-freshness .wsf-note { font-size: 10.5px; color: var(--text-3); margin: 4px 0 7px; line-height: 1.4; }
-.ws-freshness .wsf-actions { display: flex; gap: 6px; }
-.ws-freshness .wsf-actions button { flex: 1; }
+.ws-tools button:hover { background: var(--surface-2); color: var(--text-1); }
 
 .ws-error {
-  border: 1px solid var(--s5); border-radius: 6px; padding: 6px 8px;
-  font-size: 11px; color: var(--text-1); background: rgba(213,81,129,0.12);
+  margin: 0 6px 4px; flex: none;
+  border: 1px solid var(--s5); border-radius: 4px; padding: 5px 7px;
+  font-size: 11px; background: rgba(213,81,129,0.12);
 }
-.ws-toolbar { display: flex; gap: 6px; }
-.ws-toolbar button { flex: 1; }
 
-.ws-tree { display: flex; flex-direction: column; }
+.ws-tree { flex: 1; min-height: 0; overflow: auto; padding-bottom: 8px; outline: none; }
+.ws-tree.drop { background: rgba(57,135,229,0.07); box-shadow: inset 0 0 0 1px var(--accent); }
+
 .ws-row {
-  display: flex; align-items: center; gap: 6px;
-  padding: 3px 4px 3px 0; border-radius: 5px; cursor: pointer;
-  font-size: 11.5px; user-select: none;
+  position: relative;
+  display: flex; align-items: center; gap: 0;
+  height: 22px; padding-right: 6px; cursor: pointer;
+  font-size: 12px; line-height: 22px; white-space: nowrap; user-select: none;
 }
 .ws-row:hover { background: var(--surface-2); }
-.ws-row.active { background: rgba(57,135,229,0.18); box-shadow: inset 0 0 0 1px var(--accent); }
-.ws-row.system { color: var(--text-3); }
-.ws-caret { width: 10px; flex: none; color: var(--text-3); font-size: 9px; }
-.ws-icon {
-  width: 9px; height: 9px; border-radius: 2px; flex: none;
-  margin-left: 10px; background: var(--text-3);
+.ws-row.selected { background: rgba(57,135,229,0.20); }
+.ws-tree:focus .ws-row.selected { background: rgba(57,135,229,0.34); }
+.ws-row.active .ws-name { font-weight: 600; }
+.ws-row.active::before {
+  content: ''; position: absolute; left: 0; top: 0; bottom: 0;
+  width: 2px; background: var(--accent);
 }
-.ws-icon.project { background: var(--accent); }
-.ws-icon.drivers { background: var(--s4); }
-.ws-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ws-meta { font-size: 10px; color: var(--text-3); flex: none; }
-.ws-actions { display: none; gap: 2px; flex: none; }
-.ws-row:hover .ws-actions { display: flex; }
-.ws-actions button {
-  padding: 0 4px; min-width: 0; font-size: 10px; line-height: 16px;
-  background: transparent; border: none; color: var(--text-3);
-}
-.ws-actions button:hover { color: var(--text-1); background: var(--surface-3, var(--surface-2)); }
+.ws-row.system { opacity: 0.72; }
+.ws-row.cut { opacity: 0.45; }
+.ws-row.drop { background: rgba(57,135,229,0.28); box-shadow: inset 0 0 0 1px var(--accent); }
+.ws-row.editing { cursor: default; }
 
-.ws-hint { font-size: 10.5px; color: var(--text-3); line-height: 1.45; margin-top: auto; }
-.ws-hint code { font-size: 10px; }
+/* Indent guides: one vertical rule per level crossed, so a nested row can be
+   traced back to its parent without counting pixels. */
+.ws-guide {
+  position: absolute; top: 0; bottom: 0; width: 1px;
+  background: var(--border); opacity: 0.55; pointer-events: none;
+}
+
+.ws-chevron {
+  width: 16px; height: 16px; flex: none; color: var(--text-3);
+  transition: transform 0.1s;
+}
+svg.ws-chevron.open { transform: rotate(90deg); }
+
+.ws-ico { width: 16px; height: 16px; flex: none; margin-right: 5px; }
+.ws-ico.folder { color: var(--s3); }
+.ws-ico.file { color: var(--text-3); }
+.ws-ico.file.project { color: var(--accent); }
+.ws-ico.file.drivers { color: var(--s4); }
+
+.ws-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.ws-meta { font-size: 10px; color: var(--text-3); flex: none; padding-left: 6px; }
+
+/* Inline rename / create: the row becomes a text box where it sits. */
+.ws-editor { flex: 1; min-width: 0; position: relative; }
+.ws-edit-input {
+  width: 100%; height: 19px; font-size: 12px; padding: 0 4px;
+  border: 1px solid var(--accent); border-radius: 2px; background: var(--bg);
+}
+.ws-edit-input.bad { border-color: var(--s5); }
+.ws-edit-error {
+  position: absolute; left: 0; right: 0; top: 100%; z-index: 30;
+  border: 1px solid var(--s5); border-top: none; padding: 3px 5px;
+  font-size: 10.5px; line-height: 1.35; white-space: normal;
+  background: var(--surface-2); color: var(--text-1);
+}
+
+/* Freshness readout, pinned to the bottom like a status bar. Browser storage
+   is not durable, so this is a standing statement rather than something the
+   user has to go and check. */
+.ws-status {
+  flex: none; display: flex; align-items: center; gap: 7px;
+  padding: 6px 8px; margin: 0; border: none; border-top: 1px solid var(--border);
+  border-radius: 0; background: transparent; cursor: pointer;
+  font-size: 10.5px; color: var(--text-3); text-align: left; width: 100%;
+}
+.ws-status:hover { background: var(--surface-2); color: var(--text-1); }
+.ws-status .wss-dot { width: 6px; height: 6px; border-radius: 50%; flex: none; background: var(--s2); }
+.ws-status.stale .wss-dot { background: var(--s3); }
+.ws-status.stale { color: var(--s3); }
+.ws-status .wss-text { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.ws-status .wss-cta { flex: none; opacity: 0; text-decoration: underline; }
+.ws-status:hover .wss-cta { opacity: 1; }
 
 .panel-section { border: 1px solid var(--border); border-radius: 8px; padding: 10px; margin-bottom: 10px; background: var(--surface-2); }
 .panel-section h4 { margin: 0 0 8px; font-size: 12px; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.06em; }

@@ -89,7 +89,7 @@ window, or an eviction under storage pressure all take it without asking.
 A week is long enough not to nag someone mid-session and short enough that
 the loss, if it comes, is a week of work rather than a year of it.
 
-## EXPORTED (26)
+## EXPORTED (29)
 
 ### `normalizePath(path)`
 
@@ -410,6 +410,9 @@ imply its existence.
 
 Remove a file, or a folder and everything inside it.
 
+The folders above it stay, even if this took their last file: they were
+there before and nothing asked for them to go.
+
 **Parameters**
 
 - `ws` — `object` — The workspace.
@@ -432,7 +435,7 @@ Move or rename a file or folder.
 
 A folder brings its contents with it: every path underneath is rewritten by
 prefix, which is why the tree is derived rather than stored — there is no
-spine to fix up.
+spine to fix up. The folder it *left* stays behind, empty.
 
 Moving a folder into itself is refused. Nothing else would go wrong
 mechanically, but the result would be a folder that has vanished from the
@@ -447,6 +450,70 @@ workspace, which is indistinguishable from a bug.
 **Returns**
 
 - `object` — A new workspace with the entry moved, or the original when the move is a no-op, the destination is taken, or the move is into itself.
+
+**Side effects**
+
+- Reads the current time for the modification stamp.
+
+### `filesUnder(ws, path)`
+
+- **Reachability:** EXPORTED
+- **Obtain via:** import { filesUnder } from '../../src/workspace.js'
+
+Every file at or under a path.
+
+**Parameters**
+
+- `ws` — `object` — The workspace.
+- `path` — `string` — A file or folder path.
+
+**Returns**
+
+- `string[]` — Paths of the files, sorted; a file path yields just itself.
+
+**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
+
+### `copyInto(ws, from, folder)`
+
+- **Reachability:** EXPORTED
+- **Obtain via:** import { copyInto } from '../../src/workspace.js'
+
+Copy a file or folder into another folder.
+
+The copy takes a free name in the destination rather than refusing when one
+is taken, which is what makes pasting into the folder you copied from
+produce "thing 2" instead of an error.
+
+**Parameters**
+
+- `ws` — `object` — The workspace.
+- `from` — `string` — Path of the entry to copy.
+- `folder` — `string` — Destination folder; the empty string means the root.
+
+**Returns**
+
+- `object` — A new workspace holding the copy, unchanged when the source does not exist or a folder is copied into itself.
+
+**Side effects**
+
+- Reads the current time for the modification stamps.
+
+### `moveInto(ws, from, folder)`
+
+- **Reachability:** EXPORTED
+- **Obtain via:** import { moveInto } from '../../src/workspace.js'
+
+Move a file or folder into another folder, keeping its name.
+
+**Parameters**
+
+- `ws` — `object` — The workspace.
+- `from` — `string` — Path of the entry to move.
+- `folder` — `string` — Destination folder; the empty string means the root.
+
+**Returns**
+
+- `{ws: object, path: string}` — The new workspace and the entry's new path, both unchanged when the move is refused.
 
 **Side effects**
 
@@ -640,7 +707,7 @@ browser holds a copy.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
-## UNREACHABLE (2)
+## UNREACHABLE (3)
 
 ### `buildTree > build(folder)`
 
@@ -656,6 +723,31 @@ Order one folder's contents and recurse into the folders it holds.
 **Returns**
 
 - `Array<object>` — The folder's children, sorted, with folder nodes filled in.
+
+**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
+
+### `preserveFolders(before, after, removed)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+Keep folders that an operation emptied rather than removed.
+
+Most folders need no record because their contents imply them — but that
+means taking the last file out of one would make it disappear, and a folder
+vanishing because you moved a file out of it is not something any file
+manager does. So before an operation, the folders that survive it are noted;
+afterwards, any that are no longer implied get a record of their own.
+
+**Parameters**
+
+- `before` — `object` — The workspace as it was.
+- `after` — `object` — The workspace as the operation left it.
+- `removed` — `string` — The path the operation emptied or took away; folders at or under it are not preserved.
+
+**Returns**
+
+- `object` — `after`, with any newly-unimplied folder recorded explicitly.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 

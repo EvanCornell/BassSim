@@ -18,7 +18,6 @@
     "test:http": "node mcp/test-http.mjs",
     "docs:api": "node scripts/extract-contracts.mjs",
     "docs:spec": "node scripts/build-spec-pack.mjs",
-    "import:catalog": "node scripts/import-catalog.mjs",
     "test:triage": "node scripts/triage-contracts.mjs"
   },
   "dependencies": {

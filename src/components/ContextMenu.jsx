@@ -19,6 +19,7 @@ import { PANEL_META, MAIN_IDS, CHART_IDS, panelTitle } from '../panelMeta'
 import { findNode, isOpen } from '../layout'
 import { formatCombo } from '../keymap'
 import { NODE_KINDS } from '../nodeKinds'
+import { isSystemPath, parentOf } from '../workspace'
 import { ItemList } from './MenuItem'
 
 /** Gap kept between the menu and the window edge when it has to be nudged back on screen. */
@@ -349,6 +350,208 @@ export default function ContextMenu() {
   }
 
   /**
+   * The rows for a right-click in the workspace explorer.
+   *
+   * The set VS Code and Eclipse both offer, in their order, because a file
+   * navigator is the one place in an app where a user's hands already know
+   * where everything is. New ▸ leads; the clipboard trio sits in the middle;
+   * Rename and Delete are last and separated, being the two that change
+   * something irreversibly.
+   *
+   * The blank area below the tree gets the same menu with the row-specific
+   * commands dropped, which is how a right-click on empty space still reaches
+   * New File.
+   *
+   * @returns {Array<object>} Item descriptors, in display order.
+   * @reads The explorer's selection and clipboard, and the workspace.
+   */
+  const workspaceItems = () => {
+    const path = target.path || null
+    const isFolder = target.entryKind === 'folder'
+    const system = path ? isSystemPath(path) : false
+    const selection = store.wsSelection.length ? store.wsSelection : (path ? [path] : [])
+    // New entries land inside a folder, or beside a file — never inside it.
+    const folder = !path ? '' : (isFolder ? path : parentOf(path))
+    const clip = store.fileClipboard
+    const many = selection.length > 1
+
+    const newRows = [
+      {
+        label: 'New',
+        submenu: [
+          {
+            label: 'Project…',
+            /**
+             * Start naming a new project in the target folder.
+             *
+             * @returns {void}
+             * @sideEffect Opens the explorer's inline editor and closes the menu.
+             */
+            onClick: () => { store.beginWsEdit('newFile', folder); close() },
+          },
+          {
+            label: 'Folder…',
+            /**
+             * Start naming a new folder in the target folder.
+             *
+             * @returns {void}
+             * @sideEffect Opens the explorer's inline editor and closes the menu.
+             */
+            onClick: () => { store.beginWsEdit('newFolder', folder); close() },
+          },
+        ],
+      },
+    ]
+
+    if (!path) {
+      return [
+        ...newRows,
+        { label: '-' },
+        {
+          label: 'Paste',
+          hint: 'Ctrl+V',
+          disabled: !clip,
+          /**
+           * Paste the file clipboard into the workspace root.
+           *
+           * @returns {void}
+           * @sideEffect Writes the workspace and closes the menu.
+           */
+          onClick: () => { store.pasteFiles(''); close() },
+        },
+        { label: '-' },
+        { label: 'Collapse All', onClick: run(store.collapseAllWsFolders) },
+        { label: 'Download Workspace…', onClick: run(store.downloadWorkspace) },
+      ]
+    }
+
+    const openRows = target.entryKind === 'project' ? [
+      {
+        label: 'Open',
+        /**
+         * Open the clicked project on the canvas.
+         *
+         * @returns {void}
+         * @sideEffect Replaces what is on the canvas and closes the menu.
+         */
+        onClick: () => { store.openFile(path); close() },
+      },
+      {
+        label: 'Open in a New Tab',
+        /**
+         * Open the clicked project, then send the node editor to its own tab.
+         *
+         * The nearest thing this app has to "Open to the Side": one project is
+         * on the canvas at a time, so a second view of it is a second window
+         * on the same graph rather than a second document.
+         *
+         * @returns {void}
+         * @sideEffect Replaces what is on the canvas, opens a browser window, changes the layout, and closes the menu.
+         */
+        onClick: () => { store.openFile(path); store.popOutPanel('canvas'); close() },
+      },
+      { label: '-' },
+    ] : []
+
+    return [
+      ...newRows,
+      { label: '-' },
+      ...openRows,
+      {
+        label: 'Cut',
+        hint: 'Ctrl+X',
+        disabled: system,
+        /**
+         * Hold the selection for a move.
+         *
+         * @returns {void}
+         * @sideEffect Writes the file clipboard and closes the menu.
+         */
+        onClick: () => { store.setFileClipboard(selection.filter((p) => !isSystemPath(p)), true); close() },
+      },
+      {
+        label: 'Copy',
+        hint: 'Ctrl+C',
+        /**
+         * Hold the selection for a copy.
+         *
+         * @returns {void}
+         * @sideEffect Writes the file clipboard and closes the menu.
+         */
+        onClick: () => { store.setFileClipboard(selection, false); close() },
+      },
+      {
+        label: 'Paste',
+        hint: 'Ctrl+V',
+        disabled: !clip,
+        /**
+         * Paste the file clipboard into the target folder.
+         *
+         * @returns {void}
+         * @sideEffect Writes the workspace and closes the menu.
+         */
+        onClick: () => { store.pasteFiles(folder); close() },
+      },
+      { label: '-' },
+      {
+        label: 'Duplicate',
+        disabled: many,
+        /**
+         * Copy the clicked entry alongside itself.
+         *
+         * @returns {void}
+         * @sideEffect Writes the workspace and closes the menu.
+         */
+        onClick: () => { store.duplicateFile(path); close() },
+      },
+      {
+        label: 'Copy Path',
+        /**
+         * Put the clicked entry's path on the system clipboard.
+         *
+         * @returns {void}
+         * @sideEffect Writes the system clipboard, which may be refused, and closes the menu.
+         */
+        onClick: () => { navigator.clipboard?.writeText(path); close() },
+      },
+      { label: '-' },
+      {
+        label: 'Rename…',
+        hint: 'F2',
+        disabled: system || many,
+        /**
+         * Turn the clicked row into a text box.
+         *
+         * @returns {void}
+         * @sideEffect Opens the explorer's inline editor and closes the menu.
+         */
+        onClick: () => { store.beginWsEdit('rename', path); close() },
+      },
+      {
+        label: many ? `Delete ${selection.length} Entries` : 'Delete',
+        hint: 'Del',
+        danger: true,
+        /**
+         * Delete the selection after confirming.
+         *
+         * @returns {void}
+         * @sideEffect Shows a confirmation dialog, then writes the workspace, and closes the menu.
+         */
+        onClick: () => {
+          close()
+          const what = many ? `${selection.length} entries` : `“${path}”`
+          const extra = selection.some(isSystemPath)
+            ? '\n\nThat includes app data, which is recreated empty the next time something needs it.'
+            : ''
+          if (!confirm(`Delete ${what}?${extra}`)) return
+          for (const p of selection) store.deletePath(p)
+          store.setWsSelection([])
+        },
+      },
+    ]
+  }
+
+  /**
    * Run a store action and dismiss the menu.
    *
    * Every command in this menu ends the same way, so the pairing is written
@@ -417,6 +620,8 @@ export default function ContextMenu() {
         ...tail,
       ]
     }
+
+    if (target.kind === 'wsEntry' || target.kind === 'wsRoot') return workspaceItems()
 
     if (target.kind === 'popout') return popoutItems(target.ids || [], target.panelId)
 

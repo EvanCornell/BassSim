@@ -38,10 +38,8 @@ const IGNORE_PATHS = new Set([join(REPO, 'data')])
 /** File extensions treated as documentable source. */
 const SOURCE_EXT = new Set(['.js', '.jsx', '.mjs'])
 
-// Generated or pure-data modules. These hold no executable surface — a
-// contract on a 172-element array literal would be noise, and drivers.bc.js is
-// rewritten wholesale by `npm run import:catalog`, so anything added by hand
-// would not survive the next import.
+// Pure-data modules. These hold no executable surface — a contract on a
+// 172-element array literal would be noise.
 export const IGNORE_FILES = new Set([
   'src/data/drivers.bc.js',
   'src/data/drivers.legacy.js',
