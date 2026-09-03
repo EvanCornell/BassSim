@@ -34,7 +34,7 @@ export const SYNC_CHANNEL = 'acousim-sync'
  */
 export const SHARED_KEYS = [
   'nodes', 'edges', 'projectName', 'settings', 'workspace', 'activeFile',
-  'results', 'metrics', 'snapshots',
+  'results', 'metrics',
   'selectedNodeId', 'velocityPopupNodeId', 'simError', 'xZoom', 'clipboard',
 ]
 

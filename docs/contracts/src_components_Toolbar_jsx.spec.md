@@ -110,6 +110,10 @@ Toggle resonance masking, which lumps chambers to hide standing-wave artifacts.
 
 Take a snapshot and manage the reference overlays already taken.
 
+The overlays belong to the workspace rather than the open project, so this
+strip keeps showing them across a project switch — which is the point of
+them.
+
 **Returns**
 
 - `React.ReactElement` — The snapshot control.

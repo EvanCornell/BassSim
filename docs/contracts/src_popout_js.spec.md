@@ -42,7 +42,7 @@ Anything absent from this list is local UI. The dock layout and the quick bar
 stay per-window on purpose: a popped-out tab shows one panel, not a copy of
 the workspace.
 
-Values: `nodes`, `edges`, `projectName`, `settings`, `workspace`, `activeFile`, `results`, `metrics`, `snapshots`, `selectedNodeId`, `velocityPopupNodeId`, `simError`, `xZoom`, `clipboard`
+Values: `nodes`, `edges`, `projectName`, `settings`, `workspace`, `activeFile`, `results`, `metrics`, `selectedNodeId`, `velocityPopupNodeId`, `simError`, `xZoom`, `clipboard`
 
 ### `SIM_INPUT_KEYS`
 

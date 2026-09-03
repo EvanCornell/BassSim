@@ -5,7 +5,7 @@
 // where:
 //
 //   project    nodes, edges, projectName, selectedNodeId, settings
-//   results    results, metrics, snapshots, simError
+//   results    results, metrics, simError
 //   history    history, future, clipboard
 //   workspace  layout, layoutPresets, maximized, focusedPanel, draggingPanel,
 //              poppedOut, toolbar, bindings, xZoom
@@ -111,6 +111,19 @@ const TOOLBAR_KEY = 'acousim:toolbar'
 const WORKSPACE_KEY = 'acousim:workspace'
 const LEGACY_DRIVERS_KEY = 'acousim:customDrivers'
 const STORAGE_CHOICE_KEY = 'acousim:workspaceChosen'
+
+/**
+ * How many reference overlays a chart will carry.
+ *
+ * Three is what stays legible over a live trace; a fourth turns a comparison
+ * into a thicket.
+ */
+export const SNAPSHOT_LIMIT = 3
+
+/**
+ * Overlay colours, chosen to stay apart from the live trace and each other.
+ */
+export const SNAPSHOT_COLORS = ['#f59e0b', '#10b981', '#8b5cf6']
 
 /**
  * Whether the user has already been asked where their workspace lives.
@@ -356,7 +369,6 @@ export const useStore = create((rawSet, get) => {
   selectedNodeId: null,
   results: null,
   metrics: null,
-  snapshots: [],
   velocityPopupNodeId: null,
   showDriverDB: false,
   showTSCalc: false,
@@ -1196,53 +1208,80 @@ export const useStore = create((rawSet, get) => {
   },
 
   // ---- snapshots (compare mode) ----
+  //
+  // Snapshots belong to the workspace, not to a project. Comparing a design
+  // against a reference is nearly always comparing it against a design in
+  // *another file* — the sealed version of the box you are now porting — so a
+  // snapshot that vanished when you opened that file would disappear exactly
+  // when it became useful. They persist until the user removes them, survive
+  // reloads, and travel with a downloaded workspace.
+
   /**
    * Freeze the current result as a labelled reference overlay.
    *
-   * Capped at three, which is as many as the charts can overlay legibly, and
-   * each gets a fixed colour by position so overlays stay visually stable.
-   * Only the plotted series are kept, not the whole result.
+   * Capped at three, which is as many as the charts can overlay legibly. Only
+   * the plotted series are kept, not the whole result — a snapshot is a
+   * picture to compare against, not a project you could reopen.
+   *
+   * The colour is the first one no live snapshot is using rather than one
+   * fixed by position, so removing the middle overlay and taking another does
+   * not produce two of the same colour.
    *
    * @returns {void}
-   * @sideEffect Writes store state. Does nothing without a successful result, or once three snapshots exist.
+   * @sideEffect Writes the workspace and persists it. Does nothing without a successful result, or once three snapshots exist.
    */
   takeSnapshot: () => {
-    const { results, snapshots, projectName } = get()
+    const { results, workspace, projectName } = get()
     if (!results || !results.ok) return
-    if (snapshots.length >= 3) return
-    const colors = ['#f59e0b', '#10b981', '#8b5cf6']
-    set({
-      snapshots: [...snapshots, {
-        id: Date.now(),
-        label: `${projectName} ${snapshots.length + 1}`,
-        color: colors[snapshots.length],
-        freqs: results.freqs,
-        splCombined: results.splCombined,
-        zinMag: results.zinMag,
-        excursion: results.excursion,
-        excursionRatio: results.excursionRatio,
-        groupDelay: results.groupDelay,
-        power: results.power,
-      }],
-    })
+    const snapshots = W.readSnapshots(workspace)
+    if (snapshots.length >= SNAPSHOT_LIMIT) return
+
+    const used = new Set(snapshots.map((s) => s.color))
+    const taken = new Set(snapshots.map((s) => s.label))
+    // Snapshots outlive the project they came from, so the project's name is
+    // the label — it is the only thing that says what you are looking at once
+    // three of them are on one chart.
+    let label = projectName || 'Snapshot'
+    for (let n = 2; taken.has(label); n++) label = `${projectName || 'Snapshot'} ${n}`
+
+    get()._commitWorkspace(W.writeSnapshots(workspace, [...snapshots, {
+      id: Date.now(),
+      label,
+      project: projectName,
+      taken: new Date().toISOString(),
+      color: SNAPSHOT_COLORS.find((c) => !used.has(c)) || SNAPSHOT_COLORS[0],
+      freqs: results.freqs,
+      splCombined: results.splCombined,
+      zinMag: results.zinMag,
+      excursion: results.excursion,
+      excursionRatio: results.excursionRatio,
+      groupDelay: results.groupDelay,
+      power: results.power,
+    }]))
   },
   /**
    * Discard a reference overlay.
    *
    * @param {number} id - Snapshot id.
    * @returns {void}
-   * @sideEffect Writes store state, mirrored to other windows.
+   * @sideEffect Writes the workspace and persists it.
    */
-  removeSnapshot: (id) => set({ snapshots: get().snapshots.filter((s) => s.id !== id) }),
+  removeSnapshot: (id) => {
+    const ws = get().workspace
+    get()._commitWorkspace(W.writeSnapshots(ws, W.readSnapshots(ws).filter((s) => s.id !== id)))
+  },
   /**
    * Relabel a reference overlay.
    *
    * @param {number} id - Snapshot id.
    * @param {string} label - New label.
    * @returns {void}
-   * @sideEffect Writes store state, mirrored to other windows.
+   * @sideEffect Writes the workspace and persists it.
    */
-  renameSnapshot: (id, label) => set({ snapshots: get().snapshots.map((s) => (s.id === id ? { ...s, label } : s)) }),
+  renameSnapshot: (id, label) => {
+    const ws = get().workspace
+    get()._commitWorkspace(W.writeSnapshots(ws, W.readSnapshots(ws).map((s) => (s.id === id ? { ...s, label } : s))))
+  },
 
   // ---- UI toggles ----
   /**
@@ -1359,8 +1398,10 @@ export const useStore = create((rawSet, get) => {
    * older build gains any parameter added since. Edges missing an id get one,
    * which hand-written and MCP-generated projects routinely need.
    *
-   * History, redo, snapshots and selection are all cleared: they describe the
-   * project being replaced and would be meaningless against the new one.
+   * History, redo and selection are all cleared: they describe the project
+   * being replaced and would be meaningless against the new one. Snapshots are
+   * not — they belong to the workspace and are the whole point of opening
+   * another file.
    *
    * @param {object} proj - A serialized project.
    * @returns {void}
@@ -1376,7 +1417,7 @@ export const useStore = create((rawSet, get) => {
       nodes, edges,
       projectName: proj.name || '',
       settings: { ...get().settings, ...(proj.settings || {}) },
-      history: [], future: [], snapshots: [], selectedNodeId: null,
+      history: [], future: [], selectedNodeId: null,
     })
     get().scheduleCompute()
   },

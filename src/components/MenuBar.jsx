@@ -5,7 +5,8 @@
 // other title to switch to it without clicking again; Escape or a click
 // anywhere else closes. Items carry shortcut hints, check marks and submenus.
 import React, { useEffect, useRef, useState } from 'react'
-import { useStore, SCHEMA_VERSION } from '../store'
+import { useStore, SCHEMA_VERSION, SNAPSHOT_LIMIT } from '../store'
+import { readSnapshots } from '../workspace'
 import { isOpen } from '../layout'
 import { PANEL_META, PANEL_IDS, MAIN_IDS, CHART_IDS } from '../panelMeta'
 import { exportCSV, exportSchematicPNG, exportMetricsTxt } from '../utils/export'
@@ -73,7 +74,8 @@ export default function MenuBar() {
   const fileRef = useRef(null)
   const workspaceRef = useRef(null)
   const barRef = useRef(null)
-  const { settings, updateSettings, layout, layoutOps, layoutPresets, snapshots, poppedOut, bindings } = store
+  const { settings, updateSettings, layout, layoutOps, layoutPresets, poppedOut, bindings } = store
+  const snapshots = readSnapshots(store.workspace)
 
   /**
    * The display hint for a command's first binding.
@@ -431,7 +433,7 @@ export default function MenuBar() {
       {
         label: 'Take Snapshot',
         hint: key('sim.snapshot'),
-        disabled: snapshots.length >= 3 || !store.results?.ok,
+        disabled: snapshots.length >= SNAPSHOT_LIMIT || !store.results?.ok,
         onClick: store.takeSnapshot,
       },
       {

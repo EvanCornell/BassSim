@@ -62,6 +62,14 @@ Drivers the user saves appear both in the driver database and here as a
 file, because they are workspace data like any other and travel with a
 downloaded workspace.
 
+### `SNAPSHOTS_PATH`
+
+Path of the reference snapshots inside the system folder.
+
+Snapshots are workspace data, not project data — see `readSnapshots` for
+why — so they live here beside the driver library and travel with a
+downloaded workspace.
+
 ### `PROJECT_EXT`
 
 Filename extension for a project file inside a workspace.
@@ -523,47 +531,6 @@ Move a file or folder into another folder, keeping its name.
 
 - Reads the current time for the modification stamp.
 
-### `hasSystemFolder(ws)`
-
-- **Reachability:** EXPORTED
-- **Obtain via:** import { hasSystemFolder } from '../../src/workspace.js'
-
-Whether the workspace's system folder is present.
-
-**Parameters**
-
-- `ws` — `object` — The workspace.
-
-**Returns**
-
-- `boolean` — True when the folder exists, explicitly or by implication.
-
-**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
-
-### `ensureSystemFolder(ws)`
-
-- **Reachability:** EXPORTED
-- **Obtain via:** import { ensureSystemFolder } from '../../src/workspace.js'
-
-Make sure the system folder and its driver library exist.
-
-Called from the write paths only. An imported workspace that arrives without
-the folder — because it predates it, or because the user pruned it — is left
-exactly as it came until something genuinely needs to store app data, at
-which point the folder appears with the write that needed it.
-
-**Parameters**
-
-- `ws` — `object` — The workspace.
-
-**Returns**
-
-- `object` — A workspace whose system folder exists, unchanged when it already did.
-
-**Side effects**
-
-- Reads the current time when a file has to be created.
-
 ### `readDrivers(ws)`
 
 - **Reachability:** EXPORTED
@@ -577,7 +544,7 @@ The workspace's custom driver entries.
 
 **Returns**
 
-- `Array<object>` — The saved drivers, empty when the system folder has never been written.
+- `Array<object>` — The saved drivers, empty when none have been saved.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
@@ -588,8 +555,8 @@ The workspace's custom driver entries.
 
 Replace the workspace's custom driver entries.
 
-This is a modification, so it is one of the moments the system folder is
-created if it is missing.
+A modification, so this is one of the moments the system folder comes into
+existence if it was not there.
 
 **Parameters**
 
@@ -599,6 +566,48 @@ created if it is missing.
 **Returns**
 
 - `object` — A new workspace holding the drivers.
+
+**Side effects**
+
+- Reads the current time for the modification stamps.
+
+### `readSnapshots(ws)`
+
+- **Reachability:** EXPORTED
+- **Obtain via:** import { readSnapshots } from '../../src/workspace.js'
+
+The workspace's reference snapshots.
+
+Snapshots belong to the workspace, not to a project. The whole point of one
+is to be compared against something else — usually the design in the *next*
+file — so a snapshot that vanished when you opened that file would be
+useless exactly when it was wanted.
+
+**Parameters**
+
+- `ws` — `object` — The workspace.
+
+**Returns**
+
+- `Array<object>` — The saved snapshots, empty when none have been taken.
+
+**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
+
+### `writeSnapshots(ws, snapshots)`
+
+- **Reachability:** EXPORTED
+- **Obtain via:** import { writeSnapshots } from '../../src/workspace.js'
+
+Replace the workspace's reference snapshots.
+
+**Parameters**
+
+- `ws` — `object` — The workspace.
+- `snapshots` — `Array<object>` — The full snapshot list to store.
+
+**Returns**
+
+- `object` — A new workspace holding the snapshots.
 
 **Side effects**
 
@@ -765,7 +774,7 @@ browser holds a copy.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
-## UNREACHABLE (3)
+## UNREACHABLE (4)
 
 ### `buildTree > build(folder)`
 
@@ -823,5 +832,23 @@ Rewrite one path for the move, leaving unrelated paths alone.
 **Returns**
 
 - `string` — The path after the move.
+
+**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
+
+### `readList(ws, path)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+Read one of the system folder's list files.
+
+**Parameters**
+
+- `ws` — `object` — The workspace.
+- `path` — `string` — Path of the file inside the system folder.
+
+**Returns**
+
+- `Array<object>` — The stored list, empty when the file has never been written.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.

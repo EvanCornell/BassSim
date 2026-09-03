@@ -49,6 +49,15 @@ export const SYSTEM_FOLDER = '.acousim'
 export const DRIVERS_PATH = `${SYSTEM_FOLDER}/drivers.json`
 
 /**
+ * Path of the reference snapshots inside the system folder.
+ *
+ * Snapshots are workspace data, not project data — see `readSnapshots` for
+ * why — so they live here beside the driver library and travel with a
+ * downloaded workspace.
+ */
+export const SNAPSHOTS_PATH = `${SYSTEM_FOLDER}/snapshots.json`
+
+/**
  * Filename extension for a project file inside a workspace.
  */
 export const PROJECT_EXT = '.acousim'
@@ -513,63 +522,53 @@ export function moveInto(ws, from, folder) {
   return next === ws ? { ws, path: from } : { ws: next, path: to }
 }
 
-// ---------- the system folder ----------
+// ---------- app data in the system folder ----------
+//
+// Everything the app tracks for itself lives here rather than in a key of its
+// own: it shows up in the explorer as a file, it travels with a downloaded
+// workspace, and it is one place to look. Each writer creates the folder
+// implicitly by writing into it, which is what keeps the folder lazy — a
+// workspace that has never saved a driver or taken a snapshot does not have
+// one.
 
 /**
- * Whether the workspace's system folder is present.
- *
- * @param {object} ws - The workspace.
- * @returns {boolean} True when the folder exists, explicitly or by implication.
- * @pure
- */
-export function hasSystemFolder(ws) {
-  return hasEntry(ws, SYSTEM_FOLDER)
-}
-
-/**
- * Make sure the system folder and its driver library exist.
- *
- * Called from the write paths only. An imported workspace that arrives without
- * the folder — because it predates it, or because the user pruned it — is left
- * exactly as it came until something genuinely needs to store app data, at
- * which point the folder appears with the write that needed it.
- *
- * @param {object} ws - The workspace.
- * @returns {object} A workspace whose system folder exists, unchanged when it already did.
- * @sideEffect Reads the current time when a file has to be created.
- */
-export function ensureSystemFolder(ws) {
-  if (ws.files[DRIVERS_PATH]) return ws
-  return writeFile(ws, DRIVERS_PATH, { kind: 'drivers', data: [] })
-}
-
-/**
- * The empty driver list returned when the system folder has never been written.
+ * The empty list returned when a system file has never been written.
  *
  * A shared constant rather than a fresh `[]`, so a caller that re-reads on
  * every render sees the same identity and does not treat "still none" as a
- * change.
+ * change. That matters: these are read straight from store selectors.
  */
-const NO_DRIVERS = []
+const NOTHING = []
+
+/**
+ * Read one of the system folder's list files.
+ *
+ * @param {object} ws - The workspace.
+ * @param {string} path - Path of the file inside the system folder.
+ * @returns {Array<object>} The stored list, empty when the file has never been written.
+ * @pure
+ */
+function readList(ws, path) {
+  const entry = ws.files[path]
+  return Array.isArray(entry?.data) ? entry.data : NOTHING
+}
 
 /**
  * The workspace's custom driver entries.
  *
  * @param {object} ws - The workspace.
- * @returns {Array<object>} The saved drivers, empty when the system folder has never been written.
+ * @returns {Array<object>} The saved drivers, empty when none have been saved.
  * @pure
  */
 export function readDrivers(ws) {
-  const entry = ws.files[DRIVERS_PATH]
-  return Array.isArray(entry?.data) ? entry.data : NO_DRIVERS
+  return readList(ws, DRIVERS_PATH)
 }
-
 
 /**
  * Replace the workspace's custom driver entries.
  *
- * This is a modification, so it is one of the moments the system folder is
- * created if it is missing.
+ * A modification, so this is one of the moments the system folder comes into
+ * existence if it was not there.
  *
  * @param {object} ws - The workspace.
  * @param {Array<object>} drivers - The full driver list to store.
@@ -577,7 +576,35 @@ export function readDrivers(ws) {
  * @sideEffect Reads the current time for the modification stamps.
  */
 export function writeDrivers(ws, drivers) {
-  return writeFile(ensureSystemFolder(ws), DRIVERS_PATH, { kind: 'drivers', data: drivers })
+  return writeFile(ws, DRIVERS_PATH, { kind: 'drivers', data: drivers })
+}
+
+/**
+ * The workspace's reference snapshots.
+ *
+ * Snapshots belong to the workspace, not to a project. The whole point of one
+ * is to be compared against something else — usually the design in the *next*
+ * file — so a snapshot that vanished when you opened that file would be
+ * useless exactly when it was wanted.
+ *
+ * @param {object} ws - The workspace.
+ * @returns {Array<object>} The saved snapshots, empty when none have been taken.
+ * @pure
+ */
+export function readSnapshots(ws) {
+  return readList(ws, SNAPSHOTS_PATH)
+}
+
+/**
+ * Replace the workspace's reference snapshots.
+ *
+ * @param {object} ws - The workspace.
+ * @param {Array<object>} snapshots - The full snapshot list to store.
+ * @returns {object} A new workspace holding the snapshots.
+ * @sideEffect Reads the current time for the modification stamps.
+ */
+export function writeSnapshots(ws, snapshots) {
+  return writeFile(ws, SNAPSHOTS_PATH, { kind: 'snapshots', data: snapshots })
 }
 
 // ---------- transport ----------
@@ -647,6 +674,7 @@ export function workspaceToEntries(ws) {
  */
 export function kindForPath(path) {
   if (path === DRIVERS_PATH) return 'drivers'
+  if (path === SNAPSHOTS_PATH) return 'snapshots'
   if (path.endsWith(PROJECT_EXT)) return 'project'
   return 'json'
 }

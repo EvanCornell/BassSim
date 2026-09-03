@@ -12,7 +12,7 @@ State fields, since the action contracts below name what changes rather than
 where:
 
   project    nodes, edges, projectName, selectedNodeId, settings
-  results    results, metrics, snapshots, simError
+  results    results, metrics, simError
   history    history, future, clipboard
   workspace  layout, layoutPresets, maximized, focusedPanel, draggingPanel,
              poppedOut, toolbar, bindings, xZoom
@@ -35,6 +35,21 @@ BroadcastChannel; see src/popout.js for which keys and why.
 Names this module publishes that are not methods. The method contracts
 above and below refer to these by role — a command, a node type, a panel —
 so this is the vocabulary they assume.
+
+### `SNAPSHOT_LIMIT`
+
+How many reference overlays a chart will carry.
+
+Three is what stays legible over a live trace; a fourth turns a comparison
+into a thicket.
+
+Value: `3`
+
+### `SNAPSHOT_COLORS`
+
+Overlay colours, chosen to stay apart from the live trace and each other.
+
+Values: `#f59e0b`, `#10b981`, `#8b5cf6`
 
 ### `useStore`
 
@@ -1211,9 +1226,13 @@ derived: it is the field the user typed in that stays exactly as typed.
 
 Freeze the current result as a labelled reference overlay.
 
-Capped at three, which is as many as the charts can overlay legibly, and
-each gets a fixed colour by position so overlays stay visually stable.
-Only the plotted series are kept, not the whole result.
+Capped at three, which is as many as the charts can overlay legibly. Only
+the plotted series are kept, not the whole result — a snapshot is a
+picture to compare against, not a project you could reopen.
+
+The colour is the first one no live snapshot is using rather than one
+fixed by position, so removing the middle overlay and taking another does
+not produce two of the same colour.
 
 **Returns**
 
@@ -1221,7 +1240,7 @@ Only the plotted series are kept, not the whole result.
 
 **Side effects**
 
-- Writes store state. Does nothing without a successful result, or once three snapshots exist.
+- Writes the workspace and persists it. Does nothing without a successful result, or once three snapshots exist.
 
 ### `removeSnapshot(id)`
 
@@ -1240,7 +1259,7 @@ Discard a reference overlay.
 
 **Side effects**
 
-- Writes store state, mirrored to other windows.
+- Writes the workspace and persists it.
 
 ### `renameSnapshot(id, label)`
 
@@ -1260,7 +1279,7 @@ Relabel a reference overlay.
 
 **Side effects**
 
-- Writes store state, mirrored to other windows.
+- Writes the workspace and persists it.
 
 ### `setVelocityPopup(id)`
 
@@ -1379,8 +1398,10 @@ Params are merged over the current defaults, so a project saved by an
 older build gains any parameter added since. Edges missing an id get one,
 which hand-written and MCP-generated projects routinely need.
 
-History, redo, snapshots and selection are all cleared: they describe the
-project being replaced and would be meaningless against the new one.
+History, redo and selection are all cleared: they describe the project
+being replaced and would be meaningless against the new one. Snapshots are
+not — they belong to the workspace and are the whole point of opening
+another file.
 
 **Parameters**
 

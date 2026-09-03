@@ -54,8 +54,8 @@ no implementation. This is the sole input to the blind contract test suite.
 | [`src/toolbarItems.js`](src_toolbarItems_js.spec.md) | 6 | 4 | 2 |
 | [`src/utils/export.js`](src_utils_export_js.spec.md) | 8 | 6 | 2 |
 | [`src/utils/zip.js`](src_utils_zip_js.spec.md) | 10 | 5 | 5 |
-| [`src/workspace.js`](src_workspace_js.spec.md) | 34 | 31 | 3 |
+| [`src/workspace.js`](src_workspace_js.spec.md) | 35 | 31 | 4 |
 | [`test/contracts.mjs`](test_contracts_mjs.spec.md) | 2 | 0 | 2 |
 | [`test/drivers.mjs`](test_drivers_mjs.spec.md) | 2 | 0 | 2 |
 | [`test/support/loader.mjs`](test_support_loader_mjs.spec.md) | 2 | 2 | 0 |
-| **Total** | **625** | **344** | **281** |
+| **Total** | **626** | **344** | **282** |

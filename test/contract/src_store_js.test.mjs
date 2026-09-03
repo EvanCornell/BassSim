@@ -7,7 +7,7 @@
 // The spec's "## Module" section names the state fields directly, so these
 // tests read state back by name:
 //   project    nodes, edges, projectName, selectedNodeId, settings
-//   results    results, metrics, snapshots, simError
+//   results    results, metrics, simError
 //   history    history, future, clipboard
 //   workspace  layout, layoutPresets, maximized, focusedPanel, draggingPanel,
 //              poppedOut, toolbar, bindings, xZoom
@@ -30,6 +30,7 @@ import { test, beforeEach } from 'node:test'
 import assert from 'node:assert/strict'
 
 import { useStore, nextId, __internals } from '../../src/store.js'
+import { readSnapshots, writeSnapshots } from '../../src/workspace.js'
 import {
   stack, split, defaultLayout, findNode, findPanelStack, openPanels, isOpen,
 } from '../../src/layout.js'
@@ -87,6 +88,9 @@ function snap() {
   }
   return out
 }
+
+/** The workspace's reference snapshots, which is where they now live. */
+const snaps = () => readSnapshots(useStore.getState().workspace)
 
 /** Keys whose value identity changed between two snapshots. */
 function changedKeys(before, after) {
@@ -1501,24 +1505,24 @@ test('setAmp: P = V²/Z holds after editing each field', () => {
 // exist."
 test('takeSnapshot: does nothing without a successful result', () => {
   assert.ok(!st().results, 'precondition: there is no result under test')
-  assert.deepEqual(st().snapshots, [], 'precondition: no snapshots after a fresh load')
+  assert.deepEqual(snaps(), [], 'precondition: no snapshots taken yet')
   const keys = keysWrittenBy(() => st().takeSnapshot())
   assert.deepEqual(keys, [], 'with no result there is nothing to freeze')
-  assert.deepEqual(st().snapshots, [])
+  assert.deepEqual(snaps(), [])
 })
 
 // CONTRACT: "Discard a reference overlay." (`id` — Snapshot id.)
 test('removeSnapshot: an unknown id leaves the snapshot list alone', () => {
-  const before = st().snapshots
+  const before = snaps()
   st().removeSnapshot(-1)
-  assert.deepEqual(st().snapshots, before)
+  assert.deepEqual(snaps(), before)
 })
 
 // CONTRACT: "Relabel a reference overlay."
 test('renameSnapshot: an unknown id leaves the snapshot list alone', () => {
-  const before = st().snapshots
+  const before = snaps()
   st().renameSnapshot(-1, 'nope')
-  assert.deepEqual(st().snapshots, before)
+  assert.deepEqual(snaps(), before)
 })
 
 // CONTRACT: "Open or close the port-velocity popup for a waveguide node." /
@@ -1621,10 +1625,9 @@ test('loadSerialized: edges missing an id are given one', () => {
   assert.ok(edgesOf()[0].id.length > 0)
 })
 
-// CONTRACT: "History, redo, snapshots and selection are all cleared: they
-// describe the project being replaced and would be meaningless against the new
-// one."
-test('loadSerialized: history, redo, snapshots and selection are cleared', () => {
+// CONTRACT: "History, redo and selection are all cleared: they describe the
+// project being replaced and would be meaningless against the new one."
+test('loadSerialized: history, redo and selection are cleared', () => {
   st().addNode(T_DRIVER, { x: 0, y: 0 })
   st().undo() // leaves something on the redo stack
   st().addNode(T_CHAMBER, { x: 0, y: 0 })
@@ -1635,9 +1638,21 @@ test('loadSerialized: history, redo, snapshots and selection are cleared', () =>
 
   assert.deepEqual(st().history, [], 'history cleared')
   assert.deepEqual(st().future, [], 'redo cleared')
-  assert.deepEqual(st().snapshots, [], 'snapshots cleared')
   assert.equal(st().selectedNodeId, null, 'selection cleared')
   assert.equal(selectedNodes().length, 0, 'no node is left flagged selected')
+})
+
+// CONTRACT: "Snapshots are not — they belong to the workspace and are the whole
+// point of opening another file." / "They persist until the user removes them."
+test('loadSerialized: snapshots survive a project switch', () => {
+  const kept = [{ id: 1, label: 'keep me', color: '#f59e0b' }]
+  st()._commitWorkspace(writeSnapshots(st().workspace, kept))
+  assert.deepEqual(snaps(), kept, 'precondition: the snapshot is stored')
+
+  st().loadSerialized(blank({ name: 'a different project' }))
+  assert.deepEqual(snaps(), kept, 'a snapshot must outlive the project it came from')
+
+  st()._commitWorkspace(writeSnapshots(st().workspace, []))
 })
 
 // CONTRACT: "Send a panel to its own browser tab and remove it from the dock."

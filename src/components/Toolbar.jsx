@@ -6,7 +6,8 @@
 // one each. Application-level switches (Settings, experimental features) belong
 // to the menu bar, not here — this strip is for per-design adjustments.
 import React from 'react'
-import { useStore } from '../store'
+import { useStore, SNAPSHOT_LIMIT } from '../store'
+import { readSnapshots } from '../workspace'
 import { TOOLBAR_ITEMS, metricValue } from '../toolbarItems'
 
 // ---------- individual controls ----------
@@ -97,17 +98,26 @@ function MaskingToggle() {
 /**
  * Take a snapshot and manage the reference overlays already taken.
  *
+ * The overlays belong to the workspace rather than the open project, so this
+ * strip keeps showing them across a project switch — which is the point of
+ * them.
+ *
  * @returns {React.ReactElement} The snapshot control.
  * @sideEffect Subscribes to the store.
  */
 function SnapshotControl() {
   const store = useStore()
+  const snapshots = readSnapshots(store.workspace)
   return (
     <>
-      <button className="snap-btn" onClick={store.takeSnapshot} disabled={store.snapshots.length >= 3}
-        title="Freeze the current result as a reference overlay (max 3)">Snap</button>
-      {store.snapshots.map((s) => (
-        <span key={s.id} className="snapshot-chip" style={{ borderColor: s.color }}>
+      <button
+        className="snap-btn"
+        onClick={store.takeSnapshot}
+        disabled={snapshots.length >= SNAPSHOT_LIMIT || !store.results?.ok}
+        title={`Freeze the current result as a reference overlay, kept until you remove it (max ${SNAPSHOT_LIMIT})`}
+      >Snap</button>
+      {snapshots.map((s) => (
+        <span key={s.id} className="snapshot-chip" style={{ borderColor: s.color }} title={s.project ? `From ${s.project}` : ''}>
           <span className="pi-dot" style={{ background: s.color }} />
           <input value={s.label} onChange={(e) => store.renameSnapshot(s.id, e.target.value)} />
           <span className="x" onClick={() => store.removeSnapshot(s.id)}>✕</span>

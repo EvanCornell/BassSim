@@ -4,6 +4,7 @@ import {
   ReferenceLine, ResponsiveContainer, ReferenceArea,
 } from 'recharts'
 import { useStore } from '../store'
+import { readSnapshots } from '../workspace'
 
 /**
  * Trace colours, cycled per series.
@@ -458,7 +459,7 @@ function fitLinear(rows, keys, floor = 0, atLeast = 0) {
  */
 function useChartData(keys) {
   const results = useStore((s) => s.results)
-  const snapshots = useStore((s) => s.snapshots)
+  const snapshots = useStore((s) => readSnapshots(s.workspace))
   return useMemo(() => {
     if (!results || !results.ok) return { data: [], portIds: [] }
     const n = results.freqs.length
@@ -570,7 +571,7 @@ function snapLines(snapshots, key) {
 function SPLTab() {
   const { data, portIds } = useChartData(['spl'])
   const nodes = useStore((s) => s.nodes)
-  const snapshots = useStore((s) => s.snapshots)
+  const snapshots = useStore((s) => readSnapshots(s.workspace))
   const [show, setShow] = useState({ driver: true, ports: true, combined: true })
   const lines = []
   if (show.combined) lines.push({ dataKey: 'combined', name: 'Combined', color: SERIES[0], width: 2.5 })
@@ -603,7 +604,7 @@ function SPLTab() {
  */
 function ImpedanceTab() {
   const { data } = useChartData(['zin'])
-  const snapshots = useStore((s) => s.snapshots)
+  const snapshots = useStore((s) => readSnapshots(s.workspace))
   const metrics = useStore((s) => s.metrics)
   const lines = [
     { dataKey: 'zmag', name: '|Z| Ω', color: SERIES[0], width: 2.5 },
@@ -641,7 +642,7 @@ function ImpedanceTab() {
  */
 function ExcursionTab() {
   const { data } = useChartData(['exc'])
-  const snapshots = useStore((s) => s.snapshots)
+  const snapshots = useStore((s) => readSnapshots(s.workspace))
   const nodes = useStore((s) => s.nodes)
   const results = useStore((s) => s.results)
   const xmaxByDriver = results?.xmaxByDriver || {}
@@ -821,7 +822,7 @@ function InteriorTab() {
  */
 function PowerTab() {
   const { data } = useChartData(['pow'])
-  const snapshots = useStore((s) => s.snapshots)
+  const snapshots = useStore((s) => readSnapshots(s.workspace))
   const lines = [{ dataKey: 'pow', name: 'Radiated power dBW', color: SERIES[0], width: 2.5 }, ...snapLines(snapshots, 'pow')]
   const fitData = useFitData('pow', data)
   const [yDomain, yControl] = useYScale('pow', fitDb(fitData, lines.map((l) => l.dataKey)))

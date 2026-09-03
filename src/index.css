@@ -349,6 +349,7 @@ svg.ws-chevron.open { transform: rotate(90deg); }
 .ws-ico.file { color: var(--text-3); }
 .ws-ico.file.project { color: var(--accent); }
 .ws-ico.file.drivers { color: var(--s4); }
+.ws-ico.file.snapshots { color: var(--s2); }
 
 .ws-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .ws-meta { font-size: 10px; color: var(--text-3); flex: none; padding-left: 6px; }
@@ -539,6 +540,7 @@ svg.ws-chevron.open { transform: rotate(90deg); }
 .snapshot-chip input { border: none; background: none; width: 90px; font-size: 11px; padding: 0; }
 .snapshot-chip .x { cursor: pointer; color: var(--text-3); }
 .snapshot-chip .x:hover { color: var(--red); }
+.snapshot-chip .pi-dot { width: 9px; height: 9px; border-radius: 3px; display: inline-block; flex: none; }
 
 /* ---------- floating utility window (Settings) ---------- */
 .float-backdrop {
