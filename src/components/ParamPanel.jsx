@@ -428,7 +428,7 @@ function PRForm({ node }) {
         <NumField id={id} field="Cms" value={p.Cms} unit="mm/N" step="0.01" />
       </div>
       {calcOpen && (
-        <div style={{ border: '1px solid var(--border)', borderRadius: 6, padding: 6, marginBottom: 6 }}>
+        <div style={{ border: '1px solid var(--border)', padding: 6, marginBottom: 6 }}>
           <div className="param-row">
             <label>Target Fs</label>
             <input type="number" value={calcFs} onChange={(e) => setCalcFs(parseFloat(e.target.value) || 0)} />

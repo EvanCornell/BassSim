@@ -6,21 +6,21 @@ import { COMMANDS, COMMAND_GROUPS, DEFAULT_BINDINGS, comboFromEvent, formatCombo
 // ---------- shared bits ----------
 
 const card = {
-  background: 'var(--bg-2, #161b22)', border: '1px solid var(--border, #30363d)',
-  borderRadius: 8, padding: 16, marginBottom: 14, maxWidth: 560,
+  background: 'var(--surface)', border: '1px solid var(--border)',
+  borderRadius: 0, padding: 14, marginBottom: 12, maxWidth: 560,
 }
-const h = { margin: '0 0 10px', fontSize: 13.5, fontWeight: 600 }
+const h = { margin: '0 0 10px', fontSize: 13, fontWeight: 600 }
 const inputStyle = {
-  width: '100%', boxSizing: 'border-box', padding: '7px 10px', marginBottom: 8,
-  background: 'var(--bg-1, #0d1117)', color: 'var(--text-1, #e6edf3)',
-  border: '1px solid var(--border, #30363d)', borderRadius: 6, fontSize: 13,
+  width: '100%', boxSizing: 'border-box', padding: '5px 8px', marginBottom: 8,
+  background: 'var(--bg)', color: 'var(--text)',
+  border: '1px solid var(--border)', borderRadius: 2, fontSize: 13,
 }
 const btn = {
-  padding: '7px 14px', borderRadius: 6, border: '1px solid var(--border, #30363d)',
-  background: 'var(--bg-3, #21262d)', color: 'var(--text-1, #e6edf3)', cursor: 'pointer', fontSize: 12.5,
+  padding: '5px 12px', borderRadius: 2, border: '1px solid var(--border)',
+  background: 'var(--surface-2)', color: 'var(--text)', cursor: 'pointer', fontSize: 12,
 }
-const okStyle = { color: '#7ee787', fontSize: 12, margin: '4px 0 8px' }
-const dim = { color: 'var(--text-3, #8b949e)', fontSize: 12, lineHeight: 1.5 }
+const okStyle = { color: 'var(--green)', fontSize: 12, margin: '4px 0 8px' }
+const dim = { color: 'var(--text-3)', fontSize: 12, lineHeight: 1.5 }
 
 // ---------- application settings ----------
 
@@ -115,7 +115,7 @@ function QuickBarSection() {
 
   const rowStyle = {
     display: 'flex', alignItems: 'center', gap: 8, padding: '5px 6px',
-    borderRadius: 6, fontSize: 13,
+    borderRadius: 0, fontSize: 13,
   }
 
   return (

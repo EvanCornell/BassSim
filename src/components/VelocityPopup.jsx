@@ -44,7 +44,7 @@ export default function VelocityPopup() {
               ticks={ticks} tick={{ fill: '#9aa7b8', fontSize: 10 }} stroke="#2d3646" />
             <YAxis tick={{ fill: '#9aa7b8', fontSize: 10 }} stroke="#2d3646" width={40}
               label={{ value: 'm/s (peak)', angle: -90, position: 'insideLeft', fill: '#6b7687', fontSize: 10 }} />
-            <Tooltip contentStyle={{ background: '#161b22', border: '1px solid #2d3646', borderRadius: 6 }}
+            <Tooltip contentStyle={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 0 }}
               labelFormatter={(v) => `${v.toFixed(1)} Hz`} formatter={(v) => [`${v.toFixed(2)} m/s`, 'velocity']}
               isAnimationActive={false} />
             <ReferenceLine y={vThreshold} stroke="#e66767" strokeDasharray="6 4"

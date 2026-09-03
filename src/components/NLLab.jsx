@@ -394,7 +394,7 @@ function CurveEditor({ driverId, param, nl, xmax, width, height, refv }) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flex: 1, minHeight: 0 }}>
       <svg
         ref={svgRef} width={W} height={H}
-        style={{ background: 'var(--bg)', borderRadius: 8, cursor: 'crosshair' }}
+        style={{ background: 'var(--bg)', border: '1px solid var(--border)', cursor: 'crosshair' }}
         onClick={onSvgClick} onPointerDown={onSvgPointerDown}
         onPointerMove={onSvgMove} onPointerLeave={() => setHover(null)}
       >

@@ -1,3 +1,14 @@
+/* AcouSim UI.
+   ------------------------------------------------------------------
+   The chrome is modelled on VS Code: flat surfaces, square corners,
+   hairline separators, and no decoration that isn't carrying meaning.
+   Depth is expressed by background value rather than by shadow, and the
+   only rounded, shadowed things in the app are the ones that genuinely
+   float above it — menus, dialogs and the utility window.
+
+   Colours are the AcouSim palette. Everything else — the 1px rules, the
+   22px rows, the flush editor tabs with a top accent, the near-zero
+   radii, the native UI font — follows the editor.                     */
 :root {
   --bg: #0d1117;
   --surface: #161b22;
@@ -18,38 +29,52 @@
   --s6: #d95926;
   --scroll-thumb: #39445a;
   --scroll-thumb-hover: #4d5b76;
+
+  /* Selection washes, so a hover and a selected row are one value each
+     rather than a different rgba() at every call site. */
+  --hover: #202839;
+  --selected: #253352;
+  --selected-inactive: #1e2637;
+
+  /* Geometry. Square is the default; 2px is as round as anything docked
+     gets, and 4px is reserved for the things that float. */
+  --r-0: 0;
+  --r-1: 2px;
+  --r-2: 4px;
+
+  /* The editor's own font stacks. Platform-native rather than a webfont:
+     nothing to download, and the app reads as part of the machine it is
+     running on. Only one family per platform can match, so the merged
+     list resolves to Segoe UI on Windows, the system face on macOS, and
+     whatever the desktop has set on Linux. */
+  --ui-font: "Segoe WPC", "Segoe UI", system-ui, "Ubuntu", "Droid Sans",
+    -apple-system, BlinkMacSystemFont, sans-serif;
+  --mono-font: "Droid Sans Mono", "Cascadia Mono", Menlo, Monaco, Consolas,
+    "Courier New", monospace;
 }
 * { box-sizing: border-box; }
 
 /* ---------- scrollbars ----------
-   A rounded thumb in the panel palette on a transparent track, inset by a
-   transparent border so it reads as floating over the content.
-   `color-scheme` also darkens the native widgets the app doesn't paint itself
-   (select popups, spin buttons).
-
-   The two engines are addressed separately on purpose: from Chrome 121 the
+   Square, trackless, and overlaid on the content — the editor's own. The
+   two engines are addressed separately on purpose: from Chrome 121 the
    standard `scrollbar-width`/`scrollbar-color` properties *disable* the
-   ::-webkit-scrollbar pseudo-elements wherever they are set, so declaring both
-   globally would silently throw away the rounded styling below. Firefox, which
-   has no pseudo-elements to offer, gets the standard properties instead. */
+   ::-webkit-scrollbar pseudo-elements wherever they are set, so declaring
+   both globally would silently throw away the styling below. Firefox,
+   which has no pseudo-elements to offer, gets the standard properties. */
 :root { color-scheme: dark; }
 @supports not selector(::-webkit-scrollbar) {
   * { scrollbar-width: thin; scrollbar-color: var(--scroll-thumb) transparent; }
 }
-::-webkit-scrollbar { width: 12px; height: 12px; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb {
-  background: var(--scroll-thumb);
-  border: 3px solid transparent; /* 6px of visible thumb, still easy to grab */
-  background-clip: content-box;
-  border-radius: 8px;
-}
-::-webkit-scrollbar-thumb:hover { background: var(--scroll-thumb-hover); background-clip: content-box; }
-::-webkit-scrollbar-thumb:active { background: var(--accent); background-clip: content-box; }
+::-webkit-scrollbar-thumb { background: var(--scroll-thumb); border-radius: 0; }
+::-webkit-scrollbar-thumb:hover { background: var(--scroll-thumb-hover); }
+::-webkit-scrollbar-thumb:active { background: var(--accent); }
 ::-webkit-scrollbar-corner { background: transparent; }
+
 html, body, #root { height: 100%; margin: 0; }
 body {
-  font-family: 'Inter', -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--ui-font);
   background: var(--bg);
   color: var(--text);
   font-size: 13px;
@@ -60,33 +85,40 @@ body {
 body.resizing { cursor: inherit; user-select: none; }
 body.resizing * { pointer-events: none; }
 
+/* One focus treatment for the whole app: a hairline drawn inside the
+   element's own box, so nothing shifts or overlaps when it lands. */
+:focus-visible { outline: 1px solid var(--accent); outline-offset: -1px; }
+
 /* ---------- menu bar ---------- */
 .menubar {
-  display: flex; align-items: stretch; gap: 2px;
+  display: flex; align-items: stretch; gap: 0;
   background: var(--surface); border-bottom: 1px solid var(--border);
-  padding: 0 10px; flex-shrink: 0; user-select: none;
+  padding: 0 8px; flex-shrink: 0; user-select: none; height: 30px;
 }
 .menubar .logo {
-  font-weight: 700; font-size: 14px; color: var(--accent);
-  margin-right: 12px; display: flex; align-items: center;
+  font-weight: 600; font-size: 13px; color: var(--accent);
+  margin-right: 10px; display: flex; align-items: center; letter-spacing: 0.01em;
 }
 .menubar .logo span { color: var(--text); }
-.menu-root { position: relative; }
+.menu-root { position: relative; display: flex; }
 .menu-title {
-  background: none; border: none; border-radius: 0;
-  padding: 7px 11px; font-size: 12.5px; color: var(--text-2);
+  background: none; border: none; border-radius: var(--r-0); height: 100%;
+  padding: 0 9px; font-size: 12px; color: var(--text-2);
 }
-.menu-title:hover { background: var(--surface-2); color: var(--text); }
-.menu-title.open { background: var(--surface-2); color: var(--text); box-shadow: inset 0 -2px 0 var(--accent); }
+.menu-title:hover { background: var(--hover); color: var(--text); }
+.menu-title.open { background: var(--hover); color: var(--text); box-shadow: none; }
+
+/* Menus float, so they are the one place with a radius and a shadow. */
 .menu-dropdown {
   position: absolute; top: 100%; left: 0; min-width: 232px; z-index: 60;
-  background: var(--surface); border: 1px solid var(--border); border-radius: 0 6px 6px 6px;
-  padding: 4px; box-shadow: 0 12px 32px rgba(0,0,0,0.55);
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r-2); padding: 4px 0;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.5);
 }
-.menu-dropdown.submenu { top: -5px; left: 100%; border-radius: 6px; }
+.menu-dropdown.submenu { top: -5px; left: 100%; }
 .menu-item {
   position: relative; display: flex; align-items: center; gap: 8px;
-  padding: 5px 10px; border-radius: 4px; font-size: 12.5px;
+  padding: 0 12px; height: 22px; border-radius: var(--r-0); font-size: 12px;
   color: var(--text); cursor: pointer; white-space: nowrap;
 }
 .menu-item:hover { background: var(--accent); color: #fff; }
@@ -96,7 +128,7 @@ body.resizing * { pointer-events: none; }
 .menu-item .mi-label { flex: 1; }
 .menu-item .mi-hint { color: var(--text-3); font-size: 11px; margin-left: 18px; }
 .menu-item:hover .mi-hint { color: rgba(255,255,255,0.75); }
-.menu-sep { height: 1px; background: var(--border); margin: 4px 6px; }
+.menu-sep { height: 1px; background: var(--border); margin: 4px 0; }
 
 /* ---------- right-click menu ---------- */
 /* Shares .menu-dropdown, so a command looks identical wherever it is offered.
@@ -104,23 +136,20 @@ body.resizing * { pointer-events: none; }
    from the click, and must not be clipped by whichever panel it was raised in. */
 /* No overflow of its own: `overflow-y: auto` forces overflow-x to auto too,
    which clips the submenus flying out of the side. */
-.ctx-menu {
-  position: fixed; top: 0; left: 0; z-index: 200;
-  border-radius: 6px;
-}
+.ctx-menu { position: fixed; top: 0; left: 0; z-index: 200; }
 /* Submenus open away from the nearer window edge. */
 .menu-dropdown.submenu.to-left { left: auto; right: 100%; }
 
 /* ---------- quick-access toolbar ---------- */
 .toolbar {
   display: flex; align-items: center; gap: 8px;
-  padding: 5px 12px; background: var(--bg);
+  padding: 4px 10px; background: var(--surface);
   border-bottom: 1px solid var(--border);
   flex-wrap: wrap; flex-shrink: 0;
 }
-.icon-btn { padding: 3px 8px; font-size: 13px; line-height: 1.2; }
-.snap-btn { color: var(--red); border-color: var(--red); font-weight: 600; }
-.snap-btn:hover:not(:disabled) { background: var(--red); color: #fff; }
+.icon-btn { padding: 2px 7px; font-size: 12px; line-height: 1.3; }
+.snap-btn { color: var(--red); font-weight: 500; }
+.snap-btn:hover:not(:disabled) { background: var(--hover); color: var(--red); }
 
 /* metric readouts in the quick bar: label above value, tight enough that a
    dozen of them fit next to the controls. The run wraps inside its own block
@@ -136,114 +165,131 @@ body.resizing * { pointer-events: none; }
 .tb-metric .m-label {
   font-size: 9px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.05em;
 }
-.tb-metric .m-value { font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.tb-metric .m-value {
+  font-family: var(--mono-font); font-size: 11.5px; font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
 .tb-metric .m-value.bad { color: var(--red); }
 
 /* drive-voltage widget */
 .tb-voltage input[type="number"] { width: 56px; }
 .tb-derived {
-  font-size: 10.5px; color: var(--text-3); font-variant-numeric: tabular-nums; min-width: 38px;
+  font-family: var(--mono-font); font-size: 10.5px; color: var(--text-3);
+  font-variant-numeric: tabular-nums; min-width: 38px;
 }
+
+/* ---------- controls ---------- */
 button, .btn {
   background: var(--surface-2); color: var(--text);
-  border: 1px solid var(--border); border-radius: 6px;
-  padding: 4px 10px; font-size: 12px; cursor: pointer;
+  border: 1px solid var(--border); border-radius: var(--r-1);
+  padding: 3px 12px; font-size: 12px; cursor: pointer;
   font-family: inherit;
 }
-button:hover { background: #242e3f; }
+button:hover { background: var(--hover); }
 button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+button.primary:hover { background: #4a94ea; }
 button.danger { color: var(--red); }
-button:disabled { opacity: 0.45; cursor: default; }
+button:disabled { opacity: 0.4; cursor: default; }
 input, select {
   background: var(--bg); color: var(--text);
-  border: 1px solid var(--border); border-radius: 5px;
-  padding: 3px 7px; font-size: 12px; font-family: inherit;
+  border: 1px solid var(--border); border-radius: var(--r-1);
+  padding: 3px 6px; font-size: 12px; font-family: inherit;
   width: 100%;
 }
-input:focus, select:focus { outline: 1px solid var(--accent); }
-input[type="checkbox"] { width: auto; }
-.tb-sep { width: 1px; height: 20px; background: var(--border); margin: 0 4px; }
+input[type="number"] { font-family: var(--mono-font); font-variant-numeric: tabular-nums; }
+input:focus, select:focus { outline: none; border-color: var(--accent); }
+input[type="checkbox"] { width: auto; accent-color: var(--accent); }
+.tb-sep { width: 1px; height: 18px; background: var(--border); margin: 0 4px; }
 .tb-group { display: flex; align-items: center; gap: 4px; }
 .tb-group label { color: var(--text-3); font-size: 11px; }
 .tb-group input { width: 58px; }
 .tb-group input[type="checkbox"] { width: auto; }
 
-/* ---------- dock workspace ---------- */
-.dock-root { position: relative; display: flex; flex: 1; min-height: 0; min-width: 0; padding: 4px; gap: 0; }
+/* ---------- dock workspace ----------
+   Editor groups, not cards: panes meet flush and are told apart by a
+   hairline, exactly where the splitter is. Nothing floats. */
+.dock-root { position: relative; display: flex; flex: 1; min-height: 0; min-width: 0; padding: 0; gap: 0; }
 .dock-split { display: flex; min-width: 0; min-height: 0; }
 .dock-split.row { flex-direction: row; }
 .dock-split.col { flex-direction: column; }
-.dock-splitter { flex: 0 0 5px; background: transparent; position: relative; z-index: 2; }
+.dock-splitter { flex: 0 0 4px; background: transparent; position: relative; z-index: 2; }
 .dock-splitter.row { cursor: col-resize; }
 .dock-splitter.col { cursor: row-resize; }
-.dock-splitter::after {
-  content: ''; position: absolute; inset: 2px; border-radius: 2px; background: transparent;
-}
+/* The hairline sits in the middle of the grab strip, so the rule the user
+   sees and the edge they drag are the same edge. */
+.dock-splitter::after { content: ''; position: absolute; background: var(--border); }
+.dock-splitter.row::after { top: 0; bottom: 0; left: 1px; width: 1px; }
+.dock-splitter.col::after { left: 0; right: 0; top: 1px; height: 1px; }
 .dock-splitter:hover::after { background: var(--accent); }
 
 .dock-stack {
   display: flex; flex-direction: column; min-width: 0; min-height: 0;
-  background: var(--surface); border-radius: 8px; margin: 2px; overflow: hidden;
+  background: var(--surface); border-radius: var(--r-0); margin: 0; overflow: hidden;
 }
 .dock-tabs {
-  display: flex; align-items: flex-end; flex-shrink: 0;
-  padding: 4px 8px 0; user-select: none;
+  display: flex; align-items: stretch; flex-shrink: 0;
+  height: 30px; padding: 0; user-select: none;
+  background: var(--surface); border-bottom: 1px solid var(--border);
 }
 /* tabs scroll sideways rather than squeezing, so the maximize button and
    every close cross stay reachable however many panels share a stack */
 .dock-tabscroll {
-  display: flex; align-items: flex-end; gap: 2px;
+  display: flex; align-items: stretch; gap: 0;
   flex: 1; min-width: 0; overflow-x: auto; scrollbar-width: none;
 }
 .dock-tabscroll::-webkit-scrollbar { height: 0; }
 .dock-tab {
   display: flex; align-items: center; gap: 6px;
-  padding: 4px 12px; font-size: 12px; color: var(--text-2);
-  border: 1px solid transparent; border-bottom: none; border-radius: 6px 6px 0 0;
+  padding: 0 12px; font-size: 12px; color: var(--text-2);
+  border: none; border-right: 1px solid var(--border); border-radius: var(--r-0);
   cursor: pointer; white-space: nowrap; flex-shrink: 0;
 }
 .dock-tab:hover { color: var(--text); }
+/* The active tab takes the pane's own background and wears the accent as a
+   top rule, so tab and pane read as one surface. */
 .dock-tab.active {
-  background: var(--surface-2); border-color: var(--border); color: var(--text);
+  background: var(--surface-2); color: var(--text);
+  box-shadow: inset 0 1px 0 var(--accent);
 }
 .dock-tab.dropping { box-shadow: inset 2px 0 0 var(--accent); }
 .dock-tab .dt-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dock-tab .dt-x {
-  color: var(--text-3); border-radius: 50%; width: 14px; height: 14px;
-  line-height: 14px; text-align: center; font-size: 9px; flex-shrink: 0;
+  color: var(--text-3); border-radius: var(--r-1); width: 16px; height: 16px;
+  line-height: 16px; text-align: center; font-size: 9px; flex-shrink: 0;
 }
-.dock-tab .dt-x:hover { background: var(--red); color: #fff; }
+.dock-tab .dt-x:hover { background: var(--hover); color: var(--text); }
 .dock-chrome-btn {
   background: none; border: none; color: var(--text-3);
-  padding: 2px 8px; font-size: 12px; align-self: center; flex-shrink: 0;
+  padding: 0 8px; font-size: 12px; flex-shrink: 0; border-radius: var(--r-0);
 }
-.dock-chrome-btn:hover { background: var(--surface-2); color: var(--text); }
+.dock-chrome-btn:hover { background: var(--hover); color: var(--text); }
 
-/* the body carries the frame, with the corner under the active tab squared
-   off so tab and pane read as one shape */
 .dock-body {
   flex: 1; min-height: 0; min-width: 0; position: relative; display: flex;
-  background: var(--surface-2); border: 1px solid var(--border);
-  border-radius: 0 8px 8px 8px; margin: 0 8px 8px; overflow: hidden;
+  background: var(--surface-2); border: none; border-radius: var(--r-0);
+  margin: 0; overflow: hidden;
 }
 .dock-panel { flex: 1; min-width: 0; min-height: 0; flex-direction: column; }
 .dock-panel > * { flex: 1; min-height: 0; min-width: 0; }
 .panel-scroll {
-  overflow-y: auto; padding: 10px;
+  overflow-y: auto; padding: 8px;
   display: flex; flex-direction: column; gap: 8px;
 }
-.panel-scroll h3 { margin: 2px 0 4px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-3); }
+.panel-scroll h3 {
+  margin: 2px 0 4px; font-size: 11px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-2);
+}
 
 /* drop indicator: shaded half/whole of the target stack */
 .drop-hint {
-  position: absolute; background: rgba(57,135,229,0.22);
-  border: 1.5px solid var(--accent); border-radius: 6px; pointer-events: none; z-index: 20;
+  position: absolute; background: rgba(57,135,229,0.18);
+  border: 1px solid var(--accent); border-radius: var(--r-0); pointer-events: none; z-index: 20;
 }
-.drop-hint.zone-center { inset: 4px; }
-.drop-hint.zone-left   { top: 4px; bottom: 4px; left: 4px; width: calc(50% - 6px); }
-.drop-hint.zone-right  { top: 4px; bottom: 4px; right: 4px; width: calc(50% - 6px); }
-.drop-hint.zone-top    { left: 4px; right: 4px; top: 4px; height: calc(50% - 6px); }
-.drop-hint.zone-bottom { left: 4px; right: 4px; bottom: 4px; height: calc(50% - 6px); }
+.drop-hint.zone-center { inset: 0; }
+.drop-hint.zone-left   { top: 0; bottom: 0; left: 0; width: 50%; }
+.drop-hint.zone-right  { top: 0; bottom: 0; right: 0; width: 50%; }
+.drop-hint.zone-top    { left: 0; right: 0; top: 0; height: 50%; }
+.drop-hint.zone-bottom { left: 0; right: 0; bottom: 0; height: 50%; }
 
 /* outer strips: dock against an edge of the whole workspace */
 .edge-drop { position: absolute; z-index: 25; }
@@ -251,100 +297,96 @@ input[type="checkbox"] { width: auto; }
 .edge-drop.right  { right: 0; top: 0; bottom: 0; width: 26px; }
 .edge-drop.top    { top: 0; left: 0; right: 0; height: 26px; }
 .edge-drop.bottom { bottom: 0; left: 0; right: 0; height: 26px; }
-.edge-drop.hot { background: rgba(57,135,229,0.35); box-shadow: inset 0 0 0 1.5px var(--accent); }
-/* The floating element palette, overlaid on the top-left of the node editor.
-   The container is transparent to the pointer so only the cubes themselves
-   sit between the user and the graph. */
+.edge-drop.hot { background: rgba(57,135,229,0.28); box-shadow: inset 0 0 0 1px var(--accent); }
+
+/* ---------- floating element palette ----------
+   Overlaid on the top-left of the node editor. The container is transparent
+   to the pointer so only the cubes themselves sit between the user and the
+   graph. Deliberately quiet: these are always on screen, so they move for
+   nothing and only shift a hairline on hover. */
 .node-palette {
-  position: absolute; top: 10px; left: 10px; z-index: 6;
-  display: flex; flex-direction: column; gap: 6px;
+  position: absolute; top: 8px; left: 8px; z-index: 6;
+  display: flex; flex-direction: column; gap: 1px;
   pointer-events: none;
 }
 .np-cube {
   pointer-events: auto; cursor: grab;
   display: flex; align-items: center; gap: 8px;
-  padding: 5px 10px 5px 6px; border-radius: 8px;
-  border: 1px solid var(--border); background: var(--surface-2);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.28);
-  font-size: 11.5px; font-weight: 600; white-space: nowrap;
-  opacity: 0.9; transition: opacity 0.12s, border-color 0.12s, transform 0.12s;
+  padding: 0 10px 0 7px; height: 24px; border-radius: var(--r-0);
+  border: 1px solid var(--border); background: var(--surface);
+  font-size: 11.5px; font-weight: 500; white-space: nowrap;
 }
-.np-cube:hover { opacity: 1; border-color: var(--accent); transform: translateX(2px); }
+.np-cube:hover { border-color: var(--accent); background: var(--surface-2); }
 .np-cube:active { cursor: grabbing; }
-.np-chip {
-  width: 18px; height: 18px; border-radius: 5px; flex: none;
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.16);
-}
-.np-name { color: var(--text-1); }
+.np-chip { width: 10px; height: 10px; border-radius: var(--r-0); flex: none; }
+.np-name { color: var(--text-2); }
+.np-cube:hover .np-name { color: var(--text); }
 
 /* ---- workspace explorer ----
-   Modelled on the VS Code / Eclipse file navigators: 22px rows, a 16px twisty
-   column, 12px of indent per level with a guide rule down each, and the
-   section's commands in a header above. */
+   The editor's file navigator: 22px rows, a 16px twisty column, 12px of
+   indent per level with a guide rule down each, and the section's commands
+   revealed in the header on hover. */
 .ws-explorer { display: flex; flex-direction: column; height: 100%; min-height: 0; }
 
 .ws-header {
-  display: flex; align-items: center; gap: 2px;
-  padding: 4px 4px 4px 6px; flex: none;
+  display: flex; align-items: center; gap: 0;
+  padding: 2px 4px 2px 8px; flex: none; height: 26px;
 }
 .ws-title {
   flex: 1; min-width: 0;
-  font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+  font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase;
   color: var(--text-2); background: transparent;
-  border: 1px solid transparent; padding: 2px 4px;
+  border: 1px solid transparent; border-radius: var(--r-0); padding: 1px 3px;
 }
 .ws-title:hover { border-color: var(--border); }
 .ws-title:focus { border-color: var(--accent); text-transform: none; letter-spacing: 0; }
-.ws-tools { display: flex; gap: 1px; flex: none; opacity: 0; transition: opacity 0.1s; }
+.ws-tools { display: flex; gap: 0; flex: none; opacity: 0; }
 .ws-explorer:hover .ws-tools, .ws-tools:focus-within { opacity: 1; }
 .ws-tools button {
   padding: 0; width: 22px; height: 22px; line-height: 22px; font-size: 12px;
-  background: transparent; border: none; color: var(--text-2); border-radius: 4px;
+  background: transparent; border: none; color: var(--text-2); border-radius: var(--r-1);
 }
-.ws-tools button:hover { background: var(--surface-2); color: var(--text-1); }
+.ws-tools button:hover { background: var(--hover); color: var(--text); }
 
 .ws-error {
   margin: 0 6px 4px; flex: none;
-  border: 1px solid var(--s5); border-radius: 4px; padding: 5px 7px;
+  border: 1px solid var(--s5); border-radius: var(--r-0); padding: 5px 7px;
   font-size: 11px; background: rgba(213,81,129,0.12);
 }
 
 .ws-tree { flex: 1; min-height: 0; overflow: auto; padding-bottom: 8px; outline: none; }
-.ws-tree.drop { background: rgba(57,135,229,0.07); box-shadow: inset 0 0 0 1px var(--accent); }
+.ws-tree.drop { box-shadow: inset 0 0 0 1px var(--accent); }
 
 .ws-row {
   position: relative;
   display: flex; align-items: center; gap: 0;
   height: 22px; padding-right: 6px; cursor: pointer;
-  font-size: 12px; line-height: 22px; white-space: nowrap; user-select: none;
+  font-size: 13px; line-height: 22px; white-space: nowrap; user-select: none;
 }
-.ws-row:hover { background: var(--surface-2); }
-.ws-row.selected { background: rgba(57,135,229,0.20); }
-.ws-tree:focus .ws-row.selected { background: rgba(57,135,229,0.34); }
+.ws-row:hover { background: var(--hover); }
+.ws-row.selected { background: var(--selected-inactive); }
+.ws-tree:focus .ws-row.selected { background: var(--selected); box-shadow: inset 0 0 0 1px var(--accent); }
 .ws-row.active .ws-name { font-weight: 600; }
 .ws-row.active::before {
   content: ''; position: absolute; left: 0; top: 0; bottom: 0;
   width: 2px; background: var(--accent);
 }
-.ws-row.system { opacity: 0.72; }
+.ws-row.system { opacity: 0.7; }
 .ws-row.cut { opacity: 0.45; }
-.ws-row.drop { background: rgba(57,135,229,0.28); box-shadow: inset 0 0 0 1px var(--accent); }
+.ws-row.drop { background: var(--selected); box-shadow: inset 0 0 0 1px var(--accent); }
 .ws-row.editing { cursor: default; }
 
 /* Indent guides: one vertical rule per level crossed, so a nested row can be
    traced back to its parent without counting pixels. */
 .ws-guide {
   position: absolute; top: 0; bottom: 0; width: 1px;
-  background: var(--border); opacity: 0.55; pointer-events: none;
+  background: var(--border); opacity: 0.5; pointer-events: none;
 }
 
-.ws-chevron {
-  width: 16px; height: 16px; flex: none; color: var(--text-3);
-  transition: transform 0.1s;
-}
+.ws-chevron { width: 16px; height: 16px; flex: none; color: var(--text-2); }
 svg.ws-chevron.open { transform: rotate(90deg); }
 
-.ws-ico { width: 16px; height: 16px; flex: none; margin-right: 5px; }
+.ws-ico { width: 16px; height: 16px; flex: none; margin-right: 6px; }
 .ws-ico.folder { color: var(--s3); }
 .ws-ico.file { color: var(--text-3); }
 .ws-ico.file.project { color: var(--accent); }
@@ -357,15 +399,15 @@ svg.ws-chevron.open { transform: rotate(90deg); }
 /* Inline rename / create: the row becomes a text box where it sits. */
 .ws-editor { flex: 1; min-width: 0; position: relative; }
 .ws-edit-input {
-  width: 100%; height: 19px; font-size: 12px; padding: 0 4px;
-  border: 1px solid var(--accent); border-radius: 2px; background: var(--bg);
+  width: 100%; height: 20px; font-size: 13px; padding: 0 4px;
+  border: 1px solid var(--accent); border-radius: var(--r-0); background: var(--bg);
 }
 .ws-edit-input.bad { border-color: var(--s5); }
 .ws-edit-error {
   position: absolute; left: 0; right: 0; top: 100%; z-index: 30;
   border: 1px solid var(--s5); border-top: none; padding: 3px 5px;
-  font-size: 10.5px; line-height: 1.35; white-space: normal;
-  background: var(--surface-2); color: var(--text-1);
+  font-size: 11px; line-height: 1.35; white-space: normal;
+  background: var(--surface); color: var(--text);
 }
 
 /* Freshness readout, pinned to the bottom like a status bar. Browser storage
@@ -373,11 +415,11 @@ svg.ws-chevron.open { transform: rotate(90deg); }
    user has to go and check. */
 .ws-status {
   flex: none; display: flex; align-items: center; gap: 7px;
-  padding: 6px 8px; margin: 0; border: none; border-top: 1px solid var(--border);
-  border-radius: 0; background: transparent; cursor: pointer;
-  font-size: 10.5px; color: var(--text-3); text-align: left; width: 100%;
+  padding: 0 8px; height: 22px; margin: 0; border: none; border-top: 1px solid var(--border);
+  border-radius: var(--r-0); background: transparent; cursor: pointer;
+  font-size: 11px; color: var(--text-3); text-align: left; width: 100%;
 }
-.ws-status:hover { background: var(--surface-2); color: var(--text-1); }
+.ws-status:hover { background: var(--hover); color: var(--text); }
 .ws-status .wss-dot { width: 6px; height: 6px; border-radius: 50%; flex: none; background: var(--s2); }
 .ws-status.stale .wss-dot { background: var(--s3); }
 .ws-status.stale { color: var(--s3); }
@@ -385,82 +427,116 @@ svg.ws-chevron.open { transform: rotate(90deg); }
 .ws-status .wss-cta { flex: none; opacity: 0; text-decoration: underline; }
 .ws-status:hover .wss-cta { opacity: 1; }
 
-.panel-section { border: 1px solid var(--border); border-radius: 8px; padding: 10px; margin-bottom: 10px; background: var(--surface-2); }
-.panel-section h4 { margin: 0 0 8px; font-size: 12px; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.06em; }
-.param-row { display: flex; align-items: center; gap: 6px; margin-bottom: 5px; }
-.param-row label { flex: 0 0 92px; font-size: 11.5px; color: var(--text-2); cursor: help; }
+/* ---------- parameter panel ---------- */
+.panel-section {
+  border: 1px solid var(--border); border-radius: var(--r-0);
+  padding: 8px 10px 10px; margin-bottom: 8px; background: var(--surface);
+}
+.panel-section h4 {
+  margin: 0 0 8px; font-size: 11px; font-weight: 600; color: var(--text-2);
+  text-transform: uppercase; letter-spacing: 0.04em;
+}
+.param-row { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+.param-row label { flex: 0 0 92px; font-size: 12px; color: var(--text-2); cursor: help; }
 .param-row .unit { flex: 0 0 38px; font-size: 10.5px; color: var(--text-3); }
 .param-row input, .param-row select { flex: 1; min-width: 0; }
 
 /* ---------- nodes ---------- */
 .acou-node {
-  background: var(--surface-2); border: 1.5px solid var(--border);
-  border-radius: 9px; min-width: 150px; font-size: 11px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.35);
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r-1); min-width: 150px; font-size: 11px;
 }
 .acou-node.selected { border-color: var(--accent); }
 .acou-node .node-head {
-  padding: 5px 9px; font-weight: 600; font-size: 12px;
-  border-bottom: 1px solid var(--border); border-radius: 8px 8px 0 0;
+  padding: 4px 9px; font-weight: 600; font-size: 12px;
+  border-bottom: 1px solid var(--border); border-radius: var(--r-1) var(--r-1) 0 0;
   display: flex; align-items: center; gap: 6px;
 }
 .acou-node .node-body { padding: 6px 9px; color: var(--text-2); line-height: 1.5; }
 .acou-node .warn-dot {
-  width: 8px; height: 8px; border-radius: 50%; background: var(--amber);
+  width: 7px; height: 7px; border-radius: 50%; background: var(--amber);
   margin-left: auto; flex-shrink: 0;
 }
-.node-readout { color: var(--text); font-variant-numeric: tabular-nums; }
+.node-readout {
+  color: var(--text); font-family: var(--mono-font);
+  font-size: 10.5px; font-variant-numeric: tabular-nums;
+}
 .vel-readout {
-  cursor: pointer; border: 1px solid var(--border); border-radius: 5px;
-  padding: 1px 6px; margin-top: 3px; display: inline-block;
-  font-variant-numeric: tabular-nums;
+  cursor: pointer; border: 1px solid var(--border); border-radius: var(--r-1);
+  padding: 0 5px; margin-top: 3px; display: inline-block;
+  font-family: var(--mono-font); font-size: 10.5px; font-variant-numeric: tabular-nums;
 }
 .vel-readout:hover { border-color: var(--accent); }
 .vel-readout.over { color: var(--red); border-color: var(--red); }
+/* Square ports, to match the rest of the chrome. React Flow rounds them to
+   circles in its own sheet, so the radius has to be stated. */
 .react-flow__handle {
-  width: 10px; height: 10px; border: 2px solid var(--bg);
+  width: 9px; height: 9px; border: 1px solid var(--bg); border-radius: var(--r-0);
 }
 .react-flow__handle.source { background: var(--s3); }
 .react-flow__handle.target { background: var(--s1); }
 .handle-label { position: absolute; font-size: 9px; color: var(--text-3); pointer-events: none; }
-.react-flow__edge-path { stroke-width: 2; }
+.react-flow__edge-path { stroke-width: 1.5; }
 .react-flow__attribution { display: none; }
+
+/* React Flow ships its own light chrome for the zoom controls and the
+   minimap. Both are overlays on our own canvas, so they take the same
+   hairline-bordered, square treatment as everything else. */
+.react-flow__controls { box-shadow: none; border: 1px solid var(--border); }
+.react-flow__controls-button {
+  width: 22px; height: 22px; padding: 4px; border-radius: var(--r-0);
+  background: var(--surface); color: var(--text-2);
+  border: none; border-bottom: 1px solid var(--border);
+}
+.react-flow__controls-button:last-child { border-bottom: none; }
+.react-flow__controls-button:hover { background: var(--hover); color: var(--text); }
+.react-flow__controls-button svg { fill: currentColor; }
+.react-flow__minimap {
+  background: var(--surface) !important;
+  border: 1px solid var(--border); border-radius: var(--r-0);
+}
 
 /* ---------- results panel ---------- */
 .results-panel { display: flex; flex-direction: column; min-height: 0; }
 .plot-area { flex: 1; min-height: 0; padding: 6px; position: relative; }
-.plot-controls { position: absolute; top: 8px; right: 14px; z-index: 5; display: flex; gap: 8px; align-items: center; font-size: 11px; background: rgba(22,27,34,0.85); padding: 3px 8px; border-radius: 6px; }
+.plot-controls {
+  position: absolute; top: 6px; right: 12px; z-index: 5;
+  display: flex; gap: 8px; align-items: center; font-size: 11px;
+  background: var(--surface); border: 1px solid var(--border);
+  padding: 3px 8px; border-radius: var(--r-1);
+}
 .plot-controls label { display: flex; gap: 4px; align-items: center; color: var(--text-2); cursor: pointer; }
 .plot-controls input[type="number"] { width: 52px; }
 
 /* ---------- popped-out panel window (/panel?id=…) ---------- */
 .popout { display: flex; flex-direction: column; height: 100vh; background: var(--bg); }
 .popout-title {
-  display: flex; align-items: baseline; gap: 10px; flex-shrink: 0;
-  padding: 7px 14px; background: var(--surface);
+  display: flex; align-items: center; gap: 10px; flex-shrink: 0;
+  padding: 0 12px; height: 30px; background: var(--surface);
   border-bottom: 1px solid var(--border); user-select: none;
 }
-.popout-title .pt-name { font-size: 13px; font-weight: 600; }
+.popout-title .pt-name { font-size: 12px; font-weight: 600; }
 .popout-title .pt-project { font-size: 11.5px; color: var(--text-3); }
 .popout-title .pt-wait { font-size: 11px; color: var(--amber); margin-left: auto; }
 .popout-body {
   flex: 1; min-height: 0; display: flex; position: relative;
-  background: var(--surface-2); margin: 8px; border: 1px solid var(--border);
-  border-radius: 8px; overflow: hidden;
+  background: var(--surface-2); margin: 0; border: none;
+  border-radius: var(--r-0); overflow: hidden;
 }
 /* Shown only when a whole docked window was popped out. Not a dock: these tabs
    switch views and nothing else — the arrangement lives in the main window. */
 .popout-tabs {
-  display: flex; gap: 2px; flex-shrink: 0; overflow-x: auto;
-  padding: 4px 10px 0; background: var(--surface);
+  display: flex; gap: 0; flex-shrink: 0; overflow-x: auto;
+  height: 30px; padding: 0; background: var(--surface);
   border-bottom: 1px solid var(--border);
 }
 .popout-tab {
-  background: none; border: none; border-radius: 5px 5px 0 0;
-  padding: 5px 12px; font-size: 12px; color: var(--text-3); white-space: nowrap;
+  background: none; border: none; border-right: 1px solid var(--border);
+  border-radius: var(--r-0); padding: 0 12px; font-size: 12px;
+  color: var(--text-2); white-space: nowrap;
 }
-.popout-tab:hover { color: var(--text); background: var(--surface-2); }
-.popout-tab.active { color: var(--text); background: var(--surface-2); box-shadow: inset 0 -2px 0 var(--accent); }
+.popout-tab:hover { color: var(--text); background: var(--hover); }
+.popout-tab.active { color: var(--text); background: var(--surface-2); box-shadow: inset 0 1px 0 var(--accent); }
 
 /* ---------- right-drag marquee on the node editor ---------- */
 /* Purely an overlay: it must never take the pointer events that are still
@@ -468,33 +544,33 @@ svg.ws-chevron.open { transform: rotate(90deg); }
 .rf-marquee {
   position: absolute; z-index: 5; pointer-events: none;
   border: 1px solid var(--accent);
-  background: rgba(85, 152, 231, 0.14);
-  border-radius: 2px;
+  background: rgba(85, 152, 231, 0.12);
+  border-radius: var(--r-0);
 }
 
 /* ---------- keybinding editor ---------- */
 .key-row {
   display: flex; align-items: center; gap: 10px;
-  padding: 4px 0; font-size: 13px; min-height: 30px;
+  padding: 3px 0; font-size: 13px; min-height: 28px;
 }
 .kr-label { flex: 1; display: flex; align-items: center; gap: 8px; }
 .kr-scope {
-  font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.06em;
+  font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.04em;
   color: var(--text-3); border: 1px solid var(--border);
-  border-radius: 4px; padding: 0 4px; line-height: 15px;
+  border-radius: var(--r-0); padding: 0 4px; line-height: 15px;
 }
 .kr-combos { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; justify-content: flex-end; }
 .kr-add {
   padding: 1px 7px; font-size: 13px; line-height: 1.3;
-  color: var(--text-3); background: none;
+  color: var(--text-3); background: none; border-color: transparent;
 }
 .kr-add:hover { color: var(--text); }
 .kr-changed { color: var(--accent); font-size: 15px; line-height: 1; width: 8px; }
 .key-chip { display: inline-flex; align-items: center; gap: 4px; cursor: pointer; }
 .key-chip kbd {
-  font-family: inherit; font-size: 11px; font-weight: 600;
+  font-family: var(--ui-font); font-size: 11px; font-weight: 600;
   background: var(--bg); border: 1px solid var(--border);
-  border-bottom-width: 2px; border-radius: 5px; padding: 2px 7px;
+  border-bottom-width: 2px; border-radius: var(--r-1); padding: 1px 6px;
   color: var(--text); white-space: nowrap;
 }
 .key-chip:hover kbd { border-color: var(--accent); }
@@ -504,43 +580,51 @@ svg.ws-chevron.open { transform: rotate(90deg); }
 
 /* ---------- modals ---------- */
 .modal-backdrop {
-  position: fixed; inset: 0; background: rgba(0,0,0,0.55);
+  position: fixed; inset: 0; background: rgba(0,0,0,0.5);
   display: flex; align-items: center; justify-content: center; z-index: 50;
 }
 .modal {
-  background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-2);
   padding: 16px; max-height: 82vh; overflow-y: auto; min-width: 460px; max-width: 760px;
-  box-shadow: 0 12px 48px rgba(0,0,0,0.5);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.5);
 }
-.modal h3 { margin: 0 0 12px; }
+.modal h3 { margin: 0 0 12px; font-size: 14px; font-weight: 600; }
 .modal table { width: 100%; border-collapse: collapse; font-size: 12px; }
-.modal th, .modal td { text-align: left; padding: 5px 8px; border-bottom: 1px solid var(--border); }
+.modal th, .modal td { text-align: left; padding: 4px 8px; border-bottom: 1px solid var(--border); }
+.modal th { font-weight: 600; color: var(--text-2); }
 .modal tr.clickable { cursor: pointer; }
-.modal tr.clickable:hover { background: var(--surface-2); }
+.modal tr.clickable:hover { background: var(--hover); }
 .modal .close-row { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
 
 /* velocity popup */
 .vel-popup {
   position: absolute; top: 60px; right: 320px; width: 460px; height: 300px;
-  background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
-  z-index: 30; padding: 8px; box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-2);
+  z-index: 30; padding: 8px; box-shadow: 0 4px 16px rgba(0,0,0,0.5);
   display: flex; flex-direction: column;
 }
 .vel-popup .vp-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
 
 .restore-banner {
-  background: #2a2413; border: 1px solid var(--amber); color: var(--text);
-  padding: 6px 12px; display: flex; gap: 10px; align-items: center; font-size: 12px;
+  background: #2a2413; border-bottom: 1px solid var(--amber); color: var(--text);
+  padding: 5px 12px; display: flex; gap: 10px; align-items: center; font-size: 12px;
 }
 .err-banner { background: #2a1616; border-bottom: 1px solid var(--red); color: var(--red); padding: 5px 12px; font-size: 12px; }
 
-.recharts-default-tooltip { background: var(--surface) !important; border: 1px solid var(--border) !important; border-radius: 6px; }
+.recharts-default-tooltip {
+  background: var(--surface) !important; border: 1px solid var(--border) !important;
+  border-radius: 0 !important;
+}
 .recharts-tooltip-label, .recharts-tooltip-item { font-size: 11px !important; }
-.snapshot-chip { display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--border); border-radius: 12px; padding: 1px 8px; font-size: 11px; }
+.snapshot-chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  border: 1px solid var(--border); border-radius: var(--r-1);
+  padding: 0 7px; height: 20px; font-size: 11px;
+}
 .snapshot-chip input { border: none; background: none; width: 90px; font-size: 11px; padding: 0; }
 .snapshot-chip .x { cursor: pointer; color: var(--text-3); }
 .snapshot-chip .x:hover { color: var(--red); }
-.snapshot-chip .pi-dot { width: 9px; height: 9px; border-radius: 3px; display: inline-block; flex: none; }
+.snapshot-chip .pi-dot { width: 9px; height: 9px; border-radius: var(--r-0); display: inline-block; flex: none; }
 
 /* ---------- floating utility window (Settings) ---------- */
 .float-backdrop {
@@ -550,26 +634,26 @@ svg.ws-chevron.open { transform: rotate(90deg); }
 .float-window {
   display: flex; flex-direction: column;
   width: min(860px, 92vw); height: min(620px, 88vh);
-  background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.6); overflow: hidden;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-2);
+  box-shadow: 0 6px 24px rgba(0,0,0,0.55); overflow: hidden;
 }
 .fw-title {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 9px 12px; background: var(--surface-2);
+  padding: 0 12px; height: 32px; background: var(--surface-2);
   border-bottom: 1px solid var(--border); cursor: move; user-select: none;
-  font-size: 13px; font-weight: 600;
+  font-size: 12px; font-weight: 600;
 }
 .fw-close { background: none; border: none; color: var(--text-3); padding: 2px 7px; font-size: 12px; }
 .fw-close:hover { background: var(--red); color: #fff; }
 .fw-body { display: flex; flex: 1; min-height: 0; }
-.fw-nav { width: 178px; flex-shrink: 0; border-right: 1px solid var(--border); padding: 12px 8px; }
+.fw-nav { width: 178px; flex-shrink: 0; border-right: 1px solid var(--border); padding: 8px 0; }
 .fw-nav-item {
-  padding: 8px 10px; border-radius: 6px; cursor: pointer;
-  font-size: 13px; margin-bottom: 2px; color: var(--text-2);
+  padding: 0 12px; height: 24px; line-height: 24px; border-radius: var(--r-0);
+  cursor: pointer; font-size: 13px; color: var(--text-2);
 }
-.fw-nav-item:hover { background: var(--surface-2); }
-.fw-nav-item.active { background: var(--surface-2); color: var(--text); box-shadow: inset 2px 0 0 var(--accent); }
-.fw-content { flex: 1; min-width: 0; overflow-y: auto; padding: 18px 22px; }
+.fw-nav-item:hover { background: var(--hover); }
+.fw-nav-item.active { background: var(--selected); color: var(--text); box-shadow: inset 2px 0 0 var(--accent); }
+.fw-content { flex: 1; min-width: 0; overflow-y: auto; padding: 16px 20px; }
 
 /* ---- no project open ---- */
 .no-project {
@@ -577,7 +661,7 @@ svg.ws-chevron.open { transform: rotate(90deg); }
   align-items: center; justify-content: center; gap: 10px; text-align: center;
   padding: 24px; color: var(--text-3);
 }
-.no-project h4 { margin: 0; font-size: 14px; color: var(--text-2); font-weight: 600; }
+.no-project h4 { margin: 0; font-size: 13px; color: var(--text-2); font-weight: 600; }
 .no-project p { margin: 0; max-width: 320px; font-size: 12px; line-height: 1.55; }
 
 /* ---- startup workspace prompt ---- */
@@ -586,18 +670,18 @@ svg.ws-chevron.open { transform: rotate(90deg); }
 
 .wsp-option {
   display: flex; align-items: flex-start; gap: 10px; width: 100%; text-align: left;
-  padding: 11px 12px; margin-bottom: 8px; border-radius: 8px;
+  padding: 10px 12px; margin-bottom: 6px; border-radius: var(--r-0);
   border: 1px solid var(--border); background: var(--surface-2); cursor: pointer;
 }
-.wsp-option.chosen { border-color: var(--accent); background: rgba(57,135,229,0.10); }
-.wsp-option.chosen:hover { background: rgba(57,135,229,0.16); }
+.wsp-option.chosen { border-color: var(--accent); background: var(--selected); }
+.wsp-option.chosen:hover { background: var(--selected); }
 .wsp-option.disabled { opacity: 0.45; cursor: default; }
 .wsp-dot {
   width: 12px; height: 12px; border-radius: 50%; flex: none; margin-top: 2px;
-  border: 2px solid var(--text-3);
+  border: 1px solid var(--text-3);
 }
 .wsp-option.chosen .wsp-dot { border-color: var(--accent); background: var(--accent); box-shadow: inset 0 0 0 2px var(--surface-2); }
 .wsp-body { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
-.wsp-title { font-size: 12.5px; font-weight: 600; color: var(--text-1); }
+.wsp-title { font-size: 12.5px; font-weight: 600; color: var(--text); }
 .wsp-title em { font-style: normal; font-weight: 400; color: var(--text-3); }
 .wsp-desc { font-size: 11px; line-height: 1.5; color: var(--text-3); }

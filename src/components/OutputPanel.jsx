@@ -298,7 +298,7 @@ function BaseChart({ chartId, data, lines, yLabel, yDomain, y2Label, y2Domain, r
           />
         )}
         <Tooltip
-          contentStyle={{ background: '#161b22', border: '1px solid #2d3646', borderRadius: 6 }}
+          contentStyle={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 0 }}
           labelStyle={{ color: '#e6edf3' }}
           labelFormatter={(v) => `${fmt(v)} Hz`}
           formatter={(v) => fmt(v, 2)}
