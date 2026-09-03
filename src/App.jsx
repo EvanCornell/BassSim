@@ -5,9 +5,9 @@ import Toolbar from './components/Toolbar'
 import DockLayout from './components/dock/DockLayout'
 import DriverDB from './components/DriverDB'
 import TSCalc from './components/TSCalc'
-import ProjectManager from './components/ProjectManager'
 import SettingsWindow from './components/SettingsWindow'
 import PopoutView from './components/PopoutView'
+import WorkspacePrompt from './components/WorkspacePrompt'
 import ContextMenu from './components/ContextMenu'
 import { isPopout } from './popout'
 import { COMMANDS, comboFromEvent, resolve } from './keymap'
@@ -16,7 +16,9 @@ import { COMMANDS, comboFromEvent, resolve } from './keymap'
  * The starter project loaded on first run.
  *
  * A ported box, which exercises every element type worth seeing on arrival:
- * driver front to radiation, rear through a chamber and a port.
+ * driver front to radiation, rear through a chamber and a port. It is written
+ * into the workspace's first project rather than opened loose, so even the
+ * demo is a file the user can rename, copy or throw away.
  */
 const DEMO = {
   schemaVersion: SCHEMA_VERSION,
@@ -34,26 +36,6 @@ const DEMO = {
     { id: 'e3', source: 'ch1', sourceHandle: 'out', target: 'wg1', targetHandle: 'throat' },
     { id: 'e4', source: 'wg1', sourceHandle: 'mouth', target: 'rad2', targetHandle: 'in' },
   ],
-}
-
-/**
- * Offer to restore the previous session's auto-saved project.
- *
- * @returns {React.ReactElement|null} The banner, or `null` when there is nothing to restore.
- * @sideEffect Subscribes to the store; the buttons replace the project or dismiss the prompt.
- */
-function RestoreBanner() {
-  const restorePrompt = useStore((s) => s.restorePrompt)
-  const setRestorePrompt = useStore((s) => s.setRestorePrompt)
-  const loadSerialized = useStore((s) => s.loadSerialized)
-  if (!restorePrompt) return null
-  return (
-    <div className="restore-banner">
-      <span>Restore last session — <b>{restorePrompt.name}</b> ({(restorePrompt.nodes || []).length} nodes, saved {restorePrompt.modified ? new Date(restorePrompt.modified).toLocaleString() : 'earlier'})?</span>
-      <button className="primary" onClick={() => { loadSerialized(restorePrompt); setRestorePrompt(null) }}>Restore</button>
-      <button onClick={() => setRestorePrompt(null)}>Dismiss</button>
-    </div>
-  )
 }
 
 /**
@@ -90,29 +72,24 @@ function ErrorBanner() {
  * Routes before rendering anything: a popped-out panel is a whole-page mode
  * that shares none of the workspace chrome.
  *
- * Two effects run once on mount. The first loads the demo project and, if a
- * different auto-save exists, offers to restore it — skipped entirely in a
- * popped-out tab, which owns no project and would otherwise broadcast one
- * over whatever the main window has open. The second installs the global
+ * Two effects run once on mount. The first opens whichever workspace file was
+ * last active, seeding a first run with the demo graph — skipped entirely in a
+ * popped-out tab, which owns no project and would otherwise broadcast one over
+ * whatever the main window has open. The second installs the global
  * key handler, which resolves every combo through `src/keymap.js` so the
  * menus, the rebinding UI and this handler can never disagree, and which
  * ignores keys while a text field has focus.
  *
  * @returns {React.ReactElement} The workspace, or a whole-page route.
- * @sideEffect Subscribes to the store, reads LocalStorage and `window.location`, and registers a window keydown listener that is removed on unmount.
+ * @sideEffect Subscribes to the store, reads `window.location`, and registers a window keydown listener that is removed on unmount.
  */
 export default function App() {
   const loadSerialized = useStore((s) => s.loadSerialized)
-  const setRestorePrompt = useStore((s) => s.setRestorePrompt)
 
   // Initial load: open the workspace's active project. On a genuine first run
   // that file exists but is empty, so the demo graph goes into it — a new user
   // lands in a workspace called "workspace", in a project called "project",
   // with something on the canvas to take apart.
-  //
-  // The restore prompt is separate and older: it offers the last auto-save
-  // from before workspaces existed, and only when it is not what is already
-  // open.
   //
   // A popped-out tab owns no project — loading one here would broadcast it
   // over whatever the main window already has open.
@@ -120,19 +97,10 @@ export default function App() {
     if (isPopout()) return
     const st = useStore.getState()
     const entry = st.activeFile ? st.workspace.files[st.activeFile] : null
-    const project = entry?.data
-
+    if (!entry) return
+    const project = entry.data
     if (project?.nodes?.length) loadSerialized(project)
     else loadSerialized({ ...DEMO, name: project?.name || DEMO.name })
-
-    const last = localStorage.getItem('acousim:lastProject')
-    let restored = null
-    if (last) {
-      try { restored = JSON.parse(localStorage.getItem(`acousim:project:${last}`)) } catch { /* ignore */ }
-    }
-    if (restored && restored.nodes?.length && restored.name !== useStore.getState().projectName) {
-      setRestorePrompt(restored)
-    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -172,14 +140,13 @@ export default function App() {
     <div className="app">
       <MenuBar />
       <Toolbar />
-      <RestoreBanner />
       <SimErrorBanner />
       <ErrorBanner />
       <DockLayout />
       <DriverDB />
       <TSCalc />
-      <ProjectManager />
       <SettingsWindow />
+      <WorkspacePrompt />
       <ContextMenu />
     </div>
   )

@@ -6,6 +6,7 @@
 // from the chart registry instead of listed one by one.
 import React from 'react'
 import { PANEL_META, CHART_IDS } from '../../panelMeta'
+import { useStore } from '../../store'
 import FileBrowser from '../FileBrowser'
 import FlowCanvas from '../FlowCanvas'
 import NodePalette from '../NodePalette'
@@ -21,10 +22,30 @@ import { chartPanelComponent } from '../OutputPanel'
  * canvas and travel with it when the panel is popped out — a popped-out node
  * editor that could not add nodes would be a strange thing to hand someone.
  *
- * @returns {React.ReactElement} The canvas panel.
- * @pure
+ * With no project open the canvas is replaced rather than merely emptied.
+ * Every edit belongs to a file; a graph that belongs to none is the one thing
+ * a user can build and then lose, so there is nothing to build on until a
+ * project is chosen.
+ *
+ * @returns {React.ReactElement} The canvas panel, or the empty state when no project is open.
+ * @sideEffect Subscribes to the store.
  */
 function CanvasPanel() {
+  const activeFile = useStore((s) => s.activeFile)
+  if (!activeFile) {
+    return (
+      <div className="canvas-wrap">
+        <div className="no-project">
+          <h4>No project open</h4>
+          <p>
+            Every design lives in a file in your workspace. Open one from the
+            Workspace panel, or start a new one.
+          </p>
+          <button className="primary" onClick={() => useStore.getState().newFile('')}>New project</button>
+        </div>
+      </div>
+    )
+  }
   return (
     <div className="canvas-wrap">
       <FlowCanvas />

@@ -15,10 +15,10 @@ The application root.
 Routes before rendering anything: a popped-out panel is a whole-page mode
 that shares none of the workspace chrome.
 
-Two effects run once on mount. The first loads the demo project and, if a
-different auto-save exists, offers to restore it — skipped entirely in a
-popped-out tab, which owns no project and would otherwise broadcast one
-over whatever the main window has open. The second installs the global
+Two effects run once on mount. The first opens whichever workspace file was
+last active, seeding a first run with the demo graph — skipped entirely in a
+popped-out tab, which owns no project and would otherwise broadcast one over
+whatever the main window has open. The second installs the global
 key handler, which resolves every combo through `src/keymap.js` so the
 menus, the rebinding UI and this handler can never disagree, and which
 ignores keys while a text field has focus.
@@ -29,24 +29,9 @@ ignores keys while a text field has focus.
 
 **Side effects**
 
-- Subscribes to the store, reads LocalStorage and `window.location`, and registers a window keydown listener that is removed on unmount.
+- Subscribes to the store, reads `window.location`, and registers a window keydown listener that is removed on unmount.
 
-## UNREACHABLE (4)
-
-### `RestoreBanner()`
-
-- **Reachability:** UNREACHABLE
-- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
-
-Offer to restore the previous session's auto-saved project.
-
-**Returns**
-
-- `React.ReactElement|null` — The banner, or `null` when there is nothing to restore.
-
-**Side effects**
-
-- Subscribes to the store; the buttons replace the project or dismiss the prompt.
+## UNREACHABLE (3)
 
 ### `SimErrorBanner()`
 

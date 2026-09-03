@@ -169,6 +169,10 @@ Close the menu on Escape.
 
 Import a project from a chosen file.
 
+The project is added to the workspace as a new file rather than dropped
+onto the canvas: a project belonging to no file is the one thing that can
+be edited and then lost.
+
 A schema-version mismatch asks before loading rather than refusing —
 older files usually still open, since every param falls back to its
 default.
@@ -186,14 +190,14 @@ in a row fires a change event the second time.
 
 **Side effects**
 
-- Reads the file, may show a confirmation, replaces the project, and alerts on unparseable input.
+- Reads the file, may show a confirmation, adds a workspace file, and alerts on unparseable input.
 
 ### `MenuBar > onLoadFile > reader.onload()`
 
 - **Reachability:** UNREACHABLE
 - **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
 
-Parse the loaded file and replace the current project with it.
+Parse the loaded file and add it to the workspace.
 
 **Returns**
 
@@ -201,7 +205,7 @@ Parse the loaded file and replace the current project with it.
 
 **Side effects**
 
-- Replaces the project, or alerts when the file is not valid project JSON.
+- Adds a workspace file and opens it, or alerts when the file is not valid project JSON.
 
 ### `MenuBar > onLoadWorkspace(e)`
 
@@ -246,7 +250,7 @@ Save the current window arrangement under a prompted name.
 - **Reachability:** UNREACHABLE
 - **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
 
-Open the saved-project browser.
+Add an empty project to the workspace and open it.
 
 **Returns**
 
@@ -254,7 +258,7 @@ Open the saved-project browser.
 
 **Side effects**
 
-- Shows a modal.
+- Creates a workspace file and replaces what is on the canvas.
 
 ### `MenuBar > onClick()`
 

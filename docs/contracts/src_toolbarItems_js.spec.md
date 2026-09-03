@@ -10,7 +10,7 @@ Quick-access bar registry.
 The bar under the menu is a list of small widgets chosen and ordered by the
 user (Settings ▸ Quick bar). Two kinds live here:
 
-  control — an interactive widget (project name, drive voltage, sweep …)
+  control — an interactive widget (drive voltage, sweep range …)
   metric  — a read-only number derived from the current simulation
 
 Adding an item means one entry in TOOLBAR_ITEMS plus, for controls, one case
@@ -31,9 +31,8 @@ Every widget the quick bar can show, keyed by id.
 renderer; `metrics` are read-only and need nothing else, because
 `metricValue` is the single place that knows how to compute and format them.
 
-Keys: `project`, `undo`, `voltage`, `sweep`, `masking`, `snapshot`, `m_f3`, `m_f10`, `m_fb`, `m_qtc`, `m_zpeaks`, `m_peakspl`, `m_xfb`, `m_xf3`, `m_bw`, `m_maxpower`, `m_volume`, `m_solve`
+Keys: `undo`, `voltage`, `sweep`, `masking`, `snapshot`, `m_f3`, `m_f10`, `m_fb`, `m_qtc`, `m_zpeaks`, `m_peakspl`, `m_xfb`, `m_xf3`, `m_bw`, `m_maxpower`, `m_volume`, `m_solve`
 
-- `project` holds: `label`, `group`
 - `undo` holds: `label`, `group`
 - `voltage` holds: `label`, `group`
 - `sweep` holds: `label`, `group`
@@ -70,7 +69,7 @@ Sweep range and resonance masking are deliberately absent: both are set-once
 controls reachable from Settings ▸ Application and the Simulate menu, so they
 earn a permanent slot only for someone who actually tweaks them often.
 
-Values: `project`, `undo`, `voltage`, `snapshot`, `m_f3`, `m_f10`, `m_fb`, `m_qtc`, `m_zpeaks`, `m_peakspl`, `m_xfb`, `m_xf3`, `m_bw`, `m_maxpower`, `m_volume`, `m_solve`
+Values: `undo`, `voltage`, `snapshot`, `m_f3`, `m_f10`, `m_fb`, `m_qtc`, `m_zpeaks`, `m_peakspl`, `m_xfb`, `m_xf3`, `m_bw`, `m_maxpower`, `m_volume`, `m_solve`
 
 ### `__internals`
 

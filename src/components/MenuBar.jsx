@@ -139,6 +139,10 @@ export default function MenuBar() {
   /**
    * Import a project from a chosen file.
    *
+   * The project is added to the workspace as a new file rather than dropped
+   * onto the canvas: a project belonging to no file is the one thing that can
+   * be edited and then lost.
+   *
    * A schema-version mismatch asks before loading rather than refusing —
    * older files usually still open, since every param falls back to its
    * default.
@@ -148,17 +152,17 @@ export default function MenuBar() {
    *
    * @param {React.ChangeEvent} e - The file input change event.
    * @returns {void}
-   * @sideEffect Reads the file, may show a confirmation, replaces the project, and alerts on unparseable input.
+   * @sideEffect Reads the file, may show a confirmation, adds a workspace file, and alerts on unparseable input.
    */
   const onLoadFile = (e) => {
     const file = e.target.files?.[0]
     if (!file) return
     const reader = new FileReader()
     /**
-     * Parse the loaded file and replace the current project with it.
+     * Parse the loaded file and add it to the workspace.
      *
      * @returns {void}
-     * @sideEffect Replaces the project, or alerts when the file is not valid project JSON.
+     * @sideEffect Adds a workspace file and opens it, or alerts when the file is not valid project JSON.
      */
     reader.onload = () => {
       try {
@@ -174,7 +178,7 @@ export default function MenuBar() {
         if (proj.schemaVersion !== SCHEMA_VERSION) {
           if (!confirm(`This file uses schema v${proj.schemaVersion ?? '?'} but the app expects v${SCHEMA_VERSION}. Attempt to load anyway?`)) return
         }
-        store.loadSerialized(proj)
+        store.importProject(proj, file.name)
       } catch {
         alert('Could not parse that file as an AcouSim project.')
       }
@@ -218,19 +222,19 @@ export default function MenuBar() {
 
   const MENUS = [
     ['File', [
-      { label: 'New Project', hint: key('project.new'), onClick: store.newProject },
       {
-        label: 'Open Project…',
+        label: 'New Project',
+        hint: key('project.new'),
         /**
-         * Open the saved-project browser.
+         * Add an empty project to the workspace and open it.
          *
          * @returns {*} Whatever the action returns; the menu ignores it.
-         * @sideEffect Shows a modal.
+         * @sideEffect Creates a workspace file and replaces what is on the canvas.
          */
-        onClick: () => store.setShowProjectManager(true),
+        onClick: () => store.newFile(''),
       },
       { label: '-' },
-      { label: 'Save Project As JSON…', hint: key('project.save'), onClick: store.saveProjectJSON },
+      { label: 'Export Project as JSON…', hint: key('project.save'), onClick: store.saveProjectJSON },
       {
         label: 'Import Project JSON…',
         /**

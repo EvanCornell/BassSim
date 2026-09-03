@@ -25,8 +25,8 @@
   },
   "stats": {
     "modules": 58,
-    "methods": 635,
-    "documented": 635
+    "methods": 625,
+    "documented": 625
   },
   "modules": [
     {
@@ -4323,44 +4323,13 @@
       "constants": [],
       "methods": [
         {
-          "name": "RestoreBanner",
-          "qualified": "RestoreBanner",
-          "kind": "function",
-          "exported": false,
-          "async": false,
-          "generator": false,
-          "line": 45,
-          "signature": [],
-          "documented": true,
-          "summary": "Offer to restore the previous session's auto-saved project.",
-          "description": "Offer to restore the previous session's auto-saved project.",
-          "params": [],
-          "returns": {
-            "type": "React.ReactElement|null",
-            "desc": "The banner, or `null` when there is nothing to restore."
-          },
-          "throws": [],
-          "contract": {
-            "pre": [],
-            "post": [],
-            "invariant": [],
-            "mutates": [],
-            "sideEffect": [
-              "Subscribes to the store; the buttons replace the project or dismiss the prompt."
-            ],
-            "reads": [],
-            "pure": false
-          },
-          "other": []
-        },
-        {
           "name": "SimErrorBanner",
           "qualified": "SimErrorBanner",
           "kind": "function",
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 69,
+          "line": 51,
           "signature": [],
           "documented": true,
           "summary": "Report that the simulation could not be run.",
@@ -4391,7 +4360,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 81,
+          "line": 63,
           "signature": [],
           "documented": true,
           "summary": "Report graph errors that prevent the simulation from running.",
@@ -4422,11 +4391,11 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 104,
+          "line": 86,
           "signature": [],
           "documented": true,
           "summary": "The application root.",
-          "description": "The application root.\n\nRoutes before rendering anything: a popped-out panel is a whole-page mode\nthat shares none of the workspace chrome.\n\nTwo effects run once on mount. The first loads the demo project and, if a\ndifferent auto-save exists, offers to restore it — skipped entirely in a\npopped-out tab, which owns no project and would otherwise broadcast one\nover whatever the main window has open. The second installs the global\nkey handler, which resolves every combo through `src/keymap.js` so the\nmenus, the rebinding UI and this handler can never disagree, and which\nignores keys while a text field has focus.",
+          "description": "The application root.\n\nRoutes before rendering anything: a popped-out panel is a whole-page mode\nthat shares none of the workspace chrome.\n\nTwo effects run once on mount. The first opens whichever workspace file was\nlast active, seeding a first run with the demo graph — skipped entirely in a\npopped-out tab, which owns no project and would otherwise broadcast one over\nwhatever the main window has open. The second installs the global\nkey handler, which resolves every combo through `src/keymap.js` so the\nmenus, the rebinding UI and this handler can never disagree, and which\nignores keys while a text field has focus.",
           "params": [],
           "returns": {
             "type": "React.ReactElement",
@@ -4439,7 +4408,7 @@
             "invariant": [],
             "mutates": [],
             "sideEffect": [
-              "Subscribes to the store, reads LocalStorage and `window.location`, and registers a window keydown listener that is removed on unmount."
+              "Subscribes to the store, reads `window.location`, and registers a window keydown listener that is removed on unmount."
             ],
             "reads": [],
             "pure": false
@@ -4453,7 +4422,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 152,
+          "line": 120,
           "signature": [
             "e"
           ],
@@ -7763,13 +7732,13 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 153,
+          "line": 157,
           "signature": [
             "e"
           ],
           "documented": true,
           "summary": "Import a project from a chosen file.",
-          "description": "Import a project from a chosen file.\n\nA schema-version mismatch asks before loading rather than refusing —\nolder files usually still open, since every param falls back to its\ndefault.\n\nThe input's value is cleared afterwards so choosing the same file twice\nin a row fires a change event the second time.",
+          "description": "Import a project from a chosen file.\n\nThe project is added to the workspace as a new file rather than dropped\nonto the canvas: a project belonging to no file is the one thing that can\nbe edited and then lost.\n\nA schema-version mismatch asks before loading rather than refusing —\nolder files usually still open, since every param falls back to its\ndefault.\n\nThe input's value is cleared afterwards so choosing the same file twice\nin a row fires a change event the second time.",
           "params": [
             {
               "name": "e",
@@ -7790,7 +7759,7 @@
             "invariant": [],
             "mutates": [],
             "sideEffect": [
-              "Reads the file, may show a confirmation, replaces the project, and alerts on unparseable input."
+              "Reads the file, may show a confirmation, adds a workspace file, and alerts on unparseable input."
             ],
             "reads": [],
             "pure": false
@@ -7804,11 +7773,11 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 163,
+          "line": 167,
           "signature": [],
           "documented": true,
-          "summary": "Parse the loaded file and replace the current project with it.",
-          "description": "Parse the loaded file and replace the current project with it.",
+          "summary": "Parse the loaded file and add it to the workspace.",
+          "description": "Parse the loaded file and add it to the workspace.",
           "params": [],
           "returns": {
             "type": "void",
@@ -7821,7 +7790,7 @@
             "invariant": [],
             "mutates": [],
             "sideEffect": [
-              "Replaces the project, or alerts when the file is not valid project JSON."
+              "Adds a workspace file and opens it, or alerts when the file is not valid project JSON."
             ],
             "reads": [],
             "pure": false
@@ -7835,7 +7804,7 @@
           "exported": false,
           "async": true,
           "generator": false,
-          "line": 196,
+          "line": 200,
           "signature": [
             "e"
           ],
@@ -7876,7 +7845,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 212,
+          "line": 216,
           "signature": [],
           "documented": true,
           "summary": "Save the current window arrangement under a prompted name.",
@@ -7907,11 +7876,11 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 230,
+          "line": 234,
           "signature": [],
           "documented": true,
-          "summary": "Open the saved-project browser.",
-          "description": "Open the saved-project browser.",
+          "summary": "Add an empty project to the workspace and open it.",
+          "description": "Add an empty project to the workspace and open it.",
           "params": [],
           "returns": {
             "type": "*",
@@ -7924,7 +7893,7 @@
             "invariant": [],
             "mutates": [],
             "sideEffect": [
-              "Shows a modal."
+              "Creates a workspace file and replaces what is on the canvas."
             ],
             "reads": [],
             "pure": false
@@ -7938,7 +7907,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 242,
+          "line": 246,
           "signature": [],
           "documented": true,
           "summary": "Open the file picker to import a project.",
@@ -7969,7 +7938,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 253,
+          "line": 257,
           "signature": [],
           "documented": true,
           "summary": "Download the whole workspace as one file.",
@@ -8000,7 +7969,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 263,
+          "line": 267,
           "signature": [],
           "documented": true,
           "summary": "Open the file picker to replace the workspace.",
@@ -8031,7 +8000,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 277,
+          "line": 281,
           "signature": [],
           "documented": true,
           "summary": "Download every result series as a CSV.",
@@ -8062,7 +8031,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 287,
+          "line": 291,
           "signature": [],
           "documented": true,
           "summary": "Download a PNG of the node canvas.",
@@ -8093,7 +8062,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 297,
+          "line": 301,
           "signature": [],
           "documented": true,
           "summary": "Download a plain-text metrics summary.",
@@ -8124,7 +8093,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 326,
+          "line": 330,
           "signature": [],
           "documented": true,
           "summary": "Pop the focused panel out into its own browser tab.",
@@ -8155,7 +8124,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 341,
+          "line": 345,
           "signature": [],
           "documented": true,
           "summary": "Pop this specific panel out into its own browser tab.",
@@ -8186,7 +8155,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 354,
+          "line": 358,
           "signature": [],
           "documented": true,
           "summary": "Maximize the focused panel, or restore the one already maximized.",
@@ -8217,7 +8186,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 365,
+          "line": 369,
           "signature": [],
           "documented": true,
           "summary": "Restore the default workspace arrangement.",
@@ -8248,7 +8217,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 380,
+          "line": 384,
           "signature": [],
           "documented": true,
           "summary": "Apply this saved arrangement.",
@@ -8279,7 +8248,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 397,
+          "line": 401,
           "signature": [],
           "documented": true,
           "summary": "Delete this saved arrangement.",
@@ -8310,7 +8279,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 413,
+          "line": 417,
           "signature": [],
           "documented": true,
           "summary": "Toggle resonance masking, which lumps chambers to hide standing-wave artifacts.",
@@ -8341,7 +8310,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 424,
+          "line": 428,
           "signature": [],
           "documented": true,
           "summary": "Toggle phase unwrapping on the phase chart.",
@@ -8372,7 +8341,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 442,
+          "line": 446,
           "signature": [],
           "documented": true,
           "summary": "Discard every reference overlay.",
@@ -8403,7 +8372,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 457,
+          "line": 461,
           "signature": [],
           "documented": true,
           "summary": "Open the driver library browser.",
@@ -8434,7 +8403,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 467,
+          "line": 471,
           "signature": [],
           "documented": true,
           "summary": "Open the Thiele/Small parameter solver.",
@@ -8465,7 +8434,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 480,
+          "line": 484,
           "signature": [],
           "documented": true,
           "summary": "Open the Nonlinear Lab panel.",
@@ -8496,7 +8465,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 495,
+          "line": 499,
           "signature": [],
           "documented": true,
           "summary": "Turn experimental features on or off.",
@@ -8527,7 +8496,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 514,
+          "line": 518,
           "signature": [],
           "documented": true,
           "summary": "Open Settings at the keyboard section.",
@@ -8558,7 +8527,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 524,
+          "line": 528,
           "signature": [],
           "documented": true,
           "summary": "Show the about dialog.",
@@ -12222,244 +12191,6 @@
       ]
     },
     {
-      "file": "src/components/ProjectManager.jsx",
-      "module": null,
-      "constants": [],
-      "methods": [
-        {
-          "name": "Thumb",
-          "qualified": "Thumb",
-          "kind": "function",
-          "exported": false,
-          "async": false,
-          "generator": false,
-          "line": 16,
-          "signature": [
-            "arg0"
-          ],
-          "documented": true,
-          "summary": "An inline SVG preview of a project's node graph.",
-          "description": "An inline SVG preview of a project's node graph.\n\nScales the graph's bounding box to fit a fixed 90×54 thumbnail, using the\nsmaller of the two axis scales so the layout keeps its proportions.\nEnough to recognise a saved project by shape without opening it.",
-          "params": [
-            {
-              "name": "props",
-              "type": "object",
-              "optional": false,
-              "default": null,
-              "desc": "Component props."
-            },
-            {
-              "name": "props.proj",
-              "type": "object",
-              "optional": false,
-              "default": null,
-              "desc": "The serialized project to preview."
-            }
-          ],
-          "returns": {
-            "type": "React.ReactElement",
-            "desc": "The thumbnail, blank for a project with no nodes."
-          },
-          "throws": [],
-          "contract": {
-            "pre": [],
-            "post": [],
-            "invariant": [],
-            "mutates": [],
-            "sideEffect": [],
-            "reads": [],
-            "pure": true
-          },
-          "other": []
-        },
-        {
-          "name": "ProjectManager",
-          "qualified": "ProjectManager",
-          "kind": "function",
-          "exported": true,
-          "async": false,
-          "generator": false,
-          "line": 57,
-          "signature": [],
-          "documented": true,
-          "summary": "Browse, load, rename, duplicate and delete auto-saved projects.",
-          "description": "Browse, load, rename, duplicate and delete auto-saved projects.\n\nProjects are read straight from LocalStorage on each render rather than\nheld in state, so the list reflects edits made in another tab.",
-          "params": [],
-          "returns": {
-            "type": "React.ReactElement|null",
-            "desc": "The modal, or `null` when hidden."
-          },
-          "throws": [],
-          "contract": {
-            "pre": [],
-            "post": [],
-            "invariant": [],
-            "mutates": [],
-            "sideEffect": [
-              "Subscribes to the store. Reads LocalStorage on every render."
-            ],
-            "reads": [],
-            "pure": false
-          },
-          "other": []
-        },
-        {
-          "name": "refresh",
-          "qualified": "ProjectManager > refresh",
-          "kind": "function",
-          "exported": false,
-          "async": false,
-          "generator": false,
-          "line": 73,
-          "signature": [],
-          "documented": true,
-          "summary": "Force a re-read of the saved project list after a change.",
-          "description": "Force a re-read of the saved project list after a change.\n\nThe projects live in LocalStorage rather than in state, so nothing else\nwould tell React that they changed.",
-          "params": [],
-          "returns": {
-            "type": "void",
-            "desc": ""
-          },
-          "throws": [],
-          "contract": {
-            "pre": [],
-            "post": [],
-            "invariant": [],
-            "mutates": [],
-            "sideEffect": [
-              "Bumps a counter to trigger a re-render."
-            ],
-            "reads": [],
-            "pure": false
-          },
-          "other": []
-        },
-        {
-          "name": "rename",
-          "qualified": "ProjectManager > rename",
-          "kind": "function",
-          "exported": false,
-          "async": false,
-          "generator": false,
-          "line": 82,
-          "signature": [
-            "p"
-          ],
-          "documented": true,
-          "summary": "Rename a saved project, moving it to its new key.",
-          "description": "Rename a saved project, moving it to its new key.",
-          "params": [
-            {
-              "name": "p",
-              "type": "object",
-              "optional": false,
-              "default": null,
-              "desc": "The saved project entry."
-            }
-          ],
-          "returns": {
-            "type": "void",
-            "desc": ""
-          },
-          "throws": [],
-          "contract": {
-            "pre": [],
-            "post": [],
-            "invariant": [],
-            "mutates": [],
-            "sideEffect": [
-              "Prompts for a name, then writes the new LocalStorage key and removes the old one. Does nothing if cancelled or unchanged."
-            ],
-            "reads": [],
-            "pure": false
-          },
-          "other": []
-        },
-        {
-          "name": "duplicate",
-          "qualified": "ProjectManager > duplicate",
-          "kind": "function",
-          "exported": false,
-          "async": false,
-          "generator": false,
-          "line": 97,
-          "signature": [
-            "p"
-          ],
-          "documented": true,
-          "summary": "Copy a saved project under a \"copy\" name.",
-          "description": "Copy a saved project under a \"copy\" name.",
-          "params": [
-            {
-              "name": "p",
-              "type": "object",
-              "optional": false,
-              "default": null,
-              "desc": "The saved project entry."
-            }
-          ],
-          "returns": {
-            "type": "void",
-            "desc": ""
-          },
-          "throws": [],
-          "contract": {
-            "pre": [],
-            "post": [],
-            "invariant": [],
-            "mutates": [],
-            "sideEffect": [
-              "Writes a new LocalStorage key with a fresh modification time. Silently overwrites an existing copy of the same name."
-            ],
-            "reads": [],
-            "pure": false
-          },
-          "other": []
-        },
-        {
-          "name": "remove",
-          "qualified": "ProjectManager > remove",
-          "kind": "function",
-          "exported": false,
-          "async": false,
-          "generator": false,
-          "line": 109,
-          "signature": [
-            "p"
-          ],
-          "documented": true,
-          "summary": "Delete a saved project after confirming.",
-          "description": "Delete a saved project after confirming.",
-          "params": [
-            {
-              "name": "p",
-              "type": "object",
-              "optional": false,
-              "default": null,
-              "desc": "The saved project entry."
-            }
-          ],
-          "returns": {
-            "type": "void",
-            "desc": ""
-          },
-          "throws": [],
-          "contract": {
-            "pre": [],
-            "post": [],
-            "invariant": [],
-            "mutates": [],
-            "sideEffect": [
-              "Shows a confirmation dialog, then removes the LocalStorage key. Does nothing if declined."
-            ],
-            "reads": [],
-            "pure": false
-          },
-          "other": []
-        }
-      ]
-    },
-    {
       "file": "src/components/SettingsWindow.jsx",
       "module": null,
       "constants": [],
@@ -13310,44 +13041,13 @@
       "constants": [],
       "methods": [
         {
-          "name": "ProjectName",
-          "qualified": "ProjectName",
-          "kind": "function",
-          "exported": false,
-          "async": false,
-          "generator": false,
-          "line": 20,
-          "signature": [],
-          "documented": true,
-          "summary": "Editable project name. Renaming moves the auto-save to the new name.",
-          "description": "Editable project name. Renaming moves the auto-save to the new name.",
-          "params": [],
-          "returns": {
-            "type": "React.ReactElement",
-            "desc": "The name input."
-          },
-          "throws": [],
-          "contract": {
-            "pre": [],
-            "post": [],
-            "invariant": [],
-            "mutates": [],
-            "sideEffect": [
-              "Subscribes to the store."
-            ],
-            "reads": [],
-            "pure": false
-          },
-          "other": []
-        },
-        {
           "name": "UndoRedo",
           "qualified": "UndoRedo",
           "kind": "function",
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 39,
+          "line": 23,
           "signature": [],
           "documented": true,
           "summary": "Undo and redo buttons, disabled when their stacks are empty.",
@@ -13378,7 +13078,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 58,
+          "line": 42,
           "signature": [],
           "documented": true,
           "summary": "Drive-level control, with the resulting wattage beside it.",
@@ -13409,7 +13109,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 80,
+          "line": 64,
           "signature": [],
           "documented": true,
           "summary": "Sweep start and end frequency. Off by default — it is a set-once control.",
@@ -13440,7 +13140,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 102,
+          "line": 86,
           "signature": [],
           "documented": true,
           "summary": "Toggle resonance masking, which lumps chambers to hide standing-wave artifacts.",
@@ -13471,7 +13171,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 119,
+          "line": 103,
           "signature": [],
           "documented": true,
           "summary": "Take a snapshot and manage the reference overlays already taken.",
@@ -13502,7 +13202,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 159,
+          "line": 142,
           "signature": [
             "arg0"
           ],
@@ -13550,7 +13250,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 186,
+          "line": 169,
           "signature": [],
           "documented": true,
           "summary": "The quick-access bar under the menu.",
@@ -13606,6 +13306,78 @@
             "mutates": [],
             "sideEffect": [
               "Subscribes to the store."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        }
+      ]
+    },
+    {
+      "file": "src/components/WorkspacePrompt.jsx",
+      "module": {
+        "summary": "The question asked before anything else: where does this workspace live?",
+        "description": "The question asked before anything else: where does this workspace live?\n\nOnly one answer exists today, which makes the prompt look redundant until\nyou notice what it is really for. Browser storage is not a filing cabinet —\nclearing site data takes it, a private window never had it, and an eviction\nunder storage pressure happens without asking. A user who learns that after\nbuilding six enclosures has learned it too late. So it is said once, at the\nfront, while there is nothing to lose.\n\nThe other half of the reason is that this is where the choice will go when\nthere is one. A folder on the user's own computer is the obvious next\nanswer, and it is listed here, visibly not yet available, so the shape of\nthe decision is familiar before it has consequences."
+      },
+      "constants": [],
+      "methods": [
+        {
+          "name": "WorkspacePrompt",
+          "qualified": "WorkspacePrompt",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 28,
+          "signature": [],
+          "documented": true,
+          "summary": "The startup workspace-location prompt.",
+          "description": "The startup workspace-location prompt.\n\nSkipping and choosing browser storage do the same thing, deliberately: the\nprompt is informative rather than gating, and a user who wants to get on\nwith it should not be made to read first. Both are recorded, so the question\nis asked once rather than on every visit.",
+          "params": [],
+          "returns": {
+            "type": "React.ReactElement|null",
+            "desc": "The modal, or `null` once the question has been answered."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Subscribes to the store; the buttons write LocalStorage."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "choose",
+          "qualified": "WorkspacePrompt > choose",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 39,
+          "signature": [],
+          "documented": true,
+          "summary": "Record the choice and dismiss the prompt.",
+          "description": "Record the choice and dismiss the prompt.",
+          "params": [],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Writes store state and LocalStorage."
             ],
             "reads": [],
             "pure": false
@@ -14265,7 +14037,7 @@
       "constants": [
         {
           "name": "PANELS",
-          "line": 56,
+          "line": 77,
           "shape": null,
           "summary": "The panel registry: each panel's metadata paired with its component.",
           "description": "The panel registry: each panel's metadata paired with its component.\n\nAdding a panel means one entry in `PANEL_META` plus one line in\n`COMPONENTS` — the dock, the View menu and the saved-layout sanitizer all\nread from these, so nothing else needs to learn about it."
@@ -14279,15 +14051,15 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 27,
+          "line": 33,
           "signature": [],
           "documented": true,
           "summary": "The Node Editor panel: the canvas with the palette and popup layered over it.",
-          "description": "The Node Editor panel: the canvas with the palette and popup layered over it.\n\nBoth overlays live here rather than at app level so they are clipped to the\ncanvas and travel with it when the panel is popped out — a popped-out node\neditor that could not add nodes would be a strange thing to hand someone.",
+          "description": "The Node Editor panel: the canvas with the palette and popup layered over it.\n\nBoth overlays live here rather than at app level so they are clipped to the\ncanvas and travel with it when the panel is popped out — a popped-out node\neditor that could not add nodes would be a strange thing to hand someone.\n\nWith no project open the canvas is replaced rather than merely emptied.\nEvery edit belongs to a file; a graph that belongs to none is the one thing\na user can build and then lose, so there is nothing to build on until a\nproject is chosen.",
           "params": [],
           "returns": {
             "type": "React.ReactElement",
-            "desc": "The canvas panel."
+            "desc": "The canvas panel, or the empty state when no project is open."
           },
           "throws": [],
           "contract": {
@@ -14295,9 +14067,11 @@
             "post": [],
             "invariant": [],
             "mutates": [],
-            "sideEffect": [],
+            "sideEffect": [
+              "Subscribes to the store."
+            ],
             "reads": [],
-            "pure": true
+            "pure": false
           },
           "other": []
         }
@@ -18672,7 +18446,6 @@
               "drive.downFine",
               "project.new",
               "project.save",
-              "project.open",
               "sim.snapshot",
               "sim.mask",
               "sim.recompute",
@@ -18765,12 +18538,6 @@
                 "scope",
                 "run"
               ],
-              "project.open": [
-                "label",
-                "group",
-                "scope",
-                "run"
-              ],
               "sim.snapshot": [
                 "label",
                 "group",
@@ -18815,21 +18582,21 @@
         },
         {
           "name": "COMMAND_IDS",
-          "line": 328,
+          "line": 315,
           "shape": null,
           "summary": "Every command id, in declaration order. The iteration order for lookups and the rebinding UI.",
           "description": "Every command id, in declaration order. The iteration order for lookups and the rebinding UI."
         },
         {
           "name": "COMMAND_GROUPS",
-          "line": 336,
+          "line": 323,
           "shape": null,
           "summary": "Commands bundled into their display groups, as `[groupName, commandIds]` pairs.",
           "description": "Commands bundled into their display groups, as `[groupName, commandIds]` pairs.\n\nBuilt by reduction rather than declared, so a new command joins its group\nautomatically and groups appear in the order their first command does."
         },
         {
           "name": "DEFAULT_BINDINGS",
-          "line": 349,
+          "line": 336,
           "shape": {
             "kind": "object",
             "keys": [
@@ -18852,7 +18619,6 @@
               "drive.downFine",
               "project.new",
               "project.save",
-              "project.open",
               "sim.snapshot",
               "sim.mask",
               "sim.recompute",
@@ -18866,7 +18632,7 @@
         },
         {
           "name": "KEYMAP_KEY",
-          "line": 481,
+          "line": 467,
           "shape": {
             "kind": "literal",
             "value": "acousim:keymap"
@@ -19423,8 +19189,8 @@
             "s"
           ],
           "documented": true,
-          "summary": "Discard the current graph and start an empty project.",
-          "description": "Discard the current graph and start an empty project.",
+          "summary": "Add an empty project to the workspace and open it.",
+          "description": "Add an empty project to the workspace and open it.",
           "params": [
             {
               "name": "s",
@@ -19445,7 +19211,7 @@
             "invariant": [],
             "mutates": [],
             "sideEffect": [
-              "Replaces the whole project state and clears the undo history."
+              "Creates a workspace file, replaces the whole project state and clears the undo history."
             ],
             "reads": [],
             "pure": false
@@ -19495,53 +19261,12 @@
         },
         {
           "name": "run",
-          "qualified": "project.open > run",
-          "kind": "method",
-          "exported": false,
-          "async": false,
-          "generator": false,
-          "line": 246,
-          "signature": [
-            "s"
-          ],
-          "documented": true,
-          "summary": "Open the saved-project browser.",
-          "description": "Open the saved-project browser.",
-          "params": [
-            {
-              "name": "s",
-              "type": "object",
-              "optional": false,
-              "default": null,
-              "desc": "The store state, with actions bound."
-            }
-          ],
-          "returns": {
-            "type": "*",
-            "desc": "Whatever the store action returns; the key handler ignores it."
-          },
-          "throws": [],
-          "contract": {
-            "pre": [],
-            "post": [],
-            "invariant": [],
-            "mutates": [],
-            "sideEffect": [
-              "Shows a modal."
-            ],
-            "reads": [],
-            "pure": false
-          },
-          "other": []
-        },
-        {
-          "name": "run",
           "qualified": "sim.snapshot > run",
           "kind": "method",
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 259,
+          "line": 246,
           "signature": [
             "s"
           ],
@@ -19582,7 +19307,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 272,
+          "line": 259,
           "signature": [
             "s"
           ],
@@ -19625,7 +19350,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 284,
+          "line": 271,
           "signature": [
             "s"
           ],
@@ -19666,7 +19391,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 297,
+          "line": 284,
           "signature": [
             "s"
           ],
@@ -19707,7 +19432,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 310,
+          "line": 297,
           "signature": [
             "s"
           ],
@@ -19750,7 +19475,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 323,
+          "line": 310,
           "signature": [
             "s"
           ],
@@ -19793,7 +19518,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 417,
+          "line": 403,
           "signature": [
             "e"
           ],
@@ -19832,7 +19557,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 440,
+          "line": 426,
           "signature": [
             "e"
           ],
@@ -19871,7 +19596,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 472,
+          "line": 458,
           "signature": [
             "combo"
           ],
@@ -19912,7 +19637,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 497,
+          "line": 483,
           "signature": [],
           "documented": true,
           "summary": "Load the effective bindings: stored overrides layered over the defaults.",
@@ -19943,7 +19668,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 522,
+          "line": 508,
           "signature": [
             "bindings"
           ],
@@ -19984,7 +19709,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 548,
+          "line": 534,
           "signature": [
             "bindings",
             "combo",
@@ -20039,7 +19764,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 574,
+          "line": 560,
           "signature": [
             "bindings",
             "combo",
@@ -22000,19 +21725,19 @@
       "file": "src/store.js",
       "module": {
         "summary": "Application state: the project graph, the workspace, and everything the UI reads. One Zustand store, deliberately flat.",
-        "description": "Application state: the project graph, the workspace, and everything the UI\nreads. One Zustand store, deliberately flat.\n\nState fields, since the action contracts below name what changes rather than\nwhere:\n\n  project    nodes, edges, projectName, selectedNodeId, settings\n  results    results, metrics, snapshots, simError\n  history    history, future, clipboard\n  workspace  layout, layoutPresets, maximized, focusedPanel, draggingPanel,\n             poppedOut, toolbar, bindings, xZoom\n  modals     showDriverDB, showProjectManager, showTSCalc, showSettings,\n             settingsSection, restorePrompt, velocityPopupNodeId\n\nFields prefixed with an underscore are solver and persistence bookkeeping\n(`_lastSig`, `_simToken`, `_computeTimer`, `_flowApi`, `_lastSavedName`,\n`_nameTimer`) and are not part of any action's observable contract.\n\nLocalStorage keys, all prefixed `acousim:` — `acousim:layout`,\n`acousim:layoutPresets`, `acousim:toolbar`, `acousim:keymap`,\n`acousim:project:<name>`, `acousim:lastProject` and `acousim:workspace`.\n\nA subset of the state is mirrored to popped-out panel windows over a\nBroadcastChannel; see src/popout.js for which keys and why."
+        "description": "Application state: the project graph, the workspace, and everything the UI\nreads. One Zustand store, deliberately flat.\n\nState fields, since the action contracts below name what changes rather than\nwhere:\n\n  project    nodes, edges, projectName, selectedNodeId, settings\n  results    results, metrics, snapshots, simError\n  history    history, future, clipboard\n  workspace  layout, layoutPresets, maximized, focusedPanel, draggingPanel,\n             poppedOut, toolbar, bindings, xZoom\n  modals     showDriverDB, showTSCalc, showSettings, settingsSection,\n             workspacePrompt, velocityPopupNodeId\n\nFields prefixed with an underscore are solver and persistence bookkeeping\n(`_lastSig`, `_simToken`, `_computeTimer`, `_flowApi`) and are not part of\nany action's observable contract.\n\nLocalStorage keys, all prefixed `acousim:` — `acousim:layout`,\n`acousim:layoutPresets`, `acousim:toolbar`, `acousim:keymap`,\n`acousim:workspace` and `acousim:workspaceChosen`.\n\nA subset of the state is mirrored to popped-out panel windows over a\nBroadcastChannel; see src/popout.js for which keys and why."
       },
       "constants": [
         {
           "name": "useStore",
-          "line": 290,
+          "line": 305,
           "shape": null,
           "summary": null,
           "description": null
         },
         {
           "name": "__internals",
-          "line": 2239,
+          "line": 2194,
           "shape": {
             "kind": "object",
             "keys": [
@@ -22160,13 +21885,44 @@
           "other": []
         },
         {
+          "name": "needsStorageChoice",
+          "qualified": "needsStorageChoice",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 124,
+          "signature": [],
+          "documented": true,
+          "summary": "Whether the user has already been asked where their workspace lives.",
+          "description": "Whether the user has already been asked where their workspace lives.\n\nA popped-out tab never asks: it owns no workspace of its own and the\nquestion belongs to the window that does.",
+          "params": [],
+          "returns": {
+            "type": "boolean",
+            "desc": "True when the prompt should be shown."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Reads LocalStorage and the window's own URL."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
           "name": "loadWorkspace",
           "qualified": "loadWorkspace",
           "kind": "function",
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 129,
+          "line": 144,
           "signature": [],
           "documented": true,
           "summary": "Load the persisted workspace, or build a first-run one.",
@@ -22197,7 +21953,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 167,
+          "line": 182,
           "signature": [],
           "documented": true,
           "summary": "Load the persisted dock layout, falling back to the default.",
@@ -22228,7 +21984,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 185,
+          "line": 200,
           "signature": [],
           "documented": true,
           "summary": "Load the user's saved layout arrangements.",
@@ -22259,7 +22015,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 205,
+          "line": 220,
           "signature": [],
           "documented": true,
           "summary": "Load the quick-bar arrangement.",
@@ -22290,7 +22046,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 225,
+          "line": 240,
           "signature": [
             "type"
           ],
@@ -22331,7 +22087,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 245,
+          "line": 260,
           "signature": [
             "spot",
             "nodes",
@@ -22396,7 +22152,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 253,
+          "line": 268,
           "signature": [
             "x",
             "y"
@@ -22445,7 +22201,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 272,
+          "line": 287,
           "signature": [
             "nodes",
             "edges",
@@ -22500,7 +22256,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 310,
+          "line": 325,
           "signature": [
             "partial",
             "replace"
@@ -22551,7 +22307,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 378,
+          "line": 396,
           "signature": [
             "x",
             "y",
@@ -22608,7 +22364,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 389,
+          "line": 407,
           "signature": [],
           "documented": true,
           "summary": "Dismiss the context menu.",
@@ -22639,7 +22395,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 398,
+          "line": 416,
           "signature": [
             "id"
           ],
@@ -22680,7 +22436,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 409,
+          "line": 427,
           "signature": [
             "id"
           ],
@@ -22721,7 +22477,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 417,
+          "line": 435,
           "signature": [
             "id"
           ],
@@ -22762,7 +22518,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 426,
+          "line": 444,
           "signature": [
             "v",
             "section"
@@ -22811,7 +22567,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 434,
+          "line": 452,
           "signature": [
             "id"
           ],
@@ -22852,7 +22608,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 446,
+          "line": 464,
           "signature": [
             "id",
             "combos"
@@ -22901,7 +22657,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 463,
+          "line": 481,
           "signature": [
             "id",
             "combo"
@@ -22950,7 +22706,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 481,
+          "line": 499,
           "signature": [
             "id",
             "combo"
@@ -22999,7 +22755,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 488,
+          "line": 506,
           "signature": [],
           "documented": true,
           "summary": "Restore every command to its default combos.",
@@ -23030,7 +22786,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 505,
+          "line": 523,
           "signature": [
             "tree"
           ],
@@ -23071,7 +22827,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 522,
+          "line": 540,
           "signature": [
             "stackId",
             "panelId"
@@ -23120,7 +22876,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 532,
+          "line": 550,
           "signature": [
             "panelId",
             "stackId",
@@ -23177,7 +22933,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 541,
+          "line": 559,
           "signature": [
             "panelId",
             "edge"
@@ -23226,7 +22982,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 552,
+          "line": 570,
           "signature": [
             "splitId",
             "index",
@@ -23291,7 +23047,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 566,
+          "line": 584,
           "signature": [
             "panelId",
             "stackId",
@@ -23348,7 +23104,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 587,
+          "line": 605,
           "signature": [
             "panelId"
           ],
@@ -23389,7 +23145,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 604,
+          "line": 622,
           "signature": [
             "panelId"
           ],
@@ -23430,7 +23186,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 616,
+          "line": 634,
           "signature": [
             "panelId"
           ],
@@ -23471,7 +23227,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 627,
+          "line": 645,
           "signature": [],
           "documented": true,
           "summary": "Restore the default workspace arrangement.",
@@ -23502,7 +23258,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 637,
+          "line": 655,
           "signature": [
             "name"
           ],
@@ -23543,7 +23299,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 656,
+          "line": 674,
           "signature": [
             "name"
           ],
@@ -23584,7 +23340,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 680,
+          "line": 698,
           "signature": [
             "ids"
           ],
@@ -23625,7 +23381,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 696,
+          "line": 714,
           "signature": [
             "id"
           ],
@@ -23666,7 +23422,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 708,
+          "line": 726,
           "signature": [
             "id",
             "delta"
@@ -23715,7 +23471,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 722,
+          "line": 740,
           "signature": [],
           "documented": true,
           "summary": "Restore the default quick-bar arrangement.",
@@ -23746,7 +23502,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 731,
+          "line": 749,
           "signature": [
             "name"
           ],
@@ -23787,7 +23543,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 749,
+          "line": 767,
           "signature": [
             "id",
             "range"
@@ -23836,7 +23592,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 765,
+          "line": 783,
           "signature": [],
           "documented": true,
           "summary": "Record the current graph as an undo point.",
@@ -23867,7 +23623,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 778,
+          "line": 796,
           "signature": [],
           "documented": true,
           "summary": "Step back one entry in the history.",
@@ -23898,7 +23654,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 795,
+          "line": 813,
           "signature": [],
           "documented": true,
           "summary": "Step forward one entry in the history.",
@@ -23929,7 +23685,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 820,
+          "line": 838,
           "signature": [
             "changes"
           ],
@@ -23970,7 +23726,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 834,
+          "line": 852,
           "signature": [
             "changes"
           ],
@@ -24011,7 +23767,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 846,
+          "line": 864,
           "signature": [
             "conn"
           ],
@@ -24052,7 +23808,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 858,
+          "line": 876,
           "signature": [
             "id"
           ],
@@ -24093,7 +23849,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 871,
+          "line": 889,
           "signature": [
             "type",
             "position"
@@ -24142,7 +23898,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 897,
+          "line": 915,
           "signature": [
             "id",
             "patch"
@@ -24191,7 +23947,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 919,
+          "line": 937,
           "signature": [],
           "documented": true,
           "summary": "Delete the selected nodes and edges.",
@@ -24222,7 +23978,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 944,
+          "line": 962,
           "signature": [],
           "documented": true,
           "summary": "Copy the selected nodes in place, offset down-right.",
@@ -24253,7 +24009,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 969,
+          "line": 987,
           "signature": [],
           "documented": true,
           "summary": "Select every node on the canvas.",
@@ -24284,7 +24040,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 984,
+          "line": 1002,
           "signature": [
             "ids",
             "additive"
@@ -24333,7 +24089,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1017,
+          "line": 1035,
           "signature": [],
           "documented": true,
           "summary": "Copy the selected nodes and their internal edges to the in-app clipboard.",
@@ -24364,7 +24120,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1043,
+          "line": 1061,
           "signature": [],
           "documented": true,
           "summary": "Copy the selection, then delete it.",
@@ -24395,7 +24151,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1064,
+          "line": 1082,
           "signature": [
             "at"
           ],
@@ -24436,7 +24192,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1112,
+          "line": 1130,
           "signature": [
             "type"
           ],
@@ -24477,7 +24233,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1128,
+          "line": 1146,
           "signature": [
             "delta"
           ],
@@ -24518,7 +24274,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1141,
+          "line": 1159,
           "signature": [],
           "documented": true,
           "summary": "Force a resimulation even though nothing has changed.",
@@ -24549,7 +24305,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1154,
+          "line": 1172,
           "signature": [
             "patch"
           ],
@@ -24590,7 +24346,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1170,
+          "line": 1188,
           "signature": [
             "field",
             "value"
@@ -24639,7 +24395,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1191,
+          "line": 1209,
           "signature": [],
           "documented": true,
           "summary": "Freeze the current result as a labelled reference overlay.",
@@ -24670,7 +24426,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1218,
+          "line": 1236,
           "signature": [
             "id"
           ],
@@ -24711,7 +24467,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1227,
+          "line": 1245,
           "signature": [
             "id",
             "label"
@@ -24760,7 +24516,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1237,
+          "line": 1255,
           "signature": [
             "id"
           ],
@@ -24801,7 +24557,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1245,
+          "line": 1263,
           "signature": [
             "v"
           ],
@@ -24836,54 +24592,13 @@
           "other": []
         },
         {
-          "name": "setShowProjectManager",
-          "qualified": "setShowProjectManager",
-          "kind": "method",
-          "exported": false,
-          "async": false,
-          "generator": false,
-          "line": 1253,
-          "signature": [
-            "v"
-          ],
-          "documented": true,
-          "summary": "Show or hide the project manager modal.",
-          "description": "Show or hide the project manager modal.",
-          "params": [
-            {
-              "name": "v",
-              "type": "boolean",
-              "optional": false,
-              "default": null,
-              "desc": "Whether to show it."
-            }
-          ],
-          "returns": {
-            "type": "void",
-            "desc": ""
-          },
-          "throws": [],
-          "contract": {
-            "pre": [],
-            "post": [],
-            "invariant": [],
-            "mutates": [],
-            "sideEffect": [
-              "Writes store state. The field is local to the window — `SHARED_KEYS` deliberately excludes it, so a popped-out panel keeps its own."
-            ],
-            "reads": [],
-            "pure": false
-          },
-          "other": []
-        },
-        {
           "name": "setShowTSCalc",
           "qualified": "setShowTSCalc",
           "kind": "method",
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1261,
+          "line": 1271,
           "signature": [
             "v"
           ],
@@ -24918,54 +24633,13 @@
           "other": []
         },
         {
-          "name": "setRestorePrompt",
-          "qualified": "setRestorePrompt",
-          "kind": "method",
-          "exported": false,
-          "async": false,
-          "generator": false,
-          "line": 1269,
-          "signature": [
-            "v"
-          ],
-          "documented": true,
-          "summary": "Set the prompt offering to restore an auto-saved project.",
-          "description": "Set the prompt offering to restore an auto-saved project.",
-          "params": [
-            {
-              "name": "v",
-              "type": "object|null",
-              "optional": false,
-              "default": null,
-              "desc": "The candidate project, or `null` to dismiss."
-            }
-          ],
-          "returns": {
-            "type": "void",
-            "desc": ""
-          },
-          "throws": [],
-          "contract": {
-            "pre": [],
-            "post": [],
-            "invariant": [],
-            "mutates": [],
-            "sideEffect": [
-              "Writes store state. The field is local to the window — `SHARED_KEYS` deliberately excludes it, so a popped-out panel keeps its own."
-            ],
-            "reads": [],
-            "pure": false
-          },
-          "other": []
-        },
-        {
           "name": "scheduleCompute",
           "qualified": "scheduleCompute",
           "kind": "method",
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1300,
+          "line": 1302,
           "signature": [],
           "documented": true,
           "summary": "Schedule a debounced simulation run.",
@@ -24996,7 +24670,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1341,
+          "line": 1343,
           "signature": [],
           "documented": true,
           "summary": "Capture the project as a plain, saveable object.",
@@ -25027,7 +24701,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1367,
+          "line": 1369,
           "signature": [
             "proj"
           ],
@@ -25062,89 +24736,17 @@
           "other": []
         },
         {
-          "name": "setProjectName",
-          "qualified": "setProjectName",
-          "kind": "method",
-          "exported": false,
-          "async": false,
-          "generator": false,
-          "line": 1402,
-          "signature": [
-            "name"
-          ],
-          "documented": true,
-          "summary": "Rename the project, saving the new name after a pause.",
-          "description": "Rename the project, saving the new name after a pause.\n\nThe save is debounced by a second so intermediate keystrokes never\npersist — without it, typing \"Ported box\" would leave nine abandoned\nauto-saves behind.\n\nThe workspace file follows the project, so the two cannot end up\ndisagreeing about what the thing is called. A name a filesystem could not\nhold — one with a slash in it — leaves the filename alone rather than\nfailing the rename; the project keeps the name the user typed.",
-          "params": [
-            {
-              "name": "name",
-              "type": "string",
-              "optional": false,
-              "default": null,
-              "desc": "The new project name."
-            }
-          ],
-          "returns": {
-            "type": "void",
-            "desc": ""
-          },
-          "throws": [],
-          "contract": {
-            "pre": [],
-            "post": [],
-            "invariant": [],
-            "mutates": [],
-            "sideEffect": [
-              "Writes store state and schedules a debounced auto-save, which also renames the workspace file."
-            ],
-            "reads": [],
-            "pure": false
-          },
-          "other": []
-        },
-        {
-          "name": "newProject",
-          "qualified": "newProject",
-          "kind": "method",
-          "exported": false,
-          "async": false,
-          "generator": false,
-          "line": 1423,
-          "signature": [],
-          "documented": true,
-          "summary": "Start an empty project, confirming first if there is anything to lose.",
-          "description": "Start an empty project, confirming first if there is anything to lose.\n\nThe new project is named with the current time so it cannot silently\noverwrite the auto-save of the one being replaced.",
-          "params": [],
-          "returns": {
-            "type": "void",
-            "desc": ""
-          },
-          "throws": [],
-          "contract": {
-            "pre": [],
-            "post": [],
-            "invariant": [],
-            "mutates": [],
-            "sideEffect": [
-              "Shows a confirmation dialog, then replaces store state and schedules a resimulation. Does nothing if the user declines."
-            ],
-            "reads": [],
-            "pure": false
-          },
-          "other": []
-        },
-        {
           "name": "saveProjectJSON",
           "qualified": "saveProjectJSON",
           "kind": "method",
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1433,
+          "line": 1393,
           "signature": [],
           "documented": true,
-          "summary": "Download the project as a file, auto-saving it first.",
-          "description": "Download the project as a file, auto-saving it first.",
+          "summary": "Download the open project as a standalone JSON file.",
+          "description": "Download the open project as a standalone JSON file.\n\nAn export, not a save: the project already lives in the workspace, and\nthis is for handing one design to someone who is not going to import a\nwhole workspace to read it.",
           "params": [],
           "returns": {
             "type": "void",
@@ -25157,7 +24759,7 @@
             "invariant": [],
             "mutates": [],
             "sideEffect": [
-              "Writes LocalStorage and triggers a browser download."
+              "Writes the open file into the workspace, then triggers a browser download."
             ],
             "reads": [],
             "pure": false
@@ -25165,21 +24767,39 @@
           "other": []
         },
         {
-          "name": "autoSave",
-          "qualified": "autoSave",
+          "name": "importProject",
+          "qualified": "importProject",
           "kind": "method",
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1450,
-          "signature": [],
+          "line": 1410,
+          "signature": [
+            "proj",
+            "filename"
+          ],
           "documented": true,
-          "summary": "Write the project to LocalStorage under its name.",
-          "description": "Write the project to LocalStorage under its name.\n\nRenaming *moves* the save rather than copying it: the previous key is\nremoved once the new one is written, so a renamed project does not leave\na duplicate behind under its old name.\n\nEmpty projects are skipped so an accidental new-project does not\noverwrite a real save with nothing.",
-          "params": [],
+          "summary": "Import a project file into the workspace as a new file, and open it.",
+          "description": "Import a project file into the workspace as a new file, and open it.\n\nImported *into* the workspace rather than onto the canvas. A project on\nthe canvas that belongs to no file would be the one thing that can be\nedited and then lost, which is the whole reason the workspace exists.",
+          "params": [
+            {
+              "name": "proj",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "A deserialized project."
+            },
+            {
+              "name": "filename",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "The file it came from, used to name the entry."
+            }
+          ],
           "returns": {
-            "type": "void",
-            "desc": ""
+            "type": "string",
+            "desc": "The path of the new workspace file."
           },
           "throws": [],
           "contract": {
@@ -25188,7 +24808,7 @@
             "invariant": [],
             "mutates": [],
             "sideEffect": [
-              "Writes LocalStorage. Skipped entirely in a popped-out tab — there is one writer for the auto-save. A quota failure is swallowed."
+              "Writes store state, persists the workspace and replaces what is on the canvas."
             ],
             "reads": [],
             "pure": false
@@ -25202,7 +24822,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1484,
+          "line": 1443,
           "signature": [
             "ws"
           ],
@@ -25243,7 +24863,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1499,
+          "line": 1458,
           "signature": [
             "name"
           ],
@@ -25284,11 +24904,11 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1513,
+          "line": 1472,
           "signature": [],
           "documented": true,
           "summary": "Write the editor's current project back into its file.",
-          "description": "Write the editor's current project back into its file.\n\nCalled from `autoSave`, so the open file tracks the graph without the user\nhaving to save anything. A workspace whose active file has been deleted or\nwas never a project writes nothing rather than resurrecting it.",
+          "description": "Write the editor's current project back into its file.\n\nCalled after every successful simulation, so the open file tracks the\ngraph without the user having to save anything. A workspace whose active file has been deleted or\nwas never a project writes nothing rather than resurrecting it.",
           "params": [],
           "returns": {
             "type": "void",
@@ -25315,7 +24935,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1531,
+          "line": 1490,
           "signature": [
             "path"
           ],
@@ -25356,7 +24976,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1547,
+          "line": 1506,
           "signature": [
             "folder"
           ],
@@ -25397,7 +25017,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1568,
+          "line": 1527,
           "signature": [
             "parent"
           ],
@@ -25438,7 +25058,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1591,
+          "line": 1550,
           "signature": [
             "from",
             "to"
@@ -25487,7 +25107,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1628,
+          "line": 1587,
           "signature": [
             "path"
           ],
@@ -25528,7 +25148,7 @@
           "exported": false,
           "async": true,
           "generator": false,
-          "line": 1660,
+          "line": 1619,
           "signature": [],
           "documented": true,
           "summary": "Download the whole workspace, and record that it happened.",
@@ -25559,7 +25179,7 @@
           "exported": false,
           "async": true,
           "generator": false,
-          "line": 1689,
+          "line": 1648,
           "signature": [
             "file"
           ],
@@ -25600,7 +25220,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1713,
+          "line": 1672,
           "signature": [
             "ws"
           ],
@@ -25641,7 +25261,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1747,
+          "line": 1706,
           "signature": [
             "paths"
           ],
@@ -25682,7 +25302,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1757,
+          "line": 1716,
           "signature": [
             "path",
             "open"
@@ -25731,7 +25351,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1771,
+          "line": 1730,
           "signature": [],
           "documented": true,
           "summary": "Collapse every folder in the explorer.",
@@ -25762,7 +25382,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1786,
+          "line": 1745,
           "signature": [
             "mode",
             "path"
@@ -25811,7 +25431,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1797,
+          "line": 1756,
           "signature": [],
           "documented": true,
           "summary": "Dismiss the explorer's inline editor.",
@@ -25842,7 +25462,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1812,
+          "line": 1771,
           "signature": [
             "paths",
             "cut"
@@ -25891,7 +25511,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1825,
+          "line": 1784,
           "signature": [
             "folder"
           ],
@@ -25932,7 +25552,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1852,
+          "line": 1811,
           "signature": [
             "path"
           ],
@@ -25973,7 +25593,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1868,
+          "line": 1827,
           "signature": [
             "from",
             "folder"
@@ -26022,7 +25642,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1890,
+          "line": 1849,
           "signature": [
             "mode",
             "parent",
@@ -26073,13 +25693,54 @@
           "other": []
         },
         {
+          "name": "chooseWorkspaceStorage",
+          "qualified": "chooseWorkspaceStorage",
+          "kind": "method",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 1885,
+          "signature": [
+            "kind"
+          ],
+          "documented": true,
+          "summary": "Record where this workspace is kept, and dismiss the startup prompt.",
+          "description": "Record where this workspace is kept, and dismiss the startup prompt.\n\nOnly browser storage exists today, so the choice is nearly rhetorical —\nbut it is asked out loud because browser storage is the one option whose\ndurability the user needs to have been told about before they have work in\nit. The answer is remembered so the question is asked once, not on every\nvisit.",
+          "params": [
+            {
+              "name": "kind",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Where the workspace lives; only `'browser'` is supported."
+            }
+          ],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Writes store state and LocalStorage."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
           "name": "setCustomDrivers",
           "qualified": "setCustomDrivers",
           "kind": "method",
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1924,
+          "line": 1901,
           "signature": [
             "drivers"
           ],
@@ -26120,7 +25781,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1946,
+          "line": 1923,
           "signature": [
             "id"
           ],
@@ -26161,7 +25822,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1962,
+          "line": 1939,
           "signature": [
             "id"
           ],
@@ -26202,7 +25863,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1985,
+          "line": 1962,
           "signature": [
             "id"
           ],
@@ -26243,7 +25904,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2012,
+          "line": 1989,
           "signature": [
             "id"
           ],
@@ -26284,7 +25945,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2028,
+          "line": 2005,
           "signature": [
             "stackId"
           ],
@@ -26325,7 +25986,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2052,
+          "line": 2029,
           "signature": [
             "panelId",
             "stackId"
@@ -26374,7 +26035,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2072,
+          "line": 2049,
           "signature": [
             "id"
           ],
@@ -26415,7 +26076,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2083,
+          "line": 2060,
           "signature": [
             "id"
           ],
@@ -26456,7 +26117,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2102,
+          "line": 2079,
           "signature": [
             "patch"
           ],
@@ -26499,7 +26160,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2112,
+          "line": 2089,
           "signature": [],
           "documented": true,
           "summary": "The full shared slice, sent to a popped-out tab when it announces itself.",
@@ -26530,7 +26191,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2170,
+          "line": 2147,
           "signature": [
             "arg0"
           ],
@@ -26572,37 +26233,6 @@
             "pure": false
           },
           "other": []
-        },
-        {
-          "name": "listSavedProjects",
-          "qualified": "listSavedProjects",
-          "kind": "function",
-          "exported": true,
-          "async": false,
-          "generator": false,
-          "line": 2222,
-          "signature": [],
-          "documented": true,
-          "summary": "List the auto-saved projects in LocalStorage, newest first.",
-          "description": "List the auto-saved projects in LocalStorage, newest first.\n\nCorrupt entries are skipped rather than throwing, so one bad record\ncannot hide every other project from the manager.",
-          "params": [],
-          "returns": {
-            "type": "Array<{key: string, name: string, modified: string, nodeCount: number, proj: object}>",
-            "desc": "Saved projects, sorted by modification time descending."
-          },
-          "throws": [],
-          "contract": {
-            "pre": [],
-            "post": [],
-            "invariant": [],
-            "mutates": [],
-            "sideEffect": [
-              "Reads LocalStorage."
-            ],
-            "reads": [],
-            "pure": false
-          },
-          "other": []
         }
       ]
     },
@@ -26610,7 +26240,7 @@
       "file": "src/toolbarItems.js",
       "module": {
         "summary": "Quick-access bar registry.",
-        "description": "Quick-access bar registry.\n\nThe bar under the menu is a list of small widgets chosen and ordered by the\nuser (Settings ▸ Quick bar). Two kinds live here:\n\n  control — an interactive widget (project name, drive voltage, sweep …)\n  metric  — a read-only number derived from the current simulation\n\nAdding an item means one entry in TOOLBAR_ITEMS plus, for controls, one case\nin Toolbar.jsx's renderer. Metrics need nothing else: `metricValue` below is\nthe single place that knows how to compute and format them."
+        "description": "Quick-access bar registry.\n\nThe bar under the menu is a list of small widgets chosen and ordered by the\nuser (Settings ▸ Quick bar). Two kinds live here:\n\n  control — an interactive widget (drive voltage, sweep range …)\n  metric  — a read-only number derived from the current simulation\n\nAdding an item means one entry in TOOLBAR_ITEMS plus, for controls, one case\nin Toolbar.jsx's renderer. Metrics need nothing else: `metricValue` below is\nthe single place that knows how to compute and format them."
       },
       "constants": [
         {
@@ -26619,7 +26249,6 @@
           "shape": {
             "kind": "object",
             "keys": [
-              "project",
               "undo",
               "voltage",
               "sweep",
@@ -26639,10 +26268,6 @@
               "m_solve"
             ],
             "nested": {
-              "project": [
-                "label",
-                "group"
-              ],
               "undo": [
                 "label",
                 "group"
@@ -26718,7 +26343,7 @@
         },
         {
           "name": "TOOLBAR_GROUPS",
-          "line": 46,
+          "line": 45,
           "shape": {
             "kind": "array",
             "length": 2
@@ -26728,19 +26353,18 @@
         },
         {
           "name": "ALL_ITEM_IDS",
-          "line": 52,
+          "line": 51,
           "shape": null,
           "summary": "Every quick-bar item id, used to offer the full list in Settings.",
           "description": "Every quick-bar item id, used to offer the full list in Settings."
         },
         {
           "name": "DEFAULT_TOOLBAR",
-          "line": 61,
+          "line": 60,
           "shape": {
             "kind": "array",
-            "length": 16,
+            "length": 15,
             "values": [
-              "project",
               "undo",
               "voltage",
               "snapshot",
@@ -26763,7 +26387,7 @@
         },
         {
           "name": "__internals",
-          "line": 181,
+          "line": 180,
           "shape": {
             "kind": "object",
             "keys": [
@@ -26782,7 +26406,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 75,
+          "line": 74,
           "signature": [
             "v",
             "d"
@@ -26829,7 +26453,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 89,
+          "line": 88,
           "signature": [
             "nodes"
           ],
@@ -26870,7 +26494,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 118,
+          "line": 117,
           "signature": [
             "id",
             "arg1"
@@ -26938,7 +26562,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 128,
+          "line": 127,
           "signature": [
             "x"
           ],
@@ -26979,7 +26603,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 135,
+          "line": 134,
           "signature": [
             "x"
           ],
@@ -27020,7 +26644,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 171,
+          "line": 170,
           "signature": [
             "ids"
           ],

@@ -214,15 +214,15 @@ export const COMMANDS = {
     group: 'Project',
     scope: 'global',
     /**
-     * Discard the current graph and start an empty project.
+     * Add an empty project to the workspace and open it.
      * @param {object} s - The store state, with actions bound.
      * @returns {*} Whatever the store action returns; the key handler ignores it.
-     * @sideEffect Replaces the whole project state and clears the undo history.
+     * @sideEffect Creates a workspace file, replaces the whole project state and clears the undo history.
      */
-    run: (s) => s.newProject(),
+    run: (s) => s.newFile(''),
   },
   'project.save': {
-    label: 'Save project as JSON',
+    label: 'Export project as JSON',
     group: 'Project',
     scope: 'global',
     /**
@@ -233,19 +233,6 @@ export const COMMANDS = {
      */
     run: (s) => s.saveProjectJSON(),
   },
-  'project.open': {
-    label: 'Open project manager',
-    group: 'Project',
-    scope: 'global',
-    /**
-     * Open the saved-project browser.
-     * @param {object} s - The store state, with actions bound.
-     * @returns {*} Whatever the store action returns; the key handler ignores it.
-     * @sideEffect Shows a modal.
-     */
-    run: (s) => s.setShowProjectManager(true),
-  },
-
   'sim.snapshot': {
     label: 'Take snapshot',
     group: 'Simulate',
@@ -369,7 +356,6 @@ export const DEFAULT_BINDINGS = {
 
   'project.new': ['mod+n'],
   'project.save': ['mod+s'],
-  'project.open': ['mod+o'],
 
   'sim.snapshot': ['alt+s'],
   'sim.mask': ['alt+m'],

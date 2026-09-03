@@ -54,7 +54,7 @@ test('systemVolume: is pure and does not modify its nodes', () => {
 // documents the second argument as `ctx`.
 // ---------------------------------------------------------------------------
 
-const CONTROL_IDS = ['project', 'undo', 'voltage', 'sweep', 'masking', 'snapshot']
+const CONTROL_IDS = ['undo', 'voltage', 'sweep', 'masking', 'snapshot']
 const METRIC_IDS = [
   'm_f3', 'm_f10', 'm_fb', 'm_qtc', 'm_zpeaks', 'm_peakspl',
   'm_xfb', 'm_xf3', 'm_bw', 'm_maxpower', 'm_volume', 'm_solve',
@@ -65,7 +65,7 @@ const ALL_ITEM_IDS = [...CONTROL_IDS, ...METRIC_IDS]
 // `undo`, `voltage`, `snapshot`, `m_f3`, `m_f10`, `m_fb`, `m_qtc`, `m_zpeaks`, `m_peakspl`,
 // `m_xfb`, `m_xf3`, `m_bw`, `m_maxpower`, `m_volume`, `m_solve`"
 const DEFAULT_TOOLBAR = [
-  'project', 'undo', 'voltage', 'snapshot', 'm_f3', 'm_f10', 'm_fb', 'm_qtc',
+  'undo', 'voltage', 'snapshot', 'm_f3', 'm_f10', 'm_fb', 'm_qtc',
   'm_zpeaks', 'm_peakspl', 'm_xfb', 'm_xf3', 'm_bw', 'm_maxpower', 'm_volume', 'm_solve',
 ]
 

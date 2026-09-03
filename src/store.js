@@ -9,16 +9,16 @@
 //   history    history, future, clipboard
 //   workspace  layout, layoutPresets, maximized, focusedPanel, draggingPanel,
 //              poppedOut, toolbar, bindings, xZoom
-//   modals     showDriverDB, showProjectManager, showTSCalc, showSettings,
-//              settingsSection, restorePrompt, velocityPopupNodeId
+//   modals     showDriverDB, showTSCalc, showSettings, settingsSection,
+//              workspacePrompt, velocityPopupNodeId
 //
 // Fields prefixed with an underscore are solver and persistence bookkeeping
-// (`_lastSig`, `_simToken`, `_computeTimer`, `_flowApi`, `_lastSavedName`,
-// `_nameTimer`) and are not part of any action's observable contract.
+// (`_lastSig`, `_simToken`, `_computeTimer`, `_flowApi`) and are not part of
+// any action's observable contract.
 //
 // LocalStorage keys, all prefixed `acousim:` — `acousim:layout`,
 // `acousim:layoutPresets`, `acousim:toolbar`, `acousim:keymap`,
-// `acousim:project:<name>`, `acousim:lastProject` and `acousim:workspace`.
+// `acousim:workspace` and `acousim:workspaceChosen`.
 //
 // A subset of the state is mirrored to popped-out panel windows over a
 // BroadcastChannel; see src/popout.js for which keys and why.
@@ -110,6 +110,21 @@ const PRESETS_KEY = 'acousim:layoutPresets'
 const TOOLBAR_KEY = 'acousim:toolbar'
 const WORKSPACE_KEY = 'acousim:workspace'
 const LEGACY_DRIVERS_KEY = 'acousim:customDrivers'
+const STORAGE_CHOICE_KEY = 'acousim:workspaceChosen'
+
+/**
+ * Whether the user has already been asked where their workspace lives.
+ *
+ * A popped-out tab never asks: it owns no workspace of its own and the
+ * question belongs to the window that does.
+ *
+ * @returns {boolean} True when the prompt should be shown.
+ * @sideEffect Reads LocalStorage and the window's own URL.
+ */
+function needsStorageChoice() {
+  if (POPOUT) return false
+  try { return !localStorage.getItem(STORAGE_CHOICE_KEY) } catch { return false }
+}
 
 /**
  * Load the persisted workspace, or build a first-run one.
@@ -321,7 +336,9 @@ export const useStore = create((rawSet, get) => {
   return {
   nodes: [],
   edges: [],
-  projectName: 'Untitled',
+  // Derived from whichever workspace file is open — there is no name field to
+  // type into any more, because the file's name is the project's name.
+  projectName: '',
   // The workspace and which of its files is open in the editor. Both are
   // shared with popped-out windows, so a popped-out file browser shows the
   // same tree the main window does and can act on it.
@@ -333,15 +350,16 @@ export const useStore = create((rawSet, get) => {
   wsCollapsed: [],
   wsEdit: null,
   fileClipboard: null,
+  // Shown once, before the user has anything to lose: browser storage is the
+  // only option today, and its durability is the thing worth saying first.
+  workspacePrompt: needsStorageChoice(),
   selectedNodeId: null,
   results: null,
   metrics: null,
   snapshots: [],
   velocityPopupNodeId: null,
   showDriverDB: false,
-  showProjectManager: false,
   showTSCalc: false,
-  restorePrompt: null,
   settings: {
     fmin: 10, fmax: 1000, npts: 512,
     voltage: 2.83, impedance: 4, power: 2, rg: 0,
@@ -1244,14 +1262,6 @@ export const useStore = create((rawSet, get) => {
    */
   setShowDriverDB: (v) => set({ showDriverDB: v }),
   /**
-   * Show or hide the project manager modal.
-   *
-   * @param {boolean} v - Whether to show it.
-   * @returns {void}
-   * @sideEffect Writes store state. The field is local to the window — `SHARED_KEYS` deliberately excludes it, so a popped-out panel keeps its own.
-   */
-  setShowProjectManager: (v) => set({ showProjectManager: v }),
-  /**
    * Show or hide the Thiele/Small parameter solver.
    *
    * @param {boolean} v - Whether to show it.
@@ -1259,14 +1269,6 @@ export const useStore = create((rawSet, get) => {
    * @sideEffect Writes store state. The field is local to the window — `SHARED_KEYS` deliberately excludes it, so a popped-out panel keeps its own.
    */
   setShowTSCalc: (v) => set({ showTSCalc: v }),
-  /**
-   * Set the prompt offering to restore an auto-saved project.
-   *
-   * @param {object|null} v - The candidate project, or `null` to dismiss.
-   * @returns {void}
-   * @sideEffect Writes store state. The field is local to the window — `SHARED_KEYS` deliberately excludes it, so a popped-out panel keeps its own.
-   */
-  setRestorePrompt: (v) => set({ restorePrompt: v }),
 
   // ---- compute pipeline (debounced 150 ms) ----
   // Simulation runs in a Web Worker: the engine ships with the app, but off
@@ -1318,7 +1320,7 @@ export const useStore = create((rawSet, get) => {
       if (get()._simToken !== token) return // a newer request superseded this one
       if (reply.ok) {
         set({ results: reply.results, metrics: reply.metrics, _lastSig: sig, simError: null })
-        get().autoSave()
+        get().saveActiveFile()
       } else {
         const detail = reply.projectErrors?.length ? reply.projectErrors.join('; ') : reply.error
         set({ simError: `Simulation failed: ${detail}`, _lastSig: '' })
@@ -1372,93 +1374,50 @@ export const useStore = create((rawSet, get) => {
     const edges = (proj.edges || []).map((e) => ({ ...e, id: e.id || `e_${e.source}_${e.target}_${Math.random().toString(36).slice(2, 7)}` }))
     set({
       nodes, edges,
-      projectName: proj.name || 'Untitled',
+      projectName: proj.name || '',
       settings: { ...get().settings, ...(proj.settings || {}) },
       history: [], future: [], snapshots: [], selectedNodeId: null,
-      _lastSavedName: proj.name || 'Untitled',
     })
     get().scheduleCompute()
   },
-  // Renaming debounces the save so intermediate keystrokes never persist,
-  // and a completed rename MOVES the auto-save (old key is removed).
-  _nameTimer: null,
-  _lastSavedName: null,
   /**
-   * Rename the project, saving the new name after a pause.
+   * Download the open project as a standalone JSON file.
    *
-   * The save is debounced by a second so intermediate keystrokes never
-   * persist — without it, typing "Ported box" would leave nine abandoned
-   * auto-saves behind.
-   *
-   * The workspace file follows the project, so the two cannot end up
-   * disagreeing about what the thing is called. A name a filesystem could not
-   * hold — one with a slash in it — leaves the filename alone rather than
-   * failing the rename; the project keeps the name the user typed.
-   *
-   * @param {string} name - The new project name.
-   * @returns {void}
-   * @sideEffect Writes store state and schedules a debounced auto-save, which also renames the workspace file.
-   */
-  setProjectName: (name) => {
-    set({ projectName: name })
-    const t = get()._nameTimer
-    if (t) clearTimeout(t)
-    set({ _nameTimer: setTimeout(() => {
-      const { activeFile } = get()
-      if (activeFile) {
-        get().renamePath(activeFile, W.joinPath(W.parentOf(activeFile), `${name}${W.PROJECT_EXT}`))
-      }
-      get().autoSave()
-    }, 1000) })
-  },
-  /**
-   * Start an empty project, confirming first if there is anything to lose.
-   *
-   * The new project is named with the current time so it cannot silently
-   * overwrite the auto-save of the one being replaced.
+   * An export, not a save: the project already lives in the workspace, and
+   * this is for handing one design to someone who is not going to import a
+   * whole workspace to read it.
    *
    * @returns {void}
-   * @sideEffect Shows a confirmation dialog, then replaces store state and schedules a resimulation. Does nothing if the user declines.
-   */
-  newProject: () => {
-    if (get().nodes.length && !confirm('Start a new project? Current graph is auto-saved under its project name.')) return
-    get().loadSerialized({ name: `Untitled ${new Date().toLocaleTimeString()}`, nodes: [], edges: [] })
-  },
-  /**
-   * Download the project as a file, auto-saving it first.
-   *
-   * @returns {void}
-   * @sideEffect Writes LocalStorage and triggers a browser download.
+   * @sideEffect Writes the open file into the workspace, then triggers a browser download.
    */
   saveProjectJSON: () => {
-    get().autoSave()
+    get().saveActiveFile()
     exportProjectJSON(get().serialize())
   },
+
   /**
-   * Write the project to LocalStorage under its name.
+   * Import a project file into the workspace as a new file, and open it.
    *
-   * Renaming *moves* the save rather than copying it: the previous key is
-   * removed once the new one is written, so a renamed project does not leave
-   * a duplicate behind under its old name.
+   * Imported *into* the workspace rather than onto the canvas. A project on
+   * the canvas that belongs to no file would be the one thing that can be
+   * edited and then lost, which is the whole reason the workspace exists.
    *
-   * Empty projects are skipped so an accidental new-project does not
-   * overwrite a real save with nothing.
-   *
-   * @returns {void}
-   * @sideEffect Writes LocalStorage. Skipped entirely in a popped-out tab — there is one writer for the auto-save. A quota failure is swallowed.
+   * @param {object} proj - A deserialized project.
+   * @param {string} filename - The file it came from, used to name the entry.
+   * @returns {string} The path of the new workspace file.
+   * @sideEffect Writes store state, persists the workspace and replaces what is on the canvas.
    */
-  autoSave: () => {
-    if (POPOUT) return // one writer for the LocalStorage auto-save
-    try {
-      const proj = get().serialize()
-      if (!proj.nodes.length) return
-      const prev = get()._lastSavedName
-      localStorage.setItem(`acousim:project:${proj.name}`, JSON.stringify(proj))
-      localStorage.setItem('acousim:lastProject', proj.name)
-      if (prev && prev !== proj.name) localStorage.removeItem(`acousim:project:${prev}`)
-      set({ _lastSavedName: proj.name })
-    } catch { /* quota */ }
+  importProject: (proj, filename) => {
+    const stem = (proj.name || filename.replace(/\.acousim\.json$/i, '').replace(/\.json$/i, '') || 'Imported').trim()
+    const name = W.uniqueName(get().workspace, '', `${stem}${W.PROJECT_EXT}`)
     get().saveActiveFile()
+    get()._commitWorkspace(W.writeFile(get().workspace, name, {
+      kind: 'project',
+      data: { ...proj, name: name.replace(/\.acousim$/, '') },
+    }))
+    set({ activeFile: name, wsSelection: [name] })
+    get().loadSerialized({ ...proj, name: name.replace(/\.acousim$/, '') })
+    return name
   },
 
   // ---- the workspace ----
@@ -1503,8 +1462,8 @@ export const useStore = create((rawSet, get) => {
   /**
    * Write the editor's current project back into its file.
    *
-   * Called from `autoSave`, so the open file tracks the graph without the user
-   * having to save anything. A workspace whose active file has been deleted or
+   * Called after every successful simulation, so the open file tracks the
+   * graph without the user having to save anything. A workspace whose active file has been deleted or
    * was never a project writes nothing rather than resurrecting it.
    *
    * @returns {void}
@@ -1911,6 +1870,24 @@ export const useStore = create((rawSet, get) => {
   },
 
   /**
+   * Record where this workspace is kept, and dismiss the startup prompt.
+   *
+   * Only browser storage exists today, so the choice is nearly rhetorical —
+   * but it is asked out loud because browser storage is the one option whose
+   * durability the user needs to have been told about before they have work in
+   * it. The answer is remembered so the question is asked once, not on every
+   * visit.
+   *
+   * @param {string} kind - Where the workspace lives; only `'browser'` is supported.
+   * @returns {void}
+   * @sideEffect Writes store state and LocalStorage.
+   */
+  chooseWorkspaceStorage: (kind) => {
+    try { localStorage.setItem(STORAGE_CHOICE_KEY, kind) } catch { /* private mode */ }
+    set({ workspacePrompt: false })
+  },
+
+  /**
    * Replace the workspace's custom driver library.
    *
    * The one write that creates the system folder in normal use: saving a
@@ -2210,28 +2187,6 @@ if (channel) {
   }
 }
 
-/**
- * List the auto-saved projects in LocalStorage, newest first.
- *
- * Corrupt entries are skipped rather than throwing, so one bad record
- * cannot hide every other project from the manager.
- *
- * @returns {Array<{key: string, name: string, modified: string, nodeCount: number, proj: object}>} Saved projects, sorted by modification time descending.
- * @sideEffect Reads LocalStorage.
- */
-export function listSavedProjects() {
-  const out = []
-  for (let i = 0; i < localStorage.length; i++) {
-    const k = localStorage.key(i)
-    if (k && k.startsWith('acousim:project:')) {
-      try {
-        const p = JSON.parse(localStorage.getItem(k))
-        out.push({ key: k, name: p.name, modified: p.modified, nodeCount: (p.nodes || []).length, proj: p })
-      } catch { /* skip corrupt */ }
-    }
-  }
-  return out.sort((a, b) => (b.modified || '').localeCompare(a.modified || ''))
-}
 
 // Module-private functions, exposed for the contract test suite only
 // (test/contract/*). Not part of this module's public API — application code

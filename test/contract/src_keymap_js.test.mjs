@@ -50,12 +50,12 @@ const KEYMAP_KEY = 'acousim:keymap'
 
 // CONTRACT (constants): "`COMMANDS` — Keys: `edit.undo`, `edit.redo`, `edit.cut`, `edit.copy`,
 // `edit.paste`, `edit.duplicate`, `edit.selectAll`, `edit.delete`, `drive.up`, `drive.down`,
-// `drive.upFine`, `drive.downFine`, `project.new`, `project.save`, `project.open`,
+// `drive.upFine`, `drive.downFine`, `project.new`, `project.save`,
 // `sim.snapshot`, `sim.mask`, `sim.recompute`, `view.settings`, `view.maximize`, `view.popout`"
 const LISTED_COMMAND_KEYS = [
   'edit.undo', 'edit.redo', 'edit.cut', 'edit.copy', 'edit.paste', 'edit.duplicate',
   'edit.selectAll', 'edit.delete', 'drive.up', 'drive.down', 'drive.upFine', 'drive.downFine',
-  'project.new', 'project.save', 'project.open', 'sim.snapshot', 'sim.mask', 'sim.recompute',
+  'project.new', 'project.save', 'sim.snapshot', 'sim.mask', 'sim.recompute',
   'view.settings', 'view.maximize', 'view.popout',
 ]
 
@@ -68,7 +68,7 @@ const DEFAULT_BINDING_KEYS = [
   'edit.undo', 'edit.redo', 'edit.cut', 'edit.copy', 'edit.paste', 'edit.duplicate',
   'edit.selectAll', 'edit.delete', ...ADD_COMMAND_IDS,
   'drive.up', 'drive.down', 'drive.upFine', 'drive.downFine',
-  'project.new', 'project.save', 'project.open', 'sim.snapshot', 'sim.mask', 'sim.recompute',
+  'project.new', 'project.save', 'sim.snapshot', 'sim.mask', 'sim.recompute',
   'view.settings', 'view.maximize', 'view.popout',
 ]
 
@@ -690,23 +690,14 @@ test('COMMANDS: drive.downFine lowers the drive voltage by 0.1 V', () => {
   assertDelegates('drive.downFine', 'nudgeVoltage', [-0.1])
 })
 
-// CONTRACT: "`project.new > run(s)` — Discard the current graph and start an empty project."
-test('COMMANDS: project.new starts an empty project', () => {
-  assertDelegates('project.new', 'newProject')
+// CONTRACT: "`project.new > run(s)` — Add an empty project to the workspace and open it."
+test('COMMANDS: project.new adds a project to the workspace', () => {
+  assertDelegates('project.new', 'newFile', [''])
 })
 
 // CONTRACT: "`project.save > run(s)` — Download the project as an `.acousim.json` file."
 test('COMMANDS: project.save downloads the project', () => {
   assertDelegates('project.save', 'saveProjectJSON')
-})
-
-// CONTRACT: "`project.open > run(s)` — Open the saved-project browser."
-// (src/store.js: "setShowProjectManager(v)")
-test('COMMANDS: project.open opens the saved-project browser', () => {
-  const { calls } = runCommand('project.open')
-  const hit = calls.find((c) => c.name === 'setShowProjectManager')
-  assert.ok(hit, `project.open did not open the browser (called ${JSON.stringify(calls.map((c) => c.name))})`)
-  assert.equal(hit.args[0], true, 'project.open must show the browser, not hide it')
 })
 
 // CONTRACT: "`sim.snapshot > run(s)` — Freeze the current result as a labelled reference overlay."

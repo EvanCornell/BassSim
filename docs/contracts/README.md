@@ -13,7 +13,7 @@ no implementation. This is the sole input to the blind contract test suite.
 | [`scripts/build-spec-pack.mjs`](scripts_build-spec-pack_mjs.spec.md) | 4 | 0 | 4 |
 | [`scripts/contracts-lib.mjs`](scripts_contracts-lib_mjs.spec.md) | 16 | 13 | 3 |
 | [`scripts/triage-contracts.mjs`](scripts_triage-contracts_mjs.spec.md) | 5 | 0 | 5 |
-| [`src/App.jsx`](src_App_jsx.spec.md) | 5 | 1 | 4 |
+| [`src/App.jsx`](src_App_jsx.spec.md) | 4 | 1 | 3 |
 | [`src/components/ContextMenu.jsx`](src_components_ContextMenu_jsx.spec.md) | 44 | 3 | 41 |
 | [`src/components/DriverDB.jsx`](src_components_DriverDB_jsx.spec.md) | 6 | 1 | 5 |
 | [`src/components/FileBrowser.jsx`](src_components_FileBrowser_jsx.spec.md) | 18 | 1 | 17 |
@@ -25,11 +25,11 @@ no implementation. This is the sole input to the blind contract test suite.
 | [`src/components/OutputPanel.jsx`](src_components_OutputPanel_jsx.spec.md) | 35 | 7 | 28 |
 | [`src/components/ParamPanel.jsx`](src_components_ParamPanel_jsx.spec.md) | 14 | 2 | 12 |
 | [`src/components/PopoutView.jsx`](src_components_PopoutView_jsx.spec.md) | 2 | 1 | 1 |
-| [`src/components/ProjectManager.jsx`](src_components_ProjectManager_jsx.spec.md) | 6 | 1 | 5 |
 | [`src/components/SettingsWindow.jsx`](src_components_SettingsWindow_jsx.spec.md) | 11 | 1 | 10 |
 | [`src/components/TSCalc.jsx`](src_components_TSCalc_jsx.spec.md) | 6 | 4 | 2 |
-| [`src/components/Toolbar.jsx`](src_components_Toolbar_jsx.spec.md) | 8 | 1 | 7 |
+| [`src/components/Toolbar.jsx`](src_components_Toolbar_jsx.spec.md) | 7 | 1 | 6 |
 | [`src/components/VelocityPopup.jsx`](src_components_VelocityPopup_jsx.spec.md) | 1 | 1 | 0 |
+| [`src/components/WorkspacePrompt.jsx`](src_components_WorkspacePrompt_jsx.spec.md) | 2 | 1 | 1 |
 | [`src/components/dock/DockLayout.jsx`](src_components_dock_DockLayout_jsx.spec.md) | 15 | 3 | 12 |
 | [`src/components/dock/panels.jsx`](src_components_dock_panels_jsx.spec.md) | 1 | 0 | 1 |
 | [`src/components/dock/stackContext.js`](src_components_dock_stackContext_js.spec.md) | 1 | 1 | 0 |
@@ -45,12 +45,12 @@ no implementation. This is the sole input to the blind contract test suite.
 | [`src/engine/project.js`](src_engine_project_js.spec.md) | 1 | 1 | 0 |
 | [`src/engine/solver.js`](src_engine_solver_js.spec.md) | 11 | 6 | 5 |
 | [`src/engine/worker.js`](src_engine_worker_js.spec.md) | 2 | 0 | 2 |
-| [`src/keymap.js`](src_keymap_js.spec.md) | 29 | 29 | 0 |
+| [`src/keymap.js`](src_keymap_js.spec.md) | 28 | 28 | 0 |
 | [`src/layout.js`](src_layout_js.spec.md) | 22 | 21 | 1 |
 | [`src/panelMeta.js`](src_panelMeta_js.spec.md) | 1 | 1 | 0 |
 | [`src/popout.js`](src_popout_js.spec.md) | 5 | 5 | 0 |
 | [`src/selection.js`](src_selection_js.spec.md) | 5 | 5 | 0 |
-| [`src/store.js`](src_store_js.spec.md) | 111 | 104 | 7 |
+| [`src/store.js`](src_store_js.spec.md) | 108 | 100 | 8 |
 | [`src/toolbarItems.js`](src_toolbarItems_js.spec.md) | 6 | 4 | 2 |
 | [`src/utils/export.js`](src_utils_export_js.spec.md) | 8 | 6 | 2 |
 | [`src/utils/zip.js`](src_utils_zip_js.spec.md) | 10 | 5 | 5 |
@@ -58,4 +58,4 @@ no implementation. This is the sole input to the blind contract test suite.
 | [`test/contracts.mjs`](test_contracts_mjs.spec.md) | 2 | 0 | 2 |
 | [`test/drivers.mjs`](test_drivers_mjs.spec.md) | 2 | 0 | 2 |
 | [`test/support/loader.mjs`](test_support_loader_mjs.spec.md) | 2 | 2 | 0 |
-| **Total** | **635** | **349** | **286** |
+| **Total** | **625** | **344** | **281** |

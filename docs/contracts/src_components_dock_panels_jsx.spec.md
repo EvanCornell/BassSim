@@ -39,8 +39,15 @@ Both overlays live here rather than at app level so they are clipped to the
 canvas and travel with it when the panel is popped out — a popped-out node
 editor that could not add nodes would be a strange thing to hand someone.
 
+With no project open the canvas is replaced rather than merely emptied.
+Every edit belongs to a file; a graph that belongs to none is the one thing
+a user can build and then lose, so there is nothing to build on until a
+project is chosen.
+
 **Returns**
 
-- `React.ReactElement` — The canvas panel.
+- `React.ReactElement` — The canvas panel, or the empty state when no project is open.
 
-**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
+**Side effects**
+
+- Subscribes to the store.

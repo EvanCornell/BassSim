@@ -47,7 +47,7 @@ modifier when matching, so a single default set fits both platforms.
 
 ### `COMMANDS`
 
-Keys: `edit.undo`, `edit.redo`, `edit.cut`, `edit.copy`, `edit.paste`, `edit.duplicate`, `edit.selectAll`, `edit.delete`, `drive.up`, `drive.down`, `drive.upFine`, `drive.downFine`, `project.new`, `project.save`, `project.open`, `sim.snapshot`, `sim.mask`, `sim.recompute`, `view.settings`, `view.maximize`, `view.popout`
+Keys: `edit.undo`, `edit.redo`, `edit.cut`, `edit.copy`, `edit.paste`, `edit.duplicate`, `edit.selectAll`, `edit.delete`, `drive.up`, `drive.down`, `drive.upFine`, `drive.downFine`, `project.new`, `project.save`, `sim.snapshot`, `sim.mask`, `sim.recompute`, `view.settings`, `view.maximize`, `view.popout`
 
 **This list is incomplete.** Further keys are added at construction
 time and are not visible in the source declaration, so treat it as a
@@ -67,7 +67,6 @@ subset rather than the full set.
 - `drive.downFine` holds: `label`, `group`, `scope`, `run`
 - `project.new` holds: `label`, `group`, `scope`, `run`
 - `project.save` holds: `label`, `group`, `scope`, `run`
-- `project.open` holds: `label`, `group`, `scope`, `run`
 - `sim.snapshot` holds: `label`, `group`, `scope`, `run`
 - `sim.mask` holds: `label`, `group`, `scope`, `run`
 - `sim.recompute` holds: `label`, `group`, `scope`, `run`
@@ -93,7 +92,7 @@ The default combo (or combos) for each command.
 Bare letters are safe here because canvas-scoped commands never fire while a
 text field has focus, and they make placing a chain of elements fast.
 
-Keys: `edit.undo`, `edit.redo`, `edit.cut`, `edit.copy`, `edit.paste`, `edit.duplicate`, `edit.selectAll`, `edit.delete`, `add.driver`, `add.chamber`, `add.waveguide`, `add.pr`, `add.radiation`, `drive.up`, `drive.down`, `drive.upFine`, `drive.downFine`, `project.new`, `project.save`, `project.open`, `sim.snapshot`, `sim.mask`, `sim.recompute`, `view.settings`, `view.maximize`, `view.popout`
+Keys: `edit.undo`, `edit.redo`, `edit.cut`, `edit.copy`, `edit.paste`, `edit.duplicate`, `edit.selectAll`, `edit.delete`, `add.driver`, `add.chamber`, `add.waveguide`, `add.pr`, `add.radiation`, `drive.up`, `drive.down`, `drive.upFine`, `drive.downFine`, `project.new`, `project.save`, `sim.snapshot`, `sim.mask`, `sim.recompute`, `view.settings`, `view.maximize`, `view.popout`
 
 ### `KEYMAP_KEY`
 
@@ -261,7 +260,7 @@ stealing copy from the rest of the app.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
-## COMMAND (22)
+## COMMAND (21)
 
 ### `edit.undo > run(s)`
 
@@ -519,7 +518,7 @@ Lower the drive voltage by 0.1 V.
 - **Reachability:** COMMAND
 - **Obtain via:** import { COMMANDS } from '../../src/keymap.js'  →  COMMANDS['<id>'].run(storeState)
 
-Discard the current graph and start an empty project.
+Add an empty project to the workspace and open it.
 
 **Parameters**
 
@@ -531,7 +530,7 @@ Discard the current graph and start an empty project.
 
 **Side effects**
 
-- Replaces the whole project state and clears the undo history.
+- Creates a workspace file, replaces the whole project state and clears the undo history.
 
 ### `project.save > run(s)`
 
@@ -551,25 +550,6 @@ Download the project as an `.acousim.json` file.
 **Side effects**
 
 - Triggers a browser download.
-
-### `project.open > run(s)`
-
-- **Reachability:** COMMAND
-- **Obtain via:** import { COMMANDS } from '../../src/keymap.js'  →  COMMANDS['<id>'].run(storeState)
-
-Open the saved-project browser.
-
-**Parameters**
-
-- `s` — `object` — The store state, with actions bound.
-
-**Returns**
-
-- `*` — Whatever the store action returns; the key handler ignores it.
-
-**Side effects**
-
-- Shows a modal.
 
 ### `sim.snapshot > run(s)`
 

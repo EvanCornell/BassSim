@@ -35,22 +35,7 @@ controls onto a second row.
 
 - Subscribes to the store.
 
-## UNREACHABLE (7)
-
-### `ProjectName()`
-
-- **Reachability:** UNREACHABLE
-- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
-
-Editable project name. Renaming moves the auto-save to the new name.
-
-**Returns**
-
-- `React.ReactElement` — The name input.
-
-**Side effects**
-
-- Subscribes to the store.
+## UNREACHABLE (6)
 
 ### `UndoRedo()`
 

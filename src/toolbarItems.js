@@ -3,7 +3,7 @@
 // The bar under the menu is a list of small widgets chosen and ordered by the
 // user (Settings ▸ Quick bar). Two kinds live here:
 //
-//   control — an interactive widget (project name, drive voltage, sweep …)
+//   control — an interactive widget (drive voltage, sweep range …)
 //   metric  — a read-only number derived from the current simulation
 //
 // Adding an item means one entry in TOOLBAR_ITEMS plus, for controls, one case
@@ -20,7 +20,6 @@ import { waveguideVolume } from './engine/geometry'
  */
 export const TOOLBAR_ITEMS = {
   // --- controls ---
-  project: { label: 'Project name', group: 'controls' },
   undo: { label: 'Undo / redo', group: 'controls' },
   voltage: { label: 'Drive voltage', group: 'controls' },
   sweep: { label: 'Sweep range', group: 'controls' },
@@ -59,7 +58,7 @@ export const ALL_ITEM_IDS = Object.keys(TOOLBAR_ITEMS)
  * earn a permanent slot only for someone who actually tweaks them often.
  */
 export const DEFAULT_TOOLBAR = [
-  'project', 'undo', 'voltage', 'snapshot',
+  'undo', 'voltage', 'snapshot',
   'm_f3', 'm_f10', 'm_fb', 'm_qtc', 'm_zpeaks', 'm_peakspl',
   'm_xfb', 'm_xf3', 'm_bw', 'm_maxpower', 'm_volume', 'm_solve',
 ]

@@ -12,22 +12,6 @@ import { TOOLBAR_ITEMS, metricValue } from '../toolbarItems'
 // ---------- individual controls ----------
 
 /**
- * Editable project name. Renaming moves the auto-save to the new name.
- *
- * @returns {React.ReactElement} The name input.
- * @sideEffect Subscribes to the store.
- */
-function ProjectName() {
-  const projectName = useStore((s) => s.projectName)
-  const setProjectName = useStore((s) => s.setProjectName)
-  return (
-    <input className="proj-name" value={projectName}
-      onChange={(e) => setProjectName(e.target.value)}
-      title="Project name (auto-saves under this name)" />
-  )
-}
-
-/**
  * Undo and redo buttons, disabled when their stacks are empty.
  *
  * Subscribes to the whole store rather than a slice, since it needs both
@@ -134,7 +118,6 @@ function SnapshotControl() {
 }
 
 const CONTROLS = {
-  project: ProjectName,
   undo: UndoRedo,
   voltage: VoltageControl,
   sweep: SweepRange,

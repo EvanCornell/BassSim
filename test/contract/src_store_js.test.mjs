@@ -11,8 +11,8 @@
 //   history    history, future, clipboard
 //   workspace  layout, layoutPresets, maximized, focusedPanel, draggingPanel,
 //              poppedOut, toolbar, bindings, xZoom
-//   modals     showDriverDB, showProjectManager, showTSCalc, showSettings,
-//              settingsSection, restorePrompt, velocityPopupNodeId
+//   modals     showDriverDB, showTSCalc, showSettings, settingsSection,
+//              workspacePrompt, velocityPopupNodeId
 //
 // Underscore-prefixed fields (`_lastSig`, `_abort`, `_computeTimer`,
 // `_flowApi`, `_lastSavedName`, `_nameTimer`) are documented as solver and
@@ -29,7 +29,7 @@
 import { test, beforeEach } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { useStore, nextId, listSavedProjects, __internals } from '../../src/store.js'
+import { useStore, nextId, __internals } from '../../src/store.js'
 import {
   stack, split, defaultLayout, findNode, findPanelStack, openPanels, isOpen,
 } from '../../src/layout.js'
@@ -57,7 +57,6 @@ const LS_LAYOUT = 'acousim:layout'
 const LS_PRESETS = 'acousim:layoutPresets'
 const LS_TOOLBAR = 'acousim:toolbar'
 const LS_KEYMAP = 'acousim:keymap'
-const lsProject = (name) => `acousim:project:${name}`
 
 const ls = () => globalThis.localStorage
 
@@ -184,61 +183,6 @@ test('nextId: successive ids in the same millisecond are unique', () => {
   const ids = new Set()
   for (let i = 0; i < 50; i++) ids.add(nextId(T_DRIVER))
   assert.equal(ids.size, 50)
-})
-
-// CONTRACT: "Saved projects, sorted by modification time descending."
-test('listSavedProjects: returns entries sorted by modified descending', () => {
-  st().loadSerialized(blank({ name: 'ls-sort-a' }))
-  st().addNode(T_DRIVER, { x: 0, y: 0 })
-  st().autoSave()
-  st().loadSerialized(blank({ name: 'ls-sort-b' }))
-  st().addNode(T_DRIVER, { x: 0, y: 0 })
-  st().autoSave()
-
-  const list = listSavedProjects()
-  assert.ok(Array.isArray(list))
-  for (let i = 1; i < list.length; i++) {
-    assert.ok(
-      String(list[i - 1].modified) >= String(list[i].modified),
-      'list must be sorted newest first',
-    )
-  }
-})
-
-// CONTRACT: "Array<{key: string, name: string, modified: string, nodeCount:
-// number, proj: object}>" — the key being `acousim:project:<name>`.
-test('listSavedProjects: every entry has the documented shape', () => {
-  st().loadSerialized(blank({ name: 'ls-shape' }))
-  st().addNode(T_DRIVER, { x: 1, y: 2 })
-  st().addNode(T_CHAMBER, { x: 3, y: 4 })
-  st().autoSave()
-
-  const entry = listSavedProjects().find((e) => e.name === 'ls-shape')
-  assert.ok(entry, 'an auto-saved project must be listed')
-  assert.equal(entry.key, lsProject('ls-shape'), 'the documented LocalStorage key')
-  assert.equal(typeof entry.name, 'string')
-  assert.equal(typeof entry.modified, 'string')
-  assert.equal(entry.nodeCount, 2)
-  assert.equal(typeof entry.proj, 'object')
-  assert.notEqual(entry.proj, null)
-})
-
-// CONTRACT: "Corrupt entries are skipped rather than throwing, so one bad
-// record cannot hide every other project from the manager."
-test('listSavedProjects: a corrupt record is skipped, the good ones survive', () => {
-  st().loadSerialized(blank({ name: 'ls-corrupt' }))
-  st().addNode(T_DRIVER, { x: 0, y: 0 })
-  st().autoSave()
-  assert.ok(ls().getItem(lsProject('ls-corrupt')), 'precondition: the project was saved')
-
-  ls().setItem(lsProject('zz-corrupt'), '{ this is not json')
-  try {
-    const list = listSavedProjects()
-    assert.ok(Array.isArray(list))
-    assert.ok(list.some((e) => e.name === 'ls-corrupt'))
-  } finally {
-    ls().removeItem(lsProject('zz-corrupt'))
-  }
 })
 
 // ============================================================== INTERNAL ====
@@ -1594,30 +1538,12 @@ test('setShowDriverDB: writes showDriverDB', () => {
   assert.equal(st().showDriverDB, false)
 })
 
-// CONTRACT: "Show or hide the project manager modal."
-test('setShowProjectManager: writes showProjectManager', () => {
-  st().setShowProjectManager(true)
-  assert.equal(st().showProjectManager, true)
-  st().setShowProjectManager(false)
-  assert.equal(st().showProjectManager, false)
-})
-
 // CONTRACT: "Show or hide the Thiele/Small parameter solver."
 test('setShowTSCalc: writes showTSCalc', () => {
   st().setShowTSCalc(true)
   assert.equal(st().showTSCalc, true)
   st().setShowTSCalc(false)
   assert.equal(st().showTSCalc, false)
-})
-
-// CONTRACT: "Set the prompt offering to restore an auto-saved project." /
-// "`v` — The candidate project, or `null` to dismiss."
-test('setRestorePrompt: stores the candidate project and null dismisses it', () => {
-  const candidate = { name: '__candidate__' }
-  st().setRestorePrompt(candidate)
-  assert.equal(st().restorePrompt, candidate)
-  st().setRestorePrompt(null)
-  assert.equal(st().restorePrompt, null)
 })
 
 // CONTRACT: "`object` — The serialized project: `{schemaVersion, app, name,
@@ -1714,92 +1640,6 @@ test('loadSerialized: history, redo, snapshots and selection are cleared', () =>
   assert.equal(selectedNodes().length, 0, 'no node is left flagged selected')
 })
 
-// CONTRACT: "Rename the project" / "`name` — The new project name."
-test('setProjectName: renames the project', () => {
-  st().setProjectName('a new name')
-  assert.equal(st().projectName, 'a new name')
-})
-
-// CONTRACT: "Start an empty project, confirming first if there is anything to
-// lose." (confirm is stubbed true under test)
-test('newProject: empties the graph', () => {
-  const a = st().addNode(T_DRIVER, { x: 0, y: 0 })
-  st().onConnect({ source: a, sourceHandle: 'h1', target: a, targetHandle: 'h2' })
-  st().newProject()
-  assert.deepEqual(nodesOf(), [])
-  assert.deepEqual(edgesOf(), [])
-})
-
-// CONTRACT: "The new project is named with the current time so it cannot
-// silently overwrite the auto-save of the one being replaced."
-test('newProject: names the new project after the current time', () => {
-  st().loadSerialized(blank({ name: 'the old one' }))
-  st().newProject()
-  const name = st().projectName
-  assert.equal(typeof name, 'string')
-  assert.notEqual(name, 'the old one')
-  assert.ok(name.length > 0)
-})
-
-// CONTRACT: "Download the project as a file, auto-saving it first." / "Writes
-// LocalStorage and triggers a browser download."
-test('saveProjectJSON: auto-saves the project to LocalStorage first', () => {
-  st().loadSerialized(blank({
-    name: 'download-me',
-    nodes: [{ id: 'x1', type: T_DRIVER, position: { x: 0, y: 0 }, params: {} }],
-  }))
-  st().saveProjectJSON()
-  assert.ok(
-    ls().getItem(lsProject('download-me')),
-    'the project must be auto-saved under acousim:project:<name> before download',
-  )
-})
-
-// CONTRACT: "Write the project to LocalStorage under its name."
-test('autoSave: writes the project under acousim:project:<name>', () => {
-  st().loadSerialized(blank({
-    name: 'autosave-name',
-    nodes: [{ id: 'x1', type: T_DRIVER, position: { x: 0, y: 0 }, params: {} }],
-  }))
-  ls().removeItem(lsProject('autosave-name'))
-  st().autoSave()
-  const stored = ls().getItem(lsProject('autosave-name'))
-  assert.ok(stored, 'autoSave must write acousim:project:autosave-name')
-  assert.equal(JSON.parse(stored).name, 'autosave-name')
-})
-
-// CONTRACT: "Renaming *moves* the save rather than copying it: the previous key
-// is removed once the new one is written, so a renamed project does not leave a
-// duplicate behind under its old name."
-test('autoSave: renaming moves the save rather than copying it', () => {
-  st().loadSerialized(blank({
-    name: 'move-me-from',
-    nodes: [{ id: 'x1', type: T_DRIVER, position: { x: 0, y: 0 }, params: {} }],
-  }))
-  st().autoSave()
-  assert.ok(ls().getItem(lsProject('move-me-from')), 'precondition: saved under the old name')
-
-  st().setProjectName('move-me-to')
-  st().autoSave()
-  assert.ok(ls().getItem(lsProject('move-me-to')), 'the new name is saved')
-  assert.equal(
-    ls().getItem(lsProject('move-me-from')), null,
-    'the old key must be removed, not left as a duplicate',
-  )
-})
-
-// CONTRACT: "Empty projects are skipped so an accidental new-project does not
-// overwrite a real save with nothing."
-test('autoSave: an empty project is skipped', () => {
-  st().loadSerialized(blank({ name: 'empty-skip' }))
-  ls().removeItem(lsProject('empty-skip'))
-  st().autoSave()
-  assert.equal(
-    ls().getItem(lsProject('empty-skip')), null,
-    'an empty project must not be written',
-  )
-})
-
 // CONTRACT: "Send a panel to its own browser tab and remove it from the dock."
 test('popOutPanel: removes the panel from the dock and tracks it as popped out', () => {
   st().layoutOps.reset()
@@ -1853,14 +1693,14 @@ test('_applyRemote: applies the patch to store state', () => {
 // leave sync permanently muted." — i.e. normal local writes still work after.
 test('_applyRemote: leaves local writes working afterwards', () => {
   st()._applyRemote({ projectName: '__remote2__' })
-  st().setProjectName('__local__')
+  st().loadSerialized(blank({ name: '__local__' }))
   assert.equal(st().projectName, '__local__')
 })
 
 // CONTRACT: "`object` — Every key in `SHARED_KEYS` with its current value."
 test('_sharedSnapshot: is exactly SHARED_KEYS with their current values', () => {
+  st().loadSerialized(blank({ name: '__shared__' }))
   st().addNode(T_DRIVER, { x: 0, y: 0 })
-  st().setProjectName('__shared__')
   const shot = st()._sharedSnapshot()
   assert.equal(typeof shot, 'object')
   assert.notEqual(shot, null)

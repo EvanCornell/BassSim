@@ -16,16 +16,16 @@ where:
   history    history, future, clipboard
   workspace  layout, layoutPresets, maximized, focusedPanel, draggingPanel,
              poppedOut, toolbar, bindings, xZoom
-  modals     showDriverDB, showProjectManager, showTSCalc, showSettings,
-             settingsSection, restorePrompt, velocityPopupNodeId
+  modals     showDriverDB, showTSCalc, showSettings, settingsSection,
+             workspacePrompt, velocityPopupNodeId
 
 Fields prefixed with an underscore are solver and persistence bookkeeping
-(`_lastSig`, `_simToken`, `_computeTimer`, `_flowApi`, `_lastSavedName`,
-`_nameTimer`) and are not part of any action's observable contract.
+(`_lastSig`, `_simToken`, `_computeTimer`, `_flowApi`) and are not part of
+any action's observable contract.
 
 LocalStorage keys, all prefixed `acousim:` — `acousim:layout`,
 `acousim:layoutPresets`, `acousim:toolbar`, `acousim:keymap`,
-`acousim:project:<name>`, `acousim:lastProject` and `acousim:workspace`.
+`acousim:workspace` and `acousim:workspaceChosen`.
 
 A subset of the state is mirrored to popped-out panel windows over a
 BroadcastChannel; see src/popout.js for which keys and why.
@@ -42,7 +42,7 @@ so this is the vocabulary they assume.
 
 Keys: `loadLayout`, `loadPresets`, `loadToolbar`, `freeSpotNear`, `graphSignature`
 
-## EXPORTED (2)
+## EXPORTED (1)
 
 ### `nextId(type)`
 
@@ -66,24 +66,6 @@ millisecond, and stay readable in a saved project file.
 **Side effects**
 
 - Advances the module-level counter.
-
-### `listSavedProjects()`
-
-- **Reachability:** EXPORTED
-- **Obtain via:** import { listSavedProjects } from '../../src/store.js'
-
-List the auto-saved projects in LocalStorage, newest first.
-
-Corrupt entries are skipped rather than throwing, so one bad record
-cannot hide every other project from the manager.
-
-**Returns**
-
-- `Array<{key: string, name: string, modified: string, nodeCount: number, proj: object}>` — Saved projects, sorted by modification time descending.
-
-**Side effects**
-
-- Reads LocalStorage.
 
 ## INTERNAL (5)
 
@@ -192,7 +174,7 @@ around the canvas does not re-run the sweep.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
-## STORE ACTION (97)
+## STORE ACTION (94)
 
 ### `openContextMenu(x, y, target)`
 
@@ -1318,25 +1300,6 @@ Show or hide the driver database modal.
 
 - Writes store state. The field is local to the window — `SHARED_KEYS` deliberately excludes it, so a popped-out panel keeps its own.
 
-### `setShowProjectManager(v)`
-
-- **Reachability:** STORE ACTION
-- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().setShowProjectManager(…)
-
-Show or hide the project manager modal.
-
-**Parameters**
-
-- `v` — `boolean` — Whether to show it.
-
-**Returns**
-
-- `void`
-
-**Side effects**
-
-- Writes store state. The field is local to the window — `SHARED_KEYS` deliberately excludes it, so a popped-out panel keeps its own.
-
 ### `setShowTSCalc(v)`
 
 - **Reachability:** STORE ACTION
@@ -1347,25 +1310,6 @@ Show or hide the Thiele/Small parameter solver.
 **Parameters**
 
 - `v` — `boolean` — Whether to show it.
-
-**Returns**
-
-- `void`
-
-**Side effects**
-
-- Writes store state. The field is local to the window — `SHARED_KEYS` deliberately excludes it, so a popped-out panel keeps its own.
-
-### `setRestorePrompt(v)`
-
-- **Reachability:** STORE ACTION
-- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().setRestorePrompt(…)
-
-Set the prompt offering to restore an auto-saved project.
-
-**Parameters**
-
-- `v` — `object|null` — The candidate project, or `null` to dismiss.
 
 **Returns**
 
@@ -1450,58 +1394,16 @@ project being replaced and would be meaningless against the new one.
 
 - Replaces store state and schedules a resimulation.
 
-### `setProjectName(name)`
-
-- **Reachability:** STORE ACTION
-- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().setProjectName(…)
-
-Rename the project, saving the new name after a pause.
-
-The save is debounced by a second so intermediate keystrokes never
-persist — without it, typing "Ported box" would leave nine abandoned
-auto-saves behind.
-
-The workspace file follows the project, so the two cannot end up
-disagreeing about what the thing is called. A name a filesystem could not
-hold — one with a slash in it — leaves the filename alone rather than
-failing the rename; the project keeps the name the user typed.
-
-**Parameters**
-
-- `name` — `string` — The new project name.
-
-**Returns**
-
-- `void`
-
-**Side effects**
-
-- Writes store state and schedules a debounced auto-save, which also renames the workspace file.
-
-### `newProject()`
-
-- **Reachability:** STORE ACTION
-- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().newProject(…)
-
-Start an empty project, confirming first if there is anything to lose.
-
-The new project is named with the current time so it cannot silently
-overwrite the auto-save of the one being replaced.
-
-**Returns**
-
-- `void`
-
-**Side effects**
-
-- Shows a confirmation dialog, then replaces store state and schedules a resimulation. Does nothing if the user declines.
-
 ### `saveProjectJSON()`
 
 - **Reachability:** STORE ACTION
 - **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().saveProjectJSON(…)
 
-Download the project as a file, auto-saving it first.
+Download the open project as a standalone JSON file.
+
+An export, not a save: the project already lives in the workspace, and
+this is for handing one design to someone who is not going to import a
+whole workspace to read it.
 
 **Returns**
 
@@ -1509,29 +1411,31 @@ Download the project as a file, auto-saving it first.
 
 **Side effects**
 
-- Writes LocalStorage and triggers a browser download.
+- Writes the open file into the workspace, then triggers a browser download.
 
-### `autoSave()`
+### `importProject(proj, filename)`
 
 - **Reachability:** STORE ACTION
-- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().autoSave(…)
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().importProject(…)
 
-Write the project to LocalStorage under its name.
+Import a project file into the workspace as a new file, and open it.
 
-Renaming *moves* the save rather than copying it: the previous key is
-removed once the new one is written, so a renamed project does not leave
-a duplicate behind under its old name.
+Imported *into* the workspace rather than onto the canvas. A project on
+the canvas that belongs to no file would be the one thing that can be
+edited and then lost, which is the whole reason the workspace exists.
 
-Empty projects are skipped so an accidental new-project does not
-overwrite a real save with nothing.
+**Parameters**
+
+- `proj` — `object` — A deserialized project.
+- `filename` — `string` — The file it came from, used to name the entry.
 
 **Returns**
 
-- `void`
+- `string` — The path of the new workspace file.
 
 **Side effects**
 
-- Writes LocalStorage. Skipped entirely in a popped-out tab — there is one writer for the auto-save. A quota failure is swallowed.
+- Writes store state, persists the workspace and replaces what is on the canvas.
 
 ### `_commitWorkspace(ws)`
 
@@ -1584,8 +1488,8 @@ back, which is the only point where the name has to mean something.
 
 Write the editor's current project back into its file.
 
-Called from `autoSave`, so the open file tracks the graph without the user
-having to save anything. A workspace whose active file has been deleted or
+Called after every successful simulation, so the open file tracks the
+graph without the user having to save anything. A workspace whose active file has been deleted or
 was never a project writes nothing rather than resurrecting it.
 
 **Returns**
@@ -1995,6 +1899,31 @@ adjusted, because the user is looking at the text box and can fix it.
 
 - On success, writes store state, persists the workspace, and for a file opens it on the canvas.
 
+### `chooseWorkspaceStorage(kind)`
+
+- **Reachability:** STORE ACTION
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().chooseWorkspaceStorage(…)
+
+Record where this workspace is kept, and dismiss the startup prompt.
+
+Only browser storage exists today, so the choice is nearly rhetorical —
+but it is asked out loud because browser storage is the one option whose
+durability the user needs to have been told about before they have work in
+it. The answer is remembered so the question is asked once, not on every
+visit.
+
+**Parameters**
+
+- `kind` — `string` — Where the workspace lives; only `'browser'` is supported.
+
+**Returns**
+
+- `void`
+
+**Side effects**
+
+- Writes store state and LocalStorage.
+
 ### `setCustomDrivers(drivers)`
 
 - **Reachability:** STORE ACTION
@@ -2243,7 +2172,7 @@ The full shared slice, sent to a popped-out tab when it announces itself.
 
 - Current store state.
 
-## UNREACHABLE (7)
+## UNREACHABLE (8)
 
 ### `simulateInWorker(project)`
 
@@ -2317,6 +2246,24 @@ the back button should return from.
 **Side effects**
 
 - Replaces the current history entry. Silently does nothing where the History API is unavailable.
+
+### `needsStorageChoice()`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+Whether the user has already been asked where their workspace lives.
+
+A popped-out tab never asks: it owns no workspace of its own and the
+question belongs to the window that does.
+
+**Returns**
+
+- `boolean` — True when the prompt should be shown.
+
+**Side effects**
+
+- Reads LocalStorage and the window's own URL.
 
 ### `loadWorkspace()`
 
