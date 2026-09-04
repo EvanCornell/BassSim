@@ -9,6 +9,35 @@
    Colours are the AcouSim palette. Everything else — the 1px rules, the
    22px rows, the flush editor tabs with a top accent, the near-zero
    radii, the native UI font — follows the editor.                     */
+/* Cascadia Mono, the face the editor and Windows Terminal ship with.
+   Bundled rather than fetched: two woff2 subsets of the variable-weight
+   build, ~42 kB together, served from the app's own origin so there is no
+   CDN in the loading path and no third party told who is running AcouSim.
+   SIL OFL — see src/assets/fonts/LICENSE-Cascadia.txt.
+
+   Greek is here for the units, not for prose: Ω and λ appear in the
+   readouts, and without it every impedance figure would break out of the
+   face halfway through. Both subsets carry the full 200–700 weight axis
+   in one file. */
+@font-face {
+  font-family: 'Cascadia Mono';
+  font-style: normal;
+  font-weight: 200 700;
+  font-display: swap;
+  src: url('./assets/fonts/cascadia-mono-latin-wght-normal.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Cascadia Mono';
+  font-style: normal;
+  font-weight: 200 700;
+  font-display: swap;
+  src: url('./assets/fonts/cascadia-mono-greek-wght-normal.woff2') format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+
 :root {
   --bg: #0d1117;
   --surface: #161b22;
@@ -49,8 +78,8 @@
      whatever the desktop has set on Linux. */
   --ui-font: "Segoe WPC", "Segoe UI", system-ui, "Ubuntu", "Droid Sans",
     -apple-system, BlinkMacSystemFont, sans-serif;
-  --mono-font: "Droid Sans Mono", "Cascadia Mono", Menlo, Monaco, Consolas,
-    "Courier New", monospace;
+  --mono-font: "Cascadia Mono", "Cascadia Code", Consolas, Menlo, Monaco,
+    "Droid Sans Mono", monospace;
 }
 * { box-sizing: border-box; }
 
@@ -616,6 +645,9 @@ svg.ws-chevron.open { transform: rotate(90deg); }
   border-radius: 0 !important;
 }
 .recharts-tooltip-label, .recharts-tooltip-item { font-size: 11px !important; }
+/* Axis ticks are figures, so they get the figure face like every other
+   readout in the app. */
+.recharts-cartesian-axis-tick text { font-family: var(--mono-font); }
 .snapshot-chip {
   display: inline-flex; align-items: center; gap: 5px;
   border: 1px solid var(--border); border-radius: var(--r-1);
