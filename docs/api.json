@@ -25,8 +25,8 @@
   },
   "stats": {
     "modules": 59,
-    "methods": 629,
-    "documented": 629
+    "methods": 646,
+    "documented": 646
   },
   "modules": [
     {
@@ -12622,14 +12622,42 @@
       "module": null,
       "constants": [
         {
+          "name": "CORE",
+          "line": 234,
+          "shape": {
+            "kind": "array",
+            "length": 6
+          },
+          "summary": "The six parameters the solver works from, in the order they are entered.",
+          "description": "The six parameters the solver works from, in the order they are entered."
+        },
+        {
+          "name": "ALTS",
+          "line": 254,
+          "shape": {
+            "kind": "object",
+            "keys": [
+              "Fs",
+              "Re",
+              "Sd",
+              "Qes",
+              "Qms",
+              "Vas"
+            ]
+          },
+          "summary": "What each parameter can be recovered from when the datasheet omits it.",
+          "description": "What each parameter can be recovered from when the datasheet omits it.\n\n`needs` lists the other core parameters a substitution consumes, which is\nwhat lets the solver order the work and refuse a set that is circular —\nQes from Qts needs Qms, so it cannot also be where Qms comes from.\n\nSubstitute inputs are keyed by name rather than by substitution, so a\nfigure entered once is still there after switching to another route that\nalso uses it. Mms in particular appears in five of them."
+        },
+        {
           "name": "__internals",
-          "line": 253,
+          "line": 663,
           "shape": {
             "kind": "object",
             "keys": [
               "solveDatasheet",
-              "solveAddedMass",
-              "solveKnownBox"
+              "altFor",
+              "compliance",
+              "equivalentVolume"
             ]
           },
           "summary": null,
@@ -12638,26 +12666,866 @@
       ],
       "methods": [
         {
+          "name": "compliance",
+          "qualified": "compliance",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 20,
+          "signature": [
+            "Vas",
+            "Sd"
+          ],
+          "documented": true,
+          "summary": "Mechanical compliance implied by an equivalent volume.",
+          "description": "Mechanical compliance implied by an equivalent volume.",
+          "params": [
+            {
+              "name": "Vas",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Equivalent compliance volume, litres."
+            },
+            {
+              "name": "Sd",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Effective cone area, cm²."
+            }
+          ],
+          "returns": {
+            "type": "number",
+            "desc": "Compliance, m/N."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "equivalentVolume",
+          "qualified": "equivalentVolume",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 33,
+          "signature": [
+            "Cms",
+            "Sd"
+          ],
+          "documented": true,
+          "summary": "Equivalent volume implied by a compliance — the inverse of `compliance`.",
+          "description": "Equivalent volume implied by a compliance — the inverse of `compliance`.",
+          "params": [
+            {
+              "name": "Cms",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Compliance, m/N."
+            },
+            {
+              "name": "Sd",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Effective cone area, cm²."
+            }
+          ],
+          "returns": {
+            "type": "number",
+            "desc": "Equivalent compliance volume, litres."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "fsFromMmsCms",
+          "qualified": "fsFromMmsCms",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 55,
+          "signature": [
+            "a"
+          ],
+          "documented": true,
+          "summary": "Free-air resonance from moving mass and compliance.",
+          "description": "Free-air resonance from moving mass and compliance.",
+          "params": [
+            {
+              "name": "a",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "Substitute inputs."
+            },
+            {
+              "name": "a.Mms",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Moving mass, grams."
+            },
+            {
+              "name": "a.Cms",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Compliance, mm/N."
+            }
+          ],
+          "returns": {
+            "type": "number",
+            "desc": "Fs, Hz."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "fsFromMmsVas",
+          "qualified": "fsFromMmsVas",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 70,
+          "signature": [
+            "a",
+            "c"
+          ],
+          "documented": true,
+          "summary": "Free-air resonance from moving mass, taking compliance from Vas and Sd.",
+          "description": "Free-air resonance from moving mass, taking compliance from Vas and Sd.",
+          "params": [
+            {
+              "name": "a",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "Substitute inputs."
+            },
+            {
+              "name": "a.Mms",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Moving mass, grams."
+            },
+            {
+              "name": "c",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "Core parameters resolved so far."
+            },
+            {
+              "name": "c.Vas",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Equivalent compliance volume, litres."
+            },
+            {
+              "name": "c.Sd",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Effective cone area, cm²."
+            }
+          ],
+          "returns": {
+            "type": "number",
+            "desc": "Fs, Hz."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "reFromZmax",
+          "qualified": "reFromZmax",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 89,
+          "signature": [
+            "a",
+            "c"
+          ],
+          "documented": true,
+          "summary": "DC resistance from the impedance peak.",
+          "description": "DC resistance from the impedance peak.\n\nAt resonance the motional branch adds Re·Qms/Qes in parallel with nothing\nelse, so the peak stands at Re(1 + Qms/Qes) — an exact relation, and Zmax\nis one of the few things a sheet without Re still tends to plot.",
+          "params": [
+            {
+              "name": "a",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "Substitute inputs."
+            },
+            {
+              "name": "a.Zmax",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Impedance at resonance, ohms."
+            },
+            {
+              "name": "c",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "Core parameters resolved so far."
+            },
+            {
+              "name": "c.Qms",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Mechanical Q."
+            },
+            {
+              "name": "c.Qes",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Electrical Q."
+            }
+          ],
+          "returns": {
+            "type": "number",
+            "desc": "Re, ohms."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "reFromZnom",
+          "qualified": "reFromZnom",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 106,
+          "signature": [
+            "a"
+          ],
+          "documented": true,
+          "summary": "DC resistance estimated from the nominal impedance rating.",
+          "description": "DC resistance estimated from the nominal impedance rating.\n\nA rule of thumb rather than a relation: nominal impedance is a marketing\nfigure, and Re lands somewhere near 0.85 of it across most drivers. Marked\nas an estimate wherever it is used, because it is the one substitution here\nthat cannot be derived from anything.",
+          "params": [
+            {
+              "name": "a",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "Substitute inputs."
+            },
+            {
+              "name": "a.Znom",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Nominal impedance rating, ohms."
+            }
+          ],
+          "returns": {
+            "type": "number",
+            "desc": "Re, ohms."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "sdFromDiameter",
+          "qualified": "sdFromDiameter",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 118,
+          "signature": [
+            "a"
+          ],
+          "documented": true,
+          "summary": "Cone area from the effective piston diameter.",
+          "description": "Cone area from the effective piston diameter.",
+          "params": [
+            {
+              "name": "a",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "Substitute inputs."
+            },
+            {
+              "name": "a.Dia",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Effective piston diameter, cm."
+            }
+          ],
+          "returns": {
+            "type": "number",
+            "desc": "Sd, cm²."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "sdFromVasCms",
+          "qualified": "sdFromVasCms",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 132,
+          "signature": [
+            "a",
+            "c"
+          ],
+          "documented": true,
+          "summary": "Cone area from compliance and the equivalent volume it produces.",
+          "description": "Cone area from compliance and the equivalent volume it produces.",
+          "params": [
+            {
+              "name": "a",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "Substitute inputs."
+            },
+            {
+              "name": "a.Cms",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Compliance, mm/N."
+            },
+            {
+              "name": "c",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "Core parameters resolved so far."
+            },
+            {
+              "name": "c.Vas",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Equivalent compliance volume, litres."
+            }
+          ],
+          "returns": {
+            "type": "number",
+            "desc": "Sd, cm²."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "qesFromQtsQms",
+          "qualified": "qesFromQtsQms",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 149,
+          "signature": [
+            "a",
+            "c"
+          ],
+          "documented": true,
+          "summary": "Electrical Q from total and mechanical Q.",
+          "description": "Electrical Q from total and mechanical Q.\n\nThe most common gap of all: sheets that print Qts and Qms but not Qes.",
+          "params": [
+            {
+              "name": "a",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "Substitute inputs."
+            },
+            {
+              "name": "a.Qts",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Total Q."
+            },
+            {
+              "name": "c",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "Core parameters resolved so far."
+            },
+            {
+              "name": "c.Qms",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Mechanical Q."
+            }
+          ],
+          "returns": {
+            "type": "number",
+            "desc": "Qes."
+          },
+          "throws": [
+            {
+              "type": "Error",
+              "desc": "When Qts is not below Qms, which no real driver allows."
+            }
+          ],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "qesFromBlMms",
+          "qualified": "qesFromBlMms",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 166,
+          "signature": [
+            "a",
+            "c"
+          ],
+          "documented": true,
+          "summary": "Electrical Q from motor strength and moving mass.",
+          "description": "Electrical Q from motor strength and moving mass.",
+          "params": [
+            {
+              "name": "a",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "Substitute inputs."
+            },
+            {
+              "name": "a.Bl",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Motor strength, T·m."
+            },
+            {
+              "name": "a.Mms",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Moving mass, grams."
+            },
+            {
+              "name": "c",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "Core parameters resolved so far."
+            },
+            {
+              "name": "c.Fs",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Free-air resonance, Hz."
+            },
+            {
+              "name": "c.Re",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "DC resistance, ohms."
+            }
+          ],
+          "returns": {
+            "type": "number",
+            "desc": "Qes."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "qmsFromQtsQes",
+          "qualified": "qmsFromQtsQes",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 181,
+          "signature": [
+            "a",
+            "c"
+          ],
+          "documented": true,
+          "summary": "Mechanical Q from total and electrical Q.",
+          "description": "Mechanical Q from total and electrical Q.",
+          "params": [
+            {
+              "name": "a",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "Substitute inputs."
+            },
+            {
+              "name": "a.Qts",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Total Q."
+            },
+            {
+              "name": "c",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "Core parameters resolved so far."
+            },
+            {
+              "name": "c.Qes",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Electrical Q."
+            }
+          ],
+          "returns": {
+            "type": "number",
+            "desc": "Qms."
+          },
+          "throws": [
+            {
+              "type": "Error",
+              "desc": "When Qts is not below Qes, which no real driver allows."
+            }
+          ],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "qmsFromRmsMms",
+          "qualified": "qmsFromRmsMms",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 197,
+          "signature": [
+            "a",
+            "c"
+          ],
+          "documented": true,
+          "summary": "Mechanical Q from suspension losses and moving mass.",
+          "description": "Mechanical Q from suspension losses and moving mass.",
+          "params": [
+            {
+              "name": "a",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "Substitute inputs."
+            },
+            {
+              "name": "a.Rms",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Mechanical resistance, kg/s."
+            },
+            {
+              "name": "a.Mms",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Moving mass, grams."
+            },
+            {
+              "name": "c",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "Core parameters resolved so far."
+            },
+            {
+              "name": "c.Fs",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Free-air resonance, Hz."
+            }
+          ],
+          "returns": {
+            "type": "number",
+            "desc": "Qms."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "vasFromCms",
+          "qualified": "vasFromCms",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 211,
+          "signature": [
+            "a",
+            "c"
+          ],
+          "documented": true,
+          "summary": "Equivalent volume from compliance.",
+          "description": "Equivalent volume from compliance.",
+          "params": [
+            {
+              "name": "a",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "Substitute inputs."
+            },
+            {
+              "name": "a.Cms",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Compliance, mm/N."
+            },
+            {
+              "name": "c",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "Core parameters resolved so far."
+            },
+            {
+              "name": "c.Sd",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Effective cone area, cm²."
+            }
+          ],
+          "returns": {
+            "type": "number",
+            "desc": "Vas, litres."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "vasFromMms",
+          "qualified": "vasFromMms",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 226,
+          "signature": [
+            "a",
+            "c"
+          ],
+          "documented": true,
+          "summary": "Equivalent volume from moving mass, via the compliance Fs and Mms imply.",
+          "description": "Equivalent volume from moving mass, via the compliance Fs and Mms imply.",
+          "params": [
+            {
+              "name": "a",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "Substitute inputs."
+            },
+            {
+              "name": "a.Mms",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Moving mass, grams."
+            },
+            {
+              "name": "c",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "Core parameters resolved so far."
+            },
+            {
+              "name": "c.Fs",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Free-air resonance, Hz."
+            },
+            {
+              "name": "c.Sd",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Effective cone area, cm²."
+            }
+          ],
+          "returns": {
+            "type": "number",
+            "desc": "Vas, litres."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
           "name": "solveDatasheet",
           "qualified": "solveDatasheet",
           "kind": "function",
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 42,
+          "line": 350,
           "signature": [
             "arg0"
           ],
           "documented": true,
-          "summary": "Derive the full T/S set from published datasheet figures.",
-          "description": "Derive the full T/S set from published datasheet figures.\n\nThe canonical path: Vas gives compliance, compliance and Fs give moving\nmass, and mass with Qes and Qms gives motor strength and mechanical\nresistance.",
+          "summary": "Derive the rest of the T/S set from the six core parameters.",
+          "description": "Derive the rest of the T/S set from the six core parameters.\n\nThe canonical path: Vas gives compliance, compliance and Fs give moving\nmass, and mass with Qes and Qms gives motor strength and mechanical\nresistance.",
           "params": [
             {
               "name": "m",
               "type": "object",
               "optional": false,
               "default": null,
-              "desc": "Measurements."
+              "desc": "The six core parameters."
             },
             {
               "name": "m.Fs",
@@ -12704,7 +13572,7 @@
           ],
           "returns": {
             "type": "{Fs: number, Vas: number, Qes: number, Qms: number, Qts: number, Re: number, Sd: number, Cms: number, Mms: number, Bl: number, Rms: number}",
-            "desc": "The complete T/S set in display units — the six inputs echoed back plus Cms mm/N, Mms g, Bl T·m and Rms N·s/m."
+            "desc": "The complete T/S set in display units — the six inputs echoed back plus Cms mm/N, Mms g, Bl T·m and Rms kg/s."
           },
           "throws": [],
           "contract": {
@@ -12721,87 +13589,41 @@
           "other": []
         },
         {
-          "name": "solveAddedMass",
-          "qualified": "solveAddedMass",
+          "name": "altFor",
+          "qualified": "altFor",
           "kind": "function",
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 75,
+          "line": 368,
           "signature": [
-            "arg0"
+            "key",
+            "id"
           ],
           "documented": true,
-          "summary": "Derive the T/S set from the added-mass measurement.",
-          "description": "Derive the T/S set from the added-mass measurement.\n\nLoading the cone with a known mass drops its resonance, and the size of\nthat drop gives the moving mass directly — which is what makes this the\npractical method for a driver with no datasheet.\n\nQes and Qms are optional here: without them the mass, compliance and Vas\nare still recoverable, and the motor figures are simply left undefined.",
+          "summary": "Look up one substitution by parameter and id.",
+          "description": "Look up one substitution by parameter and id.",
           "params": [
             {
-              "name": "m",
-              "type": "object",
+              "name": "key",
+              "type": "string",
               "optional": false,
               "default": null,
-              "desc": "Measurements."
+              "desc": "Core parameter name."
             },
             {
-              "name": "m.Fs",
-              "type": "number",
+              "name": "id",
+              "type": "string",
               "optional": false,
               "default": null,
-              "desc": "Free-air resonance, Hz."
-            },
-            {
-              "name": "m.FsPrime",
-              "type": "number",
-              "optional": false,
-              "default": null,
-              "desc": "Resonance with the added mass fitted, Hz."
-            },
-            {
-              "name": "m.mAdd",
-              "type": "number",
-              "optional": false,
-              "default": null,
-              "desc": "Added mass, grams."
-            },
-            {
-              "name": "m.Qes",
-              "type": "number",
-              "optional": true,
-              "default": null,
-              "desc": "Electrical Q, if known."
-            },
-            {
-              "name": "m.Qms",
-              "type": "number",
-              "optional": true,
-              "default": null,
-              "desc": "Mechanical Q, if known."
-            },
-            {
-              "name": "m.Re",
-              "type": "number",
-              "optional": false,
-              "default": null,
-              "desc": "DC resistance, ohms."
-            },
-            {
-              "name": "m.Sd",
-              "type": "number",
-              "optional": false,
-              "default": null,
-              "desc": "Effective cone area, cm²."
+              "desc": "Substitution id."
             }
           ],
           "returns": {
             "type": "object",
-            "desc": "The T/S set in display units; `Bl`, `Rms` and `Qts` are `undefined` when the Q values were not supplied."
+            "desc": "The substitution, falling back to the parameter's first."
           },
-          "throws": [
-            {
-              "type": "Error",
-              "desc": "When the loaded resonance is not below the free-air one, which means the measurements are swapped or wrong."
-            }
-          ],
+          "throws": [],
           "contract": {
             "pre": [],
             "post": [],
@@ -12814,174 +13636,71 @@
           "other": []
         },
         {
-          "name": "solveKnownBox",
-          "qualified": "solveKnownBox",
-          "kind": "function",
-          "exported": false,
-          "async": false,
-          "generator": false,
-          "line": 108,
-          "signature": [
-            "arg0"
-          ],
-          "documented": true,
-          "summary": "Derive the T/S set from the resonance shift in a box of known volume.",
-          "description": "Derive the T/S set from the resonance shift in a box of known volume.\n\nSealing the driver in a known volume raises its resonance, and the size of\nthat rise gives Vas as `Vb·((Fc/Fs)² − 1)` — after which this delegates to\n`solveDatasheet`, so equivalent inputs give identical results.",
-          "params": [
-            {
-              "name": "m",
-              "type": "object",
-              "optional": false,
-              "default": null,
-              "desc": "Measurements."
-            },
-            {
-              "name": "m.Fs",
-              "type": "number",
-              "optional": false,
-              "default": null,
-              "desc": "Free-air resonance, Hz."
-            },
-            {
-              "name": "m.Fc",
-              "type": "number",
-              "optional": false,
-              "default": null,
-              "desc": "Resonance in the test box, Hz."
-            },
-            {
-              "name": "m.Vb",
-              "type": "number",
-              "optional": false,
-              "default": null,
-              "desc": "Test box volume, litres."
-            },
-            {
-              "name": "m.Qes",
-              "type": "number",
-              "optional": false,
-              "default": null,
-              "desc": "Electrical Q."
-            },
-            {
-              "name": "m.Qms",
-              "type": "number",
-              "optional": false,
-              "default": null,
-              "desc": "Mechanical Q."
-            },
-            {
-              "name": "m.Re",
-              "type": "number",
-              "optional": false,
-              "default": null,
-              "desc": "DC resistance, ohms."
-            },
-            {
-              "name": "m.Sd",
-              "type": "number",
-              "optional": false,
-              "default": null,
-              "desc": "Effective cone area, cm²."
-            }
-          ],
-          "returns": {
-            "type": "{Fs: number, Vas: number, Qes: number, Qms: number, Qts: number, Re: number, Sd: number, Cms: number, Mms: number, Bl: number, Rms: number}",
-            "desc": "The complete T/S set in display units, identical to what `solveDatasheet` returns for the derived Vas."
-          },
-          "throws": [
-            {
-              "type": "Error",
-              "desc": "When the in-box resonance is not above the free-air one, which means the measurements are swapped or the box is leaking."
-            }
-          ],
-          "contract": {
-            "pre": [],
-            "post": [],
-            "invariant": [],
-            "mutates": [],
-            "sideEffect": [],
-            "reads": [],
-            "pure": true
-          },
-          "other": []
-        },
-        {
-          "name": "TSCalc",
-          "qualified": "TSCalc",
+          "name": "solveTS",
+          "qualified": "solveTS",
           "kind": "function",
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 130,
-          "signature": [],
+          "line": 388,
+          "signature": [
+            "values",
+            "missing"
+          ],
           "documented": true,
-          "summary": "The Thiele/Small solver: derive a full parameter set from measurements.",
-          "description": "The Thiele/Small solver: derive a full parameter set from measurements.\n\nThree methods — datasheet, added mass and known box — sharing one result\nview, so the derived set can be applied to a driver node whichever way it\nwas obtained.",
-          "params": [],
+          "summary": "Resolve the six core parameters, then derive the full T/S set.",
+          "description": "Resolve the six core parameters, then derive the full T/S set.\n\nAnything named in `missing` comes from a substitution instead of from its\nown field. Because a substitution can itself depend on other core figures,\nthey are resolved by repeated passes rather than in a fixed order: each\npass takes whatever has all its dependencies satisfied, until either\neverything is known or a pass achieves nothing — which means what is left\ndepends on itself.",
+          "params": [
+            {
+              "name": "values",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "Every form field, core and substitute alike."
+            },
+            {
+              "name": "missing",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "Map of core parameter to the substitution id chosen for it. Absent keys are taken from their own field."
+            }
+          ],
           "returns": {
-            "type": "React.ReactElement|null",
-            "desc": "The modal, or `null` when hidden."
+            "type": "{result: object, via: object, estimated: boolean}",
+            "desc": "The full T/S set, a map of core parameter to the relation that produced it (or `'given'`), and whether any estimate was involved."
           },
-          "throws": [],
+          "throws": [
+            {
+              "type": "Error",
+              "desc": "When a figure is missing or not positive, when a substitution's own precondition fails, or when the chosen substitutions depend on each other in a circle."
+            }
+          ],
           "contract": {
             "pre": [],
             "post": [],
             "invariant": [],
             "mutates": [],
-            "sideEffect": [
-              "Subscribes to the store."
-            ],
+            "sideEffect": [],
             "reads": [],
-            "pure": false
+            "pure": true
           },
           "other": []
         },
         {
-          "name": "applyToNode",
-          "qualified": "TSCalc > applyToNode",
+          "name": "Field",
+          "qualified": "Field",
           "kind": "function",
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 167,
-          "signature": [],
-          "documented": true,
-          "summary": "Write the derived parameters into the selected driver node.",
-          "description": "Write the derived parameters into the selected driver node.\n\nRounded to three decimals, which is past the precision the measurements\njustify and keeps the parameter panel readable.",
-          "params": [],
-          "returns": {
-            "type": "void",
-            "desc": ""
-          },
-          "throws": [],
-          "contract": {
-            "pre": [],
-            "post": [],
-            "invariant": [],
-            "mutates": [],
-            "sideEffect": [
-              "Updates the node's params — which triggers a resimulation — and closes the modal. Alerts and does nothing when no driver node is selected."
-            ],
-            "reads": [],
-            "pure": false
-          },
-          "other": []
-        },
-        {
-          "name": "F",
-          "qualified": "TSCalc > F",
-          "kind": "function",
-          "exported": false,
-          "async": false,
-          "generator": false,
-          "line": 188,
+          "line": 450,
           "signature": [
             "arg0"
           ],
           "documented": true,
-          "summary": "One labelled numeric input row, registered with the form.",
-          "description": "One labelled numeric input row, registered with the form.",
+          "summary": "One labelled numeric input row.",
+          "description": "One labelled numeric input row.",
           "params": [
             {
               "name": "props",
@@ -13010,6 +13729,20 @@
               "optional": false,
               "default": null,
               "desc": "Unit shown after the input."
+            },
+            {
+              "name": "props.register",
+              "type": "Function",
+              "optional": false,
+              "default": null,
+              "desc": "The form's `register`."
+            },
+            {
+              "name": "props.children",
+              "type": "React.ReactNode",
+              "optional": true,
+              "default": null,
+              "desc": "Trailing control, such as the missing-parameter checkbox."
             }
           ],
           "returns": {
@@ -13023,8 +13756,228 @@
             "invariant": [],
             "mutates": [],
             "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "TSCalc",
+          "qualified": "TSCalc",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 472,
+          "signature": [],
+          "documented": true,
+          "summary": "The Thiele/Small solver: derive a full parameter set from datasheet figures.",
+          "description": "The Thiele/Small solver: derive a full parameter set from datasheet figures.\n\nSix parameters are wanted — Fs, Re, Sd, Qes, Qms and Vas — and datasheets\nroutinely print five of them. Each row can therefore be marked as missing,\nwhich swaps its field for whichever published figures it can be recovered\nfrom instead.",
+          "params": [],
+          "returns": {
+            "type": "React.ReactElement|null",
+            "desc": "The modal, or `null` when hidden."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Subscribes to the store."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "setMissingFlag",
+          "qualified": "TSCalc > setMissingFlag",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 503,
+          "signature": [
+            "key",
+            "on"
+          ],
+          "documented": true,
+          "summary": "Mark a parameter as present or missing from the datasheet.",
+          "description": "Mark a parameter as present or missing from the datasheet.",
+          "params": [
+            {
+              "name": "key",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Core parameter name."
+            },
+            {
+              "name": "on",
+              "type": "boolean",
+              "optional": false,
+              "default": null,
+              "desc": "Whether it is missing."
+            }
+          ],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Updates component state and drops any previous result."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "setAlt",
+          "qualified": "TSCalc > setAlt",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 522,
+          "signature": [
+            "key",
+            "id"
+          ],
+          "documented": true,
+          "summary": "Choose which relation a missing parameter is recovered through.",
+          "description": "Choose which relation a missing parameter is recovered through.",
+          "params": [
+            {
+              "name": "key",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Core parameter name."
+            },
+            {
+              "name": "id",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Substitution id."
+            }
+          ],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Updates component state and drops any previous result."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "applyToNode",
+          "qualified": "TSCalc > applyToNode",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 547,
+          "signature": [],
+          "documented": true,
+          "summary": "Write the derived parameters into the selected driver node.",
+          "description": "Write the derived parameters into the selected driver node.\n\nRounded to three decimals, which is past the precision the measurements\njustify and keeps the parameter panel readable.",
+          "params": [],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Updates the node's params — which triggers a resimulation — and closes the modal. Alerts and does nothing when no driver node is selected."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "renderRow",
+          "qualified": "TSCalc > renderRow",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 569,
+          "signature": [
+            "arg0"
+          ],
+          "documented": true,
+          "summary": "One core parameter's row: its own field, or the substitute that replaces it.",
+          "description": "One core parameter's row: its own field, or the substitute that replaces it.",
+          "params": [
+            {
+              "name": "p",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "The core parameter descriptor."
+            },
+            {
+              "name": "p.key",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Parameter name."
+            },
+            {
+              "name": "p.label",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Display label."
+            },
+            {
+              "name": "p.unit",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Unit."
+            }
+          ],
+          "returns": {
+            "type": "React.ReactElement",
+            "desc": "The row, or the substitution block when the parameter is missing."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
             "reads": [
-              "the enclosing form's `register`."
+              "component state."
             ],
             "pure": false
           },

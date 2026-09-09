@@ -625,6 +625,45 @@ svg.ws-chevron.open { transform: rotate(90deg); }
 .modal tr.clickable:hover { background: var(--hover); }
 .modal .close-row { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
 
+/* ---------- T/S solver ----------
+   A parameter the datasheet omits turns its row into a block: the relation
+   it will be recovered through, then that relation's own inputs, indented
+   under an accent rule so it reads as a detour from the straight list. */
+.ts-lead { font-size: 12px; line-height: 1.55; color: var(--text-2); margin: 0 0 12px; }
+.ts-lead em { font-style: normal; color: var(--text); }
+.ts-missing {
+  display: flex; align-items: center; gap: 4px; flex: none;
+  font-size: 10.5px; color: var(--text-3); cursor: pointer; user-select: none;
+  width: 62px;
+}
+.ts-missing input { margin: 0; }
+.ts-missing:hover { color: var(--text-2); }
+.ts-sub {
+  border-left: 2px solid var(--accent); padding-left: 8px; margin: 4px 0 8px -2px;
+  background: var(--surface);
+}
+.ts-sub .param-row:first-child { padding-top: 4px; }
+.ts-formula {
+  font-family: var(--mono-font); font-size: 10.5px; color: var(--text-3);
+  padding: 0 0 5px 98px;
+}
+.ts-error {
+  color: var(--red); margin-top: 8px; font-size: 12px; line-height: 1.5;
+  border: 1px solid var(--red); padding: 5px 8px;
+}
+.ts-note {
+  color: var(--amber); margin-top: 8px; font-size: 11.5px; line-height: 1.5;
+  border: 1px solid var(--amber); padding: 5px 8px;
+}
+.ts-spacer { width: 62px; flex: none; }
+.modal tr.ts-derived td:first-child { color: var(--text-2); }
+.modal tr.ts-head td {
+  font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em;
+  color: var(--text-3); border-bottom: none; padding: 12px 8px 2px;
+}
+.modal tr.ts-head:first-child td { padding-top: 2px; }
+.ts-src { color: var(--text-3); font-size: 10.5px; font-family: var(--mono-font); }
+
 /* velocity popup */
 .vel-popup {
   position: absolute; top: 60px; right: 320px; width: 460px; height: 300px;

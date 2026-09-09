@@ -26,7 +26,7 @@ no implementation. This is the sole input to the blind contract test suite.
 | [`src/components/ParamPanel.jsx`](src_components_ParamPanel_jsx.spec.md) | 14 | 2 | 12 |
 | [`src/components/PopoutView.jsx`](src_components_PopoutView_jsx.spec.md) | 2 | 1 | 1 |
 | [`src/components/SettingsWindow.jsx`](src_components_SettingsWindow_jsx.spec.md) | 11 | 1 | 10 |
-| [`src/components/TSCalc.jsx`](src_components_TSCalc_jsx.spec.md) | 6 | 4 | 2 |
+| [`src/components/TSCalc.jsx`](src_components_TSCalc_jsx.spec.md) | 23 | 6 | 17 |
 | [`src/components/Toolbar.jsx`](src_components_Toolbar_jsx.spec.md) | 7 | 1 | 6 |
 | [`src/components/VelocityPopup.jsx`](src_components_VelocityPopup_jsx.spec.md) | 1 | 1 | 0 |
 | [`src/components/WorkspacePrompt.jsx`](src_components_WorkspacePrompt_jsx.spec.md) | 2 | 1 | 1 |
@@ -59,4 +59,4 @@ no implementation. This is the sole input to the blind contract test suite.
 | [`test/contracts.mjs`](test_contracts_mjs.spec.md) | 2 | 0 | 2 |
 | [`test/drivers.mjs`](test_drivers_mjs.spec.md) | 2 | 0 | 2 |
 | [`test/support/loader.mjs`](test_support_loader_mjs.spec.md) | 2 | 2 | 0 |
-| **Total** | **629** | **345** | **284** |
+| **Total** | **646** | **347** | **299** |
