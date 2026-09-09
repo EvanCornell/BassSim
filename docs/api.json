@@ -24,9 +24,9 @@
     "pure": "flag"
   },
   "stats": {
-    "modules": 59,
-    "methods": 646,
-    "documented": 646
+    "modules": 60,
+    "methods": 662,
+    "documented": 662
   },
   "modules": [
     {
@@ -11358,7 +11358,7 @@
       "constants": [
         {
           "name": "__internals",
-          "line": 517,
+          "line": 590,
           "shape": {
             "kind": "object",
             "keys": [
@@ -11377,7 +11377,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 62,
+          "line": 63,
           "signature": [
             "arg0"
           ],
@@ -11474,7 +11474,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 96,
+          "line": 97,
           "signature": [
             "arg0"
           ],
@@ -11550,7 +11550,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 124,
+          "line": 125,
           "signature": [
             "arg0"
           ],
@@ -11605,7 +11605,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 159,
+          "line": 160,
           "signature": [
             "arg0"
           ],
@@ -11660,7 +11660,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 179,
+          "line": 180,
           "signature": [],
           "documented": true,
           "summary": "The amplifier section: voltage, impedance and power, linked by P = V²/Z.",
@@ -11691,7 +11691,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 195,
+          "line": 196,
           "signature": [
             "field",
             "label",
@@ -11748,7 +11748,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 235,
+          "line": 236,
           "signature": [
             "v"
           ],
@@ -11781,19 +11781,102 @@
           "other": []
         },
         {
+          "name": "TSField",
+          "qualified": "TSField",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 255,
+          "signature": [
+            "arg0"
+          ],
+          "documented": true,
+          "summary": "One coupled T/S parameter: its value, and the padlock deciding who sets it.",
+          "description": "One coupled T/S parameter: its value, and the padlock deciding who sets it.\n\nA held parameter is one the user is asserting; a released one is a\nconsequence, so it is shown but not typed into. The padlock is the only way\nto move a parameter between the two.",
+          "params": [
+            {
+              "name": "props",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "Component props."
+            },
+            {
+              "name": "props.id",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Node id."
+            },
+            {
+              "name": "props.field",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Parameter name."
+            },
+            {
+              "name": "props.value",
+              "type": "number|undefined",
+              "optional": false,
+              "default": null,
+              "desc": "Current value."
+            },
+            {
+              "name": "props.held",
+              "type": "boolean",
+              "optional": false,
+              "default": null,
+              "desc": "Whether this parameter is one of the six being held."
+            },
+            {
+              "name": "props.unit",
+              "type": "string",
+              "optional": true,
+              "default": null,
+              "desc": "Unit shown after the input."
+            },
+            {
+              "name": "props.step",
+              "type": "string|number",
+              "optional": true,
+              "default": null,
+              "desc": "Input step."
+            }
+          ],
+          "returns": {
+            "type": "React.ReactElement",
+            "desc": "The row."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Subscribes to the store. Editing or toggling updates the node and triggers a resimulation."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
           "name": "DriverForm",
           "qualified": "DriverForm",
           "kind": "function",
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 245,
+          "line": 301,
           "signature": [
             "arg0"
           ],
           "documented": true,
           "summary": "Parameter form for a driver, with links to the library and the T/S solver.",
-          "description": "Parameter form for a driver, with links to the library and the T/S solver.",
+          "description": "Parameter form for a driver, with links to the library and the T/S solver.\n\nThe eleven T/S figures are six free values and five consequences of them,\nso the form does not offer eleven independent boxes. Six carry a closed\npadlock and are editable; the rest show what those six imply, and moving a\npadlock moves a parameter between the two groups.",
           "params": [
             {
               "name": "props",
@@ -11829,13 +11912,70 @@
           "other": []
         },
         {
+          "name": "ts",
+          "qualified": "DriverForm > ts",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 316,
+          "signature": [
+            "field",
+            "unit",
+            "step"
+          ],
+          "documented": true,
+          "summary": "One coupled T/S row, wired to this node and its current basis.",
+          "description": "One coupled T/S row, wired to this node and its current basis.",
+          "params": [
+            {
+              "name": "field",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Parameter name."
+            },
+            {
+              "name": "unit",
+              "type": "string",
+              "optional": true,
+              "default": null,
+              "desc": "Unit shown after the input."
+            },
+            {
+              "name": "step",
+              "type": "string",
+              "optional": true,
+              "default": null,
+              "desc": "Input step."
+            }
+          ],
+          "returns": {
+            "type": "React.ReactElement",
+            "desc": "The row."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [
+              "the enclosing form's node and basis."
+            ],
+            "pure": false
+          },
+          "other": []
+        },
+        {
           "name": "ChamberForm",
           "qualified": "ChamberForm",
           "kind": "function",
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 298,
+          "line": 371,
           "signature": [
             "arg0"
           ],
@@ -11883,7 +12023,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 335,
+          "line": 408,
           "signature": [
             "arg0"
           ],
@@ -11938,7 +12078,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 380,
+          "line": 453,
           "signature": [
             "arg0"
           ],
@@ -11986,7 +12126,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 414,
+          "line": 487,
           "signature": [
             "arg0"
           ],
@@ -12034,7 +12174,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 466,
+          "line": 539,
           "signature": [
             "arg0"
           ],
@@ -12082,7 +12222,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 497,
+          "line": 570,
           "signature": [],
           "documented": true,
           "summary": "The Parameters panel: the amplifier section plus the selected node's form.",
@@ -15889,6 +16029,618 @@
             "post": [
               "The input row is not modified."
             ],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        }
+      ]
+    },
+    {
+      "file": "src/driverParams.js",
+      "module": {
+        "summary": "The driver's T/S parameters are not eleven independent numbers. They are six, plus five relations that fix the rest — so typing a new Fs into a driver whose Mms and Cms are already set is not an edit, it is a contradiction.",
+        "description": "The driver's T/S parameters are not eleven independent numbers. They are\nsix, plus five relations that fix the rest — so typing a new Fs into a\ndriver whose Mms and Cms are already set is not an edit, it is a\ncontradiction.\n\nHornresp answers this by only ever letting you edit the physical six\n(Sd, Bl, Cms, Rms, Mmd, Re) and showing the rest as consequences. This\nmodule generalises that: any six that determine the others may be the set\nyou edit, and the remaining five are derived from them. Which six is the\nuser's choice, expressed as locks.\n\nThe relations are held as data rather than as code paths, so the solver is\none propagation loop over them instead of a special case per combination."
+      },
+      "constants": [
+        {
+          "name": "COUPLED",
+          "line": 27,
+          "shape": {
+            "kind": "array",
+            "length": 11,
+            "values": [
+              "Fs",
+              "Qts",
+              "Qes",
+              "Qms",
+              "Vas",
+              "Re",
+              "Bl",
+              "Mms",
+              "Cms",
+              "Sd",
+              "Rms"
+            ]
+          },
+          "summary": "The eleven parameters bound together by the relations below.",
+          "description": "The eleven parameters bound together by the relations below.\n\nLe, the Le exponent and Xmax are absent on purpose: they are genuinely\nindependent of the rest and are always editable."
+        },
+        {
+          "name": "BASIS_SIZE",
+          "line": 35,
+          "shape": {
+            "kind": "literal",
+            "value": 6
+          },
+          "summary": "How many parameters must be held for the other five to follow.",
+          "description": "How many parameters must be held for the other five to follow.\n\nEleven quantities minus five independent relations. Any set of this size\nthat `canSolve` accepts is a legitimate basis."
+        },
+        {
+          "name": "DEFAULT_BASIS",
+          "line": 43,
+          "shape": {
+            "kind": "array",
+            "length": 6,
+            "values": [
+              "Sd",
+              "Bl",
+              "Cms",
+              "Rms",
+              "Mms",
+              "Re"
+            ]
+          },
+          "summary": "The set held by default: the physical parameters, which is Hornresp's.",
+          "description": "The set held by default: the physical parameters, which is Hornresp's.\n\nOrdered oldest-first, which is the order locks give way in when room has\nto be made for a new one."
+        },
+        {
+          "name": "RELATIONS",
+          "line": 142,
+          "shape": {
+            "kind": "array",
+            "length": 5
+          },
+          "summary": "The five relations, each listing the parameters it binds together.",
+          "description": "The five relations, each listing the parameters it binds together.\n\nA relation with exactly one unknown among its `vars` can produce that\nunknown, which is the whole of the solver below."
+        }
+      ],
+      "methods": [
+        {
+          "name": "si",
+          "qualified": "si",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 58,
+          "signature": [
+            "v",
+            "key"
+          ],
+          "documented": true,
+          "summary": "One parameter's value in SI units.",
+          "description": "One parameter's value in SI units.",
+          "params": [
+            {
+              "name": "v",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "Parameter values in display units."
+            },
+            {
+              "name": "key",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Parameter name."
+            }
+          ],
+          "returns": {
+            "type": "number",
+            "desc": "The value in SI."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "relCompliance",
+          "qualified": "relCompliance",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 70,
+          "signature": [
+            "target",
+            "v"
+          ],
+          "documented": true,
+          "summary": "Compliance, equivalent volume and cone area: Vas = ρc²·Sd²·Cms.",
+          "description": "Compliance, equivalent volume and cone area: Vas = ρc²·Sd²·Cms.",
+          "params": [
+            {
+              "name": "target",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Which of the three to compute."
+            },
+            {
+              "name": "v",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "The other values, in display units."
+            }
+          ],
+          "returns": {
+            "type": "number",
+            "desc": "The target's value in display units."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "relResonance",
+          "qualified": "relResonance",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 84,
+          "signature": [
+            "target",
+            "v"
+          ],
+          "documented": true,
+          "summary": "Resonance, mass and compliance: Fs = 1 / (2π√(Mms·Cms)).",
+          "description": "Resonance, mass and compliance: Fs = 1 / (2π√(Mms·Cms)).",
+          "params": [
+            {
+              "name": "target",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Which of the three to compute."
+            },
+            {
+              "name": "v",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "The other values, in display units."
+            }
+          ],
+          "returns": {
+            "type": "number",
+            "desc": "The target's value in display units."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "relMechanicalQ",
+          "qualified": "relMechanicalQ",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 99,
+          "signature": [
+            "target",
+            "v"
+          ],
+          "documented": true,
+          "summary": "Mechanical Q: Qms = 2πFs·Mms / Rms.",
+          "description": "Mechanical Q: Qms = 2πFs·Mms / Rms.",
+          "params": [
+            {
+              "name": "target",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Which of the four to compute."
+            },
+            {
+              "name": "v",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "The other values, in display units."
+            }
+          ],
+          "returns": {
+            "type": "number",
+            "desc": "The target's value in display units."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "relElectricalQ",
+          "qualified": "relElectricalQ",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 114,
+          "signature": [
+            "target",
+            "v"
+          ],
+          "documented": true,
+          "summary": "Electrical Q: Qes = 2πFs·Mms·Re / Bl².",
+          "description": "Electrical Q: Qes = 2πFs·Mms·Re / Bl².",
+          "params": [
+            {
+              "name": "target",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Which of the five to compute."
+            },
+            {
+              "name": "v",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "The other values, in display units."
+            }
+          ],
+          "returns": {
+            "type": "number",
+            "desc": "The target's value in display units."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "relTotalQ",
+          "qualified": "relTotalQ",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 130,
+          "signature": [
+            "target",
+            "v"
+          ],
+          "documented": true,
+          "summary": "Total Q: Qts = Qes·Qms / (Qes + Qms).",
+          "description": "Total Q: Qts = Qes·Qms / (Qes + Qms).",
+          "params": [
+            {
+              "name": "target",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Which of the three to compute."
+            },
+            {
+              "name": "v",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "The other values, in display units."
+            }
+          ],
+          "returns": {
+            "type": "number",
+            "desc": "The target's value in display units."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "round6",
+          "qualified": "round6",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 161,
+          "signature": [
+            "v"
+          ],
+          "documented": true,
+          "summary": "Round to six significant figures.",
+          "description": "Round to six significant figures.\n\nDerived values feed the next derivation, so they are rounded for display\nrather than for storage precision — six figures is far past what a\ndatasheet justifies and keeps repeated round trips from drifting.",
+          "params": [
+            {
+              "name": "v",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "The value."
+            }
+          ],
+          "returns": {
+            "type": "number",
+            "desc": "The rounded value, or the input unchanged when it is not finite."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "derive",
+          "qualified": "derive",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 183,
+          "signature": [
+            "params",
+            "basis"
+          ],
+          "documented": true,
+          "summary": "Derive every parameter outside the basis from the ones inside it.",
+          "description": "Derive every parameter outside the basis from the ones inside it.\n\nRepeated passes rather than a fixed order: each pass takes any relation\nwith exactly one unknown left and fills it in, until everything is known\nor a pass achieves nothing. Because there are five relations and five\nparameters outside a correctly sized basis, resolving all of them means\neach relation was used exactly once — so a complete result is also a\nconsistent one, and an incomplete one means the basis was not a basis.",
+          "params": [
+            {
+              "name": "params",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "Current values in display units. Only the basis entries are read."
+            },
+            {
+              "name": "basis",
+              "type": "string[]",
+              "optional": false,
+              "default": null,
+              "desc": "The parameters being held."
+            }
+          ],
+          "returns": {
+            "type": "{ok: boolean, values: object, unresolved: string[]}",
+            "desc": "Whether everything resolved, the derived values (basis excluded), and the names that could not be reached."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "canSolve",
+          "qualified": "canSolve",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 234,
+          "signature": [
+            "basis"
+          ],
+          "documented": true,
+          "summary": "Whether a set of parameters determines all the others.",
+          "description": "Whether a set of parameters determines all the others.",
+          "params": [
+            {
+              "name": "basis",
+              "type": "string[]",
+              "optional": false,
+              "default": null,
+              "desc": "Candidate basis."
+            }
+          ],
+          "returns": {
+            "type": "boolean",
+            "desc": "True when it is the right size and everything else follows from it."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "lockParam",
+          "qualified": "lockParam",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 252,
+          "signature": [
+            "basis",
+            "key"
+          ],
+          "documented": true,
+          "summary": "Add a parameter to the basis, dropping whichever one makes room.",
+          "description": "Add a parameter to the basis, dropping whichever one makes room.\n\nThe basis is ordered oldest-first, so the parameter that gives way is the\none the user pinned longest ago — and only if what remains still resolves.\nCandidates are tried in that order, so the newest choices survive.",
+          "params": [
+            {
+              "name": "basis",
+              "type": "string[]",
+              "optional": false,
+              "default": null,
+              "desc": "The current basis, oldest first."
+            },
+            {
+              "name": "key",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "The parameter to start holding."
+            }
+          ],
+          "returns": {
+            "type": "string[]|null",
+            "desc": "The new basis, or `null` when nothing can be dropped for it."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "unlockParam",
+          "qualified": "unlockParam",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 272,
+          "signature": [
+            "basis",
+            "key"
+          ],
+          "documented": true,
+          "summary": "Remove a parameter from the basis, promoting another to keep it complete.",
+          "description": "Remove a parameter from the basis, promoting another to keep it complete.\n\nCandidates are tried in the canonical parameter order, so the same release\nalways produces the same replacement rather than depending on history.",
+          "params": [
+            {
+              "name": "basis",
+              "type": "string[]",
+              "optional": false,
+              "default": null,
+              "desc": "The current basis, oldest first."
+            },
+            {
+              "name": "key",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "The parameter to stop holding."
+            }
+          ],
+          "returns": {
+            "type": "string[]|null",
+            "desc": "The new basis, or `null` when no replacement completes it."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "basisOf",
+          "qualified": "basisOf",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 294,
+          "signature": [
+            "node"
+          ],
+          "documented": true,
+          "summary": "The basis a driver node is using, falling back to the default.",
+          "description": "The basis a driver node is using, falling back to the default.\n\nA node that has never had a lock touched has no stored basis, and a stored\none that no longer resolves — hand-edited, or written by an older version —\nis discarded rather than trusted.",
+          "params": [
+            {
+              "name": "node",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "The driver node."
+            }
+          ],
+          "returns": {
+            "type": "string[]",
+            "desc": "The basis, oldest first."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
             "invariant": [],
             "mutates": [],
             "sideEffect": [],
@@ -22682,7 +23434,7 @@
       "constants": [
         {
           "name": "SNAPSHOT_LIMIT",
-          "line": 121,
+          "line": 122,
           "shape": {
             "kind": "literal",
             "value": 3
@@ -22692,7 +23444,7 @@
         },
         {
           "name": "SNAPSHOT_COLORS",
-          "line": 126,
+          "line": 127,
           "shape": {
             "kind": "array",
             "length": 3,
@@ -22707,14 +23459,14 @@
         },
         {
           "name": "useStore",
-          "line": 318,
+          "line": 319,
           "shape": null,
           "summary": null,
           "description": null
         },
         {
           "name": "__internals",
-          "line": 2235,
+          "line": 2298,
           "shape": {
             "kind": "object",
             "keys": [
@@ -22737,7 +23489,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 59,
+          "line": 60,
           "signature": [
             "project"
           ],
@@ -22778,7 +23530,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 72,
+          "line": 73,
           "signature": [
             "e"
           ],
@@ -22819,7 +23571,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 102,
+          "line": 103,
           "signature": [
             "ids",
             "active"
@@ -22868,7 +23620,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 137,
+          "line": 138,
           "signature": [],
           "documented": true,
           "summary": "Whether the user has already been asked where their workspace lives.",
@@ -22899,7 +23651,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 157,
+          "line": 158,
           "signature": [],
           "documented": true,
           "summary": "Load the persisted workspace, or build a first-run one.",
@@ -22930,7 +23682,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 195,
+          "line": 196,
           "signature": [],
           "documented": true,
           "summary": "Load the persisted dock layout, falling back to the default.",
@@ -22961,7 +23713,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 213,
+          "line": 214,
           "signature": [],
           "documented": true,
           "summary": "Load the user's saved layout arrangements.",
@@ -22992,7 +23744,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 233,
+          "line": 234,
           "signature": [],
           "documented": true,
           "summary": "Load the quick-bar arrangement.",
@@ -23023,7 +23775,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 253,
+          "line": 254,
           "signature": [
             "type"
           ],
@@ -23064,7 +23816,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 273,
+          "line": 274,
           "signature": [
             "spot",
             "nodes",
@@ -23129,7 +23881,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 281,
+          "line": 282,
           "signature": [
             "x",
             "y"
@@ -23178,7 +23930,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 300,
+          "line": 301,
           "signature": [
             "nodes",
             "edges",
@@ -23233,7 +23985,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 338,
+          "line": 339,
           "signature": [
             "partial",
             "replace"
@@ -23284,7 +24036,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 408,
+          "line": 409,
           "signature": [
             "x",
             "y",
@@ -23341,7 +24093,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 419,
+          "line": 420,
           "signature": [],
           "documented": true,
           "summary": "Dismiss the context menu.",
@@ -23372,7 +24124,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 428,
+          "line": 429,
           "signature": [
             "id"
           ],
@@ -23413,7 +24165,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 439,
+          "line": 440,
           "signature": [
             "id"
           ],
@@ -23454,7 +24206,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 447,
+          "line": 448,
           "signature": [
             "id"
           ],
@@ -23495,7 +24247,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 456,
+          "line": 457,
           "signature": [
             "v",
             "section"
@@ -23544,7 +24296,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 464,
+          "line": 465,
           "signature": [
             "id"
           ],
@@ -23585,7 +24337,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 476,
+          "line": 477,
           "signature": [
             "id",
             "combos"
@@ -23634,7 +24386,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 493,
+          "line": 494,
           "signature": [
             "id",
             "combo"
@@ -23683,7 +24435,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 511,
+          "line": 512,
           "signature": [
             "id",
             "combo"
@@ -23732,7 +24484,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 518,
+          "line": 519,
           "signature": [],
           "documented": true,
           "summary": "Restore every command to its default combos.",
@@ -23763,7 +24515,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 535,
+          "line": 536,
           "signature": [
             "tree"
           ],
@@ -23804,7 +24556,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 552,
+          "line": 553,
           "signature": [
             "stackId",
             "panelId"
@@ -23853,7 +24605,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 562,
+          "line": 563,
           "signature": [
             "panelId",
             "stackId",
@@ -23910,7 +24662,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 571,
+          "line": 572,
           "signature": [
             "panelId",
             "edge"
@@ -23959,7 +24711,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 582,
+          "line": 583,
           "signature": [
             "splitId",
             "index",
@@ -24024,7 +24776,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 596,
+          "line": 597,
           "signature": [
             "panelId",
             "stackId",
@@ -24081,7 +24833,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 617,
+          "line": 618,
           "signature": [
             "panelId"
           ],
@@ -24122,7 +24874,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 634,
+          "line": 635,
           "signature": [
             "panelId"
           ],
@@ -24163,7 +24915,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 646,
+          "line": 647,
           "signature": [
             "panelId"
           ],
@@ -24204,7 +24956,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 657,
+          "line": 658,
           "signature": [],
           "documented": true,
           "summary": "Restore the default workspace arrangement.",
@@ -24235,7 +24987,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 667,
+          "line": 668,
           "signature": [
             "name"
           ],
@@ -24276,7 +25028,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 686,
+          "line": 687,
           "signature": [
             "name"
           ],
@@ -24317,7 +25069,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 710,
+          "line": 711,
           "signature": [
             "ids"
           ],
@@ -24358,7 +25110,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 726,
+          "line": 727,
           "signature": [
             "id"
           ],
@@ -24399,7 +25151,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 738,
+          "line": 739,
           "signature": [
             "id",
             "delta"
@@ -24448,7 +25200,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 752,
+          "line": 753,
           "signature": [],
           "documented": true,
           "summary": "Restore the default quick-bar arrangement.",
@@ -24479,7 +25231,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 761,
+          "line": 762,
           "signature": [
             "name"
           ],
@@ -24520,7 +25272,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 779,
+          "line": 780,
           "signature": [
             "id",
             "range"
@@ -24569,7 +25321,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 795,
+          "line": 796,
           "signature": [],
           "documented": true,
           "summary": "Record the current graph as an undo point.",
@@ -24600,7 +25352,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 808,
+          "line": 809,
           "signature": [],
           "documented": true,
           "summary": "Step back one entry in the history.",
@@ -24631,7 +25383,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 825,
+          "line": 826,
           "signature": [],
           "documented": true,
           "summary": "Step forward one entry in the history.",
@@ -24662,7 +25414,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 850,
+          "line": 851,
           "signature": [
             "changes"
           ],
@@ -24703,7 +25455,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 864,
+          "line": 865,
           "signature": [
             "changes"
           ],
@@ -24744,7 +25496,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 876,
+          "line": 877,
           "signature": [
             "conn"
           ],
@@ -24785,7 +25537,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 888,
+          "line": 889,
           "signature": [
             "id"
           ],
@@ -24826,7 +25578,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 901,
+          "line": 902,
           "signature": [
             "type",
             "position"
@@ -24869,13 +25621,127 @@
           "other": []
         },
         {
+          "name": "setDriverParam",
+          "qualified": "setDriverParam",
+          "kind": "method",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 938,
+          "signature": [
+            "id",
+            "field",
+            "value"
+          ],
+          "documented": true,
+          "summary": "Set one coupled T/S parameter on a driver, letting the rest follow.",
+          "description": "Set one coupled T/S parameter on a driver, letting the rest follow.\n\nA driver's eleven T/S figures are six free values and five consequences,\nso writing one on its own would leave the set contradicting itself. The\nnode's basis says which six the user is holding; everything outside it is\nrecomputed here from the edit.\n\nA parameter outside the basis is not editable through this path, and an\nedit that leaves the set unsolvable — a zero or a negative, say — writes\nthe typed value alone rather than a set of NaNs.",
+          "params": [
+            {
+              "name": "id",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Driver node id. An unknown id is a no-op."
+            },
+            {
+              "name": "field",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Parameter name."
+            },
+            {
+              "name": "value",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "New value in display units."
+            }
+          ],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Writes store state and schedules a resimulation."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "setDriverLock",
+          "qualified": "setDriverLock",
+          "kind": "method",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 967,
+          "signature": [
+            "id",
+            "field",
+            "held"
+          ],
+          "documented": true,
+          "summary": "Hold or release one of a driver's T/S parameters.",
+          "description": "Hold or release one of a driver's T/S parameters.\n\nExactly six can be held at once, so taking hold of a seventh releases\nwhichever was held longest, and releasing one promotes another to take\nits place. The swap is chosen so that the six still determine the other\nfive — releasing Qes while Qts and Qms are both held, for instance, has\nno valid replacement and is refused rather than silently accepted.\n\nHeld values are left exactly as they are and only the rest are recomputed,\nso changing which parameters you control leaves the driver as it was — to\nthe six figures derived values are kept to.",
+          "params": [
+            {
+              "name": "id",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Driver node id. An unknown id is a no-op."
+            },
+            {
+              "name": "field",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Parameter name. One outside the coupled set is a no-op."
+            },
+            {
+              "name": "held",
+              "type": "boolean",
+              "optional": false,
+              "default": null,
+              "desc": "Whether to hold it."
+            }
+          ],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Writes store state and schedules a resimulation. Does nothing when no valid swap exists."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
           "name": "updateParams",
           "qualified": "updateParams",
           "kind": "method",
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 927,
+          "line": 990,
           "signature": [
             "id",
             "patch"
@@ -24924,7 +25790,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 949,
+          "line": 1012,
           "signature": [],
           "documented": true,
           "summary": "Delete the selected nodes and edges.",
@@ -24955,7 +25821,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 974,
+          "line": 1037,
           "signature": [],
           "documented": true,
           "summary": "Copy the selected nodes in place, offset down-right.",
@@ -24986,7 +25852,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 999,
+          "line": 1062,
           "signature": [],
           "documented": true,
           "summary": "Select every node on the canvas.",
@@ -25017,7 +25883,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1014,
+          "line": 1077,
           "signature": [
             "ids",
             "additive"
@@ -25066,7 +25932,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1047,
+          "line": 1110,
           "signature": [],
           "documented": true,
           "summary": "Copy the selected nodes and their internal edges to the in-app clipboard.",
@@ -25097,7 +25963,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1073,
+          "line": 1136,
           "signature": [],
           "documented": true,
           "summary": "Copy the selection, then delete it.",
@@ -25128,7 +25994,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1094,
+          "line": 1157,
           "signature": [
             "at"
           ],
@@ -25169,7 +26035,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1142,
+          "line": 1205,
           "signature": [
             "type"
           ],
@@ -25210,7 +26076,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1158,
+          "line": 1221,
           "signature": [
             "delta"
           ],
@@ -25251,7 +26117,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1171,
+          "line": 1234,
           "signature": [],
           "documented": true,
           "summary": "Force a resimulation even though nothing has changed.",
@@ -25282,7 +26148,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1184,
+          "line": 1247,
           "signature": [
             "patch"
           ],
@@ -25323,7 +26189,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1200,
+          "line": 1263,
           "signature": [
             "field",
             "value"
@@ -25372,7 +26238,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1233,
+          "line": 1296,
           "signature": [],
           "documented": true,
           "summary": "Freeze the current result as a labelled reference overlay.",
@@ -25403,7 +26269,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1269,
+          "line": 1332,
           "signature": [
             "id"
           ],
@@ -25444,7 +26310,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1281,
+          "line": 1344,
           "signature": [
             "id",
             "label"
@@ -25493,7 +26359,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1294,
+          "line": 1357,
           "signature": [
             "id"
           ],
@@ -25534,7 +26400,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1302,
+          "line": 1365,
           "signature": [
             "v"
           ],
@@ -25575,7 +26441,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1310,
+          "line": 1373,
           "signature": [
             "v"
           ],
@@ -25616,7 +26482,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1341,
+          "line": 1404,
           "signature": [],
           "documented": true,
           "summary": "Schedule a debounced simulation run.",
@@ -25647,7 +26513,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1382,
+          "line": 1445,
           "signature": [],
           "documented": true,
           "summary": "Capture the project as a plain, saveable object.",
@@ -25678,7 +26544,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1410,
+          "line": 1473,
           "signature": [
             "proj"
           ],
@@ -25719,7 +26585,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1434,
+          "line": 1497,
           "signature": [],
           "documented": true,
           "summary": "Download the open project as a standalone JSON file.",
@@ -25750,7 +26616,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1451,
+          "line": 1514,
           "signature": [
             "proj",
             "filename"
@@ -25799,7 +26665,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1484,
+          "line": 1547,
           "signature": [
             "ws"
           ],
@@ -25840,7 +26706,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1499,
+          "line": 1562,
           "signature": [
             "name"
           ],
@@ -25881,7 +26747,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1513,
+          "line": 1576,
           "signature": [],
           "documented": true,
           "summary": "Write the editor's current project back into its file.",
@@ -25912,7 +26778,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1531,
+          "line": 1594,
           "signature": [
             "path"
           ],
@@ -25953,7 +26819,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1547,
+          "line": 1610,
           "signature": [
             "folder"
           ],
@@ -25994,7 +26860,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1568,
+          "line": 1631,
           "signature": [
             "parent"
           ],
@@ -26035,7 +26901,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1591,
+          "line": 1654,
           "signature": [
             "from",
             "to"
@@ -26084,7 +26950,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1628,
+          "line": 1691,
           "signature": [
             "path"
           ],
@@ -26125,7 +26991,7 @@
           "exported": false,
           "async": true,
           "generator": false,
-          "line": 1660,
+          "line": 1723,
           "signature": [],
           "documented": true,
           "summary": "Download the whole workspace, and record that it happened.",
@@ -26156,7 +27022,7 @@
           "exported": false,
           "async": true,
           "generator": false,
-          "line": 1689,
+          "line": 1752,
           "signature": [
             "file"
           ],
@@ -26197,7 +27063,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1713,
+          "line": 1776,
           "signature": [
             "ws"
           ],
@@ -26238,7 +27104,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1747,
+          "line": 1810,
           "signature": [
             "paths"
           ],
@@ -26279,7 +27145,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1757,
+          "line": 1820,
           "signature": [
             "path",
             "open"
@@ -26328,7 +27194,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1771,
+          "line": 1834,
           "signature": [],
           "documented": true,
           "summary": "Collapse every folder in the explorer.",
@@ -26359,7 +27225,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1786,
+          "line": 1849,
           "signature": [
             "mode",
             "path"
@@ -26408,7 +27274,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1797,
+          "line": 1860,
           "signature": [],
           "documented": true,
           "summary": "Dismiss the explorer's inline editor.",
@@ -26439,7 +27305,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1812,
+          "line": 1875,
           "signature": [
             "paths",
             "cut"
@@ -26488,7 +27354,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1825,
+          "line": 1888,
           "signature": [
             "folder"
           ],
@@ -26529,7 +27395,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1852,
+          "line": 1915,
           "signature": [
             "path"
           ],
@@ -26570,7 +27436,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1868,
+          "line": 1931,
           "signature": [
             "from",
             "folder"
@@ -26619,7 +27485,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1890,
+          "line": 1953,
           "signature": [
             "mode",
             "parent",
@@ -26676,7 +27542,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1926,
+          "line": 1989,
           "signature": [
             "kind"
           ],
@@ -26717,7 +27583,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1942,
+          "line": 2005,
           "signature": [
             "drivers"
           ],
@@ -26758,7 +27624,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1964,
+          "line": 2027,
           "signature": [
             "id"
           ],
@@ -26799,7 +27665,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1980,
+          "line": 2043,
           "signature": [
             "id"
           ],
@@ -26840,7 +27706,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2003,
+          "line": 2066,
           "signature": [
             "id"
           ],
@@ -26881,7 +27747,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2030,
+          "line": 2093,
           "signature": [
             "id"
           ],
@@ -26922,7 +27788,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2046,
+          "line": 2109,
           "signature": [
             "stackId"
           ],
@@ -26963,7 +27829,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2070,
+          "line": 2133,
           "signature": [
             "panelId",
             "stackId"
@@ -27012,7 +27878,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2090,
+          "line": 2153,
           "signature": [
             "id"
           ],
@@ -27053,7 +27919,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2101,
+          "line": 2164,
           "signature": [
             "id"
           ],
@@ -27094,7 +27960,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2120,
+          "line": 2183,
           "signature": [
             "patch"
           ],
@@ -27137,7 +28003,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2130,
+          "line": 2193,
           "signature": [],
           "documented": true,
           "summary": "The full shared slice, sent to a popped-out tab when it announces itself.",
@@ -27168,7 +28034,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2188,
+          "line": 2251,
           "signature": [
             "arg0"
           ],

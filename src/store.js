@@ -27,6 +27,7 @@ import { create } from 'zustand'
 import { applyNodeChanges, applyEdgeChanges, addEdge } from 'reactflow'
 import { SCHEMA_VERSION, DEFAULT_PARAMS } from './engine/project'
 import * as L from './layout'
+import * as D from './driverParams'
 import { PANEL_META, PANEL_IDS } from './panelMeta'
 import { exportProjectJSON, exportWorkspaceZip } from './utils/export'
 import * as W from './workspace'
@@ -914,6 +915,68 @@ export const useStore = create((rawSet, get) => {
     })
     get().scheduleCompute()
     return id
+  },
+
+  /**
+   * Set one coupled T/S parameter on a driver, letting the rest follow.
+   *
+   * A driver's eleven T/S figures are six free values and five consequences,
+   * so writing one on its own would leave the set contradicting itself. The
+   * node's basis says which six the user is holding; everything outside it is
+   * recomputed here from the edit.
+   *
+   * A parameter outside the basis is not editable through this path, and an
+   * edit that leaves the set unsolvable — a zero or a negative, say — writes
+   * the typed value alone rather than a set of NaNs.
+   *
+   * @param {string} id - Driver node id. An unknown id is a no-op.
+   * @param {string} field - Parameter name.
+   * @param {number} value - New value in display units.
+   * @returns {void}
+   * @sideEffect Writes store state and schedules a resimulation.
+   */
+  setDriverParam: (id, field, value) => {
+    const node = get().nodes.find((n) => n.id === id)
+    if (!node) return
+    if (!D.COUPLED.includes(field)) { get().updateParams(id, { [field]: value }); return }
+    const basis = D.basisOf(node)
+    if (!basis.includes(field)) return
+    const { ok, values } = D.derive({ ...node.data.params, [field]: value }, basis)
+    get().updateParams(id, ok ? { ...values, [field]: value } : { [field]: value })
+  },
+
+  /**
+   * Hold or release one of a driver's T/S parameters.
+   *
+   * Exactly six can be held at once, so taking hold of a seventh releases
+   * whichever was held longest, and releasing one promotes another to take
+   * its place. The swap is chosen so that the six still determine the other
+   * five — releasing Qes while Qts and Qms are both held, for instance, has
+   * no valid replacement and is refused rather than silently accepted.
+   *
+   * Held values are left exactly as they are and only the rest are recomputed,
+   * so changing which parameters you control leaves the driver as it was — to
+   * the six figures derived values are kept to.
+   *
+   * @param {string} id - Driver node id. An unknown id is a no-op.
+   * @param {string} field - Parameter name. One outside the coupled set is a no-op.
+   * @param {boolean} held - Whether to hold it.
+   * @returns {void}
+   * @sideEffect Writes store state and schedules a resimulation. Does nothing when no valid swap exists.
+   */
+  setDriverLock: (id, field, held) => {
+    const node = get().nodes.find((n) => n.id === id)
+    if (!node || !D.COUPLED.includes(field)) return
+    const basis = D.basisOf(node)
+    const next = held ? D.lockParam(basis, field) : D.unlockParam(basis, field)
+    if (!next) return
+    const { ok, values } = D.derive(node.data.params, next)
+    set({
+      nodes: get().nodes.map((n) => (n.id === id
+        ? { ...n, data: { ...n.data, locks: next, params: ok ? { ...n.data.params, ...values } : n.data.params } }
+        : n)),
+    })
+    if (ok) get().scheduleCompute()
   },
 
   /**

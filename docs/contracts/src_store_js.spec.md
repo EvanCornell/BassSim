@@ -189,7 +189,7 @@ around the canvas does not re-run the sweep.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
-## STORE ACTION (94)
+## STORE ACTION (96)
 
 ### `openContextMenu(x, y, target)`
 
@@ -940,6 +940,67 @@ copied, nudged or deleted straight away without clicking it first.
 **Side effects**
 
 - Records history, writes store state and schedules a resimulation.
+
+### `setDriverParam(id, field, value)`
+
+- **Reachability:** STORE ACTION
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().setDriverParam(…)
+
+Set one coupled T/S parameter on a driver, letting the rest follow.
+
+A driver's eleven T/S figures are six free values and five consequences,
+so writing one on its own would leave the set contradicting itself. The
+node's basis says which six the user is holding; everything outside it is
+recomputed here from the edit.
+
+A parameter outside the basis is not editable through this path, and an
+edit that leaves the set unsolvable — a zero or a negative, say — writes
+the typed value alone rather than a set of NaNs.
+
+**Parameters**
+
+- `id` — `string` — Driver node id. An unknown id is a no-op.
+- `field` — `string` — Parameter name.
+- `value` — `number` — New value in display units.
+
+**Returns**
+
+- `void`
+
+**Side effects**
+
+- Writes store state and schedules a resimulation.
+
+### `setDriverLock(id, field, held)`
+
+- **Reachability:** STORE ACTION
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().setDriverLock(…)
+
+Hold or release one of a driver's T/S parameters.
+
+Exactly six can be held at once, so taking hold of a seventh releases
+whichever was held longest, and releasing one promotes another to take
+its place. The swap is chosen so that the six still determine the other
+five — releasing Qes while Qts and Qms are both held, for instance, has
+no valid replacement and is refused rather than silently accepted.
+
+Held values are left exactly as they are and only the rest are recomputed,
+so changing which parameters you control leaves the driver as it was — to
+the six figures derived values are kept to.
+
+**Parameters**
+
+- `id` — `string` — Driver node id. An unknown id is a no-op.
+- `field` — `string` — Parameter name. One outside the coupled set is a no-op.
+- `held` — `boolean` — Whether to hold it.
+
+**Returns**
+
+- `void`
+
+**Side effects**
+
+- Writes store state and schedules a resimulation. Does nothing when no valid swap exists.
 
 ### `updateParams(id, patch)`
 

@@ -55,7 +55,7 @@ makes the boxes unreadable as you type.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
-## UNREACHABLE (12)
+## UNREACHABLE (14)
 
 ### `NumField(props)`
 
@@ -202,12 +202,46 @@ a zero would propagate infinities through the settings.
 
 - the enclosing `settings` and `setAmp`.
 
+### `TSField(props)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+One coupled T/S parameter: its value, and the padlock deciding who sets it.
+
+A held parameter is one the user is asserting; a released one is a
+consequence, so it is shown but not typed into. The padlock is the only way
+to move a parameter between the two.
+
+**Parameters**
+
+- `props` — `object` — Component props.
+- `props.id` — `string` — Node id.
+- `props.field` — `string` — Parameter name.
+- `props.value` — `number|undefined` — Current value.
+- `props.held` — `boolean` — Whether this parameter is one of the six being held.
+- `props.unit` — `string` _(optional)_ — Unit shown after the input.
+- `props.step` — `string|number` _(optional)_ — Input step.
+
+**Returns**
+
+- `React.ReactElement` — The row.
+
+**Side effects**
+
+- Subscribes to the store. Editing or toggling updates the node and triggers a resimulation.
+
 ### `DriverForm(props)`
 
 - **Reachability:** UNREACHABLE
 - **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
 
 Parameter form for a driver, with links to the library and the T/S solver.
+
+The eleven T/S figures are six free values and five consequences of them,
+so the form does not offer eleven independent boxes. Six carry a closed
+padlock and are editable; the rest show what those six imply, and moving a
+padlock moves a parameter between the two groups.
 
 **Parameters**
 
@@ -221,6 +255,27 @@ Parameter form for a driver, with links to the library and the T/S solver.
 **Side effects**
 
 - Subscribes to the store.
+
+### `DriverForm > ts(field, unit, step)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+One coupled T/S row, wired to this node and its current basis.
+
+**Parameters**
+
+- `field` — `string` — Parameter name.
+- `unit` — `string` _(optional)_ — Unit shown after the input.
+- `step` — `string` _(optional)_ — Input step.
+
+**Returns**
+
+- `React.ReactElement` — The row.
+
+**Reads external mutable state**
+
+- the enclosing form's node and basis.
 
 ### `ChamberForm(props)`
 

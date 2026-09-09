@@ -625,6 +625,26 @@ svg.ws-chevron.open { transform: rotate(90deg); }
 .modal tr.clickable:hover { background: var(--hover); }
 .modal .close-row { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
 
+/* ---------- driver T/S rows ----------
+   Six of the eleven are the user's to set and the rest are consequences, so
+   the two states have to be legible at a glance: a held row looks like an
+   input, a derived one is dimmed and reads as a readout. */
+.ts-hint { font-size: 10.5px; line-height: 1.5; color: var(--text-3); margin-bottom: 8px; }
+.ts-row input { font-family: var(--mono-font); font-variant-numeric: tabular-nums; }
+.ts-row.derived input {
+  background: transparent; border-color: transparent; color: var(--text-3);
+  cursor: default;
+}
+.ts-row.derived label { color: var(--text-3); }
+.ts-row.derived:hover input { border-color: var(--border); }
+.ts-lock {
+  flex: none; width: 22px; height: 20px; padding: 0; line-height: 1;
+  font-size: 10px; background: transparent; border: 1px solid transparent;
+  border-radius: var(--r-1); opacity: 0.35; filter: grayscale(1);
+}
+.ts-lock.held { opacity: 0.9; filter: none; }
+.ts-lock:hover { opacity: 1; background: var(--hover); border-color: var(--border); }
+
 /* ---------- T/S solver ----------
    A parameter the datasheet omits turns its row into a block: the relation
    it will be recovered through, then that relation's own inputs, indented

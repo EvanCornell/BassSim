@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { useStore } from '../store'
 import { waveguideVolume } from '../engine/geometry'
+import { basisOf, BASIS_SIZE } from '../driverParams'
 
 /**
  * One-line physical explanation per parameter, shown as a label tooltip.
@@ -235,7 +236,62 @@ function AmpSolver() {
 const round3 = (v) => (typeof v === 'number' ? Math.round(v * 1000) / 1000 : v)
 
 /**
+ * One coupled T/S parameter: its value, and the padlock deciding who sets it.
+ *
+ * A held parameter is one the user is asserting; a released one is a
+ * consequence, so it is shown but not typed into. The padlock is the only way
+ * to move a parameter between the two.
+ *
+ * @param {object} props - Component props.
+ * @param {string} props.id - Node id.
+ * @param {string} props.field - Parameter name.
+ * @param {number|undefined} props.value - Current value.
+ * @param {boolean} props.held - Whether this parameter is one of the six being held.
+ * @param {string} [props.unit] - Unit shown after the input.
+ * @param {string|number} [props.step] - Input step.
+ * @returns {React.ReactElement} The row.
+ * @sideEffect Subscribes to the store. Editing or toggling updates the node and triggers a resimulation.
+ */
+function TSField({ id, field, value, held, unit, step }) {
+  const setDriverParam = useStore((s) => s.setDriverParam)
+  const setDriverLock = useStore((s) => s.setDriverLock)
+  return (
+    <div className={`param-row ts-row${held ? '' : ' derived'}`}>
+      <label title={TIPS[field] || ''}>{field}</label>
+      <input
+        type="number"
+        step={step || 'any'}
+        value={value ?? ''}
+        readOnly={!held}
+        tabIndex={held ? undefined : -1}
+        title={held ? '' : 'Derived from the held parameters — click the padlock to set it yourself'}
+        onChange={(e) => {
+          const v = e.target.value === '' ? '' : parseFloat(e.target.value)
+          if (v === '' || Number.isNaN(v)) return
+          setDriverParam(id, field, v)
+        }}
+      />
+      <span className="unit">{unit || ''}</span>
+      <button
+        className={`ts-lock${held ? ' held' : ''}`}
+        aria-pressed={held}
+        aria-label={`${held ? 'Release' : 'Hold'} ${field}`}
+        title={held
+          ? `${field} is yours to set. Release it to let it follow the others.`
+          : `${field} follows the others. Hold it to set it yourself.`}
+        onClick={() => setDriverLock(id, field, !held)}
+      >{held ? '🔒' : '🔓'}</button>
+    </div>
+  )
+}
+
+/**
  * Parameter form for a driver, with links to the library and the T/S solver.
+ *
+ * The eleven T/S figures are six free values and five consequences of them,
+ * so the form does not offer eleven independent boxes. Six carry a closed
+ * padlock and are editable; the rest show what those six imply, and moving a
+ * padlock moves a parameter between the two groups.
  *
  * @param {object} props - Component props.
  * @param {object} props.node - The selected node.
@@ -247,6 +303,19 @@ function DriverForm({ node }) {
   const id = node.id
   const setShowDriverDB = useStore((s) => s.setShowDriverDB)
   const setShowTSCalc = useStore((s) => s.setShowTSCalc)
+  const basis = basisOf(node)
+  /**
+   * One coupled T/S row, wired to this node and its current basis.
+   *
+   * @param {string} field - Parameter name.
+   * @param {string} [unit] - Unit shown after the input.
+   * @param {string} [step] - Input step.
+   * @returns {React.ReactElement} The row.
+   * @reads the enclosing form's node and basis.
+   */
+  const ts = (field, unit, step) => (
+    <TSField id={id} field={field} value={p[field]} held={basis.includes(field)} unit={unit} step={step} />
+  )
   return (
     <>
       <div className="panel-section">
@@ -256,17 +325,21 @@ function DriverForm({ node }) {
           <button onClick={() => setShowDriverDB(true)}>Database…</button>
           <button onClick={() => setShowTSCalc(true)}>T/S Solver…</button>
         </div>
-        <NumField id={id} field="Fs" value={p.Fs} unit="Hz" />
-        <NumField id={id} field="Qts" value={p.Qts} step="0.01" />
-        <NumField id={id} field="Qes" value={p.Qes} step="0.01" />
-        <NumField id={id} field="Qms" value={p.Qms} step="0.1" />
-        <NumField id={id} field="Vas" value={p.Vas} unit="L" />
-        <NumField id={id} field="Re" value={p.Re} unit="Ω" />
-        <NumField id={id} field="Bl" value={p.Bl} unit="T·m" />
-        <NumField id={id} field="Mms" value={p.Mms} unit="g" />
-        <NumField id={id} field="Cms" value={p.Cms} unit="mm/N" step="0.01" />
-        <NumField id={id} field="Sd" value={p.Sd} unit="cm²" />
-        <NumField id={id} field="Rms" value={p.Rms} unit="kg/s" step="0.1" />
+        <div className="ts-hint">
+          {BASIS_SIZE} of these are yours to set; the rest follow. Move a padlock
+          to change which.
+        </div>
+        {ts('Fs', 'Hz')}
+        {ts('Qts', '', '0.01')}
+        {ts('Qes', '', '0.01')}
+        {ts('Qms', '', '0.1')}
+        {ts('Vas', 'L')}
+        {ts('Re', 'Ω')}
+        {ts('Bl', 'T·m')}
+        {ts('Mms', 'g')}
+        {ts('Cms', 'mm/N', '0.01')}
+        {ts('Sd', 'cm²')}
+        {ts('Rms', 'kg/s', '0.1')}
         <NumField id={id} field="Le" value={p.Le} unit="mH" step="0.1" />
         <NumField id={id} field="LeExp" value={p.LeExp} label="Le exponent" step="0.05" min="0.3" />
         <NumField id={id} field="Xmax" value={p.Xmax} unit="mm" />
