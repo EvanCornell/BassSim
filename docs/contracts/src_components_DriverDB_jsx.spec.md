@@ -84,10 +84,10 @@ detail can never reach a node's params.
 - **Reachability:** UNREACHABLE
 - **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
 
-Store the selected Driver node's parameters as a custom database entry.
+Ask what to call the selected Driver node, then store it in the library.
 
-Only the core T/S fields are captured; a node has no extended parameters
-to save.
+The name is asked for rather than taken from the node's label: a node is
+named for its place in a design, a library entry for the driver.
 
 **Returns**
 
@@ -95,7 +95,7 @@ to save.
 
 **Side effects**
 
-- Writes the workspace, creating its system folder if this is the first thing to be stored there. Alerts and does nothing when no driver node is selected.
+- Opens the naming prompt. Alerts and does nothing when no driver node is selected.
 
 ### `DriverDB > removeCustom(i)`
 

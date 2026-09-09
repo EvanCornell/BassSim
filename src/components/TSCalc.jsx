@@ -473,7 +473,7 @@ export default function TSCalc() {
   const show = useStore((s) => s.showTSCalc)
   const setShow = useStore((s) => s.setShowTSCalc)
   const node = useStore((s) => s.nodes.find((n) => n.id === s.selectedNodeId))
-  const updateParams = useStore((s) => s.updateParams)
+  const applyDriverParams = useStore((s) => s.applyDriverParams)
   const [missing, setMissing] = useState({})
   const [solved, setSolved] = useState(null)
   const [error, setError] = useState(null)
@@ -542,7 +542,7 @@ export default function TSCalc() {
    * justify and keeps the parameter panel readable.
    *
    * @returns {void}
-   * @sideEffect Updates the node's params — which triggers a resimulation — and closes the modal. Alerts and does nothing when no driver node is selected.
+   * @sideEffect Updates the node's params and records them as its new starting point — which triggers a resimulation — then closes the modal. Alerts and does nothing when no driver node is selected.
    */
   const applyToNode = () => {
     if (!solved) return
@@ -552,7 +552,7 @@ export default function TSCalc() {
       const v = solved.result[k]
       if (v != null && isFinite(v)) patch[k] = Math.round(v * 1000) / 1000
     }
-    updateParams(node.id, patch)
+    applyDriverParams(node.id, patch)
     setShow(false)
   }
 

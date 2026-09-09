@@ -34,6 +34,17 @@ independent of the rest and are always editable.
 
 Values: `Fs`, `Qts`, `Qes`, `Qms`, `Vas`, `Re`, `Bl`, `Mms`, `Cms`, `Sd`, `Rms`
 
+### `TS_FIELDS`
+
+Every field that belongs to the driver itself, rather than to the node.
+
+The coupled eleven plus the three independent ones. A label, an array
+count and the loss settings describe how a driver is being used, not what
+it is, so they are outside this list — restoring a driver's parameters
+must not rename the node it is in.
+
+An array. Its length is computed at load time and is not published here.
+
 ### `BASIS_SIZE`
 
 How many parameters must be held for the other five to follow.
@@ -61,7 +72,7 @@ unknown, which is the whole of the solver below.
 
 An array of 5 entries.
 
-## EXPORTED (6)
+## EXPORTED (9)
 
 ### `round6(v)`
 
@@ -187,6 +198,65 @@ is discarded rather than trusted.
 **Returns**
 
 - `string[]` — The basis, oldest first.
+
+**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
+
+### `pickTS(params)`
+
+- **Reachability:** EXPORTED
+- **Obtain via:** import { pickTS } from '../../src/driverParams.js'
+
+Just the driver's own fields, copied out of a larger parameter set.
+
+Fields the set does not carry are left out rather than written as
+`undefined`, so a baseline never restores a parameter into existence that
+the driver never had.
+
+**Parameters**
+
+- `params` — `object` — A node's parameters.
+
+**Returns**
+
+- `object` — The driver fields present in it.
+
+**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
+
+### `baselineOf(node)`
+
+- **Reachability:** EXPORTED
+- **Obtain via:** import { baselineOf } from '../../src/driverParams.js'
+
+A driver's recorded starting point, if it has one.
+
+**Parameters**
+
+- `node` — `object` — The driver node.
+
+**Returns**
+
+- `object|null` — The stored baseline parameters, or `null` when none was ever recorded.
+
+**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
+
+### `matchesBaseline(node)`
+
+- **Reachability:** EXPORTED
+- **Obtain via:** import { matchesBaseline } from '../../src/driverParams.js'
+
+Whether a driver still matches the starting point it was recorded at.
+
+Compared over the driver's own fields only, and on the stored values
+rather than to any tolerance: the baseline was written from the same
+rounding, so anything that differs at all is a real change.
+
+**Parameters**
+
+- `node` — `object` — The driver node.
+
+**Returns**
+
+- `boolean` — True when there is a baseline and every field still equals it.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 

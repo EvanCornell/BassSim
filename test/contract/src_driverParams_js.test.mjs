@@ -1,8 +1,9 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import {
-  COUPLED, BASIS_SIZE, DEFAULT_BASIS, RELATIONS,
+  COUPLED, BASIS_SIZE, DEFAULT_BASIS, RELATIONS, TS_FIELDS,
   round6, derive, canSolve, lockParam, unlockParam, basisOf,
+  pickTS, baselineOf, matchesBaseline,
 } from '../../src/driverParams.js'
 import { RHO, C_AIR } from '../../src/engine/geometry.js'
 
@@ -307,4 +308,76 @@ test('basisOf falls back to the default for anything it cannot use', () => {
 test('basisOf returns a stored basis that still resolves', () => {
   const locks = ['Fs', 'Qts', 'Qes', 'Vas', 'Sd', 'Re']
   assert.deepStrictEqual(basisOf({ data: { locks } }), locks)
+})
+
+// ---------------------------------------------------------------------------
+// TS_FIELDS / pickTS
+// ---------------------------------------------------------------------------
+
+// CONTRACT: "The coupled eleven plus the three independent ones."
+// CONTRACT: "A label, an array count and the loss settings describe how a
+// driver is being used, not what it is, so they are outside this list."
+test('TS_FIELDS is the driver itself, not how the node uses it', () => {
+  assert.deepStrictEqual(TS_FIELDS, [...COUPLED, 'Le', 'LeExp', 'Xmax'])
+  for (const k of ['label', 'count', 'wiring', 'Q', 'lossless']) {
+    assert.ok(!TS_FIELDS.includes(k), `${k} is not a driver field`)
+  }
+})
+
+// CONTRACT: "Fields the set does not carry are left out rather than written as
+// `undefined`."
+test('pickTS copies the driver fields and nothing else', () => {
+  const picked = pickTS({ ...DRIVER, Le: 1.5, LeExp: 1, Xmax: 15, label: 'left woofer', count: 2, Q: 30 })
+  assert.deepStrictEqual(new Set(Object.keys(picked)), new Set(TS_FIELDS))
+  for (const k of ['label', 'count', 'Q']) assert.ok(!(k in picked), `${k} not copied`)
+  assert.equal(picked.Fs, DRIVER.Fs)
+})
+
+test('pickTS omits fields that are absent rather than writing undefined', () => {
+  const picked = pickTS({ Fs: 30, Sd: 480, Xmax: null })
+  assert.deepStrictEqual(picked, { Fs: 30, Sd: 480 })
+  for (const k of TS_FIELDS) assert.ok(!(k in picked) || picked[k] != null, `${k} is never undefined`)
+})
+
+test('pickTS tolerates a missing parameter set', () => {
+  assert.deepStrictEqual(pickTS(undefined), {})
+  assert.deepStrictEqual(pickTS(null), {})
+  assert.deepStrictEqual(pickTS({}), {})
+})
+
+// ---------------------------------------------------------------------------
+// baselineOf / matchesBaseline
+// ---------------------------------------------------------------------------
+
+// CONTRACT: "The stored baseline parameters, or `null` when none was ever
+// recorded."
+test('baselineOf returns the stored baseline, or null', () => {
+  assert.equal(baselineOf(undefined), null)
+  assert.equal(baselineOf({}), null)
+  assert.equal(baselineOf({ data: {} }), null)
+  const base = pickTS(DRIVER)
+  assert.equal(baselineOf({ data: { baseline: base } }), base)
+})
+
+// CONTRACT: "True when there is a baseline and every field still equals it."
+test('matchesBaseline is false without a baseline', () => {
+  assert.equal(matchesBaseline({ data: { params: DRIVER } }), false)
+})
+
+test('matchesBaseline tracks whether any driver field has moved', () => {
+  const base = pickTS({ ...DRIVER, Le: 1.5, LeExp: 1, Xmax: 15 })
+  const node = { data: { params: { ...base }, baseline: base } }
+  assert.equal(matchesBaseline(node), true)
+  for (const k of TS_FIELDS) {
+    const moved = { data: { params: { ...base, [k]: base[k] * 1.01 }, baseline: base } }
+    assert.equal(matchesBaseline(moved), false, `${k} moved`)
+  }
+})
+
+// CONTRACT: "the driver's own fields only" — renaming the node, or changing
+// how many of it there are, is not a change to the driver.
+test('matchesBaseline ignores fields outside the driver itself', () => {
+  const base = pickTS({ ...DRIVER, Le: 1.5, LeExp: 1, Xmax: 15 })
+  const node = { data: { params: { ...base, label: 'left woofer', count: 2, Q: 30 }, baseline: base } }
+  assert.equal(matchesBaseline(node), true)
 })

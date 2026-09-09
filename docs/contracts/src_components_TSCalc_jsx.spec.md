@@ -511,7 +511,7 @@ justify and keeps the parameter panel readable.
 
 **Side effects**
 
-- Updates the node's params — which triggers a resimulation — and closes the modal. Alerts and does nothing when no driver node is selected.
+- Updates the node's params and records them as its new starting point — which triggers a resimulation — then closes the modal. Alerts and does nothing when no driver node is selected.
 
 ### `TSCalc > renderRow(p)`
 

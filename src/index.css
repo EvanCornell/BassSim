@@ -629,7 +629,17 @@ svg.ws-chevron.open { transform: rotate(90deg); }
    Six of the eleven are the user's to set and the rest are consequences, so
    the two states have to be legible at a glance: a held row looks like an
    input, a derived one is dimmed and reads as a readout. */
+.drv-actions { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; }
+.drv-actions button { padding: 3px 8px; }
 .ts-hint { font-size: 10.5px; line-height: 1.5; color: var(--text-3); margin-bottom: 8px; }
+.modal.sdp { min-width: 420px; max-width: 520px; }
+.sdp-lead { font-size: 11.5px; line-height: 1.55; color: var(--text-2); margin: 0 0 12px; }
+.sdp-lead code { font-family: var(--mono-font); font-size: 11px; color: var(--text-3); }
+.sdp .param-row label { flex: 0 0 48px; }
+.sdp-note {
+  margin-top: 8px; font-size: 11.5px; line-height: 1.5; color: var(--amber);
+  border: 1px solid var(--amber); padding: 5px 8px;
+}
 .ts-row input { font-family: var(--mono-font); font-variant-numeric: tabular-nums; }
 .ts-row.derived input {
   background: transparent; border-color: transparent; color: var(--text-3);

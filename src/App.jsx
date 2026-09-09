@@ -5,6 +5,7 @@ import Toolbar from './components/Toolbar'
 import DockLayout from './components/dock/DockLayout'
 import DriverDB from './components/DriverDB'
 import TSCalc from './components/TSCalc'
+import SaveDriverPrompt from './components/SaveDriverPrompt'
 import SettingsWindow from './components/SettingsWindow'
 import PopoutView from './components/PopoutView'
 import WorkspacePrompt from './components/WorkspacePrompt'
@@ -145,6 +146,7 @@ export default function App() {
       <DockLayout />
       <DriverDB />
       <TSCalc />
+      <SaveDriverPrompt />
       <SettingsWindow />
       <WorkspacePrompt />
       <ContextMenu />

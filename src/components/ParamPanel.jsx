@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { useStore } from '../store'
 import { waveguideVolume } from '../engine/geometry'
-import { basisOf, BASIS_SIZE } from '../driverParams'
+import { basisOf, baselineOf, matchesBaseline, BASIS_SIZE } from '../driverParams'
 
 /**
  * One-line physical explanation per parameter, shown as a label tooltip.
@@ -303,7 +303,11 @@ function DriverForm({ node }) {
   const id = node.id
   const setShowDriverDB = useStore((s) => s.setShowDriverDB)
   const setShowTSCalc = useStore((s) => s.setShowTSCalc)
+  const setSaveDriverFor = useStore((s) => s.setSaveDriverFor)
+  const restoreDriverParams = useStore((s) => s.restoreDriverParams)
   const basis = basisOf(node)
+  const baseline = baselineOf(node)
+  const canRestore = baseline != null && !matchesBaseline(node)
   /**
    * One coupled T/S row, wired to this node and its current basis.
    *
@@ -321,9 +325,20 @@ function DriverForm({ node }) {
       <div className="panel-section">
         <h4>Driver — T/S Parameters</h4>
         <LabelField id={id} p={p} />
-        <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
+        <div className="drv-actions">
           <button onClick={() => setShowDriverDB(true)}>Database…</button>
           <button onClick={() => setShowTSCalc(true)}>T/S Solver…</button>
+          <button
+            onClick={() => setSaveDriverFor(id)}
+            title="Store these parameters in the workspace's driver library under a name you choose"
+          >Save to library…</button>
+          <button
+            disabled={!canRestore}
+            onClick={() => restoreDriverParams(id)}
+            title={baseline
+              ? 'Put every T/S parameter back to what this driver started as'
+              : 'Nothing to restore — this driver has not been changed since it was loaded'}
+          >Restore</button>
         </div>
         <div className="ts-hint">
           {BASIS_SIZE} of these are yours to set; the rest follow. Move a padlock

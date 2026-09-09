@@ -27,6 +27,16 @@ const K = RHO * C_AIR * C_AIR
 export const COUPLED = ['Fs', 'Qts', 'Qes', 'Qms', 'Vas', 'Re', 'Bl', 'Mms', 'Cms', 'Sd', 'Rms']
 
 /**
+ * Every field that belongs to the driver itself, rather than to the node.
+ *
+ * The coupled eleven plus the three independent ones. A label, an array
+ * count and the loss settings describe how a driver is being used, not what
+ * it is, so they are outside this list — restoring a driver's parameters
+ * must not rename the node it is in.
+ */
+export const TS_FIELDS = [...COUPLED, 'Le', 'LeExp', 'Xmax']
+
+/**
  * How many parameters must be held for the other five to follow.
  *
  * Eleven quantities minus five independent relations. Any set of this size
@@ -294,4 +304,51 @@ export function unlockParam(basis, key) {
 export function basisOf(node) {
   const stored = node?.data?.locks
   return Array.isArray(stored) && canSolve(stored) ? stored : DEFAULT_BASIS
+}
+
+/**
+ * Just the driver's own fields, copied out of a larger parameter set.
+ *
+ * Fields the set does not carry are left out rather than written as
+ * `undefined`, so a baseline never restores a parameter into existence that
+ * the driver never had.
+ *
+ * @param {object} params - A node's parameters.
+ * @returns {object} The driver fields present in it.
+ * @pure
+ */
+export function pickTS(params) {
+  const out = {}
+  for (const k of TS_FIELDS) if (params?.[k] != null) out[k] = params[k]
+  return out
+}
+
+/**
+ * A driver's recorded starting point, if it has one.
+ *
+ * @param {object} node - The driver node.
+ * @returns {object|null} The stored baseline parameters, or `null` when none was ever recorded.
+ * @pure
+ */
+export function baselineOf(node) {
+  const b = node?.data?.baseline
+  return b && typeof b === 'object' ? b : null
+}
+
+/**
+ * Whether a driver still matches the starting point it was recorded at.
+ *
+ * Compared over the driver's own fields only, and on the stored values
+ * rather than to any tolerance: the baseline was written from the same
+ * rounding, so anything that differs at all is a real change.
+ *
+ * @param {object} node - The driver node.
+ * @returns {boolean} True when there is a baseline and every field still equals it.
+ * @pure
+ */
+export function matchesBaseline(node) {
+  const base = baselineOf(node)
+  if (!base) return false
+  const p = node.data.params || {}
+  return TS_FIELDS.every((k) => p[k] === base[k])
 }

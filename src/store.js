@@ -10,6 +10,7 @@
 //   workspace  layout, layoutPresets, maximized, focusedPanel, draggingPanel,
 //              poppedOut, toolbar, bindings, xZoom
 //   modals     showDriverDB, showTSCalc, showSettings, settingsSection,
+//              saveDriverFor,
 //              workspacePrompt, velocityPopupNodeId
 //
 // Fields prefixed with an underscore are solver and persistence bookkeeping
@@ -373,6 +374,7 @@ export const useStore = create((rawSet, get) => {
   velocityPopupNodeId: null,
   showDriverDB: false,
   showTSCalc: false,
+  saveDriverFor: null,
   settings: {
     fmin: 10, fmax: 1000, npts: 512,
     voltage: 2.83, impedance: 4, power: 2, rg: 0,
@@ -918,6 +920,78 @@ export const useStore = create((rawSet, get) => {
   },
 
   /**
+   * Write a complete parameter set onto a driver and make it the starting point.
+   *
+   * This is the authoritative path — the database and the T/S solver both
+   * hand over a whole consistent set — so it is also where a driver's
+   * baseline is recorded. Restoring later comes back to exactly here.
+   *
+   * @param {string} id - Driver node id. An unknown id is a no-op.
+   * @param {object} params - The parameters to write.
+   * @returns {void}
+   * @sideEffect Writes store state and schedules a resimulation.
+   */
+  applyDriverParams: (id, params) => {
+    const node = get().nodes.find((n) => n.id === id)
+    if (!node) return
+    const merged = { ...node.data.params, ...params }
+    set({
+      nodes: get().nodes.map((n) => (n.id === id
+        ? { ...n, data: { ...n.data, params: merged, baseline: D.pickTS(merged) } }
+        : n)),
+    })
+    get().scheduleCompute()
+  },
+
+  /**
+   * Put a driver back to the parameters it started from.
+   *
+   * The starting point is whatever the database or the solver last wrote,
+   * or — for a driver that has only ever been edited by hand — the values it
+   * held before the first of those edits.
+   *
+   * Only the driver's own fields are restored. The node's label, its array
+   * count and its loss settings say how the driver is being used rather than
+   * what it is, so they survive.
+   *
+   * @param {string} id - Driver node id. An unknown id, or one with no recorded starting point, is a no-op.
+   * @returns {void}
+   * @sideEffect Writes store state and schedules a resimulation.
+   */
+  restoreDriverParams: (id) => {
+    const node = get().nodes.find((n) => n.id === id)
+    const base = node && D.baselineOf(node)
+    if (!base) return
+    get().updateParams(id, base)
+  },
+
+  /**
+   * Store a driver node's parameters in the workspace's custom library.
+   *
+   * The name is asked for rather than taken from the node's label, because a
+   * node is named for its place in a design — "left woofer" — and a library
+   * entry is named for the driver. Saving under a name already in the
+   * library replaces that entry rather than adding a second one under the
+   * same name.
+   *
+   * @param {string} id - Driver node id. An unknown id, or a node that is not a driver, is a no-op.
+   * @param {string} name - Name to file it under. Blank names are a no-op.
+   * @returns {void}
+   * @sideEffect Writes the workspace, creating its system folder if this is the first thing stored there.
+   */
+  saveDriverAsCustom: (id, name) => {
+    const node = get().nodes.find((n) => n.id === id)
+    const model = (name || '').trim()
+    if (!node || node.type !== 'driver' || !model) return
+    const entry = { brand: 'Custom', model, source: 'custom', ...D.pickTS(node.data.params) }
+    const drivers = W.readDrivers(get().workspace)
+    const at = drivers.findIndex((d) => d.model === model)
+    get().setCustomDrivers(at < 0
+      ? [...drivers, entry]
+      : drivers.map((d, i) => (i === at ? entry : d)))
+  },
+
+  /**
    * Set one coupled T/S parameter on a driver, letting the rest follow.
    *
    * A driver's eleven T/S figures are six free values and five consequences,
@@ -938,11 +1012,33 @@ export const useStore = create((rawSet, get) => {
   setDriverParam: (id, field, value) => {
     const node = get().nodes.find((n) => n.id === id)
     if (!node) return
+    get()._markDriverBaseline(id)
     if (!D.COUPLED.includes(field)) { get().updateParams(id, { [field]: value }); return }
     const basis = D.basisOf(node)
     if (!basis.includes(field)) return
     const { ok, values } = D.derive({ ...node.data.params, [field]: value }, basis)
     get().updateParams(id, ok ? { ...values, [field]: value } : { [field]: value })
+  },
+
+  /**
+   * Record a driver's current parameters as its starting point, once.
+   *
+   * A driver that arrived from the database or the solver already has one.
+   * This covers the other case: a driver being edited by hand for the first
+   * time, whose starting point is whatever it held just before that edit.
+   * Called before the edit lands, and a no-op every time after.
+   *
+   * @param {string} id - Driver node id. An unknown id is a no-op.
+   * @returns {void}
+   * @sideEffect Writes store state. Does not schedule a resimulation — the baseline is not part of the graph.
+   */
+  _markDriverBaseline: (id) => {
+    const node = get().nodes.find((n) => n.id === id)
+    if (!node || D.baselineOf(node)) return
+    set({
+      nodes: get().nodes.map((n) => (n.id === id
+        ? { ...n, data: { ...n.data, baseline: D.pickTS(n.data.params) } } : n)),
+    })
   },
 
   /**
@@ -970,6 +1066,7 @@ export const useStore = create((rawSet, get) => {
     const basis = D.basisOf(node)
     const next = held ? D.lockParam(basis, field) : D.unlockParam(basis, field)
     if (!next) return
+    get()._markDriverBaseline(id)
     const { ok, values } = D.derive(node.data.params, next)
     set({
       nodes: get().nodes.map((n) => (n.id === id
@@ -1371,6 +1468,14 @@ export const useStore = create((rawSet, get) => {
    * @sideEffect Writes store state. The field is local to the window — `SHARED_KEYS` deliberately excludes it, so a popped-out panel keeps its own.
    */
   setShowTSCalc: (v) => set({ showTSCalc: v }),
+  /**
+   * Open the save-to-database prompt for one driver node, or close it.
+   *
+   * @param {string|null} id - Driver node id, or `null` to close.
+   * @returns {void}
+   * @sideEffect Writes store state. The field is local to the window — `SHARED_KEYS` deliberately excludes it, so a popped-out panel keeps its own.
+   */
+  setSaveDriverFor: (id) => set({ saveDriverFor: id }),
 
   // ---- compute pipeline (debounced 150 ms) ----
   // Simulation runs in a Web Worker: the engine ships with the app, but off

@@ -72,7 +72,8 @@ export default function DriverDB() {
   const show = useStore((s) => s.showDriverDB)
   const setShow = useStore((s) => s.setShowDriverDB)
   const node = useStore((s) => s.nodes.find((n) => n.id === s.selectedNodeId))
-  const updateParams = useStore((s) => s.updateParams)
+  const applyDriverParams = useStore((s) => s.applyDriverParams)
+  const setSaveDriverFor = useStore((s) => s.setSaveDriverFor)
   const addNode = useStore((s) => s.addNode)
   const [query, setQuery] = useState('')
   const [brand, setBrand] = useState('')
@@ -121,28 +122,23 @@ export default function DriverDB() {
    */
   const apply = (d) => {
     const params = driverToParams(d)
-    if (node && node.type === 'driver') updateParams(node.id, params)
-    else updateParams(addNode('driver', { x: 100, y: 100 }), params)
+    const target = node && node.type === 'driver' ? node.id : addNode('driver', { x: 100, y: 100 })
+    applyDriverParams(target, params)
     setShow(false)
   }
 
   /**
-   * Store the selected Driver node's parameters as a custom database entry.
+   * Ask what to call the selected Driver node, then store it in the library.
    *
-   * Only the core T/S fields are captured; a node has no extended parameters
-   * to save.
+   * The name is asked for rather than taken from the node's label: a node is
+   * named for its place in a design, a library entry for the driver.
    *
    * @returns {void}
-   * @sideEffect Writes the workspace, creating its system folder if this is the first thing to be stored there. Alerts and does nothing when no driver node is selected.
+   * @sideEffect Opens the naming prompt. Alerts and does nothing when no driver node is selected.
    */
   const saveCurrentAsCustom = () => {
     if (!node || node.type !== 'driver') { alert('Select a Driver node first.'); return }
-    const p = node.data.params
-    const entry = { brand: 'Custom', model: p.label || `Custom ${custom.length + 1}`, source: 'custom' }
-    for (const k of ['Fs', 'Qts', 'Qes', 'Qms', 'Vas', 'Re', 'Bl', 'Mms', 'Cms', 'Sd', 'Le', 'Xmax', 'Rms']) {
-      if (p[k] != null) entry[k] = p[k]
-    }
-    useStore.getState().setCustomDrivers([...custom, entry])
+    setSaveDriverFor(node.id)
   }
 
   /**

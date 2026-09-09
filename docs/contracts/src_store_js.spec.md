@@ -17,6 +17,7 @@ where:
   workspace  layout, layoutPresets, maximized, focusedPanel, draggingPanel,
              poppedOut, toolbar, bindings, xZoom
   modals     showDriverDB, showTSCalc, showSettings, settingsSection,
+             saveDriverFor,
              workspacePrompt, velocityPopupNodeId
 
 Fields prefixed with an underscore are solver and persistence bookkeeping
@@ -189,7 +190,7 @@ around the canvas does not re-run the sweep.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
-## STORE ACTION (96)
+## STORE ACTION (101)
 
 ### `openContextMenu(x, y, target)`
 
@@ -941,6 +942,83 @@ copied, nudged or deleted straight away without clicking it first.
 
 - Records history, writes store state and schedules a resimulation.
 
+### `applyDriverParams(id, params)`
+
+- **Reachability:** STORE ACTION
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().applyDriverParams(…)
+
+Write a complete parameter set onto a driver and make it the starting point.
+
+This is the authoritative path — the database and the T/S solver both
+hand over a whole consistent set — so it is also where a driver's
+baseline is recorded. Restoring later comes back to exactly here.
+
+**Parameters**
+
+- `id` — `string` — Driver node id. An unknown id is a no-op.
+- `params` — `object` — The parameters to write.
+
+**Returns**
+
+- `void`
+
+**Side effects**
+
+- Writes store state and schedules a resimulation.
+
+### `restoreDriverParams(id)`
+
+- **Reachability:** STORE ACTION
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().restoreDriverParams(…)
+
+Put a driver back to the parameters it started from.
+
+The starting point is whatever the database or the solver last wrote,
+or — for a driver that has only ever been edited by hand — the values it
+held before the first of those edits.
+
+Only the driver's own fields are restored. The node's label, its array
+count and its loss settings say how the driver is being used rather than
+what it is, so they survive.
+
+**Parameters**
+
+- `id` — `string` — Driver node id. An unknown id, or one with no recorded starting point, is a no-op.
+
+**Returns**
+
+- `void`
+
+**Side effects**
+
+- Writes store state and schedules a resimulation.
+
+### `saveDriverAsCustom(id, name)`
+
+- **Reachability:** STORE ACTION
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().saveDriverAsCustom(…)
+
+Store a driver node's parameters in the workspace's custom library.
+
+The name is asked for rather than taken from the node's label, because a
+node is named for its place in a design — "left woofer" — and a library
+entry is named for the driver. Saving under a name already in the
+library replaces that entry rather than adding a second one under the
+same name.
+
+**Parameters**
+
+- `id` — `string` — Driver node id. An unknown id, or a node that is not a driver, is a no-op.
+- `name` — `string` — Name to file it under. Blank names are a no-op.
+
+**Returns**
+
+- `void`
+
+**Side effects**
+
+- Writes the workspace, creating its system folder if this is the first thing stored there.
+
 ### `setDriverParam(id, field, value)`
 
 - **Reachability:** STORE ACTION
@@ -970,6 +1048,30 @@ the typed value alone rather than a set of NaNs.
 **Side effects**
 
 - Writes store state and schedules a resimulation.
+
+### `_markDriverBaseline(id)`
+
+- **Reachability:** STORE ACTION
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState()._markDriverBaseline(…)
+
+Record a driver's current parameters as its starting point, once.
+
+A driver that arrived from the database or the solver already has one.
+This covers the other case: a driver being edited by hand for the first
+time, whose starting point is whatever it held just before that edit.
+Called before the edit lands, and a no-op every time after.
+
+**Parameters**
+
+- `id` — `string` — Driver node id. An unknown id is a no-op.
+
+**Returns**
+
+- `void`
+
+**Side effects**
+
+- Writes store state. Does not schedule a resimulation — the baseline is not part of the graph.
 
 ### `setDriverLock(id, field, held)`
 
@@ -1390,6 +1492,25 @@ Show or hide the Thiele/Small parameter solver.
 **Parameters**
 
 - `v` — `boolean` — Whether to show it.
+
+**Returns**
+
+- `void`
+
+**Side effects**
+
+- Writes store state. The field is local to the window — `SHARED_KEYS` deliberately excludes it, so a popped-out panel keeps its own.
+
+### `setSaveDriverFor(id)`
+
+- **Reachability:** STORE ACTION
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().setSaveDriverFor(…)
+
+Open the save-to-database prompt for one driver node, or close it.
+
+**Parameters**
+
+- `id` — `string|null` — Driver node id, or `null` to close.
 
 **Returns**
 

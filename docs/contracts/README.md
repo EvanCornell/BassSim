@@ -25,6 +25,7 @@ no implementation. This is the sole input to the blind contract test suite.
 | [`src/components/OutputPanel.jsx`](src_components_OutputPanel_jsx.spec.md) | 35 | 7 | 28 |
 | [`src/components/ParamPanel.jsx`](src_components_ParamPanel_jsx.spec.md) | 16 | 2 | 14 |
 | [`src/components/PopoutView.jsx`](src_components_PopoutView_jsx.spec.md) | 2 | 1 | 1 |
+| [`src/components/SaveDriverPrompt.jsx`](src_components_SaveDriverPrompt_jsx.spec.md) | 2 | 1 | 1 |
 | [`src/components/SettingsWindow.jsx`](src_components_SettingsWindow_jsx.spec.md) | 11 | 1 | 10 |
 | [`src/components/TSCalc.jsx`](src_components_TSCalc_jsx.spec.md) | 23 | 6 | 17 |
 | [`src/components/Toolbar.jsx`](src_components_Toolbar_jsx.spec.md) | 7 | 1 | 6 |
@@ -37,7 +38,7 @@ no implementation. This is the sole input to the blind contract test suite.
 | [`src/data/driver-audit.js`](src_data_driver-audit_js.spec.md) | 3 | 1 | 2 |
 | [`src/data/driver-fields.js`](src_data_driver-fields_js.spec.md) | 2 | 2 | 0 |
 | [`src/data/drivers.js`](src_data_drivers_js.spec.md) | 1 | 0 | 1 |
-| [`src/driverParams.js`](src_driverParams_js.spec.md) | 12 | 6 | 6 |
+| [`src/driverParams.js`](src_driverParams_js.spec.md) | 15 | 9 | 6 |
 | [`src/engine/acoustics.js`](src_engine_acoustics_js.spec.md) | 9 | 9 | 0 |
 | [`src/engine/complex.js`](src_engine_complex_js.spec.md) | 18 | 18 | 0 |
 | [`src/engine/geometry.js`](src_engine_geometry_js.spec.md) | 4 | 4 | 0 |
@@ -51,7 +52,7 @@ no implementation. This is the sole input to the blind contract test suite.
 | [`src/panelMeta.js`](src_panelMeta_js.spec.md) | 1 | 1 | 0 |
 | [`src/popout.js`](src_popout_js.spec.md) | 5 | 5 | 0 |
 | [`src/selection.js`](src_selection_js.spec.md) | 5 | 5 | 0 |
-| [`src/store.js`](src_store_js.spec.md) | 110 | 102 | 8 |
+| [`src/store.js`](src_store_js.spec.md) | 115 | 107 | 8 |
 | [`src/toolbarItems.js`](src_toolbarItems_js.spec.md) | 6 | 4 | 2 |
 | [`src/utils/backdrop.js`](src_utils_backdrop_js.spec.md) | 3 | 1 | 2 |
 | [`src/utils/export.js`](src_utils_export_js.spec.md) | 8 | 6 | 2 |
@@ -60,4 +61,4 @@ no implementation. This is the sole input to the blind contract test suite.
 | [`test/contracts.mjs`](test_contracts_mjs.spec.md) | 2 | 0 | 2 |
 | [`test/drivers.mjs`](test_drivers_mjs.spec.md) | 2 | 0 | 2 |
 | [`test/support/loader.mjs`](test_support_loader_mjs.spec.md) | 2 | 2 | 0 |
-| **Total** | **662** | **355** | **307** |
+| **Total** | **672** | **364** | **308** |
