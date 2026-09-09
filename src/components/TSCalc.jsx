@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useStore } from '../store'
 import { RHO, C_AIR } from '../engine/geometry'
+import { useBackdropDismiss } from '../utils/backdrop'
 
 /**
  * The relations used by each solver, shown beside the results.
@@ -138,6 +139,7 @@ export default function TSCalc() {
     defaultValues: { Fs: 30, Vas: 60, Qes: 0.5, Qms: 5, Re: 3.6, Sd: 480, FsPrime: 24, mAdd: 50, Fc: 45, Vb: 40 },
   })
 
+  const dismiss = useBackdropDismiss(() => setShow(false))
   if (!show) return null
 
   const onSolve = handleSubmit((v) => {
@@ -192,8 +194,8 @@ export default function TSCalc() {
   )
 
   return (
-    <div className="modal-backdrop" onClick={() => setShow(false)}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
+    <div className="modal-backdrop" {...dismiss}>
+      <div className="modal">
         <h3>T/S Parameter Solver</h3>
         <div className="param-row">
           <label>Method</label>

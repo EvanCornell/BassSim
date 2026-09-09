@@ -52,10 +52,11 @@ no implementation. This is the sole input to the blind contract test suite.
 | [`src/selection.js`](src_selection_js.spec.md) | 5 | 5 | 0 |
 | [`src/store.js`](src_store_js.spec.md) | 108 | 100 | 8 |
 | [`src/toolbarItems.js`](src_toolbarItems_js.spec.md) | 6 | 4 | 2 |
+| [`src/utils/backdrop.js`](src_utils_backdrop_js.spec.md) | 3 | 1 | 2 |
 | [`src/utils/export.js`](src_utils_export_js.spec.md) | 8 | 6 | 2 |
 | [`src/utils/zip.js`](src_utils_zip_js.spec.md) | 10 | 5 | 5 |
 | [`src/workspace.js`](src_workspace_js.spec.md) | 35 | 31 | 4 |
 | [`test/contracts.mjs`](test_contracts_mjs.spec.md) | 2 | 0 | 2 |
 | [`test/drivers.mjs`](test_drivers_mjs.spec.md) | 2 | 0 | 2 |
 | [`test/support/loader.mjs`](test_support_loader_mjs.spec.md) | 2 | 2 | 0 |
-| **Total** | **626** | **344** | **282** |
+| **Total** | **629** | **345** | **284** |

@@ -12,6 +12,7 @@ import { PANEL_META, PANEL_IDS, MAIN_IDS, CHART_IDS } from '../panelMeta'
 import { exportCSV, exportSchematicPNG, exportMetricsTxt } from '../utils/export'
 import { formatCombo } from '../keymap'
 import { ItemList } from './MenuItem'
+import { useBackdropDismiss } from '../utils/backdrop'
 
 
 // ---------- dropdown primitives ----------
@@ -71,6 +72,7 @@ export default function MenuBar() {
   const store = useStore()
   const [open, setOpen] = useState(null)
   const [showExpWarning, setShowExpWarning] = useState(false)
+  const expWarningDismiss = useBackdropDismiss(() => setShowExpWarning(false))
   const fileRef = useRef(null)
   const workspaceRef = useRef(null)
   const barRef = useRef(null)
@@ -561,8 +563,8 @@ export default function MenuBar() {
       <input ref={workspaceRef} type="file" accept=".zip,.json,application/zip,application/json" style={{ display: 'none' }} onChange={onLoadWorkspace} />
 
       {showExpWarning && (
-        <div className="modal-backdrop" onClick={() => setShowExpWarning(false)}>
-          <div className="modal" style={{ maxWidth: 480, minWidth: 380 }} onClick={(e) => e.stopPropagation()}>
+        <div className="modal-backdrop" {...expWarningDismiss}>
+          <div className="modal" style={{ maxWidth: 480, minWidth: 380 }}>
             <h3 style={{ color: 'var(--amber)' }}>Experimental features</h3>
             <p style={{ fontSize: 13, lineHeight: 1.55 }}>
               You are enabling <b>large-signal T/S nonlinearity</b> simulation.

@@ -4,6 +4,7 @@ import { readDrivers, DRIVERS_PATH } from '../workspace'
 import {
   BUILTIN_DRIVERS, DRIVER_BRANDS, EXT_FIELDS, EXT_GROUPS, driverToParams,
 } from '../data/drivers'
+import { useBackdropDismiss } from '../utils/backdrop'
 
 /**
  * The expanded extended-parameter view for one driver.
@@ -105,6 +106,7 @@ export default function DriverDB() {
     return true
   }), [all, query, brand, fsMax, vasMin, xmaxMin])
 
+  const dismiss = useBackdropDismiss(() => setShow(false))
   if (!show) return null
 
   /**
@@ -169,8 +171,8 @@ export default function DriverDB() {
   const key = (d, i) => `${d.brand}|${d.model}|${i}`
 
   return (
-    <div className="modal-backdrop" onClick={() => setShow(false)}>
-      <div className="modal" style={{ minWidth: 780 }} onClick={(e) => e.stopPropagation()}>
+    <div className="modal-backdrop" {...dismiss}>
+      <div className="modal" style={{ minWidth: 780 }}>
         <h3>Driver Database</h3>
         <div style={{ display: 'flex', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
           <input placeholder="Search brand or model…" value={query} onChange={(e) => setQuery(e.target.value)} autoFocus style={{ flex: 1, minWidth: 180 }} />

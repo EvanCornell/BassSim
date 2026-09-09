@@ -24,9 +24,9 @@
     "pure": "flag"
   },
   "stats": {
-    "modules": 58,
-    "methods": 626,
-    "documented": 626
+    "modules": 59,
+    "methods": 629,
+    "documented": 629
   },
   "modules": [
     {
@@ -5986,7 +5986,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 21,
+          "line": 22,
           "signature": [
             "arg0"
           ],
@@ -6032,7 +6032,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 70,
+          "line": 71,
           "signature": [],
           "documented": true,
           "summary": "The driver library browser.",
@@ -6063,7 +6063,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 120,
+          "line": 122,
           "signature": [
             "d"
           ],
@@ -6104,7 +6104,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 136,
+          "line": 138,
           "signature": [],
           "documented": true,
           "summary": "Store the selected Driver node's parameters as a custom database entry.",
@@ -6135,7 +6135,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 153,
+          "line": 155,
           "signature": [
             "i"
           ],
@@ -6176,7 +6176,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 169,
+          "line": 171,
           "signature": [
             "d",
             "i"
@@ -7432,7 +7432,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 37,
+          "line": 38,
           "signature": [
             "arg0"
           ],
@@ -7506,7 +7506,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 70,
+          "line": 71,
           "signature": [],
           "documented": true,
           "summary": "The application menu bar.",
@@ -7537,7 +7537,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 90,
+          "line": 92,
           "signature": [
             "id"
           ],
@@ -7578,7 +7578,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 103,
+          "line": 105,
           "signature": [
             "id"
           ],
@@ -7619,7 +7619,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 115,
+          "line": 117,
           "signature": [],
           "documented": true,
           "summary": "Bring a popped-out panel's tab to the front, or toggle a docked one.",
@@ -7650,7 +7650,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 127,
+          "line": 129,
           "signature": [
             "e"
           ],
@@ -7691,7 +7691,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 135,
+          "line": 137,
           "signature": [
             "e"
           ],
@@ -7732,7 +7732,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 159,
+          "line": 161,
           "signature": [
             "e"
           ],
@@ -7773,7 +7773,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 169,
+          "line": 171,
           "signature": [],
           "documented": true,
           "summary": "Parse the loaded file and add it to the workspace.",
@@ -7804,7 +7804,7 @@
           "exported": false,
           "async": true,
           "generator": false,
-          "line": 202,
+          "line": 204,
           "signature": [
             "e"
           ],
@@ -7845,7 +7845,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 218,
+          "line": 220,
           "signature": [],
           "documented": true,
           "summary": "Save the current window arrangement under a prompted name.",
@@ -7876,7 +7876,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 236,
+          "line": 238,
           "signature": [],
           "documented": true,
           "summary": "Add an empty project to the workspace and open it.",
@@ -7907,7 +7907,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 248,
+          "line": 250,
           "signature": [],
           "documented": true,
           "summary": "Open the file picker to import a project.",
@@ -7938,7 +7938,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 259,
+          "line": 261,
           "signature": [],
           "documented": true,
           "summary": "Download the whole workspace as one file.",
@@ -7969,7 +7969,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 269,
+          "line": 271,
           "signature": [],
           "documented": true,
           "summary": "Open the file picker to replace the workspace.",
@@ -8000,7 +8000,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 283,
+          "line": 285,
           "signature": [],
           "documented": true,
           "summary": "Download every result series as a CSV.",
@@ -8031,7 +8031,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 293,
+          "line": 295,
           "signature": [],
           "documented": true,
           "summary": "Download a PNG of the node canvas.",
@@ -8062,7 +8062,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 303,
+          "line": 305,
           "signature": [],
           "documented": true,
           "summary": "Download a plain-text metrics summary.",
@@ -8093,7 +8093,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 332,
+          "line": 334,
           "signature": [],
           "documented": true,
           "summary": "Pop the focused panel out into its own browser tab.",
@@ -8124,7 +8124,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 347,
+          "line": 349,
           "signature": [],
           "documented": true,
           "summary": "Pop this specific panel out into its own browser tab.",
@@ -8155,7 +8155,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 360,
+          "line": 362,
           "signature": [],
           "documented": true,
           "summary": "Maximize the focused panel, or restore the one already maximized.",
@@ -8186,7 +8186,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 371,
+          "line": 373,
           "signature": [],
           "documented": true,
           "summary": "Restore the default workspace arrangement.",
@@ -8217,7 +8217,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 386,
+          "line": 388,
           "signature": [],
           "documented": true,
           "summary": "Apply this saved arrangement.",
@@ -8248,7 +8248,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 403,
+          "line": 405,
           "signature": [],
           "documented": true,
           "summary": "Delete this saved arrangement.",
@@ -8279,7 +8279,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 419,
+          "line": 421,
           "signature": [],
           "documented": true,
           "summary": "Toggle resonance masking, which lumps chambers to hide standing-wave artifacts.",
@@ -8310,7 +8310,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 430,
+          "line": 432,
           "signature": [],
           "documented": true,
           "summary": "Toggle phase unwrapping on the phase chart.",
@@ -8341,7 +8341,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 448,
+          "line": 450,
           "signature": [],
           "documented": true,
           "summary": "Discard every reference overlay.",
@@ -8372,7 +8372,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 463,
+          "line": 465,
           "signature": [],
           "documented": true,
           "summary": "Open the driver library browser.",
@@ -8403,7 +8403,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 473,
+          "line": 475,
           "signature": [],
           "documented": true,
           "summary": "Open the Thiele/Small parameter solver.",
@@ -8434,7 +8434,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 486,
+          "line": 488,
           "signature": [],
           "documented": true,
           "summary": "Open the Nonlinear Lab panel.",
@@ -8465,7 +8465,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 501,
+          "line": 503,
           "signature": [],
           "documented": true,
           "summary": "Turn experimental features on or off.",
@@ -8496,7 +8496,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 520,
+          "line": 522,
           "signature": [],
           "documented": true,
           "summary": "Open Settings at the keyboard section.",
@@ -8527,7 +8527,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 530,
+          "line": 532,
           "signature": [],
           "documented": true,
           "summary": "Show the about dialog.",
@@ -12623,7 +12623,7 @@
       "constants": [
         {
           "name": "__internals",
-          "line": 251,
+          "line": 253,
           "shape": {
             "kind": "object",
             "keys": [
@@ -12644,7 +12644,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 41,
+          "line": 42,
           "signature": [
             "arg0"
           ],
@@ -12727,7 +12727,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 74,
+          "line": 75,
           "signature": [
             "arg0"
           ],
@@ -12820,7 +12820,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 107,
+          "line": 108,
           "signature": [
             "arg0"
           ],
@@ -12913,7 +12913,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 129,
+          "line": 130,
           "signature": [],
           "documented": true,
           "summary": "The Thiele/Small solver: derive a full parameter set from measurements.",
@@ -12944,7 +12944,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 165,
+          "line": 167,
           "signature": [],
           "documented": true,
           "summary": "Write the derived parameters into the selected driver node.",
@@ -12975,7 +12975,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 186,
+          "line": 188,
           "signature": [
             "arg0"
           ],
@@ -26697,6 +26697,138 @@
             "sideEffect": [],
             "reads": [],
             "pure": true
+          },
+          "other": []
+        }
+      ]
+    },
+    {
+      "file": "src/utils/backdrop.js",
+      "module": null,
+      "constants": [],
+      "methods": [
+        {
+          "name": "useBackdropDismiss",
+          "qualified": "useBackdropDismiss",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 31,
+          "signature": [
+            "close"
+          ],
+          "documented": true,
+          "summary": "Props for a modal backdrop that dismisses on a click, but not on a drag that merely finished over it.",
+          "description": "Props for a modal backdrop that dismisses on a click, but not on a drag\nthat merely finished over it.\n\nA bare `onClick` on the backdrop is wrong, and wrong in a way that only\nshows up once there is text worth selecting. `click` fires on the nearest\ncommon ancestor of where the button went down and where it came up, so\npressing inside a text field, sweeping past the dialog's edge and\nreleasing lands a click on the backdrop itself — a selection gesture that\nthrows the dialog away mid-edit. Stopping propagation inside the dialog\ncannot help: the event was never dispatched there to begin with.\n\nSo both ends of the gesture are checked instead, on the press and on the\nrelease, and the dialog is dismissed only when neither touched it. That\nalso rules out the mirror case — pressing on the backdrop and releasing\ninside the dialog, which is how a user drags a selection the other way.\n\nThe arming flag is a ref rather than a closure variable because React may\nre-render between the press and the release, which would otherwise hand\nthe second handler a fresh, unarmed copy.\n\nBecause both ends are checked against `currentTarget`, the dialog this\nwraps needs no `onClick` of its own to shield itself.",
+          "params": [
+            {
+              "name": "close",
+              "type": "Function",
+              "optional": false,
+              "default": null,
+              "desc": "Called when the backdrop is genuinely clicked."
+            }
+          ],
+          "returns": {
+            "type": "{onMouseDown: Function, onMouseUp: Function}",
+            "desc": "Props to spread onto the backdrop element."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Allocates a ref on the calling component."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "onMouseDown",
+          "qualified": "useBackdropDismiss > onMouseDown",
+          "kind": "method",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 41,
+          "signature": [
+            "e"
+          ],
+          "documented": true,
+          "summary": "Arm the dismissal only if the press landed on the backdrop itself.",
+          "description": "Arm the dismissal only if the press landed on the backdrop itself.",
+          "params": [
+            {
+              "name": "e",
+              "type": "MouseEvent",
+              "optional": false,
+              "default": null,
+              "desc": "The press."
+            }
+          ],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [
+              "the arming ref."
+            ],
+            "sideEffect": [],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "onMouseUp",
+          "qualified": "useBackdropDismiss > onMouseUp",
+          "kind": "method",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 50,
+          "signature": [
+            "e"
+          ],
+          "documented": true,
+          "summary": "Dismiss, if this release and the press that began it were both on the backdrop.",
+          "description": "Dismiss, if this release and the press that began it were both on the backdrop.",
+          "params": [
+            {
+              "name": "e",
+              "type": "MouseEvent",
+              "optional": false,
+              "default": null,
+              "desc": "The release."
+            }
+          ],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [
+              "the arming ref."
+            ],
+            "sideEffect": [
+              "Calls `close` when both ends of the gesture were on the backdrop."
+            ],
+            "reads": [],
+            "pure": false
           },
           "other": []
         }
