@@ -19,10 +19,13 @@
 // menu is a separate component that has to read and drive all four.
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { useStore } from '../store'
+import { isPopout } from '../popout'
 import {
   buildTree, isSystemPath, parentOf, baseName, joinPath, timeAgo, isDownloadStale,
   PROJECT_EXT,
 } from '../workspace'
+import { supportsFolders } from '../utils/folder'
+import { connectFolderWithPrompt, disconnectFolderWithPrompt } from '../utils/folderPrompts'
 
 /** The drag type marking a drag as one of the explorer's own rows. */
 const ROW_DRAG_TYPE = 'application/acousim-path'
@@ -160,6 +163,10 @@ export default function FileBrowser() {
   const collapsed = useStore((s) => s.wsCollapsed)
   const edit = useStore((s) => s.wsEdit)
   const clip = useStore((s) => s.fileClipboard)
+  const folderStatus = useStore((s) => s.folderStatus)
+  const folderName = useStore((s) => s.folderName)
+  const folderError = useStore((s) => s.folderError)
+  const folderSaved = useStore((s) => s.folderSaved)
 
   const [error, setError] = useState(null)
   const [editError, setEditError] = useState(null)
@@ -437,6 +444,18 @@ export default function FileBrowser() {
   }
 
   /**
+   * Point the workspace at a folder on disk, reporting a refusal in the panel.
+   *
+   * @returns {Promise<void>} Resolves once the folder is connected or the picker is dismissed.
+   * @sideEffect Shows a folder picker and a confirmation, writes to the user's filesystem, and writes store and component state.
+   */
+  const connectFolder = async () => {
+    setError(null)
+    const result = await connectFolderWithPrompt()
+    if (result.error) setError(result.error)
+  }
+
+  /**
    * Draw one row of the tree.
    *
    * @param {object} row - A row descriptor from `flatten`.
@@ -545,6 +564,9 @@ export default function FileBrowser() {
           <button title="New Project" onClick={() => useStore.getState().beginWsEdit('newFile', targetFolder())}>🗋</button>
           <button title="New Folder" onClick={() => useStore.getState().beginWsEdit('newFolder', targetFolder())}>🗀</button>
           <button title="Collapse All" onClick={() => useStore.getState().collapseAllWsFolders()}>⌄</button>
+          {supportsFolders() && folderStatus === 'off' && !isPopout() && (
+            <button title="Keep this workspace in a folder…" onClick={connectFolder}>🗁</button>
+          )}
           <button title="Download workspace" onClick={() => useStore.getState().downloadWorkspace()}>⭳</button>
           <button title="Import workspace…" onClick={() => fileInput.current?.click()}>⭱</button>
         </div>
@@ -572,20 +594,44 @@ export default function FileBrowser() {
         ))}
       </div>
 
-      {/* Browser storage is not durable, so how long it has been since a copy
-          left the browser is a standing readout rather than something to go
-          looking for. */}
-      <button
-        className={`ws-status ${stale ? 'stale' : ''}`}
-        title="Download this workspace as a file"
-        onClick={() => useStore.getState().downloadWorkspace()}
-      >
-        <span className="wss-dot" />
-        <span className="wss-text">
-          {workspace.downloaded ? `Downloaded ${timeAgo(workspace.downloaded, now)}` : 'Never downloaded'}
-        </span>
-        <span className="wss-cta">Download</span>
-      </button>
+      {/* Where the work actually is. With a folder connected that is the folder
+          and the readout says so; without one, browser storage is not durable,
+          so how long it has been since a copy left the browser is a standing
+          readout rather than something to go looking for. */}
+      {folderStatus === 'off' ? (
+        <button
+          className={`ws-status ${stale ? 'stale' : ''}`}
+          title="Download this workspace as a file"
+          onClick={() => useStore.getState().downloadWorkspace()}
+        >
+          <span className="wss-dot" />
+          <span className="wss-text">
+            {workspace.downloaded ? `Downloaded ${timeAgo(workspace.downloaded, now)}` : 'Never downloaded'}
+          </span>
+          <span className="wss-cta">Download</span>
+        </button>
+      ) : (
+        <button
+          className={`ws-status folder ${folderStatus}`}
+          // The folder belongs to the main window: it holds the handle and does
+          // the writing, so a popped-out explorer reports the state and leaves
+          // the two commands that change it where they work.
+          disabled={isPopout()}
+          title={folderError || `Saved to the folder “${folderName}” as you work`}
+          onClick={folderStatus === 'locked'
+            ? () => useStore.getState().reconnectWorkspaceFolder()
+            : disconnectFolderWithPrompt}
+        >
+          <span className="wss-dot" />
+          <span className="wss-text">
+            {folderStatus === 'locked' && `${folderName} — needs permission`}
+            {folderStatus === 'error' && `${folderName} — not fully saved`}
+            {folderStatus === 'connected'
+              && `${folderName}${folderSaved ? ` — saved ${timeAgo(folderSaved, now)}` : ''}`}
+          </span>
+          <span className="wss-cta">{folderStatus === 'locked' ? 'Reconnect' : 'Disconnect'}</span>
+        </button>
+      )}
     </div>
   )
 }

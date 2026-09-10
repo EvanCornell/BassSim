@@ -190,7 +190,7 @@ around the canvas does not re-run the sweep.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
-## STORE ACTION (101)
+## STORE ACTION (107)
 
 ### `openContextMenu(x, y, target)`
 
@@ -2109,15 +2109,13 @@ adjusted, because the user is looking at the text box and can fix it.
 
 Record where this workspace is kept, and dismiss the startup prompt.
 
-Only browser storage exists today, so the choice is nearly rhetorical —
-but it is asked out loud because browser storage is the one option whose
-durability the user needs to have been told about before they have work in
-it. The answer is remembered so the question is asked once, not on every
-visit.
+Asked out loud because browser storage is the option whose durability the
+user needs to have been told about before they have work in it. The answer
+is remembered so the question is asked once, not on every visit.
 
 **Parameters**
 
-- `kind` — `string` — Where the workspace lives; only `'browser'` is supported.
+- `kind` — `string` — Where the workspace lives: `'browser'` or `'folder'`.
 
 **Returns**
 
@@ -2126,6 +2124,163 @@ visit.
 **Side effects**
 
 - Writes store state and LocalStorage.
+
+### `connectWorkspaceFolder(confirmAdopt)`
+
+- **Reachability:** STORE ACTION
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().connectWorkspaceFolder(…)
+- **Async:** returns a Promise
+
+Put the workspace in a folder the user picks.
+
+A folder that already holds a workspace is opened rather than overwritten,
+which is how a workspace moves between machines: point both at the same
+synced folder. Because that replaces what is in the browser, the caller is
+asked to confirm it — the question belongs to the UI, not here.
+
+An empty folder, or one with nothing of ours in it, gets the current
+workspace written into it.
+
+**Parameters**
+
+- `confirmAdopt` — `Function` _(optional)_ — Called with `{name, files}` when the folder already holds a workspace; the folder is opened only if it returns true.
+
+**Returns**
+
+- `Promise<{ok: boolean, adopted?: boolean, cancelled?: boolean, error?: string}>` — What happened, and whether the folder's own workspace was opened.
+
+**Side effects**
+
+- Shows a folder picker, reads and writes the user's filesystem, writes IndexedDB and LocalStorage, writes store state and may replace what is on the canvas. Does nothing in a popped-out tab.
+
+### `reconnectWorkspaceFolder()`
+
+- **Reachability:** STORE ACTION
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().reconnectWorkspaceFolder(…)
+- **Async:** returns a Promise
+
+Renew permission on a remembered folder and open it again.
+
+Permission does not survive a reload, and the browser will only re-ask
+from a user gesture — which is what the explorer's Reconnect button is
+for. Refusing leaves the workspace in the browser rather than in limbo.
+
+**Returns**
+
+- `Promise<{ok: boolean, error?: string}>` — Whether the folder is connected again.
+
+**Side effects**
+
+- Shows a permission prompt, reads and writes the user's filesystem, and writes store state. Does nothing in a popped-out tab.
+
+### `disconnectWorkspaceFolder()`
+
+- **Reachability:** STORE ACTION
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().disconnectWorkspaceFolder(…)
+- **Async:** returns a Promise
+
+Stop keeping the workspace in a folder.
+
+The folder is left exactly as it is and the workspace stays in the browser
+— this disconnects, it does not delete. Whichever copy the user wants to
+keep, they still have both.
+
+**Returns**
+
+- `Promise<void>` — Resolves once the folder is forgotten.
+
+**Mutates**
+
+- The module-level folder handle and its recorded state.
+
+**Side effects**
+
+- Writes IndexedDB and store state, and cancels any pending write.
+
+### `_openFolder(handle, read, prefer)`
+
+- **Reachability:** STORE ACTION
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState()._openFolder(…)
+- **Async:** returns a Promise
+
+Adopt a folder as the workspace's home, in whichever direction is newer.
+
+The folder wins by default, since that is what "the workspace lives here"
+has to mean for a folder shared between machines. It loses only to a
+browser workspace that has been modified more recently than the folder's,
+which is the one case where reading would discard work — and even then the
+folder is brought up to date rather than left behind.
+
+**Parameters**
+
+- `handle` — `FileSystemDirectoryHandle` — The folder.
+- `read` — `object` — The result of `readFolderWorkspace` for it.
+- `prefer` — `boolean` — Whether the folder's workspace wins regardless of stamps.
+
+**Returns**
+
+- `Promise<void>` — Resolves once the workspace and the folder agree.
+
+**Mutates**
+
+- The module-level folder handle and its recorded state.
+
+**Side effects**
+
+- Writes the user's filesystem and store state, and may replace what is on the canvas.
+
+### `_syncFolder()`
+
+- **Reachability:** STORE ACTION
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState()._syncFolder(…)
+- **Async:** returns a Promise
+
+Write the workspace to the connected folder.
+
+Only what changed is written. A write already in flight is not joined but
+remembered: the next one runs after it, so a burst of edits during a slow
+save collapses into one more write rather than a queue of them.
+
+**Returns**
+
+- `Promise<void>` — Resolves once the folder matches, or once the failure has been recorded.
+
+**Mutates**
+
+- The module-level folder state and the in-flight flags.
+
+**Side effects**
+
+- Writes the user's filesystem and store state. Does nothing when no folder is connected, or when the connected one is locked.
+
+### `_resumeFolder(since)`
+
+- **Reachability:** STORE ACTION
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState()._resumeFolder(…)
+- **Async:** returns a Promise
+
+Pick up the folder from a previous visit, if the browser still allows it.
+
+Run once at startup. Permission is checked without prompting — a prompt
+needs a gesture and there is none at load — so a remembered folder either
+reconnects silently or comes back locked with the explorer offering the
+click that renews it.
+
+**Parameters**
+
+- `since` — `string` — The browser workspace's modification stamp as it was at load, before any auto-save could advance it.
+
+**Returns**
+
+- `Promise<void>` — Resolves once the folder is connected, locked, or found to be gone.
+
+**Mutates**
+
+- The module-level folder handle.
+
+**Side effects**
+
+- Reads IndexedDB and the user's filesystem, writes store state, and may replace what is on the canvas.
 
 ### `setCustomDrivers(drivers)`
 
@@ -2375,7 +2530,7 @@ The full shared slice, sent to a popped-out tab when it announces itself.
 
 - Current store state.
 
-## UNREACHABLE (8)
+## UNREACHABLE (9)
 
 ### `simulateInWorker(project)`
 
@@ -2491,6 +2646,29 @@ appear when something writes to it, not when the app starts.
 **Side effects**
 
 - Reads LocalStorage and the current time.
+
+### `scheduleFolderSync()`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+Queue a folder write.
+
+A folder whose permission has lapsed is left alone until the user renews it.
+Writing to it would fail anyway, and the attempt is what would otherwise
+report the folder as saved when nothing had been.
+
+**Returns**
+
+- `void`
+
+**Mutates**
+
+- The module-level sync timer.
+
+**Side effects**
+
+- Schedules a timer that writes to the user's filesystem. Does nothing when no folder is connected, or when the connected one is locked.
 
 ### `freeSpotNear > taken(x, y)`
 

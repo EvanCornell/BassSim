@@ -42,7 +42,7 @@ The workspace explorer panel.
 
 - Subscribes to the store. Its commands rename, move, copy and delete workspace entries, trigger downloads, and read imported files.
 
-## UNREACHABLE (17)
+## UNREACHABLE (18)
 
 ### `Chevron(props)`
 
@@ -384,6 +384,22 @@ accepted; the store decides which by looking at the file.
 **Side effects**
 
 - Shows a confirmation, reads the chosen file, replaces the workspace on success, and clears the input so choosing the same file twice still fires.
+
+### `FileBrowser > connectFolder()`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+- **Async:** returns a Promise
+
+Point the workspace at a folder on disk, reporting a refusal in the panel.
+
+**Returns**
+
+- `Promise<void>` — Resolves once the folder is connected or the picker is dismissed.
+
+**Side effects**
+
+- Shows a folder picker and a confirmation, writes to the user's filesystem, and writes store and component state.
 
 ### `FileBrowser > renderRow(row)`
 

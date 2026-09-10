@@ -33,6 +33,7 @@ import { PANEL_META, PANEL_IDS } from './panelMeta'
 import { exportProjectJSON, exportWorkspaceZip } from './utils/export'
 import * as W from './workspace'
 import * as Z from './utils/zip'
+import * as F from './utils/folder'
 import { DEFAULT_TOOLBAR, sanitizeToolbar } from './toolbarItems'
 import { channel, isPopout, openPanelWindow, openPanelGroupWindow, popoutPanelId, popoutPanelIds, SHARED_KEYS, SIM_INPUT_KEYS } from './popout'
 import { loadBindings, saveBindings, DEFAULT_BINDINGS, COMMAND_IDS, findConflict } from './keymap'
@@ -238,6 +239,55 @@ function loadToolbar() {
   } catch { return DEFAULT_TOOLBAR }
 }
 
+// ---- the workspace folder ----
+//
+// When the user has pointed at a folder on their own disk, that folder is the
+// workspace: it is read on startup and written back as they work. See
+// src/utils/folder.js for what is written and the two rules that keep it from
+// touching anything it did not put there.
+//
+// The handle and the last-known state of the folder are module state rather
+// than store state. Neither is serializable, neither belongs in a popped-out
+// window, and neither is anything a component should be able to reach.
+
+/** The connected folder, or `null` when the workspace lives in the browser. */
+let folderHandle = null
+
+/** What the folder held the last time this app read or wrote it. */
+let folderState = { files: new Map(), folders: [] }
+
+/** Pending debounce timer for the next write. */
+let folderTimer = null
+
+/** Whether a write is in flight, and whether another was asked for during it. */
+let folderWriting = false
+let folderAgain = false
+
+/**
+ * How long to wait after a change before writing the folder.
+ *
+ * The workspace commits on every simulation, and a drag across a slider is
+ * many of those. Waiting out the pause coalesces a burst into one write.
+ */
+const FOLDER_SYNC_MS = 700
+
+/**
+ * Queue a folder write.
+ *
+ * A folder whose permission has lapsed is left alone until the user renews it.
+ * Writing to it would fail anyway, and the attempt is what would otherwise
+ * report the folder as saved when nothing had been.
+ *
+ * @returns {void}
+ * @sideEffect Schedules a timer that writes to the user's filesystem. Does nothing when no folder is connected, or when the connected one is locked.
+ * @mutates The module-level sync timer.
+ */
+function scheduleFolderSync() {
+  if (!folderHandle || useStore.getState().folderStatus === 'locked') return
+  clearTimeout(folderTimer)
+  folderTimer = setTimeout(() => useStore.getState()._syncFolder(), FOLDER_SYNC_MS)
+}
+
 export { SCHEMA_VERSION, DEFAULT_PARAMS }
 
 let idCounter = 1
@@ -365,9 +415,21 @@ export const useStore = create((rawSet, get) => {
   wsCollapsed: [],
   wsEdit: null,
   fileClipboard: null,
-  // Shown once, before the user has anything to lose: browser storage is the
-  // only option today, and its durability is the thing worth saying first.
+  // Shown once, before the user has anything to lose: where the workspace is
+  // kept decides whether it survives the browser being cleared.
   workspacePrompt: needsStorageChoice(),
+  // Where the workspace is kept. `folderStatus` is one of:
+  //   'off'        in the browser, as it has always been
+  //   'connected'  a folder on disk, being written as the user works
+  //   'locked'     a folder is remembered, but the browser has not renewed
+  //                permission this visit — one click away from connected
+  //   'error'      connected, but the last write did not fully land
+  // The name is the folder's own, for the explorer to show; `folderSaved` is
+  // when the folder last matched the workspace.
+  folderStatus: 'off',
+  folderName: null,
+  folderError: null,
+  folderSaved: null,
   selectedNodeId: null,
   results: null,
   metrics: null,
@@ -2081,19 +2143,217 @@ export const useStore = create((rawSet, get) => {
   /**
    * Record where this workspace is kept, and dismiss the startup prompt.
    *
-   * Only browser storage exists today, so the choice is nearly rhetorical —
-   * but it is asked out loud because browser storage is the one option whose
-   * durability the user needs to have been told about before they have work in
-   * it. The answer is remembered so the question is asked once, not on every
-   * visit.
+   * Asked out loud because browser storage is the option whose durability the
+   * user needs to have been told about before they have work in it. The answer
+   * is remembered so the question is asked once, not on every visit.
    *
-   * @param {string} kind - Where the workspace lives; only `'browser'` is supported.
+   * @param {string} kind - Where the workspace lives: `'browser'` or `'folder'`.
    * @returns {void}
    * @sideEffect Writes store state and LocalStorage.
    */
   chooseWorkspaceStorage: (kind) => {
     try { localStorage.setItem(STORAGE_CHOICE_KEY, kind) } catch { /* private mode */ }
     set({ workspacePrompt: false })
+  },
+
+  // ---- a folder on the user's computer ----
+  //
+  // The folder is authoritative: connect one and what is on disk becomes the
+  // workspace. The exception is a workspace the browser has carried further
+  // than the folder — worked on during a visit where permission had lapsed,
+  // say — which is pushed out instead of being thrown away. Stamps decide,
+  // and there is no case where the newer of the two loses.
+  //
+  // Browser storage keeps mirroring throughout. It costs nothing and it is
+  // what the app falls back to on the visit where the folder cannot be read.
+
+  /**
+   * Put the workspace in a folder the user picks.
+   *
+   * A folder that already holds a workspace is opened rather than overwritten,
+   * which is how a workspace moves between machines: point both at the same
+   * synced folder. Because that replaces what is in the browser, the caller is
+   * asked to confirm it — the question belongs to the UI, not here.
+   *
+   * An empty folder, or one with nothing of ours in it, gets the current
+   * workspace written into it.
+   *
+   * @param {Function} [confirmAdopt] - Called with `{name, files}` when the folder already holds a workspace; the folder is opened only if it returns true.
+   * @returns {Promise<{ok: boolean, adopted?: boolean, cancelled?: boolean, error?: string}>} What happened, and whether the folder's own workspace was opened.
+   * @sideEffect Shows a folder picker, reads and writes the user's filesystem, writes IndexedDB and LocalStorage, writes store state and may replace what is on the canvas. Does nothing in a popped-out tab.
+   */
+  connectWorkspaceFolder: async (confirmAdopt) => {
+    if (POPOUT) return { ok: false }
+    if (!F.supportsFolders()) {
+      return { ok: false, error: 'This browser cannot keep a workspace in a folder. Chrome and Edge can.' }
+    }
+    const handle = await F.pickFolder()
+    if (!handle) return { ok: false, cancelled: true }
+
+    const read = await F.readFolderWorkspace(handle)
+    if (read.ok && confirmAdopt) {
+      const proceed = await confirmAdopt({ name: handle.name, files: Object.keys(read.workspace.files).length })
+      if (!proceed) return { ok: false, cancelled: true }
+    }
+
+    await F.rememberFolder(handle)
+    try { localStorage.setItem(STORAGE_CHOICE_KEY, 'folder') } catch { /* private mode */ }
+    set({ workspacePrompt: false })
+    // A folder chosen by hand is the one the user means, so its workspace wins
+    // outright rather than being compared against the browser's.
+    await get()._openFolder(handle, read, true)
+    return { ok: true, adopted: read.ok }
+  },
+
+  /**
+   * Renew permission on a remembered folder and open it again.
+   *
+   * Permission does not survive a reload, and the browser will only re-ask
+   * from a user gesture — which is what the explorer's Reconnect button is
+   * for. Refusing leaves the workspace in the browser rather than in limbo.
+   *
+   * @returns {Promise<{ok: boolean, error?: string}>} Whether the folder is connected again.
+   * @sideEffect Shows a permission prompt, reads and writes the user's filesystem, and writes store state. Does nothing in a popped-out tab.
+   */
+  reconnectWorkspaceFolder: async () => {
+    if (POPOUT || !folderHandle) return { ok: false }
+    const state = await F.folderPermission(folderHandle, true)
+    if (state !== 'granted') {
+      set({ folderStatus: 'locked', folderError: 'AcouSim needs permission to use that folder.' })
+      return { ok: false, error: 'Permission was not granted.' }
+    }
+    const read = await F.readFolderWorkspace(folderHandle)
+    await get()._openFolder(folderHandle, read, false)
+    return { ok: true }
+  },
+
+  /**
+   * Stop keeping the workspace in a folder.
+   *
+   * The folder is left exactly as it is and the workspace stays in the browser
+   * — this disconnects, it does not delete. Whichever copy the user wants to
+   * keep, they still have both.
+   *
+   * @returns {Promise<void>} Resolves once the folder is forgotten.
+   * @sideEffect Writes IndexedDB and store state, and cancels any pending write.
+   * @mutates The module-level folder handle and its recorded state.
+   */
+  disconnectWorkspaceFolder: async () => {
+    clearTimeout(folderTimer)
+    folderHandle = null
+    folderState = { files: new Map(), folders: [] }
+    set({ folderStatus: 'off', folderName: null, folderError: null, folderSaved: null })
+    try { localStorage.setItem(STORAGE_CHOICE_KEY, 'browser') } catch { /* private mode */ }
+    await F.forgetFolder()
+  },
+
+  /**
+   * Adopt a folder as the workspace's home, in whichever direction is newer.
+   *
+   * The folder wins by default, since that is what "the workspace lives here"
+   * has to mean for a folder shared between machines. It loses only to a
+   * browser workspace that has been modified more recently than the folder's,
+   * which is the one case where reading would discard work — and even then the
+   * folder is brought up to date rather than left behind.
+   *
+   * @param {FileSystemDirectoryHandle} handle - The folder.
+   * @param {object} read - The result of `readFolderWorkspace` for it.
+   * @param {boolean} prefer - Whether the folder's workspace wins regardless of stamps.
+   * @returns {Promise<void>} Resolves once the workspace and the folder agree.
+   * @sideEffect Writes the user's filesystem and store state, and may replace what is on the canvas.
+   * @mutates The module-level folder handle and its recorded state.
+   */
+  _openFolder: async (handle, read, prefer) => {
+    folderHandle = handle
+    set({ folderName: handle.name, folderStatus: 'connected', folderError: null })
+
+    const ours = Date.parse(get().workspace.modified || '') || 0
+    const theirs = read.ok ? (Date.parse(read.workspace.modified || '') || 0) : -1
+
+    if (read.ok && (prefer || theirs >= ours)) {
+      folderState = read.previous
+      get()._adoptWorkspace(read.workspace)
+      set({ folderSaved: new Date().toISOString() })
+      return
+    }
+
+    // Ours is the newer of the two, or the folder holds nothing of ours: write
+    // it out. Anything already in the folder that we did not read stays —
+    // `folderState` is what a delete may touch, and it holds only what came
+    // back from the read.
+    folderState = read.ok ? read.previous : { files: new Map(), folders: [] }
+    get().saveActiveFile()
+    await get()._syncFolder()
+  },
+
+  /**
+   * Write the workspace to the connected folder.
+   *
+   * Only what changed is written. A write already in flight is not joined but
+   * remembered: the next one runs after it, so a burst of edits during a slow
+   * save collapses into one more write rather than a queue of them.
+   *
+   * @returns {Promise<void>} Resolves once the folder matches, or once the failure has been recorded.
+   * @sideEffect Writes the user's filesystem and store state. Does nothing when no folder is connected, or when the connected one is locked.
+   * @mutates The module-level folder state and the in-flight flags.
+   */
+  _syncFolder: async () => {
+    if (!folderHandle || get().folderStatus === 'locked') return
+    if (folderWriting) { folderAgain = true; return }
+    folderWriting = true
+    try {
+      const plan = F.planSync(get().workspace, folderState)
+      if (!plan.writes.length && !plan.deletes.length && !plan.gone.length) return
+      const { failed } = await F.applyPlan(folderHandle, plan)
+      folderState = plan.next
+      if (!failed.length) {
+        set({ folderStatus: 'connected', folderError: null, folderSaved: new Date().toISOString() })
+        return
+      }
+      // Everything failing is almost never forty locked files; it is the
+      // folder having gone away or permission having lapsed.
+      const state = await F.folderPermission(folderHandle, false)
+      if (state !== 'granted') {
+        set({ folderStatus: 'locked', folderError: 'Permission for that folder has lapsed.' })
+      } else {
+        set({ folderStatus: 'error', folderError: `${failed.length} file${failed.length === 1 ? '' : 's'} could not be written.` })
+      }
+    } catch (err) {
+      set({ folderStatus: 'error', folderError: err?.message || 'The folder could not be written.' })
+    } finally {
+      folderWriting = false
+      if (folderAgain) { folderAgain = false; scheduleFolderSync() }
+    }
+  },
+
+  /**
+   * Pick up the folder from a previous visit, if the browser still allows it.
+   *
+   * Run once at startup. Permission is checked without prompting — a prompt
+   * needs a gesture and there is none at load — so a remembered folder either
+   * reconnects silently or comes back locked with the explorer offering the
+   * click that renews it.
+   *
+   * @param {string} since - The browser workspace's modification stamp as it was at load, before any auto-save could advance it.
+   * @returns {Promise<void>} Resolves once the folder is connected, locked, or found to be gone.
+   * @sideEffect Reads IndexedDB and the user's filesystem, writes store state, and may replace what is on the canvas.
+   * @mutates The module-level folder handle.
+   */
+  _resumeFolder: async (since) => {
+    const handle = await F.recallFolder()
+    if (!handle) return
+    folderHandle = handle
+    if (await F.folderPermission(handle, false) !== 'granted') {
+      set({ folderStatus: 'locked', folderName: handle.name })
+      return
+    }
+    const read = await F.readFolderWorkspace(handle)
+    // Compare against the workspace as it was loaded rather than as it is now:
+    // the first simulation has probably auto-saved by the time the folder has
+    // been read, and that must not make the browser copy look like the newer.
+    const stale = Date.parse(since || '') || 0
+    const theirs = read.ok ? (Date.parse(read.workspace.modified || '') || 0) : -1
+    await get()._openFolder(handle, read, read.ok && theirs >= stale)
   },
 
   /**
@@ -2318,7 +2578,13 @@ if (!POPOUT) {
     if (st.workspace === last) return
     last = st.workspace
     try { localStorage.setItem(WORKSPACE_KEY, JSON.stringify(st.workspace)) } catch { /* quota */ }
+    scheduleFolderSync()
   })
+
+  // Pick the folder back up, if there is one. Deliberately not awaited: the
+  // app must render and be usable while the browser decides what it will let
+  // us do with a handle from last week.
+  if (F.supportsFolders()) useStore.getState()._resumeFolder(INITIAL_WORKSPACE.modified)
 }
 
 // ---------- cross-window wiring ----------

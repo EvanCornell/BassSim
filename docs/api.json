@@ -24,9 +24,9 @@
     "pure": "flag"
   },
   "stats": {
-    "modules": 61,
-    "methods": 672,
-    "documented": 672
+    "modules": 63,
+    "methods": 704,
+    "documented": 704
   },
   "modules": [
     {
@@ -6233,7 +6233,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 38,
+          "line": 41,
           "signature": [
             "arg0"
           ],
@@ -6279,7 +6279,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 59,
+          "line": 62,
           "signature": [
             "arg0"
           ],
@@ -6332,7 +6332,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 91,
+          "line": 94,
           "signature": [
             "nodes",
             "collapsed",
@@ -6387,7 +6387,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 118,
+          "line": 121,
           "signature": [
             "arg0"
           ],
@@ -6456,7 +6456,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 156,
+          "line": 159,
           "signature": [],
           "documented": true,
           "summary": "The workspace explorer panel.",
@@ -6487,7 +6487,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 189,
+          "line": 196,
           "signature": [
             "path",
             "e"
@@ -6536,7 +6536,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 214,
+          "line": 221,
           "signature": [
             "node"
           ],
@@ -6577,7 +6577,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 230,
+          "line": 237,
           "signature": [],
           "documented": true,
           "summary": "The folder a new entry or a paste belongs in, given what is selected.",
@@ -6608,7 +6608,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 242,
+          "line": 249,
           "signature": [],
           "documented": true,
           "summary": "Delete what is selected, after one confirmation covering all of it.",
@@ -6639,7 +6639,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 266,
+          "line": 273,
           "signature": [
             "name"
           ],
@@ -6680,7 +6680,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 292,
+          "line": 299,
           "signature": [],
           "documented": true,
           "summary": "Abandon an inline edit.",
@@ -6711,7 +6711,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 305,
+          "line": 312,
           "signature": [
             "e"
           ],
@@ -6752,7 +6752,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 317,
+          "line": 324,
           "signature": [
             "next"
           ],
@@ -6793,7 +6793,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 371,
+          "line": 378,
           "signature": [
             "e",
             "node"
@@ -6842,7 +6842,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 390,
+          "line": 397,
           "signature": [
             "e",
             "folder"
@@ -6891,7 +6891,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 406,
+          "line": 413,
           "signature": [
             "e",
             "folder"
@@ -6940,7 +6940,7 @@
           "exported": false,
           "async": true,
           "generator": false,
-          "line": 427,
+          "line": 434,
           "signature": [
             "e"
           ],
@@ -6975,13 +6975,44 @@
           "other": []
         },
         {
+          "name": "connectFolder",
+          "qualified": "FileBrowser > connectFolder",
+          "kind": "function",
+          "exported": false,
+          "async": true,
+          "generator": false,
+          "line": 452,
+          "signature": [],
+          "documented": true,
+          "summary": "Point the workspace at a folder on disk, reporting a refusal in the panel.",
+          "description": "Point the workspace at a folder on disk, reporting a refusal in the panel.",
+          "params": [],
+          "returns": {
+            "type": "Promise<void>",
+            "desc": "Resolves once the folder is connected or the picker is dismissed."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Shows a folder picker and a confirmation, writes to the user's filesystem, and writes store and component state."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
           "name": "renderRow",
           "qualified": "FileBrowser > renderRow",
           "kind": "function",
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 446,
+          "line": 465,
           "signature": [
             "row"
           ],
@@ -7432,7 +7463,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 38,
+          "line": 40,
           "signature": [
             "arg0"
           ],
@@ -7506,7 +7537,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 71,
+          "line": 73,
           "signature": [],
           "documented": true,
           "summary": "The application menu bar.",
@@ -7537,7 +7568,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 92,
+          "line": 94,
           "signature": [
             "id"
           ],
@@ -7578,7 +7609,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 105,
+          "line": 107,
           "signature": [
             "id"
           ],
@@ -7619,7 +7650,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 117,
+          "line": 119,
           "signature": [],
           "documented": true,
           "summary": "Bring a popped-out panel's tab to the front, or toggle a docked one.",
@@ -7650,7 +7681,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 129,
+          "line": 131,
           "signature": [
             "e"
           ],
@@ -7691,7 +7722,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 137,
+          "line": 139,
           "signature": [
             "e"
           ],
@@ -7732,7 +7763,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 161,
+          "line": 163,
           "signature": [
             "e"
           ],
@@ -7773,7 +7804,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 171,
+          "line": 173,
           "signature": [],
           "documented": true,
           "summary": "Parse the loaded file and add it to the workspace.",
@@ -7804,7 +7835,7 @@
           "exported": false,
           "async": true,
           "generator": false,
-          "line": 204,
+          "line": 206,
           "signature": [
             "e"
           ],
@@ -7845,7 +7876,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 220,
+          "line": 222,
           "signature": [],
           "documented": true,
           "summary": "Save the current window arrangement under a prompted name.",
@@ -7876,7 +7907,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 238,
+          "line": 240,
           "signature": [],
           "documented": true,
           "summary": "Add an empty project to the workspace and open it.",
@@ -7907,7 +7938,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 250,
+          "line": 252,
           "signature": [],
           "documented": true,
           "summary": "Open the file picker to import a project.",
@@ -7938,7 +7969,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 261,
+          "line": 263,
           "signature": [],
           "documented": true,
           "summary": "Download the whole workspace as one file.",
@@ -7969,7 +8000,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 271,
+          "line": 273,
           "signature": [],
           "documented": true,
           "summary": "Open the file picker to replace the workspace.",
@@ -8000,7 +8031,38 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 285,
+          "line": 283,
+          "signature": [],
+          "documented": true,
+          "summary": "Connect the workspace to a folder on disk, or disconnect it.",
+          "description": "Connect the workspace to a folder on disk, or disconnect it.",
+          "params": [],
+          "returns": {
+            "type": "*",
+            "desc": "Whatever the action returns; the menu ignores it."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Shows a picker or a confirmation, and writes to the user's filesystem."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "onClick",
+          "qualified": "MenuBar > onClick",
+          "kind": "method",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 297,
           "signature": [],
           "documented": true,
           "summary": "Download every result series as a CSV.",
@@ -8031,7 +8093,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 295,
+          "line": 307,
           "signature": [],
           "documented": true,
           "summary": "Download a PNG of the node canvas.",
@@ -8062,7 +8124,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 305,
+          "line": 317,
           "signature": [],
           "documented": true,
           "summary": "Download a plain-text metrics summary.",
@@ -8093,7 +8155,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 334,
+          "line": 346,
           "signature": [],
           "documented": true,
           "summary": "Pop the focused panel out into its own browser tab.",
@@ -8124,7 +8186,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 349,
+          "line": 361,
           "signature": [],
           "documented": true,
           "summary": "Pop this specific panel out into its own browser tab.",
@@ -8155,7 +8217,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 362,
+          "line": 374,
           "signature": [],
           "documented": true,
           "summary": "Maximize the focused panel, or restore the one already maximized.",
@@ -8186,7 +8248,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 373,
+          "line": 385,
           "signature": [],
           "documented": true,
           "summary": "Restore the default workspace arrangement.",
@@ -8217,7 +8279,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 388,
+          "line": 400,
           "signature": [],
           "documented": true,
           "summary": "Apply this saved arrangement.",
@@ -8248,7 +8310,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 405,
+          "line": 417,
           "signature": [],
           "documented": true,
           "summary": "Delete this saved arrangement.",
@@ -8279,7 +8341,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 421,
+          "line": 433,
           "signature": [],
           "documented": true,
           "summary": "Toggle resonance masking, which lumps chambers to hide standing-wave artifacts.",
@@ -8310,7 +8372,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 432,
+          "line": 444,
           "signature": [],
           "documented": true,
           "summary": "Toggle phase unwrapping on the phase chart.",
@@ -8341,7 +8403,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 450,
+          "line": 462,
           "signature": [],
           "documented": true,
           "summary": "Discard every reference overlay.",
@@ -8372,7 +8434,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 465,
+          "line": 477,
           "signature": [],
           "documented": true,
           "summary": "Open the driver library browser.",
@@ -8403,7 +8465,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 475,
+          "line": 487,
           "signature": [],
           "documented": true,
           "summary": "Open the Thiele/Small parameter solver.",
@@ -8434,7 +8496,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 488,
+          "line": 500,
           "signature": [],
           "documented": true,
           "summary": "Open the Nonlinear Lab panel.",
@@ -8465,7 +8527,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 503,
+          "line": 515,
           "signature": [],
           "documented": true,
           "summary": "Turn experimental features on or off.",
@@ -8496,7 +8558,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 522,
+          "line": 534,
           "signature": [],
           "documented": true,
           "summary": "Open Settings at the keyboard section.",
@@ -8527,7 +8589,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 532,
+          "line": 544,
           "signature": [],
           "documented": true,
           "summary": "Show the about dialog.",
@@ -14480,7 +14542,7 @@
       "file": "src/components/WorkspacePrompt.jsx",
       "module": {
         "summary": "The question asked before anything else: where does this workspace live?",
-        "description": "The question asked before anything else: where does this workspace live?\n\nOnly one answer exists today, which makes the prompt look redundant until\nyou notice what it is really for. Browser storage is not a filing cabinet —\nclearing site data takes it, a private window never had it, and an eviction\nunder storage pressure happens without asking. A user who learns that after\nbuilding six enclosures has learned it too late. So it is said once, at the\nfront, while there is nothing to lose.\n\nThe other half of the reason is that this is where the choice will go when\nthere is one. A folder on the user's own computer is the obvious next\nanswer, and it is listed here, visibly not yet available, so the shape of\nthe decision is familiar before it has consequences."
+        "description": "The question asked before anything else: where does this workspace live?\n\nBrowser storage is not a filing cabinet — clearing site data takes it, a\nprivate window never had it, and an eviction under storage pressure happens\nwithout asking. A user who learns that after building six enclosures has\nlearned it too late. So it is said once, at the front, while there is\nnothing to lose.\n\nThe other answer is a folder on the user's own computer, where the projects\nare ordinary files in their own backups and their own version control. It is\noffered first where the browser supports it, and shown as unavailable rather\nthan hidden where it does not — a user on Safari should find out that the\noption exists and what would give it to them."
       },
       "constants": [],
       "methods": [
@@ -14491,7 +14553,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 28,
+          "line": 30,
           "signature": [],
           "documented": true,
           "summary": "The startup workspace-location prompt.",
@@ -14508,7 +14570,7 @@
             "invariant": [],
             "mutates": [],
             "sideEffect": [
-              "Subscribes to the store; the buttons write LocalStorage."
+              "Subscribes to the store; the buttons write LocalStorage, and choosing a folder opens a picker and writes to disk."
             ],
             "reads": [],
             "pure": false
@@ -14522,7 +14584,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 39,
+          "line": 42,
           "signature": [],
           "documented": true,
           "summary": "Record the choice and dismiss the prompt.",
@@ -14540,6 +14602,37 @@
             "mutates": [],
             "sideEffect": [
               "Writes store state and LocalStorage."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "chooseFolder",
+          "qualified": "WorkspacePrompt > chooseFolder",
+          "kind": "function",
+          "exported": false,
+          "async": true,
+          "generator": false,
+          "line": 54,
+          "signature": [],
+          "documented": true,
+          "summary": "Pick a folder to keep the workspace in.",
+          "description": "Pick a folder to keep the workspace in.\n\nA folder that already holds a workspace is opened instead — the prompt is\nthe first thing a returning user on a new machine sees, and pointing it at\ntheir synced folder should bring their work back, not overwrite it.",
+          "params": [],
+          "returns": {
+            "type": "Promise<void>",
+            "desc": "Resolves once the folder is connected or the picker is dismissed."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Shows a folder picker and a confirmation, writes to the user's filesystem, and writes store state."
             ],
             "reads": [],
             "pure": false
@@ -23143,7 +23236,7 @@
           "line": 35,
           "shape": {
             "kind": "array",
-            "length": 13,
+            "length": 17,
             "values": [
               "nodes",
               "edges",
@@ -23157,7 +23250,11 @@
               "velocityPopupNodeId",
               "simError",
               "xZoom",
-              "clipboard"
+              "clipboard",
+              "folderStatus",
+              "folderName",
+              "folderError",
+              "folderSaved"
             ]
           },
           "summary": "Store keys mirrored between the main window and every popped-out tab.",
@@ -23165,7 +23262,7 @@
         },
         {
           "name": "SIM_INPUT_KEYS",
-          "line": 42,
+          "line": 46,
           "shape": {
             "kind": "array",
             "length": 3,
@@ -23180,7 +23277,7 @@
         },
         {
           "name": "channel",
-          "line": 145,
+          "line": 149,
           "shape": null,
           "summary": "The shared BroadcastChannel, or `null` where the API is unavailable.",
           "description": "The shared BroadcastChannel, or `null` where the API is unavailable.\n\nNull-checked at every use rather than polyfilled: without it the app still\nworks, it just cannot mirror state between windows."
@@ -23194,7 +23291,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 58,
+          "line": 62,
           "signature": [],
           "documented": true,
           "summary": "Every panel id this window was opened to show.",
@@ -23225,7 +23322,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 76,
+          "line": 80,
           "signature": [],
           "documented": true,
           "summary": "The panel this window is currently showing, if it is a popped-out tab.",
@@ -23256,7 +23353,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 92,
+          "line": 96,
           "signature": [],
           "documented": true,
           "summary": "Whether this window is a popped-out panel rather than the main workspace.",
@@ -23287,7 +23384,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 108,
+          "line": 112,
           "signature": [
             "id"
           ],
@@ -23328,7 +23425,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 129,
+          "line": 133,
           "signature": [
             "ids",
             "active"
@@ -23629,7 +23726,7 @@
       "constants": [
         {
           "name": "SNAPSHOT_LIMIT",
-          "line": 123,
+          "line": 124,
           "shape": {
             "kind": "literal",
             "value": 3
@@ -23639,7 +23736,7 @@
         },
         {
           "name": "SNAPSHOT_COLORS",
-          "line": 128,
+          "line": 129,
           "shape": {
             "kind": "array",
             "length": 3,
@@ -23654,14 +23751,14 @@
         },
         {
           "name": "useStore",
-          "line": 320,
+          "line": 370,
           "shape": null,
           "summary": null,
           "description": null
         },
         {
           "name": "__internals",
-          "line": 2403,
+          "line": 2669,
           "shape": {
             "kind": "object",
             "keys": [
@@ -23684,7 +23781,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 61,
+          "line": 62,
           "signature": [
             "project"
           ],
@@ -23725,7 +23822,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 74,
+          "line": 75,
           "signature": [
             "e"
           ],
@@ -23766,7 +23863,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 104,
+          "line": 105,
           "signature": [
             "ids",
             "active"
@@ -23815,7 +23912,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 139,
+          "line": 140,
           "signature": [],
           "documented": true,
           "summary": "Whether the user has already been asked where their workspace lives.",
@@ -23846,7 +23943,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 159,
+          "line": 160,
           "signature": [],
           "documented": true,
           "summary": "Load the persisted workspace, or build a first-run one.",
@@ -23877,7 +23974,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 197,
+          "line": 198,
           "signature": [],
           "documented": true,
           "summary": "Load the persisted dock layout, falling back to the default.",
@@ -23908,7 +24005,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 215,
+          "line": 216,
           "signature": [],
           "documented": true,
           "summary": "Load the user's saved layout arrangements.",
@@ -23939,7 +24036,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 235,
+          "line": 236,
           "signature": [],
           "documented": true,
           "summary": "Load the quick-bar arrangement.",
@@ -23964,13 +24061,46 @@
           "other": []
         },
         {
+          "name": "scheduleFolderSync",
+          "qualified": "scheduleFolderSync",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 285,
+          "signature": [],
+          "documented": true,
+          "summary": "Queue a folder write.",
+          "description": "Queue a folder write.\n\nA folder whose permission has lapsed is left alone until the user renews it.\nWriting to it would fail anyway, and the attempt is what would otherwise\nreport the folder as saved when nothing had been.",
+          "params": [],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [
+              "The module-level sync timer."
+            ],
+            "sideEffect": [
+              "Schedules a timer that writes to the user's filesystem. Does nothing when no folder is connected, or when the connected one is locked."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
           "name": "nextId",
           "qualified": "nextId",
           "kind": "function",
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 255,
+          "line": 305,
           "signature": [
             "type"
           ],
@@ -24011,7 +24141,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 275,
+          "line": 325,
           "signature": [
             "spot",
             "nodes",
@@ -24076,7 +24206,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 283,
+          "line": 333,
           "signature": [
             "x",
             "y"
@@ -24125,7 +24255,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 302,
+          "line": 352,
           "signature": [
             "nodes",
             "edges",
@@ -24180,7 +24310,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 340,
+          "line": 390,
           "signature": [
             "partial",
             "replace"
@@ -24231,7 +24361,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 411,
+          "line": 473,
           "signature": [
             "x",
             "y",
@@ -24288,7 +24418,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 422,
+          "line": 484,
           "signature": [],
           "documented": true,
           "summary": "Dismiss the context menu.",
@@ -24319,7 +24449,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 431,
+          "line": 493,
           "signature": [
             "id"
           ],
@@ -24360,7 +24490,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 442,
+          "line": 504,
           "signature": [
             "id"
           ],
@@ -24401,7 +24531,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 450,
+          "line": 512,
           "signature": [
             "id"
           ],
@@ -24442,7 +24572,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 459,
+          "line": 521,
           "signature": [
             "v",
             "section"
@@ -24491,7 +24621,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 467,
+          "line": 529,
           "signature": [
             "id"
           ],
@@ -24532,7 +24662,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 479,
+          "line": 541,
           "signature": [
             "id",
             "combos"
@@ -24581,7 +24711,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 496,
+          "line": 558,
           "signature": [
             "id",
             "combo"
@@ -24630,7 +24760,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 514,
+          "line": 576,
           "signature": [
             "id",
             "combo"
@@ -24679,7 +24809,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 521,
+          "line": 583,
           "signature": [],
           "documented": true,
           "summary": "Restore every command to its default combos.",
@@ -24710,7 +24840,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 538,
+          "line": 600,
           "signature": [
             "tree"
           ],
@@ -24751,7 +24881,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 555,
+          "line": 617,
           "signature": [
             "stackId",
             "panelId"
@@ -24800,7 +24930,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 565,
+          "line": 627,
           "signature": [
             "panelId",
             "stackId",
@@ -24857,7 +24987,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 574,
+          "line": 636,
           "signature": [
             "panelId",
             "edge"
@@ -24906,7 +25036,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 585,
+          "line": 647,
           "signature": [
             "splitId",
             "index",
@@ -24971,7 +25101,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 599,
+          "line": 661,
           "signature": [
             "panelId",
             "stackId",
@@ -25028,7 +25158,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 620,
+          "line": 682,
           "signature": [
             "panelId"
           ],
@@ -25069,7 +25199,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 637,
+          "line": 699,
           "signature": [
             "panelId"
           ],
@@ -25110,7 +25240,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 649,
+          "line": 711,
           "signature": [
             "panelId"
           ],
@@ -25151,7 +25281,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 660,
+          "line": 722,
           "signature": [],
           "documented": true,
           "summary": "Restore the default workspace arrangement.",
@@ -25182,7 +25312,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 670,
+          "line": 732,
           "signature": [
             "name"
           ],
@@ -25223,7 +25353,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 689,
+          "line": 751,
           "signature": [
             "name"
           ],
@@ -25264,7 +25394,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 713,
+          "line": 775,
           "signature": [
             "ids"
           ],
@@ -25305,7 +25435,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 729,
+          "line": 791,
           "signature": [
             "id"
           ],
@@ -25346,7 +25476,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 741,
+          "line": 803,
           "signature": [
             "id",
             "delta"
@@ -25395,7 +25525,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 755,
+          "line": 817,
           "signature": [],
           "documented": true,
           "summary": "Restore the default quick-bar arrangement.",
@@ -25426,7 +25556,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 764,
+          "line": 826,
           "signature": [
             "name"
           ],
@@ -25467,7 +25597,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 782,
+          "line": 844,
           "signature": [
             "id",
             "range"
@@ -25516,7 +25646,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 798,
+          "line": 860,
           "signature": [],
           "documented": true,
           "summary": "Record the current graph as an undo point.",
@@ -25547,7 +25677,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 811,
+          "line": 873,
           "signature": [],
           "documented": true,
           "summary": "Step back one entry in the history.",
@@ -25578,7 +25708,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 828,
+          "line": 890,
           "signature": [],
           "documented": true,
           "summary": "Step forward one entry in the history.",
@@ -25609,7 +25739,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 853,
+          "line": 915,
           "signature": [
             "changes"
           ],
@@ -25650,7 +25780,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 867,
+          "line": 929,
           "signature": [
             "changes"
           ],
@@ -25691,7 +25821,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 879,
+          "line": 941,
           "signature": [
             "conn"
           ],
@@ -25732,7 +25862,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 891,
+          "line": 953,
           "signature": [
             "id"
           ],
@@ -25773,7 +25903,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 904,
+          "line": 966,
           "signature": [
             "type",
             "position"
@@ -25822,7 +25952,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 934,
+          "line": 996,
           "signature": [
             "id",
             "params"
@@ -25871,7 +26001,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 961,
+          "line": 1023,
           "signature": [
             "id"
           ],
@@ -25912,7 +26042,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 982,
+          "line": 1044,
           "signature": [
             "id",
             "name"
@@ -25961,7 +26091,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1012,
+          "line": 1074,
           "signature": [
             "id",
             "field",
@@ -26018,7 +26148,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1035,
+          "line": 1097,
           "signature": [
             "id"
           ],
@@ -26059,7 +26189,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1063,
+          "line": 1125,
           "signature": [
             "id",
             "field",
@@ -26116,7 +26246,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1087,
+          "line": 1149,
           "signature": [
             "id",
             "patch"
@@ -26165,7 +26295,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1109,
+          "line": 1171,
           "signature": [],
           "documented": true,
           "summary": "Delete the selected nodes and edges.",
@@ -26196,7 +26326,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1134,
+          "line": 1196,
           "signature": [],
           "documented": true,
           "summary": "Copy the selected nodes in place, offset down-right.",
@@ -26227,7 +26357,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1159,
+          "line": 1221,
           "signature": [],
           "documented": true,
           "summary": "Select every node on the canvas.",
@@ -26258,7 +26388,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1174,
+          "line": 1236,
           "signature": [
             "ids",
             "additive"
@@ -26307,7 +26437,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1207,
+          "line": 1269,
           "signature": [],
           "documented": true,
           "summary": "Copy the selected nodes and their internal edges to the in-app clipboard.",
@@ -26338,7 +26468,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1233,
+          "line": 1295,
           "signature": [],
           "documented": true,
           "summary": "Copy the selection, then delete it.",
@@ -26369,7 +26499,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1254,
+          "line": 1316,
           "signature": [
             "at"
           ],
@@ -26410,7 +26540,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1302,
+          "line": 1364,
           "signature": [
             "type"
           ],
@@ -26451,7 +26581,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1318,
+          "line": 1380,
           "signature": [
             "delta"
           ],
@@ -26492,7 +26622,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1331,
+          "line": 1393,
           "signature": [],
           "documented": true,
           "summary": "Force a resimulation even though nothing has changed.",
@@ -26523,7 +26653,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1344,
+          "line": 1406,
           "signature": [
             "patch"
           ],
@@ -26564,7 +26694,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1360,
+          "line": 1422,
           "signature": [
             "field",
             "value"
@@ -26613,7 +26743,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1393,
+          "line": 1455,
           "signature": [],
           "documented": true,
           "summary": "Freeze the current result as a labelled reference overlay.",
@@ -26644,7 +26774,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1429,
+          "line": 1491,
           "signature": [
             "id"
           ],
@@ -26685,7 +26815,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1441,
+          "line": 1503,
           "signature": [
             "id",
             "label"
@@ -26734,7 +26864,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1454,
+          "line": 1516,
           "signature": [
             "id"
           ],
@@ -26775,7 +26905,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1462,
+          "line": 1524,
           "signature": [
             "v"
           ],
@@ -26816,7 +26946,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1470,
+          "line": 1532,
           "signature": [
             "v"
           ],
@@ -26857,7 +26987,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1478,
+          "line": 1540,
           "signature": [
             "id"
           ],
@@ -26898,7 +27028,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1509,
+          "line": 1571,
           "signature": [],
           "documented": true,
           "summary": "Schedule a debounced simulation run.",
@@ -26929,7 +27059,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1550,
+          "line": 1612,
           "signature": [],
           "documented": true,
           "summary": "Capture the project as a plain, saveable object.",
@@ -26960,7 +27090,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1578,
+          "line": 1640,
           "signature": [
             "proj"
           ],
@@ -27001,7 +27131,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1602,
+          "line": 1664,
           "signature": [],
           "documented": true,
           "summary": "Download the open project as a standalone JSON file.",
@@ -27032,7 +27162,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1619,
+          "line": 1681,
           "signature": [
             "proj",
             "filename"
@@ -27081,7 +27211,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1652,
+          "line": 1714,
           "signature": [
             "ws"
           ],
@@ -27122,7 +27252,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1667,
+          "line": 1729,
           "signature": [
             "name"
           ],
@@ -27163,7 +27293,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1681,
+          "line": 1743,
           "signature": [],
           "documented": true,
           "summary": "Write the editor's current project back into its file.",
@@ -27194,7 +27324,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1699,
+          "line": 1761,
           "signature": [
             "path"
           ],
@@ -27235,7 +27365,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1715,
+          "line": 1777,
           "signature": [
             "folder"
           ],
@@ -27276,7 +27406,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1736,
+          "line": 1798,
           "signature": [
             "parent"
           ],
@@ -27317,7 +27447,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1759,
+          "line": 1821,
           "signature": [
             "from",
             "to"
@@ -27366,7 +27496,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1796,
+          "line": 1858,
           "signature": [
             "path"
           ],
@@ -27407,7 +27537,7 @@
           "exported": false,
           "async": true,
           "generator": false,
-          "line": 1828,
+          "line": 1890,
           "signature": [],
           "documented": true,
           "summary": "Download the whole workspace, and record that it happened.",
@@ -27438,7 +27568,7 @@
           "exported": false,
           "async": true,
           "generator": false,
-          "line": 1857,
+          "line": 1919,
           "signature": [
             "file"
           ],
@@ -27479,7 +27609,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1881,
+          "line": 1943,
           "signature": [
             "ws"
           ],
@@ -27520,7 +27650,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1915,
+          "line": 1977,
           "signature": [
             "paths"
           ],
@@ -27561,7 +27691,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1925,
+          "line": 1987,
           "signature": [
             "path",
             "open"
@@ -27610,7 +27740,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1939,
+          "line": 2001,
           "signature": [],
           "documented": true,
           "summary": "Collapse every folder in the explorer.",
@@ -27641,7 +27771,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1954,
+          "line": 2016,
           "signature": [
             "mode",
             "path"
@@ -27690,7 +27820,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1965,
+          "line": 2027,
           "signature": [],
           "documented": true,
           "summary": "Dismiss the explorer's inline editor.",
@@ -27721,7 +27851,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1980,
+          "line": 2042,
           "signature": [
             "paths",
             "cut"
@@ -27770,7 +27900,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1993,
+          "line": 2055,
           "signature": [
             "folder"
           ],
@@ -27811,7 +27941,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2020,
+          "line": 2082,
           "signature": [
             "path"
           ],
@@ -27852,7 +27982,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2036,
+          "line": 2098,
           "signature": [
             "from",
             "folder"
@@ -27901,7 +28031,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2058,
+          "line": 2120,
           "signature": [
             "mode",
             "parent",
@@ -27958,20 +28088,20 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2094,
+          "line": 2154,
           "signature": [
             "kind"
           ],
           "documented": true,
           "summary": "Record where this workspace is kept, and dismiss the startup prompt.",
-          "description": "Record where this workspace is kept, and dismiss the startup prompt.\n\nOnly browser storage exists today, so the choice is nearly rhetorical —\nbut it is asked out loud because browser storage is the one option whose\ndurability the user needs to have been told about before they have work in\nit. The answer is remembered so the question is asked once, not on every\nvisit.",
+          "description": "Record where this workspace is kept, and dismiss the startup prompt.\n\nAsked out loud because browser storage is the option whose durability the\nuser needs to have been told about before they have work in it. The answer\nis remembered so the question is asked once, not on every visit.",
           "params": [
             {
               "name": "kind",
               "type": "string",
               "optional": false,
               "default": null,
-              "desc": "Where the workspace lives; only `'browser'` is supported."
+              "desc": "Where the workspace lives: `'browser'` or `'folder'`."
             }
           ],
           "returns": {
@@ -27993,13 +28123,253 @@
           "other": []
         },
         {
+          "name": "connectWorkspaceFolder",
+          "qualified": "connectWorkspaceFolder",
+          "kind": "method",
+          "exported": false,
+          "async": true,
+          "generator": false,
+          "line": 2185,
+          "signature": [
+            "confirmAdopt"
+          ],
+          "documented": true,
+          "summary": "Put the workspace in a folder the user picks.",
+          "description": "Put the workspace in a folder the user picks.\n\nA folder that already holds a workspace is opened rather than overwritten,\nwhich is how a workspace moves between machines: point both at the same\nsynced folder. Because that replaces what is in the browser, the caller is\nasked to confirm it — the question belongs to the UI, not here.\n\nAn empty folder, or one with nothing of ours in it, gets the current\nworkspace written into it.",
+          "params": [
+            {
+              "name": "confirmAdopt",
+              "type": "Function",
+              "optional": true,
+              "default": null,
+              "desc": "Called with `{name, files}` when the folder already holds a workspace; the folder is opened only if it returns true."
+            }
+          ],
+          "returns": {
+            "type": "Promise<{ok: boolean, adopted?: boolean, cancelled?: boolean, error?: string}>",
+            "desc": "What happened, and whether the folder's own workspace was opened."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Shows a folder picker, reads and writes the user's filesystem, writes IndexedDB and LocalStorage, writes store state and may replace what is on the canvas. Does nothing in a popped-out tab."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "reconnectWorkspaceFolder",
+          "qualified": "reconnectWorkspaceFolder",
+          "kind": "method",
+          "exported": false,
+          "async": true,
+          "generator": false,
+          "line": 2218,
+          "signature": [],
+          "documented": true,
+          "summary": "Renew permission on a remembered folder and open it again.",
+          "description": "Renew permission on a remembered folder and open it again.\n\nPermission does not survive a reload, and the browser will only re-ask\nfrom a user gesture — which is what the explorer's Reconnect button is\nfor. Refusing leaves the workspace in the browser rather than in limbo.",
+          "params": [],
+          "returns": {
+            "type": "Promise<{ok: boolean, error?: string}>",
+            "desc": "Whether the folder is connected again."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Shows a permission prompt, reads and writes the user's filesystem, and writes store state. Does nothing in a popped-out tab."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "disconnectWorkspaceFolder",
+          "qualified": "disconnectWorkspaceFolder",
+          "kind": "method",
+          "exported": false,
+          "async": true,
+          "generator": false,
+          "line": 2241,
+          "signature": [],
+          "documented": true,
+          "summary": "Stop keeping the workspace in a folder.",
+          "description": "Stop keeping the workspace in a folder.\n\nThe folder is left exactly as it is and the workspace stays in the browser\n— this disconnects, it does not delete. Whichever copy the user wants to\nkeep, they still have both.",
+          "params": [],
+          "returns": {
+            "type": "Promise<void>",
+            "desc": "Resolves once the folder is forgotten."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [
+              "The module-level folder handle and its recorded state."
+            ],
+            "sideEffect": [
+              "Writes IndexedDB and store state, and cancels any pending write."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "_openFolder",
+          "qualified": "_openFolder",
+          "kind": "method",
+          "exported": false,
+          "async": true,
+          "generator": false,
+          "line": 2266,
+          "signature": [
+            "handle",
+            "read",
+            "prefer"
+          ],
+          "documented": true,
+          "summary": "Adopt a folder as the workspace's home, in whichever direction is newer.",
+          "description": "Adopt a folder as the workspace's home, in whichever direction is newer.\n\nThe folder wins by default, since that is what \"the workspace lives here\"\nhas to mean for a folder shared between machines. It loses only to a\nbrowser workspace that has been modified more recently than the folder's,\nwhich is the one case where reading would discard work — and even then the\nfolder is brought up to date rather than left behind.",
+          "params": [
+            {
+              "name": "handle",
+              "type": "FileSystemDirectoryHandle",
+              "optional": false,
+              "default": null,
+              "desc": "The folder."
+            },
+            {
+              "name": "read",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "The result of `readFolderWorkspace` for it."
+            },
+            {
+              "name": "prefer",
+              "type": "boolean",
+              "optional": false,
+              "default": null,
+              "desc": "Whether the folder's workspace wins regardless of stamps."
+            }
+          ],
+          "returns": {
+            "type": "Promise<void>",
+            "desc": "Resolves once the workspace and the folder agree."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [
+              "The module-level folder handle and its recorded state."
+            ],
+            "sideEffect": [
+              "Writes the user's filesystem and store state, and may replace what is on the canvas."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "_syncFolder",
+          "qualified": "_syncFolder",
+          "kind": "method",
+          "exported": false,
+          "async": true,
+          "generator": false,
+          "line": 2300,
+          "signature": [],
+          "documented": true,
+          "summary": "Write the workspace to the connected folder.",
+          "description": "Write the workspace to the connected folder.\n\nOnly what changed is written. A write already in flight is not joined but\nremembered: the next one runs after it, so a burst of edits during a slow\nsave collapses into one more write rather than a queue of them.",
+          "params": [],
+          "returns": {
+            "type": "Promise<void>",
+            "desc": "Resolves once the folder matches, or once the failure has been recorded."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [
+              "The module-level folder state and the in-flight flags."
+            ],
+            "sideEffect": [
+              "Writes the user's filesystem and store state. Does nothing when no folder is connected, or when the connected one is locked."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "_resumeFolder",
+          "qualified": "_resumeFolder",
+          "kind": "method",
+          "exported": false,
+          "async": true,
+          "generator": false,
+          "line": 2342,
+          "signature": [
+            "since"
+          ],
+          "documented": true,
+          "summary": "Pick up the folder from a previous visit, if the browser still allows it.",
+          "description": "Pick up the folder from a previous visit, if the browser still allows it.\n\nRun once at startup. Permission is checked without prompting — a prompt\nneeds a gesture and there is none at load — so a remembered folder either\nreconnects silently or comes back locked with the explorer offering the\nclick that renews it.",
+          "params": [
+            {
+              "name": "since",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "The browser workspace's modification stamp as it was at load, before any auto-save could advance it."
+            }
+          ],
+          "returns": {
+            "type": "Promise<void>",
+            "desc": "Resolves once the folder is connected, locked, or found to be gone."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [
+              "The module-level folder handle."
+            ],
+            "sideEffect": [
+              "Reads IndexedDB and the user's filesystem, writes store state, and may replace what is on the canvas."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
           "name": "setCustomDrivers",
           "qualified": "setCustomDrivers",
           "kind": "method",
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2110,
+          "line": 2370,
           "signature": [
             "drivers"
           ],
@@ -28040,7 +28410,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2132,
+          "line": 2392,
           "signature": [
             "id"
           ],
@@ -28081,7 +28451,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2148,
+          "line": 2408,
           "signature": [
             "id"
           ],
@@ -28122,7 +28492,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2171,
+          "line": 2431,
           "signature": [
             "id"
           ],
@@ -28163,7 +28533,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2198,
+          "line": 2458,
           "signature": [
             "id"
           ],
@@ -28204,7 +28574,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2214,
+          "line": 2474,
           "signature": [
             "stackId"
           ],
@@ -28245,7 +28615,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2238,
+          "line": 2498,
           "signature": [
             "panelId",
             "stackId"
@@ -28294,7 +28664,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2258,
+          "line": 2518,
           "signature": [
             "id"
           ],
@@ -28335,7 +28705,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2269,
+          "line": 2529,
           "signature": [
             "id"
           ],
@@ -28376,7 +28746,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2288,
+          "line": 2548,
           "signature": [
             "patch"
           ],
@@ -28419,7 +28789,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2298,
+          "line": 2558,
           "signature": [],
           "documented": true,
           "summary": "The full shared slice, sent to a popped-out tab when it announces itself.",
@@ -28450,7 +28820,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2356,
+          "line": 2622,
           "signature": [
             "arg0"
           ],
@@ -29471,6 +29841,858 @@
               "Appends to the enclosing `l` line buffer."
             ],
             "sideEffect": [],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        }
+      ]
+    },
+    {
+      "file": "src/utils/folder.js",
+      "module": {
+        "summary": "Keeping a workspace in a real folder on the user's computer.",
+        "description": "Keeping a workspace in a real folder on the user's computer.\n\nBrowser storage is not a filing cabinet: clearing site data takes it, a\nprivate window never had it, and an eviction under storage pressure happens\nwithout asking. The File System Access API is the way out of that — the user\npoints at a folder once, and from then on their projects are ordinary files\non their own disk, in their own backups, in their own git repository.\n\nThe folder is authoritative. When one is connected, what is on disk is the\nworkspace: it is read on startup and every change is written back. Browser\nstorage keeps mirroring alongside it, but only as a fallback for the session\nwhere permission has lapsed and the folder cannot be read.\n\nWhat is written is exactly what a downloaded archive unzips to — the same\nentries, from the same `workspaceToEntries`. A workspace zipped from the\nbrowser and a workspace synced to a folder are the same tree, so one can be\nunzipped over the other and neither format has to be maintained twice.\n\nTwo rules keep this from ever being destructive. Deletions are confined to\nfiles this app previously wrote or read there, so a folder that also holds\nthe user's notes, a README or a `.git` keeps them. And a folder is only\nremoved when it is already empty — a directory the app no longer knows about\nbut that still has something in it stays exactly where it is.\n\nThe handle survives a reload in IndexedDB, which is the only store that can\nhold one. Permission does not survive with it: the browser re-asks on the\nnext visit, and that ask needs a user gesture, so a resumed session may come\nback locked and waiting for a click rather than connected."
+      },
+      "constants": [],
+      "methods": [
+        {
+          "name": "supportsFolders",
+          "qualified": "supportsFolders",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 70,
+          "signature": [],
+          "documented": true,
+          "summary": "Whether this browser can keep a workspace in a folder.",
+          "description": "Whether this browser can keep a workspace in a folder.\n\nChromium-based browsers can; Safari and Firefox have the pickers but not\nthe persistent read-write handles this needs, so they are told the option\ndoes not exist rather than being offered one that fails at the second step.",
+          "params": [],
+          "returns": {
+            "type": "boolean",
+            "desc": "True when the File System Access API is usable here."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Reads the global `window`."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "diskContents",
+          "qualified": "diskContents",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 88,
+          "signature": [
+            "ws"
+          ],
+          "documented": true,
+          "summary": "The files a workspace should have on disk, as text.",
+          "description": "The files a workspace should have on disk, as text.\n\nThe same entries a download produces, so a synced folder and an unzipped\narchive are byte-for-byte the same tree.",
+          "params": [
+            {
+              "name": "ws",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "The workspace."
+            }
+          ],
+          "returns": {
+            "type": "{files: Map<string, string>, folders: string[]}",
+            "desc": "Each file's contents by path, and every folder the workspace has."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "planSync",
+          "qualified": "planSync",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 116,
+          "signature": [
+            "ws",
+            "previous"
+          ],
+          "documented": true,
+          "summary": "What has to happen on disk to bring a folder up to date.",
+          "description": "What has to happen on disk to bring a folder up to date.\n\nOnly files whose text actually changed are rewritten, which matters more\nthan it looks: a workspace commits on every simulation, and rewriting forty\nunchanged projects each time would churn the user's filesystem, their\nbackups and their git history.\n\nDeletions are drawn from `previous` rather than from the folder, so this can\nonly ever remove a file the app itself put there. Anything else in the\nfolder is invisible to it.",
+          "params": [
+            {
+              "name": "ws",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "The workspace to write."
+            },
+            {
+              "name": "previous",
+              "type": "{files: Map<string, string>, folders: string[]}",
+              "optional": false,
+              "default": null,
+              "desc": "What the app last saw on disk."
+            }
+          ],
+          "returns": {
+            "type": "{writes: Array<{path: string, data: string}>, deletes: string[], folders: string[], gone: string[], next: {files: Map<string, string>, folders: string[]}}",
+            "desc": "The files to write, the files and folders to remove, the folders to create, and the state to record once it is done."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "openDb",
+          "qualified": "openDb",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 136,
+          "signature": [],
+          "documented": true,
+          "summary": "Open the handle database, creating its store on first use.",
+          "description": "Open the handle database, creating its store on first use.",
+          "params": [],
+          "returns": {
+            "type": "Promise<IDBDatabase>",
+            "desc": "The open database."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Opens IndexedDB, creating the database and its object store if they do not exist."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "req.onupgradeneeded",
+          "qualified": "openDb > req.onupgradeneeded",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 145,
+          "signature": [],
+          "documented": true,
+          "summary": "Create the handle store the first time this database is opened.",
+          "description": "Create the handle store the first time this database is opened.",
+          "params": [],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Creates the object store."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "req.onsuccess",
+          "qualified": "openDb > req.onsuccess",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 154,
+          "signature": [],
+          "documented": true,
+          "summary": "Hand back the open database.",
+          "description": "Hand back the open database.",
+          "params": [],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Settles the enclosing promise."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "req.onerror",
+          "qualified": "openDb > req.onerror",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 161,
+          "signature": [],
+          "documented": true,
+          "summary": "Report that the database could not be opened.",
+          "description": "Report that the database could not be opened.",
+          "params": [],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Rejects the enclosing promise."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "withStore",
+          "qualified": "withStore",
+          "kind": "function",
+          "exported": false,
+          "async": true,
+          "generator": false,
+          "line": 173,
+          "signature": [
+            "mode",
+            "run"
+          ],
+          "documented": true,
+          "summary": "Run one transaction against the handle store and close the database.",
+          "description": "Run one transaction against the handle store and close the database.",
+          "params": [
+            {
+              "name": "mode",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "`'readonly'` or `'readwrite'`."
+            },
+            {
+              "name": "run",
+              "type": "Function",
+              "optional": false,
+              "default": null,
+              "desc": "Given the object store, issues the request and returns it."
+            }
+          ],
+          "returns": {
+            "type": "Promise<*>",
+            "desc": "The request's result, or `null` when it produced none."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Reads or writes IndexedDB."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "tx.oncomplete",
+          "qualified": "withStore > tx.oncomplete",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 188,
+          "signature": [],
+          "documented": true,
+          "summary": "Hand back the request's result once the transaction has committed.",
+          "description": "Hand back the request's result once the transaction has committed.\n\nWaiting for the transaction rather than the request is what makes a\nwrite durable before the caller is told it happened.",
+          "params": [],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Settles the enclosing promise."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "tx.onerror",
+          "qualified": "withStore > tx.onerror",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 195,
+          "signature": [],
+          "documented": true,
+          "summary": "Report a failed transaction.",
+          "description": "Report a failed transaction.",
+          "params": [],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Rejects the enclosing promise."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "tx.onabort",
+          "qualified": "withStore > tx.onabort",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 202,
+          "signature": [],
+          "documented": true,
+          "summary": "Report an aborted transaction.",
+          "description": "Report an aborted transaction.",
+          "params": [],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Rejects the enclosing promise."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "rememberFolder",
+          "qualified": "rememberFolder",
+          "kind": "function",
+          "exported": true,
+          "async": true,
+          "generator": false,
+          "line": 219,
+          "signature": [
+            "handle"
+          ],
+          "documented": true,
+          "summary": "Remember the folder a workspace lives in, so the next visit can resume it.",
+          "description": "Remember the folder a workspace lives in, so the next visit can resume it.\n\nA directory handle is not serializable but is structured-cloneable, which is\nwhy this is IndexedDB and not LocalStorage.",
+          "params": [
+            {
+              "name": "handle",
+              "type": "FileSystemDirectoryHandle",
+              "optional": false,
+              "default": null,
+              "desc": "The chosen folder."
+            }
+          ],
+          "returns": {
+            "type": "Promise<boolean>",
+            "desc": "True when it was stored; false when this browser refused."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Writes IndexedDB."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "recallFolder",
+          "qualified": "recallFolder",
+          "kind": "function",
+          "exported": true,
+          "async": true,
+          "generator": false,
+          "line": 234,
+          "signature": [],
+          "documented": true,
+          "summary": "The folder remembered from a previous visit.",
+          "description": "The folder remembered from a previous visit.",
+          "params": [],
+          "returns": {
+            "type": "Promise<FileSystemDirectoryHandle|null>",
+            "desc": "The handle, or `null` when none was stored or it could not be read."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Reads IndexedDB."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "forgetFolder",
+          "qualified": "forgetFolder",
+          "kind": "function",
+          "exported": true,
+          "async": true,
+          "generator": false,
+          "line": 249,
+          "signature": [],
+          "documented": true,
+          "summary": "Forget the remembered folder.",
+          "description": "Forget the remembered folder.",
+          "params": [],
+          "returns": {
+            "type": "Promise<void>",
+            "desc": "Resolves once it is gone, or immediately when it could not be removed."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Writes IndexedDB."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "folderPermission",
+          "qualified": "folderPermission",
+          "kind": "function",
+          "exported": true,
+          "async": true,
+          "generator": false,
+          "line": 270,
+          "signature": [
+            "handle",
+            "ask"
+          ],
+          "documented": true,
+          "summary": "Whether the app may still read and write a remembered folder.",
+          "description": "Whether the app may still read and write a remembered folder.\n\nPermission is not remembered with the handle: the browser re-asks on a new\nvisit, and the ask has to come from a user gesture. So the resumed case\ndistinguishes `'granted'` — carry on silently — from `'prompt'`, which means\nthe folder is there but a click is needed before it can be touched.",
+          "params": [
+            {
+              "name": "handle",
+              "type": "FileSystemDirectoryHandle",
+              "optional": false,
+              "default": null,
+              "desc": "The folder."
+            },
+            {
+              "name": "ask",
+              "type": "boolean",
+              "optional": true,
+              "default": null,
+              "desc": "Whether to raise the browser's permission prompt; only valid from a user gesture."
+            }
+          ],
+          "returns": {
+            "type": "Promise<string>",
+            "desc": "`'granted'`, `'prompt'` or `'denied'`."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Queries the browser's permission store, and may show a permission prompt."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "pickFolder",
+          "qualified": "pickFolder",
+          "kind": "function",
+          "exported": true,
+          "async": true,
+          "generator": false,
+          "line": 287,
+          "signature": [],
+          "documented": true,
+          "summary": "Ask the user to choose a folder for their workspace.",
+          "description": "Ask the user to choose a folder for their workspace.",
+          "params": [],
+          "returns": {
+            "type": "Promise<FileSystemDirectoryHandle|null>",
+            "desc": "The chosen folder, or `null` when the picker was dismissed."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Shows the browser's folder picker."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "readFolderEntries",
+          "qualified": "readFolderEntries",
+          "kind": "function",
+          "exported": true,
+          "async": true,
+          "generator": false,
+          "line": 311,
+          "signature": [
+            "handle",
+            "prefix",
+            "budget"
+          ],
+          "documented": true,
+          "summary": "Walk a folder into archive entries.",
+          "description": "Walk a folder into archive entries.\n\nRecursive, and deliberately indiscriminate: whatever is in the folder is\noffered to the importer, which keeps what parses as JSON and skips the rest.\nThat is what lets a user keep a README beside their projects without either\nfile troubling the other.",
+          "params": [
+            {
+              "name": "handle",
+              "type": "FileSystemDirectoryHandle",
+              "optional": false,
+              "default": null,
+              "desc": "The folder to read."
+            },
+            {
+              "name": "prefix",
+              "type": "string",
+              "optional": true,
+              "default": null,
+              "desc": "Path of this folder within the workspace; empty at the top."
+            },
+            {
+              "name": "budget",
+              "type": "{n: number}",
+              "optional": true,
+              "default": null,
+              "desc": "Shared entry budget, so the cap covers the whole walk rather than each folder."
+            }
+          ],
+          "returns": {
+            "type": "Promise<Array<{path: string, data: Uint8Array|null, folder: boolean}>>",
+            "desc": "Entries for `entriesToWorkspace`."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Reads the user's filesystem."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "readFolderWorkspace",
+          "qualified": "readFolderWorkspace",
+          "kind": "function",
+          "exported": true,
+          "async": true,
+          "generator": false,
+          "line": 341,
+          "signature": [
+            "handle"
+          ],
+          "documented": true,
+          "summary": "Read a folder as a workspace.",
+          "description": "Read a folder as a workspace.\n\nThe folder's own name becomes the workspace name when the folder holds no\nmetadata of ours — which is what makes pointing at a plain directory of\nproject files work.",
+          "params": [
+            {
+              "name": "handle",
+              "type": "FileSystemDirectoryHandle",
+              "optional": false,
+              "default": null,
+              "desc": "The folder to read."
+            }
+          ],
+          "returns": {
+            "type": "Promise<{ok: boolean, workspace?: object, previous?: {files: Map<string, string>, folders: string[]}, empty?: boolean, error?: string, skipped?: string[]}>",
+            "desc": "The workspace and the on-disk state to sync against, or why it could not be read. `empty` marks a folder with nothing of ours in it."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Reads the user's filesystem."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "dirFor",
+          "qualified": "dirFor",
+          "kind": "function",
+          "exported": false,
+          "async": true,
+          "generator": false,
+          "line": 371,
+          "signature": [
+            "root",
+            "path",
+            "create"
+          ],
+          "documented": true,
+          "summary": "Walk to a folder inside another, creating the levels on the way.",
+          "description": "Walk to a folder inside another, creating the levels on the way.",
+          "params": [
+            {
+              "name": "root",
+              "type": "FileSystemDirectoryHandle",
+              "optional": false,
+              "default": null,
+              "desc": "The workspace folder."
+            },
+            {
+              "name": "path",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "A `/`-separated folder path; empty means the root itself."
+            },
+            {
+              "name": "create",
+              "type": "boolean",
+              "optional": true,
+              "default": null,
+              "desc": "Whether to create levels that do not exist."
+            }
+          ],
+          "returns": {
+            "type": "Promise<FileSystemDirectoryHandle|null>",
+            "desc": "The folder, or `null` when a level is missing and `create` is false."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "May create directories on the user's filesystem."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "applyPlan",
+          "qualified": "applyPlan",
+          "kind": "function",
+          "exported": true,
+          "async": true,
+          "generator": false,
+          "line": 396,
+          "signature": [
+            "root",
+            "plan"
+          ],
+          "documented": true,
+          "summary": "Carry out a sync plan against a folder.",
+          "description": "Carry out a sync plan against a folder.\n\nEach step is attempted independently: one file the user has open in another\nprogram and locked should cost that file, not the other thirty-nine. What\nfailed comes back so the caller can say so rather than reporting a clean\nsave.",
+          "params": [
+            {
+              "name": "root",
+              "type": "FileSystemDirectoryHandle",
+              "optional": false,
+              "default": null,
+              "desc": "The workspace folder."
+            },
+            {
+              "name": "plan",
+              "type": "{writes: Array<{path: string, data: string}>, deletes: string[], folders: string[], gone: string[]}",
+              "optional": false,
+              "default": null,
+              "desc": "The plan from `planSync`."
+            }
+          ],
+          "returns": {
+            "type": "Promise<{written: number, failed: string[]}>",
+            "desc": "How many files were written, and the paths that could not be."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Creates, overwrites and removes files and directories on the user's filesystem."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        }
+      ]
+    },
+    {
+      "file": "src/utils/folderPrompts.js",
+      "module": {
+        "summary": "The questions asked around connecting a workspace folder.",
+        "description": "The questions asked around connecting a workspace folder.\n\nThree places offer the folder — the startup prompt, the explorer's footer\nand the File menu — and all three have to ask the same two questions in the\nsame words. The store deliberately does not ask them itself: it takes the\nanswer as an argument so that \"what does connecting a folder do\" stays\nanswerable without a browser. This is the one place that supplies the\nbrowser's answer."
+      },
+      "constants": [],
+      "methods": [
+        {
+          "name": "connectFolderWithPrompt",
+          "qualified": "connectFolderWithPrompt",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 22,
+          "signature": [],
+          "documented": true,
+          "summary": "Connect the workspace to a folder the user picks, confirming an overwrite.",
+          "description": "Connect the workspace to a folder the user picks, confirming an overwrite.\n\nThe only question that needs asking is the one where something is lost: a\nfolder that already holds a workspace opens in place of the current one.\nEverything else — an empty folder, a dismissed picker — needs no dialog.",
+          "params": [],
+          "returns": {
+            "type": "Promise<{ok: boolean, adopted?: boolean, cancelled?: boolean, error?: string}>",
+            "desc": "What happened, for the caller to report."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Shows a folder picker and possibly a confirmation, writes to the user's filesystem, and writes store state."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "disconnectFolderWithPrompt",
+          "qualified": "disconnectFolderWithPrompt",
+          "kind": "function",
+          "exported": true,
+          "async": true,
+          "generator": false,
+          "line": 46,
+          "signature": [],
+          "documented": true,
+          "summary": "Stop keeping the workspace in a folder, after saying what that means.",
+          "description": "Stop keeping the workspace in a folder, after saying what that means.\n\nWorth a confirmation despite losing nothing, because the wording is the only\nthing that makes that clear: a user clicking \"Disconnect\" has every reason\nto wonder whether their files are about to be deleted.",
+          "params": [],
+          "returns": {
+            "type": "Promise<boolean>",
+            "desc": "True when the folder was disconnected."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Shows a confirmation, and on agreement writes IndexedDB and store state."
+            ],
             "reads": [],
             "pure": false
           },

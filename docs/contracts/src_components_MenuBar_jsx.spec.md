@@ -37,7 +37,7 @@ current state.
 
 - Subscribes to the store. Registers window mousedown and keydown listeners while a menu is open.
 
-## UNREACHABLE (32)
+## UNREACHABLE (33)
 
 ### `Menu(props)`
 
@@ -304,6 +304,21 @@ Open the file picker to replace the workspace.
 **Side effects**
 
 - Clicks the hidden workspace file input.
+
+### `MenuBar > onClick()`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+Connect the workspace to a folder on disk, or disconnect it.
+
+**Returns**
+
+- `*` — Whatever the action returns; the menu ignores it.
+
+**Side effects**
+
+- Shows a picker or a confirmation, and writes to the user's filesystem.
 
 ### `MenuBar > onClick()`
 

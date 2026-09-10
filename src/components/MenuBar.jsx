@@ -7,6 +7,8 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { useStore, SCHEMA_VERSION, SNAPSHOT_LIMIT } from '../store'
 import { readSnapshots } from '../workspace'
+import { supportsFolders } from '../utils/folder'
+import { connectFolderWithPrompt, disconnectFolderWithPrompt } from '../utils/folderPrompts'
 import { isOpen } from '../layout'
 import { PANEL_META, PANEL_IDS, MAIN_IDS, CHART_IDS } from '../panelMeta'
 import { exportCSV, exportSchematicPNG, exportMetricsTxt } from '../utils/export'
@@ -270,6 +272,16 @@ export default function MenuBar() {
          */
         onClick: () => workspaceRef.current?.click(),
       },
+      ...(supportsFolders() ? [{
+        label: store.folderStatus === 'off' ? 'Keep Workspace in a Folder…' : `Stop Saving to “${store.folderName}”`,
+        /**
+         * Connect the workspace to a folder on disk, or disconnect it.
+         *
+         * @returns {*} Whatever the action returns; the menu ignores it.
+         * @sideEffect Shows a picker or a confirmation, and writes to the user's filesystem.
+         */
+        onClick: () => (store.folderStatus === 'off' ? connectFolderWithPrompt() : disconnectFolderWithPrompt()),
+      }] : []),
       { label: '-' },
       {
         label: 'Export',

@@ -448,13 +448,23 @@ svg.ws-chevron.open { transform: rotate(90deg); }
   border-radius: var(--r-0); background: transparent; cursor: pointer;
   font-size: 11px; color: var(--text-3); text-align: left; width: 100%;
 }
-.ws-status:hover { background: var(--hover); color: var(--text); }
+.ws-status:hover:not(:disabled) { background: var(--hover); color: var(--text); }
+.ws-status:disabled { cursor: default; }
+.ws-status:disabled .wss-cta { display: none; }
 .ws-status .wss-dot { width: 6px; height: 6px; border-radius: 50%; flex: none; background: var(--s2); }
 .ws-status.stale .wss-dot { background: var(--s3); }
 .ws-status.stale { color: var(--s3); }
-.ws-status .wss-text { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+/* A connected folder is the durable case, so it reads as settled rather than
+   as a warning; a lapsed permission or a failed write is the exception. */
+.ws-status.folder .wss-dot { background: var(--accent); }
+.ws-status.folder.locked .wss-dot, .ws-status.folder.error .wss-dot { background: var(--s5); }
+.ws-status.folder.locked, .ws-status.folder.error { color: var(--s5); }
+.ws-status .wss-text { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ws-status .wss-cta { flex: none; opacity: 0; text-decoration: underline; }
 .ws-status:hover .wss-cta { opacity: 1; }
+/* A folder waiting on permission is not saving anything, so the click that
+   fixes it does not wait to be hovered over. */
+.ws-status.folder.locked .wss-cta, .ws-status.folder.error .wss-cta { opacity: 1; }
 
 /* ---------- parameter panel ---------- */
 .panel-section {

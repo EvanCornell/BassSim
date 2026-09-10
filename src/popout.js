@@ -36,6 +36,10 @@ export const SHARED_KEYS = [
   'nodes', 'edges', 'projectName', 'settings', 'workspace', 'activeFile',
   'results', 'metrics',
   'selectedNodeId', 'velocityPopupNodeId', 'simError', 'xZoom', 'clipboard',
+  // Where the workspace is kept. Mirrored so a popped-out explorer reports the
+  // truth; the folder itself belongs to the main window, which is the only one
+  // that holds its handle and the only one that writes to it.
+  'folderStatus', 'folderName', 'folderError', 'folderSaved',
 ]
 
 /** Shared keys whose change invalidates the current result and forces a resolve. */
