@@ -2229,7 +2229,7 @@ folder is brought up to date rather than left behind.
 
 - Writes the user's filesystem and store state, and may replace what is on the canvas.
 
-### `_syncFolder()`
+### `_syncFolder(prune)`
 
 - **Reachability:** STORE ACTION
 - **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState()._syncFolder(…)
@@ -2240,6 +2240,10 @@ Write the workspace to the connected folder.
 Only what changed is written. A write already in flight is not joined but
 remembered: the next one runs after it, so a burst of edits during a slow
 save collapses into one more write rather than a queue of them.
+
+**Parameters**
+
+- `prune` — `boolean` _(optional)_ — Whether files the workspace no longer has may be removed; false for the first write after connecting.
 
 **Returns**
 

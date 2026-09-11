@@ -143,6 +143,19 @@ function needsStorageChoice() {
 }
 
 /**
+ * Whether this window's workspace came back from storage or was invented now.
+ *
+ * The difference decides what may happen to a connected folder. A restored
+ * workspace is the continuation of the user's work and can legitimately be
+ * newer than what is on disk. A first-run one is the app's own empty default
+ * — it carries a modification stamp of *now*, and every stamp comparison in
+ * the world would call it the newer of the two. Letting it win would write an
+ * empty workspace over a folder full of projects, which is exactly what
+ * clearing browser data would otherwise do.
+ */
+let workspaceRestored = false
+
+/**
  * Load the persisted workspace, or build a first-run one.
  *
  * A workspace that fails to parse is replaced rather than repaired: the file
@@ -162,7 +175,7 @@ function loadWorkspace() {
     const raw = localStorage.getItem(WORKSPACE_KEY)
     if (raw) {
       const parsed = W.parseWorkspace(raw)
-      if (parsed.ok) return parsed.workspace
+      if (parsed.ok) { workspaceRestored = true; return parsed.workspace }
     }
   } catch { /* fall through to a fresh workspace */ }
 
@@ -2266,6 +2279,11 @@ export const useStore = create((rawSet, get) => {
   _openFolder: async (handle, read, prefer) => {
     folderHandle = handle
     set({ folderName: handle.name, folderStatus: 'connected', folderError: null })
+    // A connected folder is the answer to where the work is kept, so the
+    // startup question is settled — including the case that asks it again
+    // because clearing browser data took the previous answer with it.
+    set({ workspacePrompt: false })
+    try { localStorage.setItem(STORAGE_CHOICE_KEY, 'folder') } catch { /* private mode */ }
 
     const ours = Date.parse(get().workspace.modified || '') || 0
     const theirs = read.ok ? (Date.parse(read.workspace.modified || '') || 0) : -1
@@ -2278,12 +2296,13 @@ export const useStore = create((rawSet, get) => {
     }
 
     // Ours is the newer of the two, or the folder holds nothing of ours: write
-    // it out. Anything already in the folder that we did not read stays —
-    // `folderState` is what a delete may touch, and it holds only what came
-    // back from the read.
+    // it out — but only write. A file on disk that this workspace does not
+    // have has not been deleted by anyone; this browser has simply never heard
+    // of it, and the first thing a connection does must never be to tidy the
+    // user's folder on that basis. Deletions begin from here.
     folderState = read.ok ? read.previous : { files: new Map(), folders: [] }
     get().saveActiveFile()
-    await get()._syncFolder()
+    await get()._syncFolder(false)
   },
 
   /**
@@ -2293,16 +2312,17 @@ export const useStore = create((rawSet, get) => {
    * remembered: the next one runs after it, so a burst of edits during a slow
    * save collapses into one more write rather than a queue of them.
    *
+   * @param {boolean} [prune] - Whether files the workspace no longer has may be removed; false for the first write after connecting.
    * @returns {Promise<void>} Resolves once the folder matches, or once the failure has been recorded.
    * @sideEffect Writes the user's filesystem and store state. Does nothing when no folder is connected, or when the connected one is locked.
    * @mutates The module-level folder state and the in-flight flags.
    */
-  _syncFolder: async () => {
+  _syncFolder: async (prune = true) => {
     if (!folderHandle || get().folderStatus === 'locked') return
     if (folderWriting) { folderAgain = true; return }
     folderWriting = true
     try {
-      const plan = F.planSync(get().workspace, folderState)
+      const plan = F.planSync(get().workspace, folderState, prune)
       if (!plan.writes.length && !plan.deletes.length && !plan.gone.length) return
       const { failed } = await F.applyPlan(folderHandle, plan)
       folderState = plan.next
@@ -2351,9 +2371,14 @@ export const useStore = create((rawSet, get) => {
     // Compare against the workspace as it was loaded rather than as it is now:
     // the first simulation has probably auto-saved by the time the folder has
     // been read, and that must not make the browser copy look like the newer.
+    //
+    // And only compare at all when there is something to compare. A workspace
+    // the browser invented seconds ago is not a competing version of the
+    // folder's; it is the absence of one. Clearing browser data leaves exactly
+    // that, and the folder is then the only copy of the user's work there is.
     const stale = Date.parse(since || '') || 0
     const theirs = read.ok ? (Date.parse(read.workspace.modified || '') || 0) : -1
-    await get()._openFolder(handle, read, read.ok && theirs >= stale)
+    await get()._openFolder(handle, read, read.ok && (!workspaceRestored || theirs >= stale))
   },
 
   /**

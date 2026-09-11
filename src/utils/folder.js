@@ -108,17 +108,25 @@ export function diskContents(ws) {
  * only ever remove a file the app itself put there. Anything else in the
  * folder is invisible to it.
  *
+ * `prune` off removes even that: nothing is deleted, only written. That is the
+ * setting for the first write after a folder is connected, where "the
+ * workspace does not have this file" does not yet mean the user got rid of it
+ * — it can equally mean this browser has never heard of it. A folder only ever
+ * loses a file to a deletion the user made while it was connected.
+ *
  * @param {object} ws - The workspace to write.
  * @param {{files: Map<string, string>, folders: string[]}} previous - What the app last saw on disk.
+ * @param {boolean} [prune] - Whether files and folders the workspace no longer has may be removed.
  * @returns {{writes: Array<{path: string, data: string}>, deletes: string[], folders: string[], gone: string[], next: {files: Map<string, string>, folders: string[]}}} The files to write, the files and folders to remove, the folders to create, and the state to record once it is done.
  * @pure
  */
-export function planSync(ws, previous) {
+export function planSync(ws, previous, prune = true) {
   const next = diskContents(ws)
   const writes = []
   for (const [path, data] of next.files) {
     if (previous.files.get(path) !== data) writes.push({ path, data })
   }
+  if (!prune) return { writes, deletes: [], folders: next.folders, gone: [], next }
   const deletes = [...previous.files.keys()].filter((p) => !next.files.has(p))
   const keep = new Set(next.folders)
   const gone = previous.folders.filter((f) => !keep.has(f))

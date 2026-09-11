@@ -194,6 +194,30 @@ test('planSync: a folder that no longer exists is listed for removal', () => {
   assert.deepEqual(plan.gone, ['sketches'])
 })
 
+test('planSync: pruning off writes but never deletes', () => {
+  const ws = writeFile(newWorkspace('w', 'a'), 'b.acousim', { kind: 'project', data: { name: 'b', nodes: [], edges: [] } })
+  const state = planSync(ws, { files: new Map(), folders: [] }).next
+
+  // The case that matters: a browser that has lost its storage arrives with an
+  // empty workspace and meets a folder full of projects.
+  const fresh = newWorkspace('w', 'project')
+  const plan = planSync(fresh, state, false)
+  assert.deepEqual(plan.deletes, [])
+  assert.deepEqual(plan.gone, [])
+  assert.ok(plan.writes.length)
+})
+
+test('planSync: pruning off forgets the files it did not delete', () => {
+  const ws = writeFile(newWorkspace('w', 'a'), 'b.acousim', { kind: 'project', data: { name: 'b', nodes: [], edges: [] } })
+  const state = planSync(ws, { files: new Map(), folders: [] }).next
+
+  // What survives an unpruned write becomes foreign: the next sync, pruning
+  // normally, must still not touch it.
+  const fresh = newWorkspace('w', 'project')
+  const first = planSync(fresh, state, false)
+  assert.deepEqual(planSync(fresh, first.next, true).deletes, [])
+})
+
 // ---------------------------------------------------------------------------
 // applyPlan
 // ---------------------------------------------------------------------------
@@ -312,6 +336,23 @@ test('readFolderWorkspace: a file that is not JSON is skipped, not fatal', async
   assert.equal(read.ok, true)
   assert.deepEqual(read.skipped, ['README.md'])
   assert.equal(read.workspace.files['README.md'], undefined)
+})
+
+test('a browser that lost its storage does not empty the folder', async () => {
+  const ws = writeFile(newWorkspace('bench', 'a'), 'boxes/b.acousim', {
+    kind: 'project', data: { name: 'b', nodes: [{ id: 'n1' }], edges: [] },
+  })
+  const { root, state } = await seed(ws)
+
+  // Cleared browser data: the workspace is the app's own empty default, whose
+  // stamp is newer than anything on disk. The folder must survive it.
+  await applyPlan(root, planSync(newWorkspace('workspace', 'project'), state, false))
+  const read = await readFolderWorkspace(root)
+  assert.deepEqual(
+    Object.keys(read.workspace.files).sort(),
+    ['a.acousim', 'boxes/b.acousim', 'project.acousim'],
+  )
+  assert.deepEqual(read.workspace.files['boxes/b.acousim'].data.nodes, [{ id: 'n1' }])
 })
 
 test('a foreign file survives a full write-read-write cycle', async () => {

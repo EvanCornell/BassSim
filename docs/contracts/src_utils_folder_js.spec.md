@@ -75,7 +75,7 @@ archive are byte-for-byte the same tree.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
-### `planSync(ws, previous)`
+### `planSync(ws, previous, prune)`
 
 - **Reachability:** EXPORTED
 - **Obtain via:** import { planSync } from '../../src/utils/folder.js'
@@ -91,10 +91,17 @@ Deletions are drawn from `previous` rather than from the folder, so this can
 only ever remove a file the app itself put there. Anything else in the
 folder is invisible to it.
 
+`prune` off removes even that: nothing is deleted, only written. That is the
+setting for the first write after a folder is connected, where "the
+workspace does not have this file" does not yet mean the user got rid of it
+— it can equally mean this browser has never heard of it. A folder only ever
+loses a file to a deletion the user made while it was connected.
+
 **Parameters**
 
 - `ws` — `object` — The workspace to write.
 - `previous` — `{files: Map<string, string>, folders: string[]}` — What the app last saw on disk.
+- `prune` — `boolean` _(optional)_ — Whether files and folders the workspace no longer has may be removed.
 
 **Returns**
 

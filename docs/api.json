@@ -23751,14 +23751,14 @@
         },
         {
           "name": "useStore",
-          "line": 370,
+          "line": 383,
           "shape": null,
           "summary": null,
           "description": null
         },
         {
           "name": "__internals",
-          "line": 2669,
+          "line": 2694,
           "shape": {
             "kind": "object",
             "keys": [
@@ -23943,7 +23943,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 160,
+          "line": 173,
           "signature": [],
           "documented": true,
           "summary": "Load the persisted workspace, or build a first-run one.",
@@ -23974,7 +23974,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 198,
+          "line": 211,
           "signature": [],
           "documented": true,
           "summary": "Load the persisted dock layout, falling back to the default.",
@@ -24005,7 +24005,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 216,
+          "line": 229,
           "signature": [],
           "documented": true,
           "summary": "Load the user's saved layout arrangements.",
@@ -24036,7 +24036,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 236,
+          "line": 249,
           "signature": [],
           "documented": true,
           "summary": "Load the quick-bar arrangement.",
@@ -24067,7 +24067,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 285,
+          "line": 298,
           "signature": [],
           "documented": true,
           "summary": "Queue a folder write.",
@@ -24100,7 +24100,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 305,
+          "line": 318,
           "signature": [
             "type"
           ],
@@ -24141,7 +24141,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 325,
+          "line": 338,
           "signature": [
             "spot",
             "nodes",
@@ -24206,7 +24206,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 333,
+          "line": 346,
           "signature": [
             "x",
             "y"
@@ -24255,7 +24255,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 352,
+          "line": 365,
           "signature": [
             "nodes",
             "edges",
@@ -24310,7 +24310,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 390,
+          "line": 403,
           "signature": [
             "partial",
             "replace"
@@ -24361,7 +24361,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 473,
+          "line": 486,
           "signature": [
             "x",
             "y",
@@ -24418,7 +24418,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 484,
+          "line": 497,
           "signature": [],
           "documented": true,
           "summary": "Dismiss the context menu.",
@@ -24449,7 +24449,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 493,
+          "line": 506,
           "signature": [
             "id"
           ],
@@ -24490,7 +24490,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 504,
+          "line": 517,
           "signature": [
             "id"
           ],
@@ -24531,7 +24531,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 512,
+          "line": 525,
           "signature": [
             "id"
           ],
@@ -24572,7 +24572,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 521,
+          "line": 534,
           "signature": [
             "v",
             "section"
@@ -24621,7 +24621,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 529,
+          "line": 542,
           "signature": [
             "id"
           ],
@@ -24662,7 +24662,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 541,
+          "line": 554,
           "signature": [
             "id",
             "combos"
@@ -24711,7 +24711,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 558,
+          "line": 571,
           "signature": [
             "id",
             "combo"
@@ -24760,7 +24760,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 576,
+          "line": 589,
           "signature": [
             "id",
             "combo"
@@ -24809,7 +24809,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 583,
+          "line": 596,
           "signature": [],
           "documented": true,
           "summary": "Restore every command to its default combos.",
@@ -24840,7 +24840,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 600,
+          "line": 613,
           "signature": [
             "tree"
           ],
@@ -24881,7 +24881,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 617,
+          "line": 630,
           "signature": [
             "stackId",
             "panelId"
@@ -24930,7 +24930,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 627,
+          "line": 640,
           "signature": [
             "panelId",
             "stackId",
@@ -24987,7 +24987,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 636,
+          "line": 649,
           "signature": [
             "panelId",
             "edge"
@@ -25036,7 +25036,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 647,
+          "line": 660,
           "signature": [
             "splitId",
             "index",
@@ -25101,7 +25101,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 661,
+          "line": 674,
           "signature": [
             "panelId",
             "stackId",
@@ -25158,7 +25158,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 682,
+          "line": 695,
           "signature": [
             "panelId"
           ],
@@ -25199,7 +25199,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 699,
+          "line": 712,
           "signature": [
             "panelId"
           ],
@@ -25240,7 +25240,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 711,
+          "line": 724,
           "signature": [
             "panelId"
           ],
@@ -25281,7 +25281,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 722,
+          "line": 735,
           "signature": [],
           "documented": true,
           "summary": "Restore the default workspace arrangement.",
@@ -25312,7 +25312,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 732,
+          "line": 745,
           "signature": [
             "name"
           ],
@@ -25353,7 +25353,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 751,
+          "line": 764,
           "signature": [
             "name"
           ],
@@ -25394,7 +25394,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 775,
+          "line": 788,
           "signature": [
             "ids"
           ],
@@ -25435,7 +25435,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 791,
+          "line": 804,
           "signature": [
             "id"
           ],
@@ -25476,7 +25476,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 803,
+          "line": 816,
           "signature": [
             "id",
             "delta"
@@ -25525,7 +25525,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 817,
+          "line": 830,
           "signature": [],
           "documented": true,
           "summary": "Restore the default quick-bar arrangement.",
@@ -25556,7 +25556,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 826,
+          "line": 839,
           "signature": [
             "name"
           ],
@@ -25597,7 +25597,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 844,
+          "line": 857,
           "signature": [
             "id",
             "range"
@@ -25646,7 +25646,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 860,
+          "line": 873,
           "signature": [],
           "documented": true,
           "summary": "Record the current graph as an undo point.",
@@ -25677,7 +25677,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 873,
+          "line": 886,
           "signature": [],
           "documented": true,
           "summary": "Step back one entry in the history.",
@@ -25708,7 +25708,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 890,
+          "line": 903,
           "signature": [],
           "documented": true,
           "summary": "Step forward one entry in the history.",
@@ -25739,7 +25739,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 915,
+          "line": 928,
           "signature": [
             "changes"
           ],
@@ -25780,7 +25780,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 929,
+          "line": 942,
           "signature": [
             "changes"
           ],
@@ -25821,7 +25821,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 941,
+          "line": 954,
           "signature": [
             "conn"
           ],
@@ -25862,7 +25862,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 953,
+          "line": 966,
           "signature": [
             "id"
           ],
@@ -25903,7 +25903,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 966,
+          "line": 979,
           "signature": [
             "type",
             "position"
@@ -25952,7 +25952,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 996,
+          "line": 1009,
           "signature": [
             "id",
             "params"
@@ -26001,7 +26001,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1023,
+          "line": 1036,
           "signature": [
             "id"
           ],
@@ -26042,7 +26042,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1044,
+          "line": 1057,
           "signature": [
             "id",
             "name"
@@ -26091,7 +26091,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1074,
+          "line": 1087,
           "signature": [
             "id",
             "field",
@@ -26148,7 +26148,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1097,
+          "line": 1110,
           "signature": [
             "id"
           ],
@@ -26189,7 +26189,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1125,
+          "line": 1138,
           "signature": [
             "id",
             "field",
@@ -26246,7 +26246,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1149,
+          "line": 1162,
           "signature": [
             "id",
             "patch"
@@ -26295,7 +26295,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1171,
+          "line": 1184,
           "signature": [],
           "documented": true,
           "summary": "Delete the selected nodes and edges.",
@@ -26326,7 +26326,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1196,
+          "line": 1209,
           "signature": [],
           "documented": true,
           "summary": "Copy the selected nodes in place, offset down-right.",
@@ -26357,7 +26357,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1221,
+          "line": 1234,
           "signature": [],
           "documented": true,
           "summary": "Select every node on the canvas.",
@@ -26388,7 +26388,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1236,
+          "line": 1249,
           "signature": [
             "ids",
             "additive"
@@ -26437,7 +26437,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1269,
+          "line": 1282,
           "signature": [],
           "documented": true,
           "summary": "Copy the selected nodes and their internal edges to the in-app clipboard.",
@@ -26468,7 +26468,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1295,
+          "line": 1308,
           "signature": [],
           "documented": true,
           "summary": "Copy the selection, then delete it.",
@@ -26499,7 +26499,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1316,
+          "line": 1329,
           "signature": [
             "at"
           ],
@@ -26540,7 +26540,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1364,
+          "line": 1377,
           "signature": [
             "type"
           ],
@@ -26581,7 +26581,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1380,
+          "line": 1393,
           "signature": [
             "delta"
           ],
@@ -26622,7 +26622,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1393,
+          "line": 1406,
           "signature": [],
           "documented": true,
           "summary": "Force a resimulation even though nothing has changed.",
@@ -26653,7 +26653,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1406,
+          "line": 1419,
           "signature": [
             "patch"
           ],
@@ -26694,7 +26694,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1422,
+          "line": 1435,
           "signature": [
             "field",
             "value"
@@ -26743,7 +26743,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1455,
+          "line": 1468,
           "signature": [],
           "documented": true,
           "summary": "Freeze the current result as a labelled reference overlay.",
@@ -26774,7 +26774,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1491,
+          "line": 1504,
           "signature": [
             "id"
           ],
@@ -26815,7 +26815,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1503,
+          "line": 1516,
           "signature": [
             "id",
             "label"
@@ -26864,7 +26864,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1516,
+          "line": 1529,
           "signature": [
             "id"
           ],
@@ -26905,7 +26905,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1524,
+          "line": 1537,
           "signature": [
             "v"
           ],
@@ -26946,7 +26946,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1532,
+          "line": 1545,
           "signature": [
             "v"
           ],
@@ -26987,7 +26987,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1540,
+          "line": 1553,
           "signature": [
             "id"
           ],
@@ -27028,7 +27028,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1571,
+          "line": 1584,
           "signature": [],
           "documented": true,
           "summary": "Schedule a debounced simulation run.",
@@ -27059,7 +27059,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1612,
+          "line": 1625,
           "signature": [],
           "documented": true,
           "summary": "Capture the project as a plain, saveable object.",
@@ -27090,7 +27090,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1640,
+          "line": 1653,
           "signature": [
             "proj"
           ],
@@ -27131,7 +27131,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1664,
+          "line": 1677,
           "signature": [],
           "documented": true,
           "summary": "Download the open project as a standalone JSON file.",
@@ -27162,7 +27162,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1681,
+          "line": 1694,
           "signature": [
             "proj",
             "filename"
@@ -27211,7 +27211,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1714,
+          "line": 1727,
           "signature": [
             "ws"
           ],
@@ -27252,7 +27252,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1729,
+          "line": 1742,
           "signature": [
             "name"
           ],
@@ -27293,7 +27293,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1743,
+          "line": 1756,
           "signature": [],
           "documented": true,
           "summary": "Write the editor's current project back into its file.",
@@ -27324,7 +27324,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1761,
+          "line": 1774,
           "signature": [
             "path"
           ],
@@ -27365,7 +27365,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1777,
+          "line": 1790,
           "signature": [
             "folder"
           ],
@@ -27406,7 +27406,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1798,
+          "line": 1811,
           "signature": [
             "parent"
           ],
@@ -27447,7 +27447,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1821,
+          "line": 1834,
           "signature": [
             "from",
             "to"
@@ -27496,7 +27496,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1858,
+          "line": 1871,
           "signature": [
             "path"
           ],
@@ -27537,7 +27537,7 @@
           "exported": false,
           "async": true,
           "generator": false,
-          "line": 1890,
+          "line": 1903,
           "signature": [],
           "documented": true,
           "summary": "Download the whole workspace, and record that it happened.",
@@ -27568,7 +27568,7 @@
           "exported": false,
           "async": true,
           "generator": false,
-          "line": 1919,
+          "line": 1932,
           "signature": [
             "file"
           ],
@@ -27609,7 +27609,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1943,
+          "line": 1956,
           "signature": [
             "ws"
           ],
@@ -27650,7 +27650,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1977,
+          "line": 1990,
           "signature": [
             "paths"
           ],
@@ -27691,7 +27691,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1987,
+          "line": 2000,
           "signature": [
             "path",
             "open"
@@ -27740,7 +27740,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2001,
+          "line": 2014,
           "signature": [],
           "documented": true,
           "summary": "Collapse every folder in the explorer.",
@@ -27771,7 +27771,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2016,
+          "line": 2029,
           "signature": [
             "mode",
             "path"
@@ -27820,7 +27820,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2027,
+          "line": 2040,
           "signature": [],
           "documented": true,
           "summary": "Dismiss the explorer's inline editor.",
@@ -27851,7 +27851,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2042,
+          "line": 2055,
           "signature": [
             "paths",
             "cut"
@@ -27900,7 +27900,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2055,
+          "line": 2068,
           "signature": [
             "folder"
           ],
@@ -27941,7 +27941,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2082,
+          "line": 2095,
           "signature": [
             "path"
           ],
@@ -27982,7 +27982,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2098,
+          "line": 2111,
           "signature": [
             "from",
             "folder"
@@ -28031,7 +28031,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2120,
+          "line": 2133,
           "signature": [
             "mode",
             "parent",
@@ -28088,7 +28088,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2154,
+          "line": 2167,
           "signature": [
             "kind"
           ],
@@ -28129,7 +28129,7 @@
           "exported": false,
           "async": true,
           "generator": false,
-          "line": 2185,
+          "line": 2198,
           "signature": [
             "confirmAdopt"
           ],
@@ -28170,7 +28170,7 @@
           "exported": false,
           "async": true,
           "generator": false,
-          "line": 2218,
+          "line": 2231,
           "signature": [],
           "documented": true,
           "summary": "Renew permission on a remembered folder and open it again.",
@@ -28201,7 +28201,7 @@
           "exported": false,
           "async": true,
           "generator": false,
-          "line": 2241,
+          "line": 2254,
           "signature": [],
           "documented": true,
           "summary": "Stop keeping the workspace in a folder.",
@@ -28234,7 +28234,7 @@
           "exported": false,
           "async": true,
           "generator": false,
-          "line": 2266,
+          "line": 2279,
           "signature": [
             "handle",
             "read",
@@ -28293,12 +28293,22 @@
           "exported": false,
           "async": true,
           "generator": false,
-          "line": 2300,
-          "signature": [],
+          "line": 2320,
+          "signature": [
+            "prune"
+          ],
           "documented": true,
           "summary": "Write the workspace to the connected folder.",
           "description": "Write the workspace to the connected folder.\n\nOnly what changed is written. A write already in flight is not joined but\nremembered: the next one runs after it, so a burst of edits during a slow\nsave collapses into one more write rather than a queue of them.",
-          "params": [],
+          "params": [
+            {
+              "name": "prune",
+              "type": "boolean",
+              "optional": true,
+              "default": null,
+              "desc": "Whether files the workspace no longer has may be removed; false for the first write after connecting."
+            }
+          ],
           "returns": {
             "type": "Promise<void>",
             "desc": "Resolves once the folder matches, or once the failure has been recorded."
@@ -28326,7 +28336,7 @@
           "exported": false,
           "async": true,
           "generator": false,
-          "line": 2342,
+          "line": 2362,
           "signature": [
             "since"
           ],
@@ -28369,7 +28379,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2370,
+          "line": 2395,
           "signature": [
             "drivers"
           ],
@@ -28410,7 +28420,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2392,
+          "line": 2417,
           "signature": [
             "id"
           ],
@@ -28451,7 +28461,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2408,
+          "line": 2433,
           "signature": [
             "id"
           ],
@@ -28492,7 +28502,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2431,
+          "line": 2456,
           "signature": [
             "id"
           ],
@@ -28533,7 +28543,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2458,
+          "line": 2483,
           "signature": [
             "id"
           ],
@@ -28574,7 +28584,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2474,
+          "line": 2499,
           "signature": [
             "stackId"
           ],
@@ -28615,7 +28625,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2498,
+          "line": 2523,
           "signature": [
             "panelId",
             "stackId"
@@ -28664,7 +28674,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2518,
+          "line": 2543,
           "signature": [
             "id"
           ],
@@ -28705,7 +28715,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2529,
+          "line": 2554,
           "signature": [
             "id"
           ],
@@ -28746,7 +28756,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2548,
+          "line": 2573,
           "signature": [
             "patch"
           ],
@@ -28789,7 +28799,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2558,
+          "line": 2583,
           "signature": [],
           "documented": true,
           "summary": "The full shared slice, sent to a popped-out tab when it announces itself.",
@@ -28820,7 +28830,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2622,
+          "line": 2647,
           "signature": [
             "arg0"
           ],
@@ -29933,14 +29943,15 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 116,
+          "line": 123,
           "signature": [
             "ws",
-            "previous"
+            "previous",
+            "prune"
           ],
           "documented": true,
           "summary": "What has to happen on disk to bring a folder up to date.",
-          "description": "What has to happen on disk to bring a folder up to date.\n\nOnly files whose text actually changed are rewritten, which matters more\nthan it looks: a workspace commits on every simulation, and rewriting forty\nunchanged projects each time would churn the user's filesystem, their\nbackups and their git history.\n\nDeletions are drawn from `previous` rather than from the folder, so this can\nonly ever remove a file the app itself put there. Anything else in the\nfolder is invisible to it.",
+          "description": "What has to happen on disk to bring a folder up to date.\n\nOnly files whose text actually changed are rewritten, which matters more\nthan it looks: a workspace commits on every simulation, and rewriting forty\nunchanged projects each time would churn the user's filesystem, their\nbackups and their git history.\n\nDeletions are drawn from `previous` rather than from the folder, so this can\nonly ever remove a file the app itself put there. Anything else in the\nfolder is invisible to it.\n\n`prune` off removes even that: nothing is deleted, only written. That is the\nsetting for the first write after a folder is connected, where \"the\nworkspace does not have this file\" does not yet mean the user got rid of it\n— it can equally mean this browser has never heard of it. A folder only ever\nloses a file to a deletion the user made while it was connected.",
           "params": [
             {
               "name": "ws",
@@ -29955,6 +29966,13 @@
               "optional": false,
               "default": null,
               "desc": "What the app last saw on disk."
+            },
+            {
+              "name": "prune",
+              "type": "boolean",
+              "optional": true,
+              "default": null,
+              "desc": "Whether files and folders the workspace no longer has may be removed."
             }
           ],
           "returns": {
@@ -29980,7 +29998,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 136,
+          "line": 144,
           "signature": [],
           "documented": true,
           "summary": "Open the handle database, creating its store on first use.",
@@ -30011,7 +30029,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 145,
+          "line": 153,
           "signature": [],
           "documented": true,
           "summary": "Create the handle store the first time this database is opened.",
@@ -30042,7 +30060,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 154,
+          "line": 162,
           "signature": [],
           "documented": true,
           "summary": "Hand back the open database.",
@@ -30073,7 +30091,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 161,
+          "line": 169,
           "signature": [],
           "documented": true,
           "summary": "Report that the database could not be opened.",
@@ -30104,7 +30122,7 @@
           "exported": false,
           "async": true,
           "generator": false,
-          "line": 173,
+          "line": 181,
           "signature": [
             "mode",
             "run"
@@ -30153,7 +30171,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 188,
+          "line": 196,
           "signature": [],
           "documented": true,
           "summary": "Hand back the request's result once the transaction has committed.",
@@ -30184,7 +30202,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 195,
+          "line": 203,
           "signature": [],
           "documented": true,
           "summary": "Report a failed transaction.",
@@ -30215,7 +30233,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 202,
+          "line": 210,
           "signature": [],
           "documented": true,
           "summary": "Report an aborted transaction.",
@@ -30246,7 +30264,7 @@
           "exported": true,
           "async": true,
           "generator": false,
-          "line": 219,
+          "line": 227,
           "signature": [
             "handle"
           ],
@@ -30287,7 +30305,7 @@
           "exported": true,
           "async": true,
           "generator": false,
-          "line": 234,
+          "line": 242,
           "signature": [],
           "documented": true,
           "summary": "The folder remembered from a previous visit.",
@@ -30318,7 +30336,7 @@
           "exported": true,
           "async": true,
           "generator": false,
-          "line": 249,
+          "line": 257,
           "signature": [],
           "documented": true,
           "summary": "Forget the remembered folder.",
@@ -30349,7 +30367,7 @@
           "exported": true,
           "async": true,
           "generator": false,
-          "line": 270,
+          "line": 278,
           "signature": [
             "handle",
             "ask"
@@ -30398,7 +30416,7 @@
           "exported": true,
           "async": true,
           "generator": false,
-          "line": 287,
+          "line": 295,
           "signature": [],
           "documented": true,
           "summary": "Ask the user to choose a folder for their workspace.",
@@ -30429,7 +30447,7 @@
           "exported": true,
           "async": true,
           "generator": false,
-          "line": 311,
+          "line": 319,
           "signature": [
             "handle",
             "prefix",
@@ -30486,7 +30504,7 @@
           "exported": true,
           "async": true,
           "generator": false,
-          "line": 341,
+          "line": 349,
           "signature": [
             "handle"
           ],
@@ -30527,7 +30545,7 @@
           "exported": false,
           "async": true,
           "generator": false,
-          "line": 371,
+          "line": 379,
           "signature": [
             "root",
             "path",
@@ -30584,7 +30602,7 @@
           "exported": true,
           "async": true,
           "generator": false,
-          "line": 396,
+          "line": 404,
           "signature": [
             "root",
             "plan"
