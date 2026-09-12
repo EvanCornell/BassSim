@@ -488,9 +488,11 @@ test('driverParams: @pure — arguments unmodified, equal results', () => {
 // portLengthGuess
 // ===========================================================================
 
-// CONTRACT: "`ecFactor` — _(optional, default `0.732`)_"
-test('portLengthGuess: ecFactor defaults to 0.732', () => {
-  assert.equal(portLengthGuess(32, 60, 100), portLengthGuess(32, 60, 100, 0.732))
+// CONTRACT: "`ecFactor` — _(optional, default `0.85`)_ ... The default is the
+// flanged value, which is what a port gets at a box at one end and at open air
+// at the other."
+test('portLengthGuess: ecFactor defaults to 0.85', () => {
+  assert.equal(portLengthGuess(32, 60, 100), portLengthGuess(32, 60, 100, 0.85))
   assert.notEqual(portLengthGuess(32, 60, 100), portLengthGuess(32, 60, 100, 0.1))
 })
 

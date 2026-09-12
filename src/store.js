@@ -26,7 +26,7 @@
 
 import { create } from 'zustand'
 import { applyNodeChanges, applyEdgeChanges, addEdge } from 'reactflow'
-import { SCHEMA_VERSION, DEFAULT_PARAMS } from './engine/project'
+import { SCHEMA_VERSION, DEFAULT_PARAMS, migrateParams } from './engine/project'
 import * as L from './layout'
 import * as D from './driverParams'
 import { PANEL_META, PANEL_IDS } from './panelMeta'
@@ -1651,9 +1651,10 @@ export const useStore = create((rawSet, get) => {
    * @sideEffect Replaces store state and schedules a resimulation.
    */
   loadSerialized: (proj) => {
+    const from = Number(proj.schemaVersion) || 1
     const nodes = (proj.nodes || []).map((n) => ({
       id: n.id, type: n.type, position: n.position,
-      data: { params: { ...DEFAULT_PARAMS[n.type], ...n.params } },
+      data: { params: { ...DEFAULT_PARAMS[n.type], ...migrateParams(n.type, n.params || {}, from) } },
     }))
     const edges = (proj.edges || []).map((e) => ({ ...e, id: e.id || `e_${e.source}_${e.target}_${Math.random().toString(36).slice(2, 7)}` }))
     set({

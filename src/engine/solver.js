@@ -17,11 +17,11 @@
 // chamber with nothing on its outlet is sealed.
 import {
   C, ZERO, add, sub, mul, div, inv, abs, arg, jw, jwPow, parallel,
-  zInFromMatrix, propagate,
+  zInFromMatrix, propagate, matMul,
 } from './complex.js'
 import {
   RHO, C_AIR, SOLID_ANGLES, radiationImpedance, waveguideMatrix, chamberMatrix,
-  endCorrectionLength, flareCutoff, combineQ,
+  junctionCorrection, seriesMassMatrix, flareCutoff, combineQ,
 } from './acoustics.js'
 import { cycleAverage, complianceRatio, hasNL } from './nonlinear.js'
 
@@ -381,6 +381,84 @@ export function runSimulation(nodes, edges, settings) {
 
   const combinedPressure = new Array(npts)
 
+  // ---------- end corrections ----------
+  //
+  // The air just outside an opening moves with the column inside it, and how
+  // much of it does depends on what the opening opens *into*. That makes an end
+  // correction a property of a junction rather than of a duct, so it is decided
+  // here, from the graph, rather than inside the element models — which see only
+  // their own geometry and would have to guess.
+  //
+  // Three cases fall out of one rule. A duct meeting a much wider space gets
+  // essentially the flanged correction. A duct meeting another of its own area
+  // gets none, so a port drawn as six segments is the same port as one drawn in
+  // a single node. And a duct meeting open air gets none *here* — the radiation
+  // impedance already carries it, and its reactance at low ka is exactly the
+  // 0.85a a flanged opening is owed. Adding a geometric term there as well
+  // would count the same air twice.
+  //
+  // Neither of these depends on frequency or on the path taken to reach a node,
+  // so they are computed per sweep and shared by both the backward and forward
+  // walks.
+
+  /**
+   * Area a node presents at one of its handles.
+   *
+   * @param {object} node - The node on the far side of a junction.
+   * @param {string} handle - The handle the junction arrives at.
+   * @returns {number|null} Area in m², or `null` for a terminal that is not a duct face — a radiation node is open air, which has no area and needs no correction.
+   * @reads Node params, and the SI driver table for a driver's total cone area.
+   */
+  const faceArea = (node, handle) => {
+    const p = node.data.params
+    if (node.type === 'waveguide') {
+      const S = handle === 'throat' ? (p.S1 || 50) : (p.S2 || 50)
+      return Math.max(S * 1e-4, 1e-6)
+    }
+    if (node.type === 'chamber') {
+      const V = Math.max((p.volume || 20) * 1e-3, 1e-5)
+      const L = Math.max((p.length || 30) * 1e-2, 1e-3)
+      return V / L
+    }
+    if (node.type === 'driver') return driverSIs.get(node.id)?.Sd ?? null
+    if (node.type === 'pr') return Math.max((p.Sd || 200) * 1e-4, 1e-5)
+    return null // radiation, or anything else that is not a duct face
+  }
+
+  /**
+   * The end correction one face of a two-port carries, in its own area's units.
+   *
+   * The mass at a junction is one physical thing, so exactly one of the two
+   * sides may hold it or it would be counted twice. It goes to the narrower
+   * side, which is where it physically sits and where `ρ·ΔL/S` is defined —
+   * unless that side is a driver or a passive radiator, which have no place to
+   * put it, in which case the duct holds it referred to its own area.
+   *
+   * Several branches on one handle are one opening of their combined area: a
+   * chamber vented by three identical ports is not three separate junctions
+   * with the small area of one.
+   *
+   * @param {object} node - The two-port being built.
+   * @param {string} handle - `'throat'`/`'mouth'` for a waveguide, `'in'`/`'out'` for a chamber.
+   * @returns {number} Added effective length in m, zero for an open end or for the side that does not own the junction.
+   * @reads The adjacency index and node params.
+   */
+  const faceCorrection = (node, handle) => {
+    const neighbours = adj.get(`${node.id}:${handle}`) || []
+    if (!neighbours.length) return 0 // open air, or a sealed chamber end
+    let total = 0
+    let farSideCanHold = true
+    for (const o of neighbours) {
+      const area = faceArea(o.node, o.handle)
+      if (area == null) return 0 // radiating into open air; radiationImpedance has it
+      total += area
+      if (o.node.type !== 'waveguide' && o.node.type !== 'chamber') farSideCanHold = false
+    }
+    const self = faceArea(node, handle)
+    if (self > total && farSideCanHold) return 0 // the narrower side owns it
+    return junctionCorrection(self, total)
+  }
+
   const nlIters = nlActive ? 4 : 1
   for (let nlIter = 0; nlIter < nlIters; nlIter++) {
   for (let i = 0; i < npts; i++) {
@@ -413,15 +491,25 @@ export function runSimulation(nodes, edges, settings) {
         const S1 = Math.max((p.S1 || 50) * 1e-4, 1e-6)
         const S2 = Math.max((p.S2 || 50) * 1e-4, 1e-6)
         const L = Math.max((p.length || 10) * 1e-2, 1e-4)
-        const ecT = endCorrectionLength(S1, p.ecOverride ?? 0.0) // throat correction usually small
-        const ecM = endCorrectionLength(S2, p.ecFactor ?? 0.732)
-        M = waveguideMatrix({ S1, S2, L, flare: p.flare || 'conical', Q: normQ(p), ecThroat: 0, ecMouth: ecM }, w)
+        const k = p.ecFactor ?? 1
+        M = waveguideMatrix({
+          S1, S2, L, flare: p.flare || 'conical', Q: normQ(p),
+          ecThroat: k * faceCorrection(node, 'throat'),
+          ecMouth: k * faceCorrection(node, 'mouth'),
+        }, w)
         M.S1 = S1; M.S2 = S2
       } else if (node.type === 'chamber') {
         const V = Math.max((p.volume || 20) * 1e-3, 1e-5)
         const L = Math.max((p.length || 30) * 1e-2, 1e-3)
-        M = chamberMatrix({ volume: V, length: L, Q: normQ(p), stuffing: p.stuffing || 0 }, w, masking)
         const S = V / L
+        M = chamberMatrix({ volume: V, length: L, Q: normQ(p), stuffing: p.stuffing || 0 }, w, masking)
+        // A chamber is nearly always the wider side of its junctions and so
+        // carries nothing; this fires only where one is narrower than what it
+        // meets, which the same rule has to cover to stay consistent.
+        const ecIn = faceCorrection(node, 'in')
+        const ecOut = faceCorrection(node, 'out')
+        if (ecIn > 0) M = matMul(seriesMassMatrix((RHO * ecIn) / S, w), M)
+        if (ecOut > 0) M = matMul(M, seriesMassMatrix((RHO * ecOut) / S, w))
         M.S1 = S; M.S2 = S
       }
       matCache.set(key, M)
@@ -494,7 +582,7 @@ export function runSimulation(nodes, edges, settings) {
         if (downstream.length === 0) {
           Zl = node.type === 'chamber'
             ? C(1e12, 0) // sealed end
-            : radiationImpedance(M.S2, 'half', w) // open unconnected duct
+            : radiationImpedance(M.S2, p.space || 'half', w) // open unconnected duct
         } else {
           Zl = parallel(downstream.map((o) => inputZ(o.node, o.handle, M.S2, nv)))
         }
@@ -594,12 +682,18 @@ export function runSimulation(nodes, edges, settings) {
         const downstream = (adj.get(`${node.id}:${outHandle}`) || []).filter((o) => !visited.has(o.node.id))
         if (downstream.length === 0) {
           if (node.type === 'waveguide') {
-            // unconnected mouth radiates half-space
-            const pr = mul(C(0, (w * RHO) / (2 * Math.PI)), U2)
+            // An unconnected mouth radiates into whatever the node says it
+            // faces — half space unless told otherwise, so a port in a corner
+            // no longer needs a radiation node bolted on to say so. A plugged
+            // port ('rigid') loaded the circuit on the way in and emits nothing.
+            const space = pd.space || 'half'
+            if (space === 'rigid') return
+            const omega = SOLID_ANGLES[space] ?? 2 * Math.PI
+            const pr = mul(C(0, (w * RHO) / omega), U2)
             emit.pressures.push(pr)
             emit.portP[node.id] = add(emit.portP[node.id] || ZERO, pr)
             if (viaFront) emit.driverP = add(emit.driverP, pr)
-            emit.powers += abs(U2) ** 2 * radiationImpedance(M.S2, 'half', w).re
+            emit.powers += abs(U2) ** 2 * radiationImpedance(M.S2, space, w).re
           }
           return
         }

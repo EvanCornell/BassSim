@@ -128,7 +128,10 @@ export function WaveguideNode({ id, data, selected }) {
   const L = p.length / 100
   const S2 = p.S2 * 1e-4
   const isStraight = Math.abs(p.S1 - p.S2) < 0.001 * Math.max(p.S1, p.S2, 1)
-  const ec = endCorrectionLength(S2, p.ecFactor ?? 0.732)
+  // The readout shows the duct as it stands on its own, with the flanged
+  // correction one open end is owed. What it will actually get depends on what
+  // it is connected to, which is the solver's business and not the node's.
+  const ec = endCorrectionLength(S2, 0.85) * (p.ecFactor ?? 1)
   const fq = C_AIR / (4 * (L + ec)) // quarter-wave tuning
   const fc = flareCutoff(p.flare, p.S1 * 1e-4, S2, L)
   const volL = waveguideVolume(p.flare, p.S1 * 1e-4, S2, L) * 1000

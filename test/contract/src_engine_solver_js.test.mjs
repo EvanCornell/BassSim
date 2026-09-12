@@ -732,3 +732,130 @@ test('buildGraph: @pure — two calls with equal inputs produce equal output', (
     )
   }
 })
+
+// ---------------------------------------------------------------------------
+// End corrections come from junctions, not from ducts
+//
+// CONTRACT (runSimulation > faceCorrection): "An end correction is not a
+// property of a duct — it is a property of the *discontinuity* at its end, and
+// so it depends on what is on the other side." Three observable consequences
+// follow, and each is checked against the simulated tuning rather than against
+// the correction itself, since the correction is internal.
+// ---------------------------------------------------------------------------
+
+const DRIVER = {
+  Fs: 30, Re: 3.4, Sd: 480, Qes: 0.4, Qms: 5, Vas: 60,
+  Bl: 15, Mms: 120, Cms: 0.234, Rms: 4.5, Le: 1.2, Xmax: 12, count: 1,
+}
+
+/** A ported box whose port is drawn as `segs` waveguide nodes end to end. */
+function portedBox(totalLenCm, segs, tail = []) {
+  const nodes = [
+    { id: 'd', type: 'driver', position: { x: 0, y: 0 }, data: { params: { ...DRIVER } } },
+    { id: 'box', type: 'chamber', position: { x: 1, y: 0 }, data: { params: { volume: 60, length: 40, Q: 50 } } },
+  ]
+  const edges = [{ id: 'e0', source: 'd', sourceHandle: 'rear', target: 'box', targetHandle: 'in' }]
+  let prev = ['box', 'out']
+  for (let k = 0; k < segs; k++) {
+    nodes.push({
+      id: `p${k}`,
+      type: 'waveguide',
+      position: { x: 2 + k, y: 0 },
+      data: { params: { S1: 80, S2: 80, length: totalLenCm / segs, flare: 'conical', ecFactor: 1, Q: 50 } },
+    })
+    edges.push({ id: `w${k}`, source: prev[0], sourceHandle: prev[1], target: `p${k}`, targetHandle: 'throat' })
+    prev = [`p${k}`, 'mouth']
+  }
+  for (const n of tail) nodes.push(n)
+  if (tail.length) {
+    edges.push({ id: 'et', source: prev[0], sourceHandle: prev[1], target: tail[0].id, targetHandle: 'in' })
+  }
+  return { nodes, edges, settings: { fmin: 10, fmax: 120, npts: 2400, voltage: 2.83 } }
+}
+
+/** The impedance minimum between the first two peaks — the tuning as measured. */
+function tuningOf(graph) {
+  const r = runSimulation(graph.nodes, graph.edges, graph.settings)
+  assert.equal(r.ok, true)
+  const z = r.zinMag
+  let first = -1
+  for (let i = 2; i < z.length - 2; i++) if (z[i] > z[i - 1] && z[i] > z[i + 1]) { first = i; break }
+  assert.ok(first > 0, 'no impedance peak found')
+  let min = first
+  for (let i = first; i < z.length - 1; i++) {
+    if (z[i] < z[min]) min = i
+    if (z[i] > z[i - 1] && z[i] > z[i + 1] && i > min + 3) break
+  }
+  return r.freqs[min]
+}
+
+// CONTRACT: "a port drawn as six segments is the same port as one drawn in a
+// single node". This is the invariant the junction rule exists to hold, and the
+// one whose absence let a 60 cm port tune 11% low when split six ways.
+test('end corrections: splitting a duct into N nodes does not change it', () => {
+  const one = tuningOf(portedBox(60, 1))
+  for (const n of [2, 3, 4, 6, 10]) {
+    const split = tuningOf(portedBox(60, n))
+    assert.ok(
+      Math.abs(split / one - 1) < 1e-6,
+      `${n} nodes tuned ${split} Hz against ${one} Hz for one`,
+    )
+  }
+})
+
+// CONTRACT: "A duct meeting a much wider space gets essentially the flanged
+// correction ... a duct meeting open air gets none *here* — the radiation
+// impedance already carries it". Both ends are then worth about the same, so
+// burying a port in a large chamber must leave its tuning where it was.
+test('end corrections: burying a port in a huge chamber barely moves its tuning', () => {
+  const open = tuningOf(portedBox(30, 1))
+  const buried = tuningOf(portedBox(30, 1, [
+    { id: 'huge', type: 'chamber', position: { x: 9, y: 0 }, data: { params: { volume: 1e7, length: 40, Q: 50 } } },
+  ]))
+  assert.ok(
+    Math.abs(buried / open - 1) < 0.02,
+    `open ${open} Hz vs buried ${buried} Hz`,
+  )
+})
+
+// CONTRACT: the same, from the other direction — a chamber that contributes no
+// impedance worth the name must not reach the answer at all.
+test('end corrections: the size of that chamber makes no difference', () => {
+  const big = (v) => tuningOf(portedBox(30, 1, [
+    { id: 'huge', type: 'chamber', position: { x: 9, y: 0 }, data: { params: { volume: v, length: 40, Q: 50 } } },
+  ]))
+  const ref = big(1e6)
+  for (const v of [1e7, 1e8, 1e9]) {
+    assert.ok(Math.abs(big(v) / ref - 1) < 1e-6, `${v} L tuned ${big(v)} Hz against ${ref} Hz`)
+  }
+})
+
+// CONTRACT (project.js): "`ecFactor` scales what that comes to" — 0 removes the
+// corrections entirely and raises the tuning; larger values lower it.
+test('end corrections: ecFactor scales them', () => {
+  const withFactor = (k) => {
+    const g = portedBox(30, 1)
+    g.nodes.find((n) => n.id === 'p0').data.params.ecFactor = k
+    return tuningOf(g)
+  }
+  const none = withFactor(0)
+  const neutral = withFactor(1)
+  const doubled = withFactor(2)
+  assert.ok(none > neutral, `expected ${none} > ${neutral}`)
+  assert.ok(neutral > doubled, `expected ${neutral} > ${doubled}`)
+})
+
+// CONTRACT (propagateInto): "An unconnected mouth radiates into whatever the
+// node says it faces ... A plugged port ('rigid') loaded the circuit on the way
+// in and emits nothing."
+test('an unconnected mouth radiates into the solid angle its node names', () => {
+  const at = (space) => {
+    const g = portedBox(30, 1)
+    g.nodes.find((n) => n.id === 'p0').data.params.space = space
+    const r = runSimulation(g.nodes, g.edges, g.settings)
+    return Math.max(...r.splCombined.filter(Number.isFinite))
+  }
+  const half = at('half')
+  const quarter = at('quarter')
+  assert.ok(quarter > half, `quarter space ${quarter} dB should exceed half space ${half} dB`)
+})

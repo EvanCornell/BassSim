@@ -46,7 +46,7 @@ virtual microphone — see below).
 ### waveguide — port, duct, horn segment
 Handles: `throat` (in), `mouth` (out). Params: `S1` throat area cm², `S2`
 mouth area cm², `length` cm, `flare` `conical|exponential|parabolic|hypex`,
-`ecFactor` end correction (0.732 typical two-flanged), `Q`, `label`.
+`ecFactor` end-correction multiplier (1 = leave the computed correction alone; corrections come from what each end opens into, so splitting a duct into segments changes nothing), `space` solid angle for an unconnected mouth, `Q`, `label`.
 **An unconnected mouth is an OPEN end radiating into the listening space**
 (that's how you make a vented port). To close an end, terminate it with a
 `radiation` node set to `space: "rigid"`.

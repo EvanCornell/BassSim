@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import {
-  hydrateProject, SCHEMA_VERSION, DEFAULT_PARAMS, DEFAULT_SETTINGS,
+  hydrateProject, migrateParams, SCHEMA_VERSION, DEFAULT_PARAMS, DEFAULT_SETTINGS,
 } from '../../src/engine/project.js'
 
 // The module header fixes the on-disk shape: "A project is plain JSON:
@@ -43,9 +43,9 @@ function throwsProjectError(fn, msg = '') {
 // Exported constants
 
 // CONTRACT: "`SCHEMA_VERSION` — Version of the `.acousim.json` project schema
-// this build reads and writes. Value: `1`"
-test('SCHEMA_VERSION: is 1', () => {
-  assert.equal(SCHEMA_VERSION, 1)
+// this build reads and writes. Value: `2`"
+test('SCHEMA_VERSION: is 2', () => {
+  assert.equal(SCHEMA_VERSION, 2)
 })
 
 // CONTRACT: "`DEFAULT_PARAMS` — Default params for each node type, in display
@@ -374,3 +374,71 @@ test('hydrateProject: @pure — equal inputs give equal outputs', () => {
 
 // UNREACHABLE — not covered:
 // (none — the single export of src/engine/project.js is marked EXPORTED/testable)
+
+// ---------------------------------------------------------------------------
+// migrateParams
+//
+// CONTRACT: "Before v2 it was the whole correction — `ΔL = ecFactor · a` at the
+// mouth ... Now the geometry decides the correction and `ecFactor` scales it,
+// so the old shipped default of 0.732 is today's 1."
+// ---------------------------------------------------------------------------
+
+test('migrateParams: the old default becomes neutral', () => {
+  assert.equal(migrateParams('waveguide', { ecFactor: 0.732 }, 1).ecFactor, 1)
+})
+
+// CONTRACT: "one that had been given twice the standard correction still has twice"
+test('migrateParams: a deliberate value keeps its proportion', () => {
+  assert.equal(migrateParams('waveguide', { ecFactor: 1.464 }, 1).ecFactor, 2)
+  assert.equal(migrateParams('waveguide', { ecFactor: 0.366 }, 1).ecFactor, 0.5)
+  assert.equal(migrateParams('waveguide', { ecFactor: 0 }, 1).ecFactor, 0)
+})
+
+test('migrateParams: a project already at v2 is left alone', () => {
+  const p = { ecFactor: 1 }
+  assert.equal(migrateParams('waveguide', p, 2), p)
+  assert.equal(migrateParams('waveguide', p, SCHEMA_VERSION), p)
+})
+
+test('migrateParams: only waveguides carry the change', () => {
+  const p = { ecFactor: 0.732 }
+  assert.equal(migrateParams('chamber', p, 1), p)
+  assert.equal(migrateParams('driver', p, 1), p)
+})
+
+// CONTRACT: "@post params is not modified"
+test('migrateParams: the input is not modified', () => {
+  const p = { ecFactor: 0.732, S1: 80 }
+  const out = migrateParams('waveguide', p, 1)
+  assert.equal(p.ecFactor, 0.732)
+  assert.equal(out.S1, 80)
+})
+
+test('migrateParams: a duct with no ecFactor is untouched', () => {
+  const p = { S1: 80 }
+  assert.equal(migrateParams('waveguide', p, 1), p)
+})
+
+test('migrateParams: nonsense is left for the defaults to absorb', () => {
+  for (const bad of [NaN, -1, Infinity, 'wide']) {
+    const p = { ecFactor: bad }
+    assert.equal(migrateParams('waveguide', p, 1), p)
+  }
+})
+
+// CONTRACT (hydrateProject): the migration runs on load, keyed off the file's
+// own version stamp.
+test('hydrateProject: a v1 file has its ecFactor rescaled, a v2 file does not', () => {
+  const proj = (v) => ({
+    schemaVersion: v,
+    nodes: [node('w', 'waveguide', { ecFactor: 0.732 })],
+    edges: [],
+  })
+  assert.equal(hydrateProject(proj(1)).nodes[0].data.params.ecFactor, 1)
+  assert.equal(hydrateProject(proj(2)).nodes[0].data.params.ecFactor, 0.732)
+})
+
+test('hydrateProject: a file with no version stamp is treated as v1', () => {
+  const out = hydrateProject({ nodes: [node('w', 'waveguide', { ecFactor: 0.732 })], edges: [] })
+  assert.equal(out.nodes[0].data.params.ecFactor, 1)
+})

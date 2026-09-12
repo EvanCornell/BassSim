@@ -161,7 +161,7 @@ impedance minimum. Expect this to be several Hz optimistic on a real box.
 - `fb` — `number` — Target tuning, Hz.
 - `volumeL` — `number` — Box volume, litres.
 - `areaCm2` — `number` — Total port area, cm².
-- `ecFactor` — `number` _(optional, default `0.732`)_ — End-correction coefficient, applied to both ends.
+- `ecFactor` — `number` _(optional, default `0.85`)_ — End-correction coefficient, applied to both ends. The default is the flanged value, which is what a port gets at a box at one end and at open air at the other.
 
 **Returns**
 

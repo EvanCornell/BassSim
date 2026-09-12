@@ -34,10 +34,10 @@ const TIPS = {
   S1: 'Throat (input) area.',
   S2: 'Mouth (output) area. Equal to S1 for a straight port.',
   flare: 'Area expansion law along the segment.',
-  ecFactor: 'End-correction factor k: added length ΔL = k·a at the mouth (0.85 flanged, 0.61 free).',
+  ecFactor: 'Scales the end corrections this duct gets. Those are worked out from what each end opens into — nearly 0.85·a into a box, nothing into a duct of its own area, and nothing into open air, where the radiation impedance already carries it. 1 leaves that alone.',
   Mmd: 'Moving mass of the passive radiator cone (without air load).',
   addedMass: 'Extra mass bolted to the cone to lower its resonance.',
-  space: 'Solid angle the opening radiates into — boundary loading.',
+  space: 'Solid angle the opening radiates into — boundary loading. On a duct it applies only when the mouth is left unconnected; plugged means it loads the circuit but emits nothing.',
   label: 'Display name for this node.',
 }
 
@@ -479,13 +479,20 @@ function WaveguideForm({ node }) {
         ['conical', 'Conical'], ['exponential', 'Exponential'], ['parabolic', 'Parabolic'],
         ['hypex', 'Hyperbolic-exp (hypex)'], ['tractrix', 'Tractrix ≈'], ['lecleach', 'Le Cléac’h ≈'],
       ]} />
-      <NumField id={id} field="ecFactor" value={p.ecFactor} label="End corr. k" step="0.01" min="0" />
+      <SelectField id={id} field="space" value={p.space} label="Mouth radiates into" options={[
+        ['free', 'Free space 4π'], ['half', 'Half space 2π'], ['quarter', 'Quarter space π'],
+        ['eighth', 'Eighth space π/2'], ['rigid', 'Plugged (no output)'],
+      ]} />
+      <NumField id={id} field="ecFactor" value={p.ecFactor} label="End corr. ×" step="0.05" min="0" />
       <QSection id={id} p={p} />
       <div style={{ fontSize: 11, color: 'var(--text-2)', marginBottom: 4 }}>
         Internal volume: <b>{(waveguideVolume(p.flare, p.S1 * 1e-4, p.S2 * 1e-4, p.length / 100) * 1000).toFixed(2)} L</b>
       </div>
       <div style={{ fontSize: 10.5, color: 'var(--text-3)' }}>
         Set S1 = S2 for a straight port. Q here models port turbulence and wall loss.
+        End corrections come from what each end meets, so splitting a duct into
+        several segments does not change it. The solid angle applies only while
+        the mouth is unconnected.
       </div>
     </div>
   )

@@ -185,3 +185,44 @@ export function flareCutoff(flare, S1, S2, L) {
 export function endCorrectionLength(S, factor) {
   return factor * Math.sqrt(S / Math.PI)
 }
+
+/**
+ * End correction for a junction between two areas.
+ *
+ * An end correction is not a property of a duct — it is a property of the
+ * *discontinuity* at its end, and so it depends on what is on the other side.
+ * A port opening into a box gets nearly the full flanged correction; the same
+ * port butted against another duct of its own diameter gets none, because
+ * nothing discontinuous happens there and the air column simply continues.
+ * Treating the correction as belonging to the duct is what makes one port
+ * drawn as several segments tune differently from the same port drawn as one.
+ *
+ * The Karal result, `0.85·a·(1 − 1.25·a/b)` for the smaller radius `a` and the
+ * larger `b`, covers both extremes and everything between: it tends to the
+ * flanged `0.85a` as the far side grows, and falls to zero as the two areas
+ * approach each other. Above `a/b ≈ 0.8` the linear form goes negative and is
+ * clamped — by then the correction is a rounding error on any real port.
+ *
+ * The mass belongs to the junction, not to either side, so exactly one of the
+ * two ducts must carry it. The caller decides which; this only says how much,
+ * expressed in `Sself`'s own units so that `ρ·ΔL/Sself` is the right inertance
+ * whichever side ends up holding it.
+ *
+ * @param {number} Sself - Area of the side asking, m².
+ * @param {number} Sother - Area on the other side of the junction, m².
+ * @returns {number} Added effective length in m, for a duct of area `Sself`. Zero when either area is non-positive or the two are close enough that the discontinuity vanishes.
+ * @post result >= 0
+ * @post result is 0 when Sself equals Sother
+ * @pure
+ */
+export function junctionCorrection(Sself, Sother) {
+  if (!(Sself > 0) || !(Sother > 0)) return 0
+  const small = Math.min(Sself, Sother)
+  const large = Math.max(Sself, Sother)
+  const a = Math.sqrt(small / Math.PI)
+  const dl = 0.85 * a * (1 - 1.25 * Math.sqrt(small / large))
+  if (!(dl > 0)) return 0
+  // Referred to the asking duct: the inertance ρ·ΔL/S is what the matrix
+  // applies, and it has to come out the same whichever side is asked.
+  return dl * (Sself / small)
+}

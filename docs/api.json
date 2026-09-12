@@ -25,8 +25,8 @@
   },
   "stats": {
     "modules": 63,
-    "methods": 704,
-    "documented": 704
+    "methods": 708,
+    "documented": 708
   },
   "modules": [
     {
@@ -2015,8 +2015,8 @@
               "name": "ecFactor",
               "type": "number",
               "optional": true,
-              "default": "0.732",
-              "desc": "End-correction coefficient, applied to both ends."
+              "default": "0.85",
+              "desc": "End-correction coefficient, applied to both ends. The default is the flanged value, which is what a port gets at a box at one end and at open air at the other."
             }
           ],
           "returns": {
@@ -11420,7 +11420,7 @@
       "constants": [
         {
           "name": "__internals",
-          "line": 605,
+          "line": 612,
           "shape": {
             "kind": "object",
             "keys": [
@@ -12188,7 +12188,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 502,
+          "line": 509,
           "signature": [
             "arg0"
           ],
@@ -12236,7 +12236,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 554,
+          "line": 561,
           "signature": [
             "arg0"
           ],
@@ -12284,7 +12284,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 585,
+          "line": 592,
           "signature": [],
           "documented": true,
           "summary": "The Parameters panel: the amplifier section plus the selected node's form.",
@@ -15387,7 +15387,7 @@
       "constants": [
         {
           "name": "nodeTypes",
-          "line": 218,
+          "line": 221,
           "shape": {
             "kind": "object",
             "keys": [
@@ -15697,7 +15697,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 173,
+          "line": 176,
           "signature": [
             "arg0"
           ],
@@ -15759,7 +15759,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 206,
+          "line": 209,
           "signature": [
             "arg0"
           ],
@@ -18617,6 +18617,56 @@
             "pure": true
           },
           "other": []
+        },
+        {
+          "name": "junctionCorrection",
+          "qualified": "junctionCorrection",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 218,
+          "signature": [
+            "Sself",
+            "Sother"
+          ],
+          "documented": true,
+          "summary": "End correction for a junction between two areas.",
+          "description": "End correction for a junction between two areas.\n\nAn end correction is not a property of a duct — it is a property of the\n*discontinuity* at its end, and so it depends on what is on the other side.\nA port opening into a box gets nearly the full flanged correction; the same\nport butted against another duct of its own diameter gets none, because\nnothing discontinuous happens there and the air column simply continues.\nTreating the correction as belonging to the duct is what makes one port\ndrawn as several segments tune differently from the same port drawn as one.\n\nThe Karal result, `0.85·a·(1 − 1.25·a/b)` for the smaller radius `a` and the\nlarger `b`, covers both extremes and everything between: it tends to the\nflanged `0.85a` as the far side grows, and falls to zero as the two areas\napproach each other. Above `a/b ≈ 0.8` the linear form goes negative and is\nclamped — by then the correction is a rounding error on any real port.\n\nThe mass belongs to the junction, not to either side, so exactly one of the\ntwo ducts must carry it. The caller decides which; this only says how much,\nexpressed in `Sself`'s own units so that `ρ·ΔL/Sself` is the right inertance\nwhichever side ends up holding it.",
+          "params": [
+            {
+              "name": "Sself",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Area of the side asking, m²."
+            },
+            {
+              "name": "Sother",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Area on the other side of the junction, m²."
+            }
+          ],
+          "returns": {
+            "type": "number",
+            "desc": "Added effective length in m, for a duct of area `Sself`. Zero when either area is non-positive or the two are close enough that the discontinuity vanishes."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [
+              "result >= 0",
+              "result is 0 when Sself equals Sother"
+            ],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
         }
       ]
     },
@@ -19442,17 +19492,17 @@
       "constants": [
         {
           "name": "SCHEMA_VERSION",
-          "line": 10,
+          "line": 17,
           "shape": {
             "kind": "literal",
-            "value": 1
+            "value": 2
           },
           "summary": "Version of the `.acousim.json` project schema this build reads and writes.",
-          "description": "Version of the `.acousim.json` project schema this build reads and writes.\n\nBumped only for changes a loader cannot absorb by falling back to defaults."
+          "description": "Version of the `.acousim.json` project schema this build reads and writes.\n\nBumped only for changes a loader cannot absorb by falling back to defaults.\n\nv2 changed what `ecFactor` means. It was a coefficient — the added length at\na port's mouth was `ecFactor · a`, applied whatever the mouth opened into.\nEnd corrections are now derived from the junction, and `ecFactor` scales what\nthat comes to, so the neutral value is 1 rather than 0.732. `migrateParams`\nrescales stored values so a project keeps the correction its author asked for\nrelative to the default."
         },
         {
           "name": "DEFAULT_PARAMS",
-          "line": 19,
+          "line": 34,
           "shape": {
             "kind": "object",
             "keys": [
@@ -19501,6 +19551,7 @@
                 "length",
                 "flare",
                 "ecFactor",
+                "space",
                 "Q",
                 "lossless",
                 "label"
@@ -19527,7 +19578,7 @@
         },
         {
           "name": "DEFAULT_SETTINGS",
-          "line": 39,
+          "line": 54,
           "shape": {
             "kind": "object",
             "keys": [
@@ -19551,13 +19602,70 @@
       ],
       "methods": [
         {
+          "name": "migrateParams",
+          "qualified": "migrateParams",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 82,
+          "signature": [
+            "type",
+            "params",
+            "from"
+          ],
+          "documented": true,
+          "summary": "Bring one node's saved params up to the current schema.",
+          "description": "Bring one node's saved params up to the current schema.\n\nOnly `ecFactor` needs it so far, and only because the quantity changed\nmeaning rather than merely changing default. Before v2 it was the whole\ncorrection — `ΔL = ecFactor · a` at the mouth, and nothing at the throat.\nNow the geometry decides the correction and `ecFactor` scales it, so the old\nshipped default of 0.732 is today's 1. Dividing by that default carries the\nauthor's intent across: a port left alone comes out neutral, and one that had\nbeen given twice the standard correction still has twice.\n\nEverything else survives on its own, since an unrecognised or missing param\nfalls back through `DEFAULT_PARAMS`.",
+          "params": [
+            {
+              "name": "type",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Node type."
+            },
+            {
+              "name": "params",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "The node's saved params, in display units."
+            },
+            {
+              "name": "from",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Schema version the project was written with."
+            }
+          ],
+          "returns": {
+            "type": "object",
+            "desc": "The params to merge over the defaults; the same object when nothing needed changing."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [
+              "params is not modified"
+            ],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
           "name": "hydrateProject",
           "qualified": "hydrateProject",
           "kind": "function",
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 67,
+          "line": 110,
           "signature": [
             "proj"
           ],
@@ -19628,7 +19736,7 @@
       "constants": [
         {
           "name": "__internals",
-          "line": 774,
+          "line": 868,
           "shape": {
             "kind": "object",
             "keys": [
@@ -20104,13 +20212,111 @@
           "other": []
         },
         {
+          "name": "faceArea",
+          "qualified": "runSimulation > faceArea",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 412,
+          "signature": [
+            "node",
+            "handle"
+          ],
+          "documented": true,
+          "summary": "Area a node presents at one of its handles.",
+          "description": "Area a node presents at one of its handles.",
+          "params": [
+            {
+              "name": "node",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "The node on the far side of a junction."
+            },
+            {
+              "name": "handle",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "The handle the junction arrives at."
+            }
+          ],
+          "returns": {
+            "type": "number|null",
+            "desc": "Area in m², or `null` for a terminal that is not a duct face — a radiation node is open air, which has no area and needs no correction."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [
+              "Node params, and the SI driver table for a driver's total cone area."
+            ],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "faceCorrection",
+          "qualified": "runSimulation > faceCorrection",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 446,
+          "signature": [
+            "node",
+            "handle"
+          ],
+          "documented": true,
+          "summary": "The end correction one face of a two-port carries, in its own area's units.",
+          "description": "The end correction one face of a two-port carries, in its own area's units.\n\nThe mass at a junction is one physical thing, so exactly one of the two\nsides may hold it or it would be counted twice. It goes to the narrower\nside, which is where it physically sits and where `ρ·ΔL/S` is defined —\nunless that side is a driver or a passive radiator, which have no place to\nput it, in which case the duct holds it referred to its own area.\n\nSeveral branches on one handle are one opening of their combined area: a\nchamber vented by three identical ports is not three separate junctions\nwith the small area of one.",
+          "params": [
+            {
+              "name": "node",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "The two-port being built."
+            },
+            {
+              "name": "handle",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "`'throat'`/`'mouth'` for a waveguide, `'in'`/`'out'` for a chamber."
+            }
+          ],
+          "returns": {
+            "type": "number",
+            "desc": "Added effective length in m, zero for an open end or for the side that does not own the junction."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [
+              "The adjacency index and node params."
+            ],
+            "pure": false
+          },
+          "other": []
+        },
+        {
           "name": "getMatrix",
           "qualified": "runSimulation > getMatrix",
           "kind": "function",
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 407,
+          "line": 485,
           "signature": [
             "node",
             "Sup"
@@ -20161,7 +20367,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 456,
+          "line": 544,
           "signature": [
             "node",
             "fromHandle",
@@ -20230,7 +20436,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 542,
+          "line": 630,
           "signature": [
             "node",
             "fromHandle",
@@ -23758,7 +23964,7 @@
         },
         {
           "name": "__internals",
-          "line": 2694,
+          "line": 2695,
           "shape": {
             "kind": "object",
             "keys": [
@@ -27131,7 +27337,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1677,
+          "line": 1678,
           "signature": [],
           "documented": true,
           "summary": "Download the open project as a standalone JSON file.",
@@ -27162,7 +27368,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1694,
+          "line": 1695,
           "signature": [
             "proj",
             "filename"
@@ -27211,7 +27417,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1727,
+          "line": 1728,
           "signature": [
             "ws"
           ],
@@ -27252,7 +27458,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1742,
+          "line": 1743,
           "signature": [
             "name"
           ],
@@ -27293,7 +27499,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1756,
+          "line": 1757,
           "signature": [],
           "documented": true,
           "summary": "Write the editor's current project back into its file.",
@@ -27324,7 +27530,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1774,
+          "line": 1775,
           "signature": [
             "path"
           ],
@@ -27365,7 +27571,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1790,
+          "line": 1791,
           "signature": [
             "folder"
           ],
@@ -27406,7 +27612,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1811,
+          "line": 1812,
           "signature": [
             "parent"
           ],
@@ -27447,7 +27653,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1834,
+          "line": 1835,
           "signature": [
             "from",
             "to"
@@ -27496,7 +27702,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1871,
+          "line": 1872,
           "signature": [
             "path"
           ],
@@ -27537,7 +27743,7 @@
           "exported": false,
           "async": true,
           "generator": false,
-          "line": 1903,
+          "line": 1904,
           "signature": [],
           "documented": true,
           "summary": "Download the whole workspace, and record that it happened.",
@@ -27568,7 +27774,7 @@
           "exported": false,
           "async": true,
           "generator": false,
-          "line": 1932,
+          "line": 1933,
           "signature": [
             "file"
           ],
@@ -27609,7 +27815,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1956,
+          "line": 1957,
           "signature": [
             "ws"
           ],
@@ -27650,7 +27856,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1990,
+          "line": 1991,
           "signature": [
             "paths"
           ],
@@ -27691,7 +27897,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2000,
+          "line": 2001,
           "signature": [
             "path",
             "open"
@@ -27740,7 +27946,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2014,
+          "line": 2015,
           "signature": [],
           "documented": true,
           "summary": "Collapse every folder in the explorer.",
@@ -27771,7 +27977,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2029,
+          "line": 2030,
           "signature": [
             "mode",
             "path"
@@ -27820,7 +28026,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2040,
+          "line": 2041,
           "signature": [],
           "documented": true,
           "summary": "Dismiss the explorer's inline editor.",
@@ -27851,7 +28057,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2055,
+          "line": 2056,
           "signature": [
             "paths",
             "cut"
@@ -27900,7 +28106,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2068,
+          "line": 2069,
           "signature": [
             "folder"
           ],
@@ -27941,7 +28147,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2095,
+          "line": 2096,
           "signature": [
             "path"
           ],
@@ -27982,7 +28188,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2111,
+          "line": 2112,
           "signature": [
             "from",
             "folder"
@@ -28031,7 +28237,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2133,
+          "line": 2134,
           "signature": [
             "mode",
             "parent",
@@ -28088,7 +28294,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2167,
+          "line": 2168,
           "signature": [
             "kind"
           ],
@@ -28129,7 +28335,7 @@
           "exported": false,
           "async": true,
           "generator": false,
-          "line": 2198,
+          "line": 2199,
           "signature": [
             "confirmAdopt"
           ],
@@ -28170,7 +28376,7 @@
           "exported": false,
           "async": true,
           "generator": false,
-          "line": 2231,
+          "line": 2232,
           "signature": [],
           "documented": true,
           "summary": "Renew permission on a remembered folder and open it again.",
@@ -28201,7 +28407,7 @@
           "exported": false,
           "async": true,
           "generator": false,
-          "line": 2254,
+          "line": 2255,
           "signature": [],
           "documented": true,
           "summary": "Stop keeping the workspace in a folder.",
@@ -28234,7 +28440,7 @@
           "exported": false,
           "async": true,
           "generator": false,
-          "line": 2279,
+          "line": 2280,
           "signature": [
             "handle",
             "read",
@@ -28293,7 +28499,7 @@
           "exported": false,
           "async": true,
           "generator": false,
-          "line": 2320,
+          "line": 2321,
           "signature": [
             "prune"
           ],
@@ -28336,7 +28542,7 @@
           "exported": false,
           "async": true,
           "generator": false,
-          "line": 2362,
+          "line": 2363,
           "signature": [
             "since"
           ],
@@ -28379,7 +28585,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2395,
+          "line": 2396,
           "signature": [
             "drivers"
           ],
@@ -28420,7 +28626,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2417,
+          "line": 2418,
           "signature": [
             "id"
           ],
@@ -28461,7 +28667,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2433,
+          "line": 2434,
           "signature": [
             "id"
           ],
@@ -28502,7 +28708,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2456,
+          "line": 2457,
           "signature": [
             "id"
           ],
@@ -28543,7 +28749,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2483,
+          "line": 2484,
           "signature": [
             "id"
           ],
@@ -28584,7 +28790,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2499,
+          "line": 2500,
           "signature": [
             "stackId"
           ],
@@ -28625,7 +28831,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2523,
+          "line": 2524,
           "signature": [
             "panelId",
             "stackId"
@@ -28674,7 +28880,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2543,
+          "line": 2544,
           "signature": [
             "id"
           ],
@@ -28715,7 +28921,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2554,
+          "line": 2555,
           "signature": [
             "id"
           ],
@@ -28756,7 +28962,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2573,
+          "line": 2574,
           "signature": [
             "patch"
           ],
@@ -28799,7 +29005,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2583,
+          "line": 2584,
           "signature": [],
           "documented": true,
           "summary": "The full shared slice, sent to a popped-out tab when it announces itself.",
@@ -28830,7 +29036,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2647,
+          "line": 2648,
           "signature": [
             "arg0"
           ],

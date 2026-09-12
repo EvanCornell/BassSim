@@ -165,7 +165,7 @@ comment:
 |---|---|---|
 | `driver` | `front` (out), `rear` (out) | `Fs` Hz, `Qts`, `Qes`, `Qms`, `Vas` L→m³, `Re` Ω, `Bl` T·m, `Mms` g→kg, `Cms` mm/N→m/N, `Sd` cm²→m², `Le` mH→H, `LeExp`, `Xmax` mm→m, `Rms` N·s/m, `count`, `wiring` ∈ {single, series, parallel, series-parallel}, `Q` |
 | `chamber` | `in` (in), `out` (out) | `volume` L→m³, `length` cm→m, `shape` ∈ {rectangular, …}, `stuffing`, `Q`, `probe`, `probePos` |
-| `waveguide` | `throat` (in), `mouth` (out) | `S1` cm²→m², `S2` cm²→m², `length` cm→m, `flare` ∈ {conical, …}, `ecFactor`, `Q` |
+| `waveguide` | `throat` (in), `mouth` (out) | `S1` cm²→m², `S2` cm²→m², `length` cm→m, `flare` ∈ {conical, …}, `ecFactor` (multiplier on the junction-derived end correction, 1 = neutral), `space` (solid angle for an unconnected mouth), `Q` |
 | `pr` | `in` (in) | `Mmd` g→kg, `Cms` mm/N→m/N, `Rms` N·s/m, `Sd` cm²→m², `addedMass` g→kg, `space`, `Q` |
 | `radiation` | `in` (in) | `space` ∈ {full, half, …} |
 

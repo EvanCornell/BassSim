@@ -2,7 +2,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import {
   areaProfile, waveguideVolume, flareCutoff, endCorrectionLength,
-  RHO, C_AIR,
+  junctionCorrection, RHO, C_AIR,
 } from '../../src/engine/geometry.js'
 
 // The six documented flare laws.
@@ -302,5 +302,70 @@ test('endCorrectionLength: @pure — equal inputs give equal outputs', () => {
   )
 })
 
+// ---------------------------------------------------------------------------
+// junctionCorrection
+// ---------------------------------------------------------------------------
+
+// CONTRACT: "@post result is 0 when Sself equals Sother" — the case the whole
+// function exists for: nothing discontinuous happens where a duct meets another
+// of its own area, so the air column simply continues.
+test('junctionCorrection: equal areas give no correction', () => {
+  assert.equal(junctionCorrection(0.008, 0.008), 0)
+  assert.equal(junctionCorrection(1e-6, 1e-6), 0)
+})
+
+// CONTRACT: "it tends to the flanged `0.85a` as the far side grows"
+test('junctionCorrection: a duct into a much larger space approaches 0.85a', () => {
+  const S = 0.008
+  const a = Math.sqrt(S / Math.PI)
+  const got = junctionCorrection(S, S * 1e6)
+  assert.ok(got > 0.84 * a && got <= 0.85 * a, `expected ≈0.85a=${0.85 * a}, got ${got}`)
+})
+
+// CONTRACT: "falls to zero as the two areas approach each other"
+test('junctionCorrection: falls as the areas converge', () => {
+  const S = 0.008
+  const wide = junctionCorrection(S, S * 100)
+  const near = junctionCorrection(S, S * 4)
+  const closer = junctionCorrection(S, S * 1.5)
+  assert.ok(wide > near, `expected ${wide} > ${near}`)
+  assert.ok(near > closer, `expected ${near} > ${closer}`)
+})
+
+// CONTRACT: "@post result >= 0" — above a/b ≈ 0.8 the linear form goes negative
+// "and is clamped".
+test('junctionCorrection: never negative, however close the areas', () => {
+  for (const ratio of [1, 1.05, 1.2, 1.5, 1.55, 1.6]) {
+    assert.ok(junctionCorrection(0.008, 0.008 * ratio) >= 0)
+  }
+})
+
+// CONTRACT: "expressed in `Sself`'s own units so that `ρ·ΔL/Sself` is the right
+// inertance whichever side ends up holding it" — the inertance the two sides
+// compute for one junction must agree, or which side carries it would matter.
+test('junctionCorrection: the same inertance whichever side is asked', () => {
+  const RHO = 1.2
+  for (const [Sa, Sb] of [[0.008, 0.15], [0.002, 0.02], [0.05, 0.4]]) {
+    const fromSmall = (RHO * junctionCorrection(Sa, Sb)) / Sa
+    const fromLarge = (RHO * junctionCorrection(Sb, Sa)) / Sb
+    assert.ok(
+      Math.abs(fromSmall - fromLarge) < 1e-12 * Math.max(fromSmall, 1),
+      `${fromSmall} vs ${fromLarge}`,
+    )
+  }
+})
+
+// CONTRACT: "Zero when either area is non-positive"
+test('junctionCorrection: a non-positive area gives no correction', () => {
+  assert.equal(junctionCorrection(0, 0.01), 0)
+  assert.equal(junctionCorrection(0.01, 0), 0)
+  assert.equal(junctionCorrection(-1, 0.01), 0)
+})
+
+// CONTRACT: "**Purity:** `@pure` ... change nothing observable."
+test('junctionCorrection: @pure — equal inputs give equal outputs', () => {
+  assert.equal(junctionCorrection(0.008, 0.15), junctionCorrection(0.008, 0.15))
+})
+
 // UNREACHABLE — not covered:
-// (none — all 4 exports of src/engine/geometry.js are marked EXPORTED/testable)
+// (none — all 5 exports of src/engine/geometry.js are marked EXPORTED/testable)

@@ -1,9 +1,9 @@
 // Acoustic element models: transmission lines, waveguides/horns, radiation
 // impedance of a piston in various solid angles. SI units throughout.
 import { C, ZERO, ONE, add, mul, div, inv, jw, cosh, sinh, matMul, matIdentity } from './complex.js'
-import { RHO, C_AIR, areaProfile, waveguideVolume, flareCutoff, endCorrectionLength } from './geometry.js'
+import { RHO, C_AIR, areaProfile, waveguideVolume, flareCutoff, endCorrectionLength, junctionCorrection } from './geometry.js'
 
-export { RHO, C_AIR, areaProfile, waveguideVolume, flareCutoff, endCorrectionLength }
+export { RHO, C_AIR, areaProfile, waveguideVolume, flareCutoff, endCorrectionLength, junctionCorrection }
 
 
 // ---------- Bessel/Struve approximations for piston radiation ----------

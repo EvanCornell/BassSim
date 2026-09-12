@@ -21,7 +21,14 @@ Version of the `.acousim.json` project schema this build reads and writes.
 
 Bumped only for changes a loader cannot absorb by falling back to defaults.
 
-Value: `1`
+v2 changed what `ecFactor` means. It was a coefficient — the added length at
+a port's mouth was `ecFactor · a`, applied whatever the mouth opened into.
+End corrections are now derived from the junction, and `ecFactor` scales what
+that comes to, so the neutral value is 1 rather than 0.732. `migrateParams`
+rescales stored values so a project keeps the correction its author asked for
+relative to the default.
+
+Value: `2`
 
 ### `DEFAULT_PARAMS`
 
@@ -35,7 +42,7 @@ Keys: `driver`, `chamber`, `waveguide`, `pr`, `radiation`
 
 - `driver` holds: `Fs`, `Qts`, `Qes`, `Qms`, `Vas`, `Re`, `Bl`, `Mms`, `Cms`, `Sd`, `Le`, `LeExp`, `Xmax`, `Rms`, `count`, `wiring`, `Q`, `lossless`, `label`
 - `chamber` holds: `volume`, `length`, `shape`, `stuffing`, `Q`, `lossless`, `probe`, `probePos`, `label`
-- `waveguide` holds: `S1`, `S2`, `length`, `flare`, `ecFactor`, `Q`, `lossless`, `label`
+- `waveguide` holds: `S1`, `S2`, `length`, `flare`, `ecFactor`, `space`, `Q`, `lossless`, `label`
 - `pr` holds: `Mmd`, `Cms`, `Rms`, `Sd`, `addedMass`, `Q`, `lossless`, `space`, `label`
 - `radiation` holds: `space`, `label`
 
@@ -50,7 +57,41 @@ to within rounding here and exactly only after `setAmp` recomputes it.
 
 Keys: `fmin`, `fmax`, `npts`, `voltage`, `impedance`, `power`, `rg`, `vThreshold`, `masking`, `unwrapPhase`, `delayOffset`, `nlEnabled`
 
-## EXPORTED (1)
+## EXPORTED (2)
+
+### `migrateParams(type, params, from)`
+
+- **Reachability:** EXPORTED
+- **Obtain via:** import { migrateParams } from '../../src/engine/project.js'
+
+Bring one node's saved params up to the current schema.
+
+Only `ecFactor` needs it so far, and only because the quantity changed
+meaning rather than merely changing default. Before v2 it was the whole
+correction — `ΔL = ecFactor · a` at the mouth, and nothing at the throat.
+Now the geometry decides the correction and `ecFactor` scales it, so the old
+shipped default of 0.732 is today's 1. Dividing by that default carries the
+author's intent across: a port left alone comes out neutral, and one that had
+been given twice the standard correction still has twice.
+
+Everything else survives on its own, since an unrecognised or missing param
+falls back through `DEFAULT_PARAMS`.
+
+**Parameters**
+
+- `type` — `string` — Node type.
+- `params` — `object` — The node's saved params, in display units.
+- `from` — `number` — Schema version the project was written with.
+
+**Returns**
+
+- `object` — The params to merge over the defaults; the same object when nothing needed changing.
+
+**Postconditions (must hold on return)**
+
+- params is not modified
+
+**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
 ### `hydrateProject(proj)`
 

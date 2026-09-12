@@ -253,7 +253,7 @@ whole sweep.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
-## UNREACHABLE (5)
+## UNREACHABLE (7)
 
 ### `validateGraph > connected(id, h)`
 
@@ -299,6 +299,56 @@ rely on identity between calls.
 **Reads external mutable state**
 
 - `nlActive` and the `nlScales` table, which the outer iteration loop rewrites between passes — the same arguments give different results on a later pass.
+
+### `runSimulation > faceArea(node, handle)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+Area a node presents at one of its handles.
+
+**Parameters**
+
+- `node` — `object` — The node on the far side of a junction.
+- `handle` — `string` — The handle the junction arrives at.
+
+**Returns**
+
+- `number|null` — Area in m², or `null` for a terminal that is not a duct face — a radiation node is open air, which has no area and needs no correction.
+
+**Reads external mutable state**
+
+- Node params, and the SI driver table for a driver's total cone area.
+
+### `runSimulation > faceCorrection(node, handle)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+The end correction one face of a two-port carries, in its own area's units.
+
+The mass at a junction is one physical thing, so exactly one of the two
+sides may hold it or it would be counted twice. It goes to the narrower
+side, which is where it physically sits and where `ρ·ΔL/S` is defined —
+unless that side is a driver or a passive radiator, which have no place to
+put it, in which case the duct holds it referred to its own area.
+
+Several branches on one handle are one opening of their combined area: a
+chamber vented by three identical ports is not three separate junctions
+with the small area of one.
+
+**Parameters**
+
+- `node` — `object` — The two-port being built.
+- `handle` — `string` — `'throat'`/`'mouth'` for a waveguide, `'in'`/`'out'` for a chamber.
+
+**Returns**
+
+- `number` — Added effective length in m, zero for an open end or for the side that does not own the junction.
+
+**Reads external mutable state**
+
+- The adjacency index and node params.
 
 ### `runSimulation > getMatrix(node, Sup)`
 

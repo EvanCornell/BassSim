@@ -30,7 +30,7 @@ Speed of sound c in air, m/s, at 20 °C.
 
 Value: `344`
 
-## EXPORTED (4)
+## EXPORTED (5)
 
 ### `areaProfile(flare, S1, S2, L)`
 
@@ -169,5 +169,47 @@ the coefficient doubles the correction.
 
 - result >= 0 when factor >= 0
 - result is 0 when S is 0, and strictly increasing in both S and factor otherwise
+
+**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
+
+### `junctionCorrection(Sself, Sother)`
+
+- **Reachability:** EXPORTED
+- **Obtain via:** import { junctionCorrection } from '../../src/engine/geometry.js'
+
+End correction for a junction between two areas.
+
+An end correction is not a property of a duct — it is a property of the
+*discontinuity* at its end, and so it depends on what is on the other side.
+A port opening into a box gets nearly the full flanged correction; the same
+port butted against another duct of its own diameter gets none, because
+nothing discontinuous happens there and the air column simply continues.
+Treating the correction as belonging to the duct is what makes one port
+drawn as several segments tune differently from the same port drawn as one.
+
+The Karal result, `0.85·a·(1 − 1.25·a/b)` for the smaller radius `a` and the
+larger `b`, covers both extremes and everything between: it tends to the
+flanged `0.85a` as the far side grows, and falls to zero as the two areas
+approach each other. Above `a/b ≈ 0.8` the linear form goes negative and is
+clamped — by then the correction is a rounding error on any real port.
+
+The mass belongs to the junction, not to either side, so exactly one of the
+two ducts must carry it. The caller decides which; this only says how much,
+expressed in `Sself`'s own units so that `ρ·ΔL/Sself` is the right inertance
+whichever side ends up holding it.
+
+**Parameters**
+
+- `Sself` — `number` — Area of the side asking, m².
+- `Sother` — `number` — Area on the other side of the junction, m².
+
+**Returns**
+
+- `number` — Added effective length in m, for a duct of area `Sself`. Zero when either area is non-positive or the two are close enough that the discontinuity vanishes.
+
+**Postconditions (must hold on return)**
+
+- result >= 0
+- result is 0 when Sself equals Sother
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.

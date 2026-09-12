@@ -6,8 +6,23 @@
  * Version of the `.acousim.json` project schema this build reads and writes.
  *
  * Bumped only for changes a loader cannot absorb by falling back to defaults.
+ *
+ * v2 changed what `ecFactor` means. It was a coefficient — the added length at
+ * a port's mouth was `ecFactor · a`, applied whatever the mouth opened into.
+ * End corrections are now derived from the junction, and `ecFactor` scales what
+ * that comes to, so the neutral value is 1 rather than 0.732. `migrateParams`
+ * rescales stored values so a project keeps the correction its author asked for
+ * relative to the default.
  */
-export const SCHEMA_VERSION = 1
+export const SCHEMA_VERSION = 2
+
+/**
+ * The `ecFactor` that used to mean "no adjustment".
+ *
+ * Every project written before v2 carries this unless its author changed it,
+ * and it is the divisor that turns an old coefficient into a new multiplier.
+ */
+const LEGACY_EC_FACTOR = 0.732
 
 /**
  * Default params for each node type, in display units.
@@ -23,7 +38,7 @@ export const DEFAULT_PARAMS = {
     count: 1, wiring: 'single', Q: 50, lossless: true, label: 'Driver',
   },
   chamber: { volume: 30, length: 40, shape: 'rectangular', stuffing: 0, Q: 50, lossless: false, probe: false, probePos: 100, label: 'Chamber' },
-  waveguide: { S1: 80, S2: 80, length: 30, flare: 'conical', ecFactor: 0.732, Q: 50, lossless: false, label: 'Port' },
+  waveguide: { S1: 80, S2: 80, length: 30, flare: 'conical', ecFactor: 1, space: 'half', Q: 50, lossless: false, label: 'Port' },
   pr: { Mmd: 85, Cms: 0.35, Rms: 3, Sd: 480, addedMass: 0, Q: 50, lossless: false, space: 'half', label: 'Passive Radiator' },
   radiation: { space: 'half', label: 'Radiation' },
 }
@@ -41,6 +56,34 @@ export const DEFAULT_SETTINGS = {
   voltage: 2.83, impedance: 4, power: 2, rg: 0,
   vThreshold: 17, masking: false, unwrapPhase: true, delayOffset: 0,
   nlEnabled: false,
+}
+
+/**
+ * Bring one node's saved params up to the current schema.
+ *
+ * Only `ecFactor` needs it so far, and only because the quantity changed
+ * meaning rather than merely changing default. Before v2 it was the whole
+ * correction — `ΔL = ecFactor · a` at the mouth, and nothing at the throat.
+ * Now the geometry decides the correction and `ecFactor` scales it, so the old
+ * shipped default of 0.732 is today's 1. Dividing by that default carries the
+ * author's intent across: a port left alone comes out neutral, and one that had
+ * been given twice the standard correction still has twice.
+ *
+ * Everything else survives on its own, since an unrecognised or missing param
+ * falls back through `DEFAULT_PARAMS`.
+ *
+ * @param {string} type - Node type.
+ * @param {object} params - The node's saved params, in display units.
+ * @param {number} from - Schema version the project was written with.
+ * @returns {object} The params to merge over the defaults; the same object when nothing needed changing.
+ * @post params is not modified
+ * @pure
+ */
+export function migrateParams(type, params, from) {
+  if (from >= 2 || type !== 'waveguide' || params.ecFactor == null) return params
+  const k = Number(params.ecFactor)
+  if (!isFinite(k) || k < 0) return params
+  return { ...params, ecFactor: k / LEGACY_EC_FACTOR }
 }
 
 /**
@@ -66,13 +109,14 @@ export const DEFAULT_SETTINGS = {
  */
 export function hydrateProject(proj) {
   const errors = []
+  const from = Number(proj.schemaVersion) || 1
   const nodes = (proj.nodes || []).map((n, i) => {
     if (!n.id) errors.push(`nodes[${i}] is missing "id"`)
     if (!DEFAULT_PARAMS[n.type]) errors.push(`nodes[${i}] (${n.id}) has unknown type "${n.type}"`)
     return {
       id: n.id, type: n.type,
       position: n.position || { x: 0, y: 0 },
-      data: { params: { ...(DEFAULT_PARAMS[n.type] || {}), ...(n.params || {}) } },
+      data: { params: { ...(DEFAULT_PARAMS[n.type] || {}), ...migrateParams(n.type, n.params || {}, from) } },
     }
   })
   const ids = new Set(nodes.map((n) => n.id))
