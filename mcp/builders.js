@@ -256,11 +256,14 @@ export function portLengthGuess(fb, volumeL, areaCm2, ecFactor = 0.85) {
  * trusting the analytic guess, it re-simulates and converges on the length
  * that actually puts the impedance minimum where it was asked for.
  *
- * Tuning falls monotonically as the port lengthens, which the bracketing
- * step exploits — it widens the interval up to four times in each direction
- * before bisecting, so a poor initial guess still converges. Fourteen
- * bisections take the interval below a tenth of a percent, and the search
- * stops early once it is within 0.05 Hz.
+ * Tuning falls as the port lengthens, but only while the port behaves as a
+ * Helmholtz mass: a long enough port acts as a pipe, and its tuning can rise
+ * again. So the bracket is found by scanning upward — a quarter, half, one,
+ * two and four times the initial guess, then doubling up to three more times
+ * — and taking the first length whose tuning is at or below the target. That
+ * is always the Helmholtz solution, and a poor initial guess still converges.
+ * Fourteen bisections take the interval below a tenth of a percent, and the
+ * search stops early once it is within 0.05 Hz.
  *
  * A simulation that returns `null` — a graph with no identifiable tuning —
  * ends the search at the current length rather than looping.
@@ -268,13 +271,13 @@ export function portLengthGuess(fb, volumeL, areaCm2, ecFactor = 0.85) {
  * @param {object} project - The project to tune. Modified in place.
  * @param {string} portId - Node id of the port to adjust.
  * @param {number} targetFb - Desired tuning, Hz.
- * @param {(project: object) => number|null} simulateFb - Simulates a project and returns its tuning in Hz, or `null` when there is none.
- * @returns {number} The calibrated port length in cm, rounded to 0.1 cm.
+ * @param {(project: object) => (number|null|Promise<number|null>)} simulateFb - Simulates a project and returns its tuning in Hz, or `null` when there is none; may return a promise.
+ * @returns {Promise<number>} The calibrated port length in cm, rounded to 0.1 cm.
  * @pre The project contains a waveguide node with id `portId`.
  * @mutates Writes the calibrated length into the project's port node.
  * @sideEffect Runs the supplied simulation up to ~22 times, which dominates the cost of building a ported enclosure.
  */
-export function calibratePort(project, portId, targetFb, simulateFb) {
+export async function calibratePort(project, portId, targetFb, simulateFb) {
   /**
    * Set the port's length in a project.
    *
@@ -292,25 +295,38 @@ export function calibratePort(project, portId, targetFb, simulateFb) {
    * calibrated.
    *
    * @param {number} L - Port length to try, cm.
-   * @returns {number|null} Tuning in Hz, or `null` when the graph has none.
+   * @returns {Promise<number|null>} Tuning in Hz, or `null` when the graph has none.
    * @sideEffect Runs the caller's simulation.
    * @reads the enclosing `project` and `simulateFb`.
    */
-  const fbAt = (L) => {
+  const fbAt = async (L) => {
     const p = structuredClone(project)
     setLen(p, L)
     return simulateFb(p)
   }
   const port = project.nodes.find((n) => n.id === portId)
-  let lo = Math.max(port.params.length / 4, 0.5)
-  let hi = port.params.length * 4
-  // fb falls as length grows; widen until bracketed
-  for (let k = 0; k < 4 && (fbAt(hi) ?? 0) > targetFb; k++) hi *= 2
-  for (let k = 0; k < 4 && (fbAt(lo) ?? 1e9) < targetFb; k++) lo /= 2
-  let L = port.params.length
+  const L0 = Math.max(port.params.length, 0.5)
+  // Scan upward from short lengths for the first crossing. Tuning falls with
+  // length only on the Helmholtz branch; once the port is long enough to act
+  // as a pipe it can come back up, so a blindly widened bracket may land on
+  // a pipe-mode "tuning" several metres long.
+  let lo = null
+  let hi = null
+  let prev = Math.max(L0 / 8, 0.25)
+  for (const L of [L0 / 4, L0 / 2, L0, L0 * 2, L0 * 4]) {
+    const fb = await fbAt(L)
+    if (fb != null && fb <= targetFb) { hi = L; lo = prev; break }
+    prev = L
+  }
+  if (hi == null) {
+    hi = L0 * 4
+    for (let k = 0; k < 3; k++) { hi *= 2; if (((await fbAt(hi)) ?? 0) <= targetFb) break }
+    lo = hi / 2
+  }
+  let L = L0
   for (let k = 0; k < 14; k++) {
     L = (lo + hi) / 2
-    const fb = fbAt(L)
+    const fb = await fbAt(L)
     if (fb == null) break
     if (Math.abs(fb - targetFb) < 0.05) break
     if (fb > targetFb) lo = L
@@ -504,14 +520,14 @@ export const BUILDERS = {
  *
  * @param {object} project - Starting project. Not modified.
  * @param {Array<{node?: string, param: string, min: number, max: number}>} params - Free parameters. Omit `node` to target a sweep setting rather than a node param.
- * @param {(project: object) => number} score - Objective; higher is better.
+ * @param {(project: object) => (number|Promise<number>)} score - Objective; higher is better; may return a promise.
  * @param {object} [opts={}] - Search controls.
  * @param {number} [opts.rounds=3] - Refinement rounds.
  * @param {number} [opts.gridN=9] - Grid points per parameter per round.
- * @returns {{best: object, bestScore: number, evals: number, values: number[]}} The best project found, its score, how many evaluations it took — `1 + rounds × params × gridN` — and the winning value of each parameter in the order given.
+ * @returns {Promise<{best: object, bestScore: number, evals: number, values: number[]}>} The best project found, its score, how many evaluations it took — `1 + rounds × params × gridN` — and the winning value of each parameter in the order given.
  * @sideEffect Calls `score` many times; if scoring simulates, this is the expensive part.
  */
-export function optimizeProject(project, params, score, { rounds = 3, gridN = 9 } = {}) {
+export async function optimizeProject(project, params, score, { rounds = 3, gridN = 9 } = {}) {
   /**
    * Read a free parameter's current value from a project.
    *
@@ -549,7 +565,7 @@ export function optimizeProject(project, params, score, { rounds = 3, gridN = 9 
     const v = getVal(best, prm)
     if (!(v >= prm.min && v <= prm.max)) setVal(best, prm, (prm.min + prm.max) / 2)
   }
-  let bestScore = score(best)
+  let bestScore = await score(best)
   let evals = 1
   const ranges = params.map((prm) => [prm.min, prm.max])
   for (let r = 0; r < rounds; r++) {
@@ -560,7 +576,7 @@ export function optimizeProject(project, params, score, { rounds = 3, gridN = 9 
         const v = lo + ((hi - lo) * k) / (gridN - 1)
         const cand = structuredClone(best)
         setVal(cand, params[pi], v)
-        const s = score(cand)
+        const s = await score(cand)
         evals++
         if (s > bestScore) { bestScore = s; best = cand; cbV = v }
       }

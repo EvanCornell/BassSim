@@ -15,12 +15,15 @@ import { toLegacy } from '../schema/toLegacy.js'
 import { hydrateProject } from './project.js'
 import { runSimulation } from './solver.js'
 import { computeMetrics } from './metrics.js'
+import { compileProject } from '../spice/compile.js'
+import { runNetlist } from '../spice/run.js'
+import { adaptResults } from '../spice/adapt.js'
 
 /** The engines `simulateProject` accepts. */
-export const ENGINES = ['legacy']
+export const ENGINES = ['spice', 'legacy']
 
 /** The engine used when none is named. */
-export const DEFAULT_ENGINE = 'legacy'
+export const DEFAULT_ENGINE = 'spice'
 
 // Upper bound on sweep resolution. The cap exists purely to keep a mistyped
 // value from appearing to hang the app.
@@ -60,12 +63,35 @@ function runLegacy(project) {
 }
 
 /**
+ * Run the SPICE engine on a resolved, validated v3 project.
+ *
+ * @param {object} project - A resolved v3 project.
+ * @param {Object<string, string[]>} warnings - The project's warnings, attached to the results.
+ * @returns {Promise<{results: object, metrics: object|null, netlist: string}>} The sweep, its metrics, and the netlist that produced it.
+ * @throws {Error} When the project uses something the compiler cannot build yet, or SPICE cannot solve it.
+ * @sideEffect Runs ngspice.
+ */
+async function runSpice(project, warnings) {
+  const analysis = (project.analyses || []).find((a) => a.type === 'ac')
+  const npts = Math.min(analysis.npts || 512, MAX_NPTS)
+  const t0 = typeof performance !== 'undefined' ? performance.now() : Date.now()
+  const { netlist, map } = compileProject(project, { ...analysis, npts })
+  const raw = await runNetlist(netlist)
+  const results = adaptResults(raw, map)
+  results.validation = { warnings, errors: [] }
+  results.elapsedMs = (typeof performance !== 'undefined' ? performance.now() : Date.now()) - t0
+  const volts = map.channels[0]?.volts ?? 2.83
+  const metrics = computeMetrics(results, { voltage: volts })
+  return { results, metrics, netlist }
+}
+
+/**
  * Simulate a saved project of any schema version.
  *
  * @param {object} input - A parsed `.acousim.json` project, any version.
  * @param {object} [opts] - Options.
  * @param {string} [opts.engine] - One of `ENGINES`; defaults to `DEFAULT_ENGINE`.
- * @returns {Promise<{results: object, metrics: object|null, warnings: Object<string, string[]>}>} The sweep, its metrics, and the project's warnings keyed by node id.
+ * @returns {Promise<{results: object, metrics: object|null, warnings: Object<string, string[]>, netlist?: string}>} The sweep, its metrics, the project's warnings keyed by node id, and — from the SPICE engine — the netlist it ran.
  * @throws {Error} When the project cannot be simulated — unresolvable expressions, structural errors, or an engine that cannot represent it. Every reason is on `projectErrors`.
  * @sideEffect Runs an engine.
  */
@@ -75,6 +101,14 @@ export async function simulateProject(input, { engine = DEFAULT_ENGINE } = {}) {
   const { errors, warnings } = validateProject(project)
   const blocking = [...exprErrors, ...errors]
   if (blocking.length) throw projectError(blocking)
+  if (engine === 'spice') {
+    try {
+      const { results, metrics, netlist } = await runSpice(project, warnings)
+      return { results, metrics, warnings, netlist }
+    } catch (err) {
+      throw projectError([err.message])
+    }
+  }
   const { results, metrics } = runLegacy(project)
   return { results, metrics, warnings }
 }

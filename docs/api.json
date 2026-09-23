@@ -24,9 +24,9 @@
     "pure": "flag"
   },
   "stats": {
-    "modules": 70,
-    "methods": 749,
-    "documented": 749
+    "modules": 81,
+    "methods": 817,
+    "documented": 817
   },
   "modules": [
     {
@@ -38,7 +38,7 @@
       "constants": [
         {
           "name": "__internals",
-          "line": 865,
+          "line": 912,
           "shape": {
             "kind": "object",
             "keys": [
@@ -65,7 +65,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 36,
+          "line": 38,
           "signature": [
             "v",
             "n"
@@ -112,7 +112,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 49,
+          "line": 51,
           "signature": [
             "nodes",
             "id"
@@ -159,7 +159,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 67,
+          "line": 69,
           "signature": [
             "nodes",
             "ref",
@@ -213,13 +213,96 @@
           "other": []
         },
         {
-          "name": "run",
-          "qualified": "run",
+          "name": "asCurrent",
+          "qualified": "asCurrent",
           "kind": "function",
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 91,
+          "line": 98,
+          "signature": [
+            "projRaw"
+          ],
+          "documented": true,
+          "summary": "Bring a project to the current schema, applying any flat `settings` over it.",
+          "description": "Bring a project to the current schema, applying any flat `settings` over it.\n\nTools address sweep and drive settings by their flat names — `voltage`,\n`fmin`, `npts` — as older files stored them. A current-version project keeps\nthose in its analyses, wiring and display sections instead, so a `settings`\nobject on it is taken as overrides and folded in through the editor bridge.",
+          "params": [
+            {
+              "name": "projRaw",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "A serialized project, any schema version."
+            }
+          ],
+          "returns": {
+            "type": "object",
+            "desc": "A complete current-version project."
+          },
+          "throws": [
+            {
+              "type": "TypeError",
+              "desc": "When `projRaw` is not an object."
+            }
+          ],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "withSettings",
+          "qualified": "withSettings",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 116,
+          "signature": [
+            "projRaw"
+          ],
+          "documented": true,
+          "summary": "A project with a flat `settings` object that tools can read and override.",
+          "description": "A project with a flat `settings` object that tools can read and override.",
+          "params": [
+            {
+              "name": "projRaw",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "A serialized project, any schema version."
+            }
+          ],
+          "returns": {
+            "type": "object",
+            "desc": "The same project with `settings` filled from its current values when it had none."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "run",
+          "qualified": "run",
+          "kind": "function",
+          "exported": false,
+          "async": true,
+          "generator": false,
+          "line": 134,
           "signature": [
             "projRaw"
           ],
@@ -232,17 +315,17 @@
               "type": "object",
               "optional": false,
               "default": null,
-              "desc": "A serialized project."
+              "desc": "A serialized project, any schema version."
             }
           ],
           "returns": {
-            "type": "{nodes: Array<object>, edges: Array<object>, settings: object, res: object, metrics: object|null}",
-            "desc": "The hydrated graph, the raw result, and metrics — `null` when the simulation failed."
+            "type": "Promise<{nodes: Array<object>, edges: Array<object>, settings: object, res: object, metrics: object|null}>",
+            "desc": "The graph in the editor's shape (params at `data.params`), its flat settings, the raw result, and metrics."
           },
           "throws": [
             {
               "type": "Error",
-              "desc": "When the project is structurally invalid, propagated from `hydrateProject`."
+              "desc": "When the project cannot be simulated; every reason is on `projectErrors`."
             }
           ],
           "contract": {
@@ -251,7 +334,7 @@
             "invariant": [],
             "mutates": [],
             "sideEffect": [
-              "Runs the solver, which is the expensive part of every tool call."
+              "Runs the engine, which is the expensive part of every tool call."
             ],
             "reads": [],
             "pure": false
@@ -265,7 +348,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 118,
+          "line": 160,
           "signature": [
             "freqs",
             "arr",
@@ -338,7 +421,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 147,
+          "line": 189,
           "signature": [
             "r"
           ],
@@ -377,7 +460,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 158,
+          "line": 200,
           "signature": [
             "r"
           ],
@@ -416,7 +499,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 171,
+          "line": 213,
           "signature": [
             "r",
             "id"
@@ -463,7 +546,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 182,
+          "line": 224,
           "signature": [
             "r"
           ],
@@ -502,7 +585,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 193,
+          "line": 235,
           "signature": [
             "r"
           ],
@@ -541,7 +624,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 204,
+          "line": 246,
           "signature": [
             "r"
           ],
@@ -580,7 +663,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 217,
+          "line": 259,
           "signature": [
             "r",
             "id"
@@ -627,7 +710,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 230,
+          "line": 272,
           "signature": [
             "r",
             "id"
@@ -674,7 +757,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 243,
+          "line": 285,
           "signature": [
             "r",
             "id"
@@ -721,7 +804,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 254,
+          "line": 296,
           "signature": [
             "r"
           ],
@@ -760,7 +843,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 265,
+          "line": 307,
           "signature": [
             "r"
           ],
@@ -799,7 +882,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 276,
+          "line": 318,
           "signature": [
             "r"
           ],
@@ -838,7 +921,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 291,
+          "line": 333,
           "signature": [
             "r"
           ],
@@ -877,7 +960,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 302,
+          "line": 344,
           "signature": [
             "r"
           ],
@@ -916,7 +999,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 313,
+          "line": 355,
           "signature": [
             "r"
           ],
@@ -955,7 +1038,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 328,
+          "line": 370,
           "signature": [
             "metrics"
           ],
@@ -994,7 +1077,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 340,
+          "line": 382,
           "signature": [
             "k",
             "v",
@@ -1051,7 +1134,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 368,
+          "line": 410,
           "signature": [
             "arg0",
             "points"
@@ -1098,7 +1181,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 408,
+          "line": 450,
           "signature": [
             "obj"
           ],
@@ -1137,7 +1220,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 419,
+          "line": 461,
           "signature": [
             "e"
           ],
@@ -1176,7 +1259,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 433,
+          "line": 475,
           "signature": [],
           "documented": true,
           "summary": "Build a fully configured MCP server with every tool and resource registered.",
@@ -1207,7 +1290,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 672,
+          "line": 715,
           "signature": [
             "k"
           ],
@@ -1251,9 +1334,9 @@
           "qualified": "createServer > simFb",
           "kind": "function",
           "exported": false,
-          "async": false,
+          "async": true,
           "generator": false,
-          "line": 685,
+          "line": 728,
           "signature": [
             "p"
           ],
@@ -1270,8 +1353,8 @@
             }
           ],
           "returns": {
-            "type": "number|null",
-            "desc": "Tuning in Hz — the vented `fb`, falling back to a sealed box's `fc` — or `null` when the simulation failed."
+            "type": "Promise<number|null>",
+            "desc": "Tuning in Hz — the vented `fb` — or `null` when the simulation failed."
           },
           "throws": [],
           "contract": {
@@ -1294,7 +1377,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 710,
+          "line": 755,
           "signature": [
             "freqs",
             "band"
@@ -1346,7 +1429,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 745,
+          "line": 790,
           "signature": [
             "arg0"
           ],
@@ -1405,7 +1488,7 @@
             }
           ],
           "returns": {
-            "type": "(project: object) => number",
+            "type": "(project: object) => Promise<number>",
             "desc": "A scoring function; higher is better."
           },
           "throws": [],
@@ -1433,7 +1516,7 @@
       "constants": [
         {
           "name": "BUILDERS",
-          "line": 478,
+          "line": 494,
           "shape": {
             "kind": "object",
             "keys": [
@@ -1448,7 +1531,7 @@
         },
         {
           "name": "__internals",
-          "line": 581,
+          "line": 597,
           "shape": {
             "kind": "object",
             "keys": [
@@ -2040,9 +2123,9 @@
           "qualified": "calibratePort",
           "kind": "function",
           "exported": true,
-          "async": false,
+          "async": true,
           "generator": false,
-          "line": 277,
+          "line": 280,
           "signature": [
             "project",
             "portId",
@@ -2051,7 +2134,7 @@
           ],
           "documented": true,
           "summary": "Tune a port by bisecting its length against the simulated tuning.",
-          "description": "Tune a port by bisecting its length against the simulated tuning.\n\nThis is what makes the builders' tunings trustworthy: rather than\ntrusting the analytic guess, it re-simulates and converges on the length\nthat actually puts the impedance minimum where it was asked for.\n\nTuning falls monotonically as the port lengthens, which the bracketing\nstep exploits — it widens the interval up to four times in each direction\nbefore bisecting, so a poor initial guess still converges. Fourteen\nbisections take the interval below a tenth of a percent, and the search\nstops early once it is within 0.05 Hz.\n\nA simulation that returns `null` — a graph with no identifiable tuning —\nends the search at the current length rather than looping.",
+          "description": "Tune a port by bisecting its length against the simulated tuning.\n\nThis is what makes the builders' tunings trustworthy: rather than\ntrusting the analytic guess, it re-simulates and converges on the length\nthat actually puts the impedance minimum where it was asked for.\n\nTuning falls as the port lengthens, but only while the port behaves as a\nHelmholtz mass: a long enough port acts as a pipe, and its tuning can rise\nagain. So the bracket is found by scanning upward — a quarter, half, one,\ntwo and four times the initial guess, then doubling up to three more times\n— and taking the first length whose tuning is at or below the target. That\nis always the Helmholtz solution, and a poor initial guess still converges.\nFourteen bisections take the interval below a tenth of a percent, and the\nsearch stops early once it is within 0.05 Hz.\n\nA simulation that returns `null` — a graph with no identifiable tuning —\nends the search at the current length rather than looping.",
           "params": [
             {
               "name": "project",
@@ -2076,14 +2159,14 @@
             },
             {
               "name": "simulateFb",
-              "type": "(project: object) => number|null",
+              "type": "(project: object) => (number|null|Promise<number|null>)",
               "optional": false,
               "default": null,
-              "desc": "Simulates a project and returns its tuning in Hz, or `null` when there is none."
+              "desc": "Simulates a project and returns its tuning in Hz, or `null` when there is none; may return a promise."
             }
           ],
           "returns": {
-            "type": "number",
+            "type": "Promise<number>",
             "desc": "The calibrated port length in cm, rounded to 0.1 cm."
           },
           "throws": [],
@@ -2111,7 +2194,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 287,
+          "line": 290,
           "signature": [
             "p",
             "L"
@@ -2160,9 +2243,9 @@
           "qualified": "calibratePort > fbAt",
           "kind": "function",
           "exported": false,
-          "async": false,
+          "async": true,
           "generator": false,
-          "line": 299,
+          "line": 302,
           "signature": [
             "L"
           ],
@@ -2179,7 +2262,7 @@
             }
           ],
           "returns": {
-            "type": "number|null",
+            "type": "Promise<number|null>",
             "desc": "Tuning in Hz, or `null` when the graph has none."
           },
           "throws": [],
@@ -2205,7 +2288,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 343,
+          "line": 359,
           "signature": [
             "arg0"
           ],
@@ -2279,7 +2362,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 375,
+          "line": 391,
           "signature": [
             "arg0"
           ],
@@ -2381,7 +2464,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 415,
+          "line": 431,
           "signature": [
             "arg0"
           ],
@@ -2476,7 +2559,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 453,
+          "line": 469,
           "signature": [
             "arg0"
           ],
@@ -2576,9 +2659,9 @@
           "qualified": "optimizeProject",
           "kind": "function",
           "exported": true,
-          "async": false,
+          "async": true,
           "generator": false,
-          "line": 514,
+          "line": 530,
           "signature": [
             "project",
             "params",
@@ -2605,10 +2688,10 @@
             },
             {
               "name": "score",
-              "type": "(project: object) => number",
+              "type": "(project: object) => (number|Promise<number>)",
               "optional": false,
               "default": null,
-              "desc": "Objective; higher is better."
+              "desc": "Objective; higher is better; may return a promise."
             },
             {
               "name": "opts",
@@ -2633,7 +2716,7 @@
             }
           ],
           "returns": {
-            "type": "{best: object, bestScore: number, evals: number, values: number[]}",
+            "type": "Promise<{best: object, bestScore: number, evals: number, values: number[]}>",
             "desc": "The best project found, its score, how many evaluations it took — `1 + rounds × params × gridN` — and the winning value of each parameter in the order given."
           },
           "throws": [],
@@ -2657,7 +2740,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 524,
+          "line": 540,
           "signature": [
             "p",
             "prm"
@@ -2706,7 +2789,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 540,
+          "line": 556,
           "signature": [
             "p",
             "prm",
@@ -9901,7 +9984,7 @@
       "constants": [
         {
           "name": "CHART_PANELS",
-          "line": 933,
+          "line": 936,
           "shape": {
             "kind": "object",
             "keys": [
@@ -9921,7 +10004,7 @@
         },
         {
           "name": "__internals",
-          "line": 974,
+          "line": 977,
           "shape": {
             "kind": "object",
             "keys": [
@@ -10932,7 +11015,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 605,
+          "line": 608,
           "signature": [],
           "documented": true,
           "summary": "Electrical input impedance magnitude, with phase on a second axis.",
@@ -10963,7 +11046,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 643,
+          "line": 646,
           "signature": [],
           "documented": true,
           "summary": "Cone excursion against Xmax, one trace per driver.",
@@ -10994,7 +11077,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 658,
+          "line": 661,
           "signature": [
             "id"
           ],
@@ -11035,7 +11118,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 673,
+          "line": 676,
           "signature": [
             "id"
           ],
@@ -11076,7 +11159,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 696,
+          "line": 699,
           "signature": [
             "xm"
           ],
@@ -11117,7 +11200,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 744,
+          "line": 747,
           "signature": [],
           "documented": true,
           "summary": "Air velocity in each waveguide, against the turbulence threshold.",
@@ -11148,7 +11231,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 783,
+          "line": 786,
           "signature": [],
           "documented": true,
           "summary": "Interior SPL at each probed chamber's virtual microphone.",
@@ -11179,7 +11262,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 823,
+          "line": 826,
           "signature": [],
           "documented": true,
           "summary": "Radiated acoustic power.",
@@ -11210,7 +11293,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 843,
+          "line": 846,
           "signature": [],
           "documented": true,
           "summary": "Acoustic efficiency as a percentage of electrical input power.",
@@ -11241,7 +11324,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 862,
+          "line": 865,
           "signature": [],
           "documented": true,
           "summary": "Electrical input power, real and apparent.",
@@ -11272,7 +11355,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 884,
+          "line": 887,
           "signature": [],
           "documented": true,
           "summary": "Phase and group delay on separate axes.",
@@ -11303,7 +11386,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 919,
+          "line": 922,
           "signature": [
             "arg0"
           ],
@@ -11349,7 +11432,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 957,
+          "line": 960,
           "signature": [
             "id"
           ],
@@ -11390,7 +11473,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 966,
+          "line": 969,
           "signature": [],
           "documented": true,
           "summary": "The chart wrapped in its panel shell.",
@@ -12504,7 +12587,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 110,
+          "line": 126,
           "signature": [],
           "documented": true,
           "summary": "The Quick bar section: choose and reorder the items in the quick bar.",
@@ -12535,7 +12618,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 178,
+          "line": 194,
           "signature": [
             "arg0"
           ],
@@ -12595,7 +12678,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 202,
+          "line": 218,
           "signature": [],
           "documented": true,
           "summary": "The Keyboard section: view and rebind every command's shortcuts.",
@@ -12626,7 +12709,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 219,
+          "line": 235,
           "signature": [
             "e"
           ],
@@ -12667,7 +12750,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 243,
+          "line": 259,
           "signature": [
             "id"
           ],
@@ -12708,7 +12791,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 328,
+          "line": 344,
           "signature": [],
           "documented": true,
           "summary": "The settings window: a floating, draggable panel rather than a dock panel.",
@@ -12739,7 +12822,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 344,
+          "line": 360,
           "signature": [
             "e"
           ],
@@ -12780,7 +12863,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 360,
+          "line": 376,
           "signature": [
             "e"
           ],
@@ -12821,7 +12904,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 371,
+          "line": 387,
           "signature": [
             "ev"
           ],
@@ -12862,7 +12945,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 378,
+          "line": 394,
           "signature": [],
           "documented": true,
           "summary": "End the window drag and remove its listeners.",
@@ -19539,11 +19622,12 @@
       "constants": [
         {
           "name": "ENGINES",
-          "line": 20,
+          "line": 23,
           "shape": {
             "kind": "array",
-            "length": 1,
+            "length": 2,
             "values": [
+              "spice",
               "legacy"
             ]
           },
@@ -19552,10 +19636,10 @@
         },
         {
           "name": "DEFAULT_ENGINE",
-          "line": 23,
+          "line": 26,
           "shape": {
             "kind": "literal",
-            "value": "legacy"
+            "value": "spice"
           },
           "summary": "The engine used when none is named.",
           "description": "The engine used when none is named."
@@ -19569,7 +19653,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 36,
+          "line": 39,
           "signature": [
             "reasons"
           ],
@@ -19608,7 +19692,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 50,
+          "line": 53,
           "signature": [
             "project"
           ],
@@ -19648,13 +19732,67 @@
           "other": []
         },
         {
+          "name": "runSpice",
+          "qualified": "runSpice",
+          "kind": "function",
+          "exported": false,
+          "async": true,
+          "generator": false,
+          "line": 74,
+          "signature": [
+            "project",
+            "warnings"
+          ],
+          "documented": true,
+          "summary": "Run the SPICE engine on a resolved, validated v3 project.",
+          "description": "Run the SPICE engine on a resolved, validated v3 project.",
+          "params": [
+            {
+              "name": "project",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "A resolved v3 project."
+            },
+            {
+              "name": "warnings",
+              "type": "Object<string, string[]>",
+              "optional": false,
+              "default": null,
+              "desc": "The project's warnings, attached to the results."
+            }
+          ],
+          "returns": {
+            "type": "Promise<{results: object, metrics: object|null, netlist: string}>",
+            "desc": "The sweep, its metrics, and the netlist that produced it."
+          },
+          "throws": [
+            {
+              "type": "Error",
+              "desc": "When the project uses something the compiler cannot build yet, or SPICE cannot solve it."
+            }
+          ],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Runs ngspice."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
           "name": "simulateProject",
           "qualified": "simulateProject",
           "kind": "function",
           "exported": true,
           "async": true,
           "generator": false,
-          "line": 72,
+          "line": 98,
           "signature": [
             "input",
             "arg1"
@@ -19686,8 +19824,8 @@
             }
           ],
           "returns": {
-            "type": "Promise<{results: object, metrics: object|null, warnings: Object<string, string[]>}>",
-            "desc": "The sweep, its metrics, and the project's warnings keyed by node id."
+            "type": "Promise<{results: object, metrics: object|null, warnings: Object<string, string[]>, netlist?: string}>",
+            "desc": "The sweep, its metrics, the project's warnings keyed by node id, and — from the SPICE engine — the netlist it ran."
           },
           "throws": [
             {
@@ -25946,6 +26084,3545 @@
             "sideEffect": [],
             "reads": [],
             "pure": true
+          },
+          "other": []
+        }
+      ]
+    },
+    {
+      "file": "src/spice/adapt.js",
+      "module": {
+        "summary": "SPICE vectors → the results a loudspeaker designer reads.",
+        "description": "SPICE vectors → the results a loudspeaker designer reads.\n\nProduces the same result object the legacy engine does, so every chart,\nmetric, export and MCP tool reads either engine's output unchanged. Drive\nlevels are RMS, so pressures and flows are RMS; excursion and duct velocity\nare reported as peaks, as before."
+      },
+      "constants": [],
+      "methods": [
+        {
+          "name": "spl",
+          "qualified": "spl",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 19,
+          "signature": [
+            "p"
+          ],
+          "documented": true,
+          "summary": "Sound pressure level of an RMS pressure magnitude.",
+          "description": "Sound pressure level of an RMS pressure magnitude.",
+          "params": [
+            {
+              "name": "p",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "|p|, Pa."
+            }
+          ],
+          "returns": {
+            "type": "number",
+            "desc": "dB SPL, floored at a pressure of 1e-12 Pa."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "phaseAndDelay",
+          "qualified": "phaseAndDelay",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 29,
+          "signature": [
+            "phase",
+            "freqs"
+          ],
+          "documented": true,
+          "summary": "Unwrap a phase curve and derive group delay, as the legacy engine does.",
+          "description": "Unwrap a phase curve and derive group delay, as the legacy engine does.",
+          "params": [
+            {
+              "name": "phase",
+              "type": "number[]",
+              "optional": false,
+              "default": null,
+              "desc": "Wrapped phase, degrees."
+            },
+            {
+              "name": "freqs",
+              "type": "number[]",
+              "optional": false,
+              "default": null,
+              "desc": "Frequencies, Hz."
+            }
+          ],
+          "returns": {
+            "type": "{unwrapped: number[], groupDelay: number[]}",
+            "desc": "Unwrapped phase in degrees, and group delay in ms."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "adaptResults",
+          "qualified": "adaptResults",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 64,
+          "signature": [
+            "raw",
+            "map"
+          ],
+          "documented": true,
+          "summary": "Turn a SPICE run into the results object.",
+          "description": "Turn a SPICE run into the results object.\n\n- Impedance is the load the first driving channel sees, excluding its\n  output resistance; electrical power sums over every channel.\n- Each radiator's far-field pressure at 1 m is jωρU/(Ω·r), and every\n  radiator is 1 m from the listening point, so the combined output is their\n  coherent sum. Only radiators that count toward output are summed.\n- Radiated power is Re(p·U*) at each counted radiator.",
+          "params": [
+            {
+              "name": "raw",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "From `runNetlist`."
+            },
+            {
+              "name": "map",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "From `compileProject`."
+            }
+          ],
+          "returns": {
+            "type": "object",
+            "desc": "The results, in the legacy engine's shape."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "arr",
+          "qualified": "adaptResults > arr",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 73,
+          "signature": [],
+          "documented": true,
+          "summary": "A zero-filled array, one entry per frequency.",
+          "description": "A zero-filled array, one entry per frequency.",
+          "params": [],
+          "returns": {
+            "type": "number[]",
+            "desc": "The array."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        }
+      ]
+    },
+    {
+      "file": "src/spice/compile.js",
+      "module": {
+        "summary": "A resolved v3 project → a SPICE netlist, plus a map of what its outputs mean.",
+        "description": "A resolved v3 project → a SPICE netlist, plus a map of what its outputs mean."
+      },
+      "constants": [],
+      "methods": [
+        {
+          "name": "pointsPerDecade",
+          "qualified": "pointsPerDecade",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 21,
+          "signature": [
+            "fmin",
+            "fmax",
+            "npts"
+          ],
+          "documented": true,
+          "summary": "Points per decade for an `.ac dec` sweep that comes closest to `npts` points.",
+          "description": "Points per decade for an `.ac dec` sweep that comes closest to `npts` points.\n\nngspice's decade sweep includes both ends, so it yields ppd·decades + 1\npoints.",
+          "params": [
+            {
+              "name": "fmin",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Lowest frequency, Hz."
+            },
+            {
+              "name": "fmax",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Highest frequency, Hz."
+            },
+            {
+              "name": "npts",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Points wanted."
+            }
+          ],
+          "returns": {
+            "type": "number",
+            "desc": "Points per decade, at least 1."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "compileProject",
+          "qualified": "compileProject",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 35,
+          "signature": [
+            "proj",
+            "analysis"
+          ],
+          "documented": true,
+          "summary": "Compile a project's frequency sweep into a netlist.",
+          "description": "Compile a project's frequency sweep into a netlist.",
+          "params": [
+            {
+              "name": "proj",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "A resolved, validated v3 project."
+            },
+            {
+              "name": "analysis",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "The `ac` analysis to run."
+            }
+          ],
+          "returns": {
+            "type": "{netlist: string, map: object, saves: string[]}",
+            "desc": "The netlist text; the map of drivers, channels, waveguides, radiators and probes to the SPICE vectors that carry them; and the vectors to read back."
+          },
+          "throws": [
+            {
+              "type": "Error",
+              "desc": "When the project uses something this compiler cannot build yet."
+            }
+          ],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        }
+      ]
+    },
+    {
+      "file": "src/spice/elements.js",
+      "module": {
+        "summary": "Node types as netlist elements.",
+        "description": "Node types as netlist elements.\n\nEach function adds one graph node's circuit and records, in `ctx.map`, which\nSPICE outputs mean what — which sense source carries a cone's velocity, a\nport's flow, a radiator's output — so the adapter can turn raw vectors into\nspeaker quantities without knowing how the netlist was built."
+      },
+      "constants": [],
+      "methods": [
+        {
+          "name": "noteOf",
+          "qualified": "noteOf",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 23,
+          "signature": [
+            "node"
+          ],
+          "documented": true,
+          "summary": "A readable name for a graph node in netlist comments.",
+          "description": "A readable name for a graph node in netlist comments.",
+          "params": [
+            {
+              "name": "node",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "A v3 node."
+            }
+          ],
+          "returns": {
+            "type": "string",
+            "desc": "Its label and id."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "endMass",
+          "qualified": "endMass",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 47,
+          "signature": [
+            "ctx",
+            "from",
+            "to",
+            "dl",
+            "S",
+            "viscous",
+            "note"
+          ],
+          "documented": true,
+          "summary": "Join an element's internal node to its netlist node through an end mass.",
+          "description": "Join an element's internal node to its netlist node through an end mass.\n\nThe end correction is a series acoustic mass ρ·Δ/S, and — scaled by the\nelement's loss multiplier — the same viscous wall loss a Δ-long extension of\nthe duct would have, so the air at the end is lossy at the same rate as the\nair inside.\n\nCallers join the nodes directly when there is no correction — a wire, not a\nnear-zero resistor, whose enormous conductance would cost the solver most of\nits precision.",
+          "params": [
+            {
+              "name": "ctx",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "Compile context."
+            },
+            {
+              "name": "from",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Node on the junction side."
+            },
+            {
+              "name": "to",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "The element's end node."
+            },
+            {
+              "name": "dl",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Added length, m; must be positive."
+            },
+            {
+              "name": "S",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Area at this end, m²."
+            },
+            {
+              "name": "viscous",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Loss multiplier; 0 for none."
+            },
+            {
+              "name": "note",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Comment."
+            }
+          ],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [
+              "ctx.nl."
+            ],
+            "sideEffect": [],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "probesOn",
+          "qualified": "probesOn",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 62,
+          "signature": [
+            "ctx",
+            "node"
+          ],
+          "documented": true,
+          "summary": "Probe positions requested on a node, m from its start.",
+          "description": "Probe positions requested on a node, m from its start.",
+          "params": [
+            {
+              "name": "ctx",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "Compile context, carrying the project's probes."
+            },
+            {
+              "name": "node",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "A chamber or waveguide."
+            }
+          ],
+          "returns": {
+            "type": "Array<{probe: object, x: number}>",
+            "desc": "Pressure probes placed along it."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "recordProbe",
+          "qualified": "recordProbe",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 80,
+          "signature": [
+            "ctx",
+            "probe",
+            "node"
+          ],
+          "documented": true,
+          "summary": "Record where a pressure probe landed.",
+          "description": "Record where a pressure probe landed.\n\nA probe that migrated from a chamber's own probe is reported under the\nchamber's id, where the editor looks for it; any other under its own id.",
+          "params": [
+            {
+              "name": "ctx",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "Compile context."
+            },
+            {
+              "name": "probe",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "The probe."
+            },
+            {
+              "name": "node",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "The netlist node its pressure is read from."
+            }
+          ],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [
+              "ctx.map.probes."
+            ],
+            "sideEffect": [],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "connectTaps",
+          "qualified": "connectTaps",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 94,
+          "signature": [
+            "ctx",
+            "node",
+            "line"
+          ],
+          "documented": true,
+          "summary": "Connect a node's taps to the nets joined to them.",
+          "description": "Connect a node's taps to the nets joined to them.",
+          "params": [
+            {
+              "name": "ctx",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "Compile context."
+            },
+            {
+              "name": "node",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "A chamber or waveguide."
+            },
+            {
+              "name": "line",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "The compiled line."
+            }
+          ],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [
+              "ctx.nl."
+            ],
+            "sideEffect": [],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "compileWaveguide",
+          "qualified": "compileWaveguide",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 114,
+          "signature": [
+            "ctx",
+            "node"
+          ],
+          "documented": true,
+          "summary": "Compile a waveguide — port, duct or horn segment.",
+          "description": "Compile a waveguide — port, duct or horn segment.\n\nEvery end gets a flow sense. A connected end joins its junction through the\nend correction it owns. An unconnected end radiates into its own solid\nangle, or is closed when that is `rigid`; the air the radiation carries is\ngiven the duct's wall loss over its equivalent length.",
+          "params": [
+            {
+              "name": "ctx",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "Compile context."
+            },
+            {
+              "name": "node",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "The waveguide node."
+            }
+          ],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [
+              "ctx.nl and ctx.map."
+            ],
+            "sideEffect": [],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "compileChamber",
+          "qualified": "compileChamber",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 167,
+          "signature": [
+            "ctx",
+            "node"
+          ],
+          "documented": true,
+          "summary": "Compile a chamber.",
+          "description": "Compile a chamber.\n\nA line of area volume/length, slowed and made lossy by stuffing, with\nviscous and thermal wall loss from its geometry, and leakage as a resistance\nto outside split between its two ends. An unconnected end is a closed wall.",
+          "params": [
+            {
+              "name": "ctx",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "Compile context."
+            },
+            {
+              "name": "node",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "The chamber node."
+            }
+          ],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [
+              "ctx.nl and ctx.map."
+            ],
+            "sideEffect": [],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "area",
+          "qualified": "compileChamber > area",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 182,
+          "signature": [],
+          "documented": true,
+          "summary": "The chamber's cross-section, the same all along it.",
+          "description": "The chamber's cross-section, the same all along it.",
+          "params": [],
+          "returns": {
+            "type": "number",
+            "desc": "Area, m²."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [
+              "the enclosing chamber area."
+            ],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "applyDvc",
+          "qualified": "applyDvc",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 217,
+          "signature": [
+            "p"
+          ],
+          "documented": true,
+          "summary": "Apply a driver's dual voice coil wiring to its catalogue parameters.",
+          "description": "Apply a driver's dual voice coil wiring to its catalogue parameters.\n\nCatalogue data for a dual-coil driver is its both-coils-in-series figures.\nParallel quarters Re and Le and halves Bl, leaving Bl²/Re — and so Qes and\nthe response shape — unchanged. One coil alone halves Re and Bl, doubling Qes.",
+          "params": [
+            {
+              "name": "p",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "Driver params, display units."
+            }
+          ],
+          "returns": {
+            "type": "object",
+            "desc": "The params with Re, Bl and Le adjusted."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "exposedFaces",
+          "qualified": "exposedFaces",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 238,
+          "signature": [
+            "ctx",
+            "node",
+            "Sd",
+            "isDriver"
+          ],
+          "documented": true,
+          "summary": "Compile the radiation from an exposed moving face.",
+          "description": "Compile the radiation from an exposed moving face.\n\nAn unconnected face radiates as if mounted in an infinite baffle. With one\nface exposed its output counts; with both exposed, only the front counts —\nthe rear is on the far side of the baffle — though both load the cone.",
+          "params": [
+            {
+              "name": "ctx",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "Compile context."
+            },
+            {
+              "name": "node",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "A driver or passive radiator."
+            },
+            {
+              "name": "Sd",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Moving area, m²."
+            },
+            {
+              "name": "isDriver",
+              "type": "boolean",
+              "optional": false,
+              "default": null,
+              "desc": "Whether the output is driver output."
+            }
+          ],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [
+              "ctx.nl and ctx.map."
+            ],
+            "sideEffect": [],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "compileDriver",
+          "qualified": "compileDriver",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 267,
+          "signature": [
+            "ctx",
+            "node",
+            "terms"
+          ],
+          "documented": true,
+          "summary": "Compile a driver.",
+          "description": "Compile a driver.\n\nElectrical side: Re, the voice coil inductance (a fitted ladder when LeExp\nis below 1), and the back EMF Bl·u, between the terminals the wiring gave\nit. Mechanical side: the force Bl·i driving Rms, Mms and Cms against the\nacoustic reaction Sd·(p_front − p_rear). Acoustic side: a flow Sd·u out of\nthe front net and into the rear. Several identical drivers in one node, and\ntheir wiring, collapse to one equivalent via `driverSI`.",
+          "params": [
+            {
+              "name": "ctx",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "Compile context."
+            },
+            {
+              "name": "node",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "The driver node."
+            },
+            {
+              "name": "terms",
+              "type": "{ep: string, em: string}",
+              "optional": false,
+              "default": null,
+              "desc": "The driver's electrical terminals."
+            }
+          ],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [
+              "ctx.nl and ctx.map."
+            ],
+            "sideEffect": [],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "compilePR",
+          "qualified": "compilePR",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 303,
+          "signature": [
+            "ctx",
+            "node"
+          ],
+          "documented": true,
+          "summary": "Compile a passive radiator: a driver without a motor.",
+          "description": "Compile a passive radiator: a driver without a motor.",
+          "params": [
+            {
+              "name": "ctx",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "Compile context."
+            },
+            {
+              "name": "node",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "The passive radiator node."
+            }
+          ],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [
+              "ctx.nl and ctx.map."
+            ],
+            "sideEffect": [],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "compileRadiation",
+          "qualified": "compileRadiation",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 339,
+          "signature": [
+            "ctx",
+            "node"
+          ],
+          "documented": true,
+          "summary": "Compile a radiation node — one shared opening to open air.",
+          "description": "Compile a radiation node — one shared opening to open air.\n\nEverything joined to it radiates through one load, whose area is the\nnode's override or the combined area of the faces joined to it. When only\ndriver faces are joined to it, its output is driver output.",
+          "params": [
+            {
+              "name": "ctx",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "Compile context."
+            },
+            {
+              "name": "node",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "The radiation node."
+            }
+          ],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [
+              "ctx.nl and ctx.map."
+            ],
+            "sideEffect": [],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        }
+      ]
+    },
+    {
+      "file": "src/spice/fit.js",
+      "module": {
+        "summary": "Passive networks fitted to frequency responses no finite circuit has exactly.",
+        "description": "Passive networks fitted to frequency responses no finite circuit has exactly.\n\nThree quantities in the model are not a single R, L or C: the radiation\nimpedance of an opening (Bessel/Struve in ka), the voice coil's\nsemi-inductance `Le·(jω)^n`, and boundary-layer loss, which goes as √(jω).\nEach is approximated here by a weighted sum of fixed passive building\nblocks (\"atoms\"), with the weights found by non-negative least squares.\n\nNon-negative weights on passive atoms are what make the result safe: every\nfitted network is a series chain of positive R‖L (or R‖L‖C) sections, so it\nis passive by construction and can never add energy, and it behaves the\nsame in an AC sweep and in a transient run. The price is that the fit is an\napproximation; each use states and tests its own accuracy.\n\nAn atom is a unit-weight impedance in a normalized frequency variable q:\n\n  corner(q0)       jq/(jq + q0)                     — R‖L, corner at q0\n  resonance(q0,Q)  (jq/(Q·q0)) / (1 − (q/q0)² + jq/(Q·q0))  — R‖L‖C\n\nA weight w scales an atom into a section with R = w, L = w/q0 (and, for a\nresonance, L = w/(Q·q0), C = Q/(w·q0)), all in normalized units the caller\nscales to physical ones."
+      },
+      "constants": [],
+      "methods": [
+        {
+          "name": "atomZ",
+          "qualified": "atomZ",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 32,
+          "signature": [
+            "atom",
+            "q"
+          ],
+          "documented": true,
+          "summary": "Unit-weight impedance of one atom at normalized frequency q.",
+          "description": "Unit-weight impedance of one atom at normalized frequency q.",
+          "params": [
+            {
+              "name": "atom",
+              "type": "{kind: string, q0: number, Q?: number}",
+              "optional": false,
+              "default": null,
+              "desc": "`corner` or `resonance`."
+            },
+            {
+              "name": "q",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Normalized frequency."
+            }
+          ],
+          "returns": {
+            "type": "{re: number, im: number}",
+            "desc": "The atom's impedance."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "nnls",
+          "qualified": "nnls",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 59,
+          "signature": [
+            "A",
+            "b",
+            "maxIter"
+          ],
+          "documented": true,
+          "summary": "Non-negative least squares, min ‖A·x − b‖ subject to x ≥ 0.",
+          "description": "Non-negative least squares, min ‖A·x − b‖ subject to x ≥ 0.\n\nLawson–Hanson active set method. Sizes here are small (a few hundred rows,\na few dozen columns), so dense normal-equation solves are fine.",
+          "params": [
+            {
+              "name": "A",
+              "type": "number[][]",
+              "optional": false,
+              "default": null,
+              "desc": "Row-major matrix, m × n."
+            },
+            {
+              "name": "b",
+              "type": "number[]",
+              "optional": false,
+              "default": null,
+              "desc": "Target, length m."
+            },
+            {
+              "name": "maxIter",
+              "type": "number",
+              "optional": true,
+              "default": "500",
+              "desc": "Iteration cap."
+            }
+          ],
+          "returns": {
+            "type": "number[]",
+            "desc": "The non-negative solution, length n."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "gradient",
+          "qualified": "nnls > gradient",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 70,
+          "signature": [],
+          "documented": true,
+          "summary": "The gradient Aᵀ(b − A·x).",
+          "description": "The gradient Aᵀ(b − A·x).",
+          "params": [],
+          "returns": {
+            "type": "number[]",
+            "desc": "One entry per column."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [
+              "the enclosing `A`, `b` and `x`."
+            ],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "solveFree",
+          "qualified": "nnls > solveFree",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 83,
+          "signature": [
+            "P"
+          ],
+          "documented": true,
+          "summary": "Unconstrained least squares restricted to the free set.",
+          "description": "Unconstrained least squares restricted to the free set.",
+          "params": [
+            {
+              "name": "P",
+              "type": "number[]",
+              "optional": false,
+              "default": null,
+              "desc": "Column indices in the free set."
+            }
+          ],
+          "returns": {
+            "type": "number[]",
+            "desc": "A full-length vector, zero outside P."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [
+              "the enclosing `A` and `b`."
+            ],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "fitAtoms",
+          "qualified": "fitAtoms",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 157,
+          "signature": [
+            "atoms",
+            "samples",
+            "componentwise"
+          ],
+          "documented": true,
+          "summary": "Fit non-negative atom weights to a complex target response.",
+          "description": "Fit non-negative atom weights to a complex target response.\n\nEach sample contributes its real and imaginary parts as two rows. By\ndefault both are divided by the target's magnitude, so the fit minimizes\nrelative error in |Z|. With `componentwise`, each part is divided by its own\nmagnitude instead — needed where one part is much smaller than the other but\nstill matters, as radiation resistance does at low ka, where it is tiny next\nto the reactance yet sets the radiated power. Atoms whose weight comes out\nzero are dropped.",
+          "params": [
+            {
+              "name": "atoms",
+              "type": "Array<object>",
+              "optional": false,
+              "default": null,
+              "desc": "Candidate atoms."
+            },
+            {
+              "name": "samples",
+              "type": "Array<{q: number, z: {re: number, im: number}, w?: number}>",
+              "optional": false,
+              "default": null,
+              "desc": "Target samples."
+            },
+            {
+              "name": "componentwise",
+              "type": "boolean",
+              "optional": true,
+              "default": "false",
+              "desc": "Weight the real and imaginary parts by their own magnitudes."
+            }
+          ],
+          "returns": {
+            "type": "Array<object>",
+            "desc": "The atoms kept, each with its `weight`."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "fitZ",
+          "qualified": "fitZ",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 180,
+          "signature": [
+            "fit",
+            "q"
+          ],
+          "documented": true,
+          "summary": "Impedance of a fitted network at normalized frequency q.",
+          "description": "Impedance of a fitted network at normalized frequency q.",
+          "params": [
+            {
+              "name": "fit",
+              "type": "Array<object>",
+              "optional": false,
+              "default": null,
+              "desc": "Atoms with weights, from `fitAtoms`."
+            },
+            {
+              "name": "q",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Normalized frequency."
+            }
+          ],
+          "returns": {
+            "type": "{re: number, im: number}",
+            "desc": "The network's impedance."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "logspace",
+          "qualified": "logspace",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 200,
+          "signature": [
+            "lo",
+            "hi",
+            "n"
+          ],
+          "documented": true,
+          "summary": "Logarithmically spaced values, inclusive.",
+          "description": "Logarithmically spaced values, inclusive.",
+          "params": [
+            {
+              "name": "lo",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "First value."
+            },
+            {
+              "name": "hi",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Last value."
+            },
+            {
+              "name": "n",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Count, at least 2."
+            }
+          ],
+          "returns": {
+            "type": "number[]",
+            "desc": "The values."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "fitFractional",
+          "qualified": "fitFractional",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 222,
+          "signature": [
+            "alpha",
+            "qMax",
+            "perDecade"
+          ],
+          "documented": true,
+          "summary": "Fit `(jq)^α` for 0 < α < 1 over q ∈ [1, qMax] with R‖L corners.",
+          "description": "Fit `(jq)^α` for 0 < α < 1 over q ∈ [1, qMax] with R‖L corners.\n\nUsed for the voice coil's semi-inductance and for boundary-layer loss\n(α = ½). The caller maps its band onto [1, qMax] by choosing the frequency\nunit, then scales the weights by its coefficient. Corners extend a decade\nbeyond the band on each side so the fit holds right to its edges.",
+          "params": [
+            {
+              "name": "alpha",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Exponent, 0 < α < 1."
+            },
+            {
+              "name": "qMax",
+              "type": "number",
+              "optional": true,
+              "default": "1e4",
+              "desc": "Upper end of the band, as a multiple of its lower end."
+            },
+            {
+              "name": "perDecade",
+              "type": "number",
+              "optional": true,
+              "default": "3",
+              "desc": "Candidate corners per decade; fewer means a smaller network and a looser fit."
+            }
+          ],
+          "returns": {
+            "type": "Array<object>",
+            "desc": "Corner atoms with weights."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [
+              "A module-level cache keyed by the arguments."
+            ],
+            "pure": false
+          },
+          "other": []
+        }
+      ]
+    },
+    {
+      "file": "src/spice/line.js",
+      "module": {
+        "summary": "A duct or chamber as a sliced transmission line.",
+        "description": "A duct or chamber as a sliced transmission line.\n\nChambers and waveguides compile to the same element: a line along its\nlength, cut at every tap and probe so those land on real nodes. A uniform\nlossless piece is one exact SPICE transmission line. A flared piece is\nstepped into slices along its area profile. Wall loss is distributed:\neach slice gets a series √(jω) viscous element at its middle and a shunt\n√(jω) thermal element at its ends, so the loss follows the geometry and\nscales with length the way friction and heat exchange do."
+      },
+      "constants": [],
+      "methods": [
+        {
+          "name": "compileLine",
+          "qualified": "compileLine",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 38,
+          "signature": [
+            "ctx",
+            "spec"
+          ],
+          "documented": true,
+          "summary": "Compile one line into the netlist.",
+          "description": "Compile one line into the netlist.",
+          "params": [
+            {
+              "name": "ctx",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "Compile context: `{nl, band, fmax}`."
+            },
+            {
+              "name": "spec",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "The line."
+            },
+            {
+              "name": "spec.note",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Comment naming the graph node."
+            },
+            {
+              "name": "spec.L",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Length, m."
+            },
+            {
+              "name": "spec.area",
+              "type": "Function",
+              "optional": false,
+              "default": null,
+              "desc": "Cross-section at distance x from the start, m² → m²."
+            },
+            {
+              "name": "spec.c",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Speed of sound in the line, m/s."
+            },
+            {
+              "name": "spec.shape",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Cross-section shape, for the perimeter."
+            },
+            {
+              "name": "spec.viscous",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Multiplier on viscous wall loss; 0 for none."
+            },
+            {
+              "name": "spec.thermal",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Multiplier on thermal wall loss; 0 for none."
+            },
+            {
+              "name": "spec.flowResistance",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Series resistance per metre from stuffing, as σ (Pa·s/m²); divided by the local area."
+            },
+            {
+              "name": "spec.stepped",
+              "type": "boolean",
+              "optional": false,
+              "default": null,
+              "desc": "Whether the area varies, so the line must be sliced along its profile."
+            },
+            {
+              "name": "spec.lumped",
+              "type": "boolean",
+              "optional": false,
+              "default": null,
+              "desc": "Collapse the whole line to one node and a compliance."
+            },
+            {
+              "name": "spec.volume",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Air volume, m³, for the lumped form."
+            },
+            {
+              "name": "spec.points",
+              "type": "number[]",
+              "optional": false,
+              "default": null,
+              "desc": "Distances, m, where nodes are needed (taps and probes)."
+            }
+          ],
+          "returns": {
+            "type": "{start: string, end: string, at: Function}",
+            "desc": "The end nodes, and `at(x)` → the node at one of `points`."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [
+              "ctx.nl."
+            ],
+            "sideEffect": [],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "at",
+          "qualified": "compileLine > at",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 54,
+          "signature": [],
+          "documented": true,
+          "summary": "The one node of a lumped chamber, wherever along it is asked for.",
+          "description": "The one node of a lumped chamber, wherever along it is asked for.",
+          "params": [],
+          "returns": {
+            "type": "string",
+            "desc": "The node name."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [
+              "the enclosing node."
+            ],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "addShunt",
+          "qualified": "compileLine > addShunt",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 76,
+          "signature": [
+            "node",
+            "len",
+            "S"
+          ],
+          "documented": true,
+          "summary": "Record a share of line length whose thermal loss belongs at a node.",
+          "description": "Record a share of line length whose thermal loss belongs at a node.",
+          "params": [
+            {
+              "name": "node",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "The node."
+            },
+            {
+              "name": "len",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Length share, m."
+            },
+            {
+              "name": "S",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Local area, m²."
+            }
+          ],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [
+              "the enclosing `shunt` map."
+            ],
+            "sideEffect": [],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "at",
+          "qualified": "compileLine > at",
+          "kind": "method",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 129,
+          "signature": [
+            "x"
+          ],
+          "documented": true,
+          "summary": "The node at one of the requested points.",
+          "description": "The node at one of the requested points.",
+          "params": [
+            {
+              "name": "x",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Distance from the start, m — one of `spec.points`."
+            }
+          ],
+          "returns": {
+            "type": "string",
+            "desc": "The node name."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [
+              "the breakpoint map."
+            ],
+            "pure": false
+          },
+          "other": []
+        }
+      ]
+    },
+    {
+      "file": "src/spice/netlist.js",
+      "module": {
+        "summary": "A small builder for SPICE netlists.",
+        "description": "A small builder for SPICE netlists.\n\nElement and node names are generated, never taken from the graph, so\nnothing a user types can reach the netlist as syntax. Each element may carry\na comment naming the graph node it came from, which is what makes a netlist\nreadable when it is exported or debugged.\n\nDomain conventions (impedance analogy): acoustic nets carry pressure (Pa) as\nvoltage and volume velocity (m³/s) as current; mechanical nets force (N) and\nvelocity (m/s); electrical nets volts and amps. Node `0` is the common\nreference — ambient pressure, rest, and electrical ground."
+      },
+      "constants": [
+        {
+          "name": "DC_TIE",
+          "line": 20,
+          "shape": {
+            "kind": "literal",
+            "value": 0.001
+          },
+          "summary": "Acoustic resistance, Pa·s/m³, put in series with every acoustic element that is a short circuit at DC (inductors, transmission lines, sense sources). Without it a loop of such elements — two ducts in parallel, two radiators on one junction — makes SPICE's DC operating point singular. It is about a millionth of any acoustic impedance in a loudspeaker model.",
+          "description": "Acoustic resistance, Pa·s/m³, put in series with every acoustic element\nthat is a short circuit at DC (inductors, transmission lines, sense\nsources). Without it a loop of such elements — two ducts in parallel, two\nradiators on one junction — makes SPICE's DC operating point singular. It\nis about a millionth of any acoustic impedance in a loudspeaker model."
+        }
+      ],
+      "methods": [
+        {
+          "name": "fmt",
+          "qualified": "fmt",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 29,
+          "signature": [
+            "v"
+          ],
+          "documented": true,
+          "summary": "Format a number for a netlist.",
+          "description": "Format a number for a netlist.",
+          "params": [
+            {
+              "name": "v",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "The value."
+            }
+          ],
+          "returns": {
+            "type": "string",
+            "desc": "Twelve significant figures, exponent form where needed."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "createNetlist",
+          "qualified": "createNetlist",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 41,
+          "signature": [
+            "title"
+          ],
+          "documented": true,
+          "summary": "Start an empty netlist.",
+          "description": "Start an empty netlist.",
+          "params": [
+            {
+              "name": "title",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "The title line."
+            }
+          ],
+          "returns": {
+            "type": "object",
+            "desc": "The builder: `node`, `add`, `comment`, `text`, and `lines` for inspection."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "node",
+          "qualified": "createNetlist > node",
+          "kind": "method",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 53,
+          "signature": [],
+          "documented": true,
+          "summary": "A fresh node name.",
+          "description": "A fresh node name.",
+          "params": [],
+          "returns": {
+            "type": "string",
+            "desc": "The name."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [
+              "the builder's node counter."
+            ],
+            "sideEffect": [],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "add",
+          "qualified": "createNetlist > add",
+          "kind": "method",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 67,
+          "signature": [
+            "letter",
+            "pins",
+            "value",
+            "note"
+          ],
+          "documented": true,
+          "summary": "Add one element.",
+          "description": "Add one element.",
+          "params": [
+            {
+              "name": "letter",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "SPICE element letter (R, L, C, V, E, F, H, T)."
+            },
+            {
+              "name": "pins",
+              "type": "string[]",
+              "optional": false,
+              "default": null,
+              "desc": "Node names, and for H/F the controlling source name last."
+            },
+            {
+              "name": "value",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Everything after the pins: a value, or keyword parameters."
+            },
+            {
+              "name": "note",
+              "type": "string",
+              "optional": true,
+              "default": null,
+              "desc": "A comment appended to the line."
+            }
+          ],
+          "returns": {
+            "type": "string",
+            "desc": "The element's name."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [
+              "the builder's lines and counters."
+            ],
+            "sideEffect": [],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "comment",
+          "qualified": "createNetlist > comment",
+          "kind": "method",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 80,
+          "signature": [
+            "text"
+          ],
+          "documented": true,
+          "summary": "Add a comment line.",
+          "description": "Add a comment line.",
+          "params": [
+            {
+              "name": "text",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "The comment."
+            }
+          ],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [
+              "the builder's lines."
+            ],
+            "sideEffect": [],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "text",
+          "qualified": "createNetlist > text",
+          "kind": "method",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 89,
+          "signature": [],
+          "documented": true,
+          "summary": "The netlist so far, as text.",
+          "description": "The netlist so far, as text.",
+          "params": [],
+          "returns": {
+            "type": "string",
+            "desc": "Newline-joined lines."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [
+              "the builder's lines."
+            ],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "resistor",
+          "qualified": "resistor",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 106,
+          "signature": [
+            "nl",
+            "a",
+            "b",
+            "R",
+            "note"
+          ],
+          "documented": true,
+          "summary": "Add a series resistor.",
+          "description": "Add a series resistor.",
+          "params": [
+            {
+              "name": "nl",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "A netlist builder."
+            },
+            {
+              "name": "a",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "One node."
+            },
+            {
+              "name": "b",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "The other node."
+            },
+            {
+              "name": "R",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Resistance."
+            },
+            {
+              "name": "note",
+              "type": "string",
+              "optional": true,
+              "default": null,
+              "desc": "Comment."
+            }
+          ],
+          "returns": {
+            "type": "string",
+            "desc": "The element name."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [
+              "nl."
+            ],
+            "sideEffect": [],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "sense",
+          "qualified": "sense",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 123,
+          "signature": [
+            "nl",
+            "a",
+            "note",
+            "to"
+          ],
+          "documented": true,
+          "summary": "Add a 0 V sense source followed by the DC tie, from `a` to a new node.",
+          "description": "Add a 0 V sense source followed by the DC tie, from `a` to a new node.\n\nCurrent through the source, `i(name)`, is the flow from `a` onward. The tie\nkeeps loops of such sources from making the DC solution singular.",
+          "params": [
+            {
+              "name": "nl",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "A netlist builder."
+            },
+            {
+              "name": "a",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "The node the flow leaves."
+            },
+            {
+              "name": "note",
+              "type": "string",
+              "optional": true,
+              "default": null,
+              "desc": "Comment."
+            },
+            {
+              "name": "to",
+              "type": "string",
+              "optional": true,
+              "default": null,
+              "desc": "An existing node to end on; a new one by default."
+            }
+          ],
+          "returns": {
+            "type": "{name: string, out: string}",
+            "desc": "The source's name and the node beyond the tie."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [
+              "nl."
+            ],
+            "sideEffect": [],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        }
+      ]
+    },
+    {
+      "file": "src/spice/nets.js",
+      "module": {
+        "summary": "Graph → netlist nodes, and the end-correction rule that depends on them.",
+        "description": "Graph → netlist nodes, and the end-correction rule that depends on them.\n\nEvery set of handles joined by edges is one netlist node — a junction at a\nsingle pressure. That is the whole reason paths that split and rejoin,\nloops and meshes need no special handling: they are simply several\nelements between the same nodes."
+      },
+      "constants": [],
+      "methods": [
+        {
+          "name": "faceArea",
+          "qualified": "faceArea",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 20,
+          "signature": [
+            "node",
+            "handle"
+          ],
+          "documented": true,
+          "summary": "The area a node presents at one of its handles, m².",
+          "description": "The area a node presents at one of its handles, m².",
+          "params": [
+            {
+              "name": "node",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "A v3 node with resolved params."
+            },
+            {
+              "name": "handle",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "The handle."
+            }
+          ],
+          "returns": {
+            "type": "number|null",
+            "desc": "Area in m², or `null` for a handle that is not a face with an area — a tap enters from the side, and a radiation node is open air."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "buildNets",
+          "qualified": "buildNets",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 38,
+          "signature": [
+            "proj",
+            "nl"
+          ],
+          "documented": true,
+          "summary": "Join the project's handles into netlist nodes.",
+          "description": "Join the project's handles into netlist nodes.",
+          "params": [
+            {
+              "name": "proj",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "A resolved, valid v3 project."
+            },
+            {
+              "name": "nl",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "The netlist builder, which names the nodes."
+            }
+          ],
+          "returns": {
+            "type": "{netOf: Function, neighbours: Function, connected: Function}",
+            "desc": "Lookups: `netOf(id, handle)` → node name; `neighbours(id, handle)` → the `{node, handle}` list joined to it by edges directly; `connected(id, handle)` → whether anything is."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [
+              "nl — allocates one node per net."
+            ],
+            "sideEffect": [],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "find",
+          "qualified": "buildNets > find",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 47,
+          "signature": [
+            "k"
+          ],
+          "documented": true,
+          "summary": "The representative of a handle's set.",
+          "description": "The representative of a handle's set.",
+          "params": [
+            {
+              "name": "k",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "`id:handle`."
+            }
+          ],
+          "returns": {
+            "type": "string",
+            "desc": "The root key."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [
+              "the enclosing `parent` map (path compression)."
+            ],
+            "sideEffect": [],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "netOf",
+          "qualified": "buildNets > netOf",
+          "kind": "method",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 84,
+          "signature": [
+            "id",
+            "handle"
+          ],
+          "documented": true,
+          "summary": "The netlist node a handle belongs to.",
+          "description": "The netlist node a handle belongs to.",
+          "params": [
+            {
+              "name": "id",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Node id."
+            },
+            {
+              "name": "handle",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Handle name."
+            }
+          ],
+          "returns": {
+            "type": "string",
+            "desc": "The netlist node name."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [
+              "the join sets."
+            ],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "neighbours",
+          "qualified": "buildNets > neighbours",
+          "kind": "method",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 93,
+          "signature": [
+            "id",
+            "handle"
+          ],
+          "documented": true,
+          "summary": "What an edge joins directly to a handle.",
+          "description": "What an edge joins directly to a handle.",
+          "params": [
+            {
+              "name": "id",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Node id."
+            },
+            {
+              "name": "handle",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Handle name."
+            }
+          ],
+          "returns": {
+            "type": "Array<{node: object, handle: string}>",
+            "desc": "The far ends of its edges."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [
+              "the adjacency index."
+            ],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "connected",
+          "qualified": "buildNets > connected",
+          "kind": "method",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 102,
+          "signature": [
+            "id",
+            "handle"
+          ],
+          "documented": true,
+          "summary": "Whether any edge touches a handle.",
+          "description": "Whether any edge touches a handle.",
+          "params": [
+            {
+              "name": "id",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Node id."
+            },
+            {
+              "name": "handle",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Handle name."
+            }
+          ],
+          "returns": {
+            "type": "boolean",
+            "desc": "True when connected."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [
+              "the adjacency index."
+            ],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "endCorrection",
+          "qualified": "endCorrection",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 122,
+          "signature": [
+            "nets",
+            "node",
+            "handle"
+          ],
+          "documented": true,
+          "summary": "The end correction one end of a duct or chamber carries, m.",
+          "description": "The end correction one end of a duct or chamber carries, m.\n\nAn end correction is a property of the discontinuity at a junction, not of\nthe duct, and exactly one side may hold it: the narrower, unless the other\nside is a driver or passive radiator, which have nowhere to put it. Several\nthings joined to one end are one opening of their combined area. An end\njoined to open air or to a tap gets nothing here — the radiation impedance\ncarries open air, and a tap is an ideal junction.",
+          "params": [
+            {
+              "name": "nets",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "From `buildNets`."
+            },
+            {
+              "name": "node",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "A waveguide or chamber node."
+            },
+            {
+              "name": "handle",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "One of its ends."
+            }
+          ],
+          "returns": {
+            "type": "number",
+            "desc": "Added length, m; 0 when this side does not own the junction."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        }
+      ]
+    },
+    {
+      "file": "src/spice/networks.js",
+      "module": {
+        "summary": "Fitted networks as netlist elements.",
+        "description": "Fitted networks as netlist elements.\n\n`fit.js` finds non-negative weights for passive building blocks; this module\nturns a fit into resistors, inductors and capacitors between netlist nodes,\nscaled to a physical impedance level and frequency."
+      },
+      "constants": [],
+      "methods": [
+        {
+          "name": "seriesNetwork",
+          "qualified": "seriesNetwork",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 29,
+          "signature": [
+            "nl",
+            "a",
+            "b",
+            "fit",
+            "zScale",
+            "omegaScale",
+            "note"
+          ],
+          "documented": true,
+          "summary": "Add a fitted series impedance between two nodes.",
+          "description": "Add a fitted series impedance between two nodes.\n\nEach atom becomes one section in a series chain: R‖L for a corner, R‖L‖C\nfor a resonance. Normalized frequency q maps to ω = q·ωs.",
+          "params": [
+            {
+              "name": "nl",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "A netlist builder."
+            },
+            {
+              "name": "a",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Start node."
+            },
+            {
+              "name": "b",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "End node."
+            },
+            {
+              "name": "fit",
+              "type": "Array<object>",
+              "optional": false,
+              "default": null,
+              "desc": "Atoms with weights."
+            },
+            {
+              "name": "zScale",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Impedance a unit weight stands for."
+            },
+            {
+              "name": "omegaScale",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "ωs, rad/s per unit of q."
+            },
+            {
+              "name": "note",
+              "type": "string",
+              "optional": true,
+              "default": null,
+              "desc": "Comment on each element."
+            }
+          ],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [
+            {
+              "type": "Error",
+              "desc": "When the fit has no sections, which a successful fit never produces."
+            }
+          ],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [
+              "nl."
+            ],
+            "sideEffect": [],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "shuntNetwork",
+          "qualified": "shuntNetwork",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 62,
+          "signature": [
+            "nl",
+            "node",
+            "fit",
+            "yScale",
+            "omegaScale",
+            "note"
+          ],
+          "documented": true,
+          "summary": "Add a fitted shunt admittance from a node to the reference.",
+          "description": "Add a fitted shunt admittance from a node to the reference.\n\nEach corner atom becomes one series R–C branch, whose admittance is\nG·jq/(jq + q0): the dual of an R‖L section.",
+          "params": [
+            {
+              "name": "nl",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "A netlist builder."
+            },
+            {
+              "name": "node",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "The node."
+            },
+            {
+              "name": "fit",
+              "type": "Array<object>",
+              "optional": false,
+              "default": null,
+              "desc": "Corner atoms with weights."
+            },
+            {
+              "name": "yScale",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Admittance a unit weight stands for."
+            },
+            {
+              "name": "omegaScale",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "ωs, rad/s per unit of q."
+            },
+            {
+              "name": "note",
+              "type": "string",
+              "optional": true,
+              "default": null,
+              "desc": "Comment on each element."
+            }
+          ],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [
+              "nl."
+            ],
+            "sideEffect": [],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "fitBand",
+          "qualified": "fitBand",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 82,
+          "signature": [
+            "fmin",
+            "fmax"
+          ],
+          "documented": true,
+          "summary": "The band a fractional element must be accurate over, for an analysis.",
+          "description": "The band a fractional element must be accurate over, for an analysis.\n\nHalf an octave-and-a-bit beyond the sweep on each side, never below 0.5 Hz.",
+          "params": [
+            {
+              "name": "fmin",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Lowest analysed frequency, Hz."
+            },
+            {
+              "name": "fmax",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Highest analysed frequency, Hz."
+            }
+          ],
+          "returns": {
+            "type": "{f1: number, f2: number}",
+            "desc": "The band, Hz."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "fractionalSeries",
+          "qualified": "fractionalSeries",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 100,
+          "signature": [
+            "nl",
+            "a",
+            "b",
+            "alpha",
+            "coeff",
+            "band",
+            "note",
+            "perDecade"
+          ],
+          "documented": true,
+          "summary": "Add a series impedance `coeff·(jω)^α` between two nodes.",
+          "description": "Add a series impedance `coeff·(jω)^α` between two nodes.",
+          "params": [
+            {
+              "name": "nl",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "A netlist builder."
+            },
+            {
+              "name": "a",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Start node."
+            },
+            {
+              "name": "b",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "End node."
+            },
+            {
+              "name": "alpha",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Exponent, 0 < α < 1."
+            },
+            {
+              "name": "coeff",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Coefficient, in the units of the impedance per (rad/s)^α."
+            },
+            {
+              "name": "band",
+              "type": "{f1: number, f2: number}",
+              "optional": false,
+              "default": null,
+              "desc": "Where the approximation must hold, Hz."
+            },
+            {
+              "name": "note",
+              "type": "string",
+              "optional": true,
+              "default": null,
+              "desc": "Comment."
+            },
+            {
+              "name": "perDecade",
+              "type": "number",
+              "optional": true,
+              "default": "1.5",
+              "desc": "Fit density; 1.5 fits √(jω) to about 0.3%, ample for a loss term."
+            }
+          ],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [
+              "nl."
+            ],
+            "sideEffect": [],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "fractionalShunt",
+          "qualified": "fractionalShunt",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 119,
+          "signature": [
+            "nl",
+            "node",
+            "alpha",
+            "coeff",
+            "band",
+            "note",
+            "perDecade"
+          ],
+          "documented": true,
+          "summary": "Add a shunt admittance `coeff·(jω)^α` from a node to the reference.",
+          "description": "Add a shunt admittance `coeff·(jω)^α` from a node to the reference.",
+          "params": [
+            {
+              "name": "nl",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "A netlist builder."
+            },
+            {
+              "name": "node",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "The node."
+            },
+            {
+              "name": "alpha",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Exponent, 0 < α < 1."
+            },
+            {
+              "name": "coeff",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Coefficient, admittance per (rad/s)^α."
+            },
+            {
+              "name": "band",
+              "type": "{f1: number, f2: number}",
+              "optional": false,
+              "default": null,
+              "desc": "Where the approximation must hold, Hz."
+            },
+            {
+              "name": "note",
+              "type": "string",
+              "optional": true,
+              "default": null,
+              "desc": "Comment."
+            },
+            {
+              "name": "perDecade",
+              "type": "number",
+              "optional": true,
+              "default": "1.5",
+              "desc": "Fit density; 1.5 fits √(jω) to about 0.3%, ample for a loss term."
+            }
+          ],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [
+              "nl."
+            ],
+            "sideEffect": [],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "halfSpaceRadiationFit",
+          "qualified": "halfSpaceRadiationFit",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 138,
+          "signature": [],
+          "documented": true,
+          "summary": "The fitted normalized radiation impedance of a flanged piston.",
+          "description": "The fitted normalized radiation impedance of a flanged piston.\n\n`z(q) = Z/(ρc/S)` as a function of q = ka, fitted over 0.003 ≤ ka ≤ 12 with\nboth parts weighted by their own size, so the tiny low-frequency radiation\nresistance — which sets the radiated power — is fitted as tightly as the\nreactance.",
+          "params": [],
+          "returns": {
+            "type": "Array<object>",
+            "desc": "Atoms with weights."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [
+              "A module-level cache."
+            ],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "radiationScale",
+          "qualified": "radiationScale",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 169,
+          "signature": [
+            "S",
+            "space"
+          ],
+          "documented": true,
+          "summary": "The radiation impedance an opening sees in a solid angle, as a network.",
+          "description": "The radiation impedance an opening sees in a solid angle, as a network.\n\nImage-source model: an opening flush at the junction of the boundaries that\nbound a solid angle Ω radiates like itself plus its images — a piston of n\ntimes the area in half space, n = 2π/Ω — so `Z_Ω(S) = n·Z_half(n·S)`. At low\nka that multiplies the radiation resistance by n and the mass by √n; at high\nka every case tends to ρc/S. Because it is a rescaled half-space impedance\nit is causal and passive, and one fit serves every solid angle.",
+          "params": [
+            {
+              "name": "S",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Opening area, m²."
+            },
+            {
+              "name": "space",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "`free`, `half`, `quarter` or `eighth`; anything else is treated as half space."
+            }
+          ],
+          "returns": {
+            "type": "{zScale: number, omegaScale: number, omega: number}",
+            "desc": "The scale factors for `halfSpaceRadiationFit`, and Ω for the far-field pressure."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "radiationLoad",
+          "qualified": "radiationLoad",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 190,
+          "signature": [
+            "nl",
+            "node",
+            "S",
+            "space",
+            "note"
+          ],
+          "documented": true,
+          "summary": "Add a radiation load from a node to the reference.",
+          "description": "Add a radiation load from a node to the reference.\n\n`rigid` adds nothing — a closed end. `anechoic` is the resistance ρc/S.\nAnything else is the fitted piston network for that solid angle.",
+          "params": [
+            {
+              "name": "nl",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "A netlist builder."
+            },
+            {
+              "name": "node",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "The node the flow radiates from."
+            },
+            {
+              "name": "S",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Opening area, m²."
+            },
+            {
+              "name": "space",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Solid angle name, `rigid` or `anechoic`."
+            },
+            {
+              "name": "note",
+              "type": "string",
+              "optional": true,
+              "default": null,
+              "desc": "Comment."
+            }
+          ],
+          "returns": {
+            "type": "number|null",
+            "desc": "Ω for the far-field pressure, or `null` when nothing radiates."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [
+              "nl."
+            ],
+            "sideEffect": [],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        }
+      ]
+    },
+    {
+      "file": "src/spice/physics.js",
+      "module": {
+        "summary": "Physical constants and loss laws the SPICE compiler builds elements from.",
+        "description": "Physical constants and loss laws the SPICE compiler builds elements from.\n\nLosses are derived from geometry here rather than typed in as a Q. Each law\nis the standard textbook result, stated with its range of validity."
+      },
+      "constants": [
+        {
+          "name": "MU",
+          "line": 11,
+          "shape": {
+            "kind": "literal",
+            "value": 0.0000181
+          },
+          "summary": "Dynamic viscosity of air at 20 °C, Pa·s.",
+          "description": "Dynamic viscosity of air at 20 °C, Pa·s."
+        },
+        {
+          "name": "KAPPA",
+          "line": 13,
+          "shape": {
+            "kind": "literal",
+            "value": 0.0257
+          },
+          "summary": "Thermal conductivity of air at 20 °C, W/(m·K).",
+          "description": "Thermal conductivity of air at 20 °C, W/(m·K)."
+        },
+        {
+          "name": "CP",
+          "line": 15,
+          "shape": {
+            "kind": "literal",
+            "value": 1005
+          },
+          "summary": "Specific heat of air at constant pressure, J/(kg·K).",
+          "description": "Specific heat of air at constant pressure, J/(kg·K)."
+        },
+        {
+          "name": "GAMMA",
+          "line": 17,
+          "shape": {
+            "kind": "literal",
+            "value": 1.4
+          },
+          "summary": "Ratio of specific heats for air.",
+          "description": "Ratio of specific heats for air."
+        },
+        {
+          "name": "SOLID_ANGLE",
+          "line": 20,
+          "shape": {
+            "kind": "object",
+            "keys": [
+              "free",
+              "half",
+              "quarter",
+              "eighth"
+            ]
+          },
+          "summary": "Solid angle Ω in steradians for each named radiating space.",
+          "description": "Solid angle Ω in steradians for each named radiating space."
+        }
+      ],
+      "methods": [
+        {
+          "name": "perimeter",
+          "qualified": "perimeter",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 36,
+          "signature": [
+            "S",
+            "shape"
+          ],
+          "documented": true,
+          "summary": "Perimeter of a duct or chamber cross-section.",
+          "description": "Perimeter of a duct or chamber cross-section.\n\nWaveguides are treated as round — the equivalent-radius assumption the rest\nof the model makes, and one that under-reads a slot's perimeter. Chambers\nfollow their `shape`: square for rectangular, round for cylindrical.",
+          "params": [
+            {
+              "name": "S",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Cross-section area, m²."
+            },
+            {
+              "name": "shape",
+              "type": "string",
+              "optional": true,
+              "default": "'round'",
+              "desc": "`round`, `cylindrical` or `rectangular`."
+            }
+          ],
+          "returns": {
+            "type": "number",
+            "desc": "Perimeter, m."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "viscousCoeff",
+          "qualified": "viscousCoeff",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 55,
+          "signature": [
+            "S",
+            "P"
+          ],
+          "documented": true,
+          "summary": "Viscous boundary-layer loss per unit length, as the coefficient of √(jω).",
+          "description": "Viscous boundary-layer loss per unit length, as the coefficient of √(jω).\n\nIn a duct much wider than the viscous boundary layer δ = √(2μ/ρω), wall\nfriction adds a series impedance per metre of `(P/S²)·√(ρμ)·√(jω)` — a\nresistance and an equal mass, both rising as √f. Valid while the duct's\nhydraulic radius is several δ (δ ≈ 0.3 mm at 45 Hz), which holds for any\npractical port.",
+          "params": [
+            {
+              "name": "S",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Cross-section area, m²."
+            },
+            {
+              "name": "P",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Perimeter, m."
+            }
+          ],
+          "returns": {
+            "type": "number",
+            "desc": "The coefficient A in Z′ = A·√(jω), Pa·s^½/m⁴ per metre."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "thermalCoeff",
+          "qualified": "thermalCoeff",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 71,
+          "signature": [
+            "P"
+          ],
+          "documented": true,
+          "summary": "Thermal boundary-layer loss per unit length, as the coefficient of √(jω).",
+          "description": "Thermal boundary-layer loss per unit length, as the coefficient of √(jω).\n\nHeat exchange with the walls makes compression slightly isothermal near\nthem, which adds a shunt admittance per metre of\n`(γ−1)·P/(ρc²)·√(κ/ρc_p)·√(jω)`. This is the main wall loss inside a\nbox, where it acts on the air's springiness.",
+          "params": [
+            {
+              "name": "P",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Perimeter, m."
+            }
+          ],
+          "returns": {
+            "type": "number",
+            "desc": "The coefficient B in Y′ = B·√(jω), per metre."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "flowResistivity",
+          "qualified": "flowResistivity",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 87,
+          "signature": [
+            "gPerL"
+          ],
+          "documented": true,
+          "summary": "Flow resistivity of fibrous stuffing, Pa·s/m².",
+          "description": "Flow resistivity of fibrous stuffing, Pa·s/m².\n\nBies & Hansen's empirical law for fibrous absorbers,\nσ = 27.3·(ρ_bulk/ρ_fibre)^1.53·μ/d², for polyester fibre (1380 kg/m³) of\n20 µm diameter. An estimate: real fill varies by a factor of two or more\nwith fibre and packing.",
+          "params": [
+            {
+              "name": "gPerL",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Stuffing density, g/L (= kg/m³)."
+            }
+          ],
+          "returns": {
+            "type": "number",
+            "desc": "Flow resistivity, Pa·s/m²; 0 for no stuffing."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "stuffedSoundSpeed",
+          "qualified": "stuffedSoundSpeed",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 103,
+          "signature": [
+            "gPerL"
+          ],
+          "documented": true,
+          "summary": "Speed of sound in a stuffed volume.",
+          "description": "Speed of sound in a stuffed volume.\n\nFill shifts compression from adiabatic toward isothermal, slowing sound by\nup to 15.5% at 8 g/L, beyond which it stops changing.",
+          "params": [
+            {
+              "name": "gPerL",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Stuffing density, g/L."
+            }
+          ],
+          "returns": {
+            "type": "number",
+            "desc": "Speed of sound, m/s."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        }
+      ]
+    },
+    {
+      "file": "src/spice/run.js",
+      "module": {
+        "summary": "Run netlists through ngspice (WebAssembly), the same way in a browser worker and in Node.",
+        "description": "Run netlists through ngspice (WebAssembly), the same way in a browser\nworker and in Node.\n\nThe engine is loaded on first use — it is several megabytes — and kept for\nthe life of the process. ngspice holds one circuit at a time, so runs are\nqueued rather than interleaved."
+      },
+      "constants": [],
+      "methods": [
+        {
+          "name": "engine",
+          "qualified": "engine",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 17,
+          "signature": [],
+          "documented": true,
+          "summary": "The shared ngspice instance, started on first call.",
+          "description": "The shared ngspice instance, started on first call.",
+          "params": [],
+          "returns": {
+            "type": "Promise<object>",
+            "desc": "The started `Simulation`."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Loads the WebAssembly engine the first time."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "isFatal",
+          "qualified": "isFatal",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 39,
+          "signature": [
+            "line"
+          ],
+          "documented": true,
+          "summary": "Whether an ngspice message line means the run failed.",
+          "description": "Whether an ngspice message line means the run failed.\n\nNotes and warnings that the engine recovered from are not failures.",
+          "params": [
+            {
+              "name": "line",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "One message line."
+            }
+          ],
+          "returns": {
+            "type": "boolean",
+            "desc": "True for an error."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "runNetlist",
+          "qualified": "runNetlist",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 51,
+          "signature": [
+            "netlist"
+          ],
+          "documented": true,
+          "summary": "Run one AC netlist and return its complex vectors.",
+          "description": "Run one AC netlist and return its complex vectors.",
+          "params": [
+            {
+              "name": "netlist",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "A complete netlist ending in `.end`."
+            }
+          ],
+          "returns": {
+            "type": "Promise<{freqs: number[], vec: Function, names: string[]}>",
+            "desc": "The frequencies; `vec(name)` → `{re, im}` arrays for a saved vector (lowercase name, as in `.save`); and every name returned."
+          },
+          "throws": [
+            {
+              "type": "Error",
+              "desc": "When ngspice reports an error; the message lines are on `spiceErrors`."
+            }
+          ],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Runs the engine; queued behind any run already in progress."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "vec",
+          "qualified": "runNetlist > vec",
+          "kind": "method",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 83,
+          "signature": [
+            "name"
+          ],
+          "documented": true,
+          "summary": "One saved vector.",
+          "description": "One saved vector.",
+          "params": [
+            {
+              "name": "name",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Lowercase vector name, e.g. `i(v3)`."
+            }
+          ],
+          "returns": {
+            "type": "{re: Float64Array, im: Float64Array}",
+            "desc": "Its complex values."
+          },
+          "throws": [
+            {
+              "type": "Error",
+              "desc": "When the vector was not returned."
+            }
+          ],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [
+              "the parsed result."
+            ],
+            "pure": false
+          },
+          "other": []
+        }
+      ]
+    },
+    {
+      "file": "src/spice/wiring.js",
+      "module": {
+        "summary": "Amplifier channels as netlist sources.",
+        "description": "Amplifier channels as netlist sources.\n\nEach channel is an AC voltage source at its level (volts at master 0 dB,\nscaled by the master), then its DSP, then its output resistance, then a\ncurrent sense, then its load: a series/parallel tree whose leaves are\ndriver nodes. The tree is compiled into terminal nodes for each driver, so\nthe drivers themselves never need to know how they are wired."
+      },
+      "constants": [],
+      "methods": [
+        {
+          "name": "compileWiring",
+          "qualified": "compileWiring",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 25,
+          "signature": [
+            "ctx",
+            "proj"
+          ],
+          "documented": true,
+          "summary": "Compile every channel, and assign each driver its electrical terminals.",
+          "description": "Compile every channel, and assign each driver its electrical terminals.\n\nA channel whose `load` is `null` drives, in parallel, every driver that no\nexplicit tree claims. A driver no channel reaches gets terminals of its own\nthat connect to nothing — an open coil.",
+          "params": [
+            {
+              "name": "ctx",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "Compile context."
+            },
+            {
+              "name": "proj",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "The resolved project."
+            }
+          ],
+          "returns": {
+            "type": "Map<string, {ep: string, em: string}>",
+            "desc": "Driver id → its + and − terminal nodes."
+          },
+          "throws": [
+            {
+              "type": "Error",
+              "desc": "When a channel uses a DSP filter, which this compiler cannot yet build."
+            }
+          ],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [
+              "ctx.nl and ctx.map.channels."
+            ],
+            "sideEffect": [],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "wire",
+          "qualified": "compileWiring > wire",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 41,
+          "signature": [
+            "tree",
+            "a",
+            "b"
+          ],
+          "documented": true,
+          "summary": "Wire a load tree between two nodes.",
+          "description": "Wire a load tree between two nodes.",
+          "params": [
+            {
+              "name": "tree",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "`{driver}`, `{parallel: [...]}` or `{series: [...]}`."
+            },
+            {
+              "name": "a",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "The + side."
+            },
+            {
+              "name": "b",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "The − side."
+            }
+          ],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [
+              "the enclosing `terms` map and the netlist."
+            ],
+            "sideEffect": [],
+            "reads": [],
+            "pure": false
           },
           "other": []
         }

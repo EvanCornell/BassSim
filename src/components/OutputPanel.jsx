@@ -577,8 +577,11 @@ function SPLTab() {
   if (show.combined) lines.push({ dataKey: 'combined', name: 'Combined', color: SERIES[0], width: 2.5 })
   if (show.driver) lines.push({ dataKey: 'driver', name: 'Driver direct', color: SERIES[1] })
   if (show.ports) portIds.forEach((pid, i) => {
-    const n = nodes.find((nn) => nn.id === pid)
-    lines.push({ dataKey: `port_${pid}`, name: n?.data.params.label || 'Port', color: SERIES[(i + 2) % SERIES.length] })
+    // A key may name one end or face of a node: `id:throat`, `id:rear`.
+    const [id, end] = pid.split(':')
+    const n = nodes.find((nn) => nn.id === id)
+    const name = `${n?.data.params.label || 'Port'}${end ? ` (${end})` : ''}`
+    lines.push({ dataKey: `port_${pid}`, name, color: SERIES[(i + 2) % SERIES.length] })
   })
   lines.push(...snapLines(snapshots, 'spl'))
   const fitData = useFitData('spl', data)

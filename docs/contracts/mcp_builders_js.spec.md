@@ -173,6 +173,7 @@ impedance minimum. Expect this to be several Hz optimistic on a real box.
 
 - **Reachability:** EXPORTED
 - **Obtain via:** import { calibratePort } from '../../mcp/builders.js'
+- **Async:** returns a Promise
 
 Tune a port by bisecting its length against the simulated tuning.
 
@@ -180,11 +181,14 @@ This is what makes the builders' tunings trustworthy: rather than
 trusting the analytic guess, it re-simulates and converges on the length
 that actually puts the impedance minimum where it was asked for.
 
-Tuning falls monotonically as the port lengthens, which the bracketing
-step exploits — it widens the interval up to four times in each direction
-before bisecting, so a poor initial guess still converges. Fourteen
-bisections take the interval below a tenth of a percent, and the search
-stops early once it is within 0.05 Hz.
+Tuning falls as the port lengthens, but only while the port behaves as a
+Helmholtz mass: a long enough port acts as a pipe, and its tuning can rise
+again. So the bracket is found by scanning upward — a quarter, half, one,
+two and four times the initial guess, then doubling up to three more times
+— and taking the first length whose tuning is at or below the target. That
+is always the Helmholtz solution, and a poor initial guess still converges.
+Fourteen bisections take the interval below a tenth of a percent, and the
+search stops early once it is within 0.05 Hz.
 
 A simulation that returns `null` — a graph with no identifiable tuning —
 ends the search at the current length rather than looping.
@@ -194,11 +198,11 @@ ends the search at the current length rather than looping.
 - `project` — `object` — The project to tune. Modified in place.
 - `portId` — `string` — Node id of the port to adjust.
 - `targetFb` — `number` — Desired tuning, Hz.
-- `simulateFb` — `(project: object) => number|null` — Simulates a project and returns its tuning in Hz, or `null` when there is none.
+- `simulateFb` — `(project: object) => (number|null|Promise<number|null>)` — Simulates a project and returns its tuning in Hz, or `null` when there is none; may return a promise.
 
 **Returns**
 
-- `number` — The calibrated port length in cm, rounded to 0.1 cm.
+- `Promise<number>` — The calibrated port length in cm, rounded to 0.1 cm.
 
 **Preconditions (caller must guarantee)**
 
@@ -356,6 +360,7 @@ sensitivity to getting both tunings right.
 
 - **Reachability:** EXPORTED
 - **Obtain via:** import { optimizeProject } from '../../mcp/builders.js'
+- **Async:** returns a Promise
 
 Search for the best parameter values by coordinate grid refinement.
 
@@ -380,14 +385,14 @@ design without the search starting from an invalid point.
 
 - `project` — `object` — Starting project. Not modified.
 - `params` — `Array<{node?: string, param: string, min: number, max: number}>` — Free parameters. Omit `node` to target a sweep setting rather than a node param.
-- `score` — `(project: object) => number` — Objective; higher is better.
+- `score` — `(project: object) => (number|Promise<number>)` — Objective; higher is better; may return a promise.
 - `opts` — `object` _(optional, default `{}`)_ — Search controls.
 - `opts.rounds` — `number` _(optional, default `3`)_ — Refinement rounds.
 - `opts.gridN` — `number` _(optional, default `9`)_ — Grid points per parameter per round.
 
 **Returns**
 
-- `{best: object, bestScore: number, evals: number, values: number[]}` — The best project found, its score, how many evaluations it took — `1 + rounds × params × gridN` — and the winning value of each parameter in the order given.
+- `Promise<{best: object, bestScore: number, evals: number, values: number[]}>` — The best project found, its score, how many evaluations it took — `1 + rounds × params × gridN` — and the winning value of each parameter in the order given.
 
 **Side effects**
 
@@ -540,6 +545,7 @@ Set the port's length in a project.
 
 - **Reachability:** UNREACHABLE
 - **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+- **Async:** returns a Promise
 
 Simulated tuning at a candidate port length.
 
@@ -552,7 +558,7 @@ calibrated.
 
 **Returns**
 
-- `number|null` — Tuning in Hz, or `null` when the graph has none.
+- `Promise<number|null>` — Tuning in Hz, or `null` when the graph has none.
 
 **Side effects**
 

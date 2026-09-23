@@ -114,6 +114,7 @@ work. Ids are matched first, then labels case-insensitively.
 
 - **Reachability:** INTERNAL
 - **Obtain via:** import { __internals } from '../../mcp/acousim.js'  →  __internals.run
+- **Async:** returns a Promise
 
 Hydrate a project and simulate it.
 
@@ -124,19 +125,19 @@ arbitrarily expensive sweep.
 
 **Parameters**
 
-- `projRaw` — `object` — A serialized project.
+- `projRaw` — `object` — A serialized project, any schema version.
 
 **Returns**
 
-- `{nodes: Array<object>, edges: Array<object>, settings: object, res: object, metrics: object|null}` — The hydrated graph, the raw result, and metrics — `null` when the simulation failed.
+- `Promise<{nodes: Array<object>, edges: Array<object>, settings: object, res: object, metrics: object|null}>` — The graph in the editor's shape (params at `data.params`), its flat settings, the raw result, and metrics.
 
 **Throws**
 
-- `Error` — When the project is structurally invalid, propagated from `hydrateProject`.
+- `Error` — When the project cannot be simulated; every reason is on `projectErrors`.
 
 **Side effects**
 
-- Runs the solver, which is the expensive part of every tool call.
+- Runs the engine, which is the expensive part of every tool call.
 
 ### `downsample(freqs, arr, points, fmin, fmax)`
 
@@ -253,7 +254,50 @@ correct its input instead of the transport reporting an opaque failure.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
-## UNREACHABLE (20)
+## UNREACHABLE (22)
+
+### `asCurrent(projRaw)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+Bring a project to the current schema, applying any flat `settings` over it.
+
+Tools address sweep and drive settings by their flat names — `voltage`,
+`fmin`, `npts` — as older files stored them. A current-version project keeps
+those in its analyses, wiring and display sections instead, so a `settings`
+object on it is taken as overrides and folded in through the editor bridge.
+
+**Parameters**
+
+- `projRaw` — `object` — A serialized project, any schema version.
+
+**Returns**
+
+- `object` — A complete current-version project.
+
+**Throws**
+
+- `TypeError` — When `projRaw` is not an object.
+
+**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
+
+### `withSettings(projRaw)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+A project with a flat `settings` object that tools can read and override.
+
+**Parameters**
+
+- `projRaw` — `object` — A serialized project, any schema version.
+
+**Returns**
+
+- `object` — The same project with `settings` filled from its current values when it had none.
+
+**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
 ### `spl > get(r)`
 
@@ -566,6 +610,7 @@ Assert that an optional argument was supplied.
 
 - **Reachability:** UNREACHABLE
 - **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+- **Async:** returns a Promise
 
 Simulate a project and report its tuning, for port calibration.
 
@@ -575,7 +620,7 @@ Simulate a project and report its tuning, for port calibration.
 
 **Returns**
 
-- `number|null` — Tuning in Hz — the vented `fb`, falling back to a sealed box's `fc` — or `null` when the simulation failed.
+- `Promise<number|null>` — Tuning in Hz — the vented `fb` — or `null` when the simulation failed.
 
 **Side effects**
 
@@ -636,7 +681,7 @@ to win but finite, so it does not poison comparisons.
 
 **Returns**
 
-- `(project: object) => number` — A scoring function; higher is better.
+- `(project: object) => Promise<number>` — A scoring function; higher is better.
 
 **Side effects**
 

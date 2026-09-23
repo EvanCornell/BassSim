@@ -25,13 +25,13 @@ so this is the vocabulary they assume.
 
 The engines `simulateProject` accepts.
 
-Values: `legacy`
+Values: `spice`, `legacy`
 
 ### `DEFAULT_ENGINE`
 
 The engine used when none is named.
 
-Value: `"legacy"`
+Value: `"spice"`
 
 ## EXPORTED (1)
 
@@ -51,7 +51,7 @@ Simulate a saved project of any schema version.
 
 **Returns**
 
-- `Promise<{results: object, metrics: object|null, warnings: Object<string, string[]>}>` — The sweep, its metrics, and the project's warnings keyed by node id.
+- `Promise<{results: object, metrics: object|null, warnings: Object<string, string[]>, netlist?: string}>` — The sweep, its metrics, the project's warnings keyed by node id, and — from the SPICE engine — the netlist it ran.
 
 **Throws**
 
@@ -61,7 +61,7 @@ Simulate a saved project of any schema version.
 
 - Runs an engine.
 
-## UNREACHABLE (2)
+## UNREACHABLE (3)
 
 ### `projectError(reasons)`
 
@@ -102,3 +102,28 @@ Run the legacy engine on a resolved, validated v3 project.
 **Side effects**
 
 - Runs the legacy solver.
+
+### `runSpice(project, warnings)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+- **Async:** returns a Promise
+
+Run the SPICE engine on a resolved, validated v3 project.
+
+**Parameters**
+
+- `project` — `object` — A resolved v3 project.
+- `warnings` — `Object<string, string[]>` — The project's warnings, attached to the results.
+
+**Returns**
+
+- `Promise<{results: object, metrics: object|null, netlist: string}>` — The sweep, its metrics, and the netlist that produced it.
+
+**Throws**
+
+- `Error` — When the project uses something the compiler cannot build yet, or SPICE cannot solve it.
+
+**Side effects**
+
+- Runs ngspice.

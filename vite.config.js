@@ -8,5 +8,9 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   base: './',
+  // The simulation worker loads ngspice (several megabytes of WebAssembly) with
+  // a dynamic import, which needs ES-module workers to be split into its own
+  // chunk rather than inlined.
+  worker: { format: 'es' },
   build: { chunkSizeWarningLimit: 1200 },
 })

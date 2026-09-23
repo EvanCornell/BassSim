@@ -34,11 +34,27 @@ function ApplicationSection() {
   const settings = useStore((s) => s.settings)
   const updateSettings = useStore((s) => s.updateSettings)
   const layoutOps = useStore((s) => s.layoutOps)
+  const engine = useStore((s) => s.engine)
+  const setEngine = useStore((s) => s.setEngine)
   const row = { display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, marginBottom: 8 }
   return (
     <>
       <div style={card}>
         <h4 style={h}>Simulation</h4>
+        <label style={row}>
+          Engine
+          <select style={{ ...inputStyle, width: 'auto', marginBottom: 0 }} value={engine}
+            onChange={(e) => setEngine(e.target.value)}>
+            <option value="spice">SPICE (ngspice)</option>
+            <option value="legacy">Legacy solver</option>
+          </select>
+        </label>
+        <div style={{ ...dim, marginTop: -2, marginBottom: 10 }}>
+          The SPICE engine solves the box as a circuit, so any wiring of chambers,
+          ducts and drivers is handled exactly. The legacy solver is kept for
+          comparison during the transition; it cannot solve paths that split and
+          rejoin, taps, or anything beyond one amplifier channel.
+        </div>
         <label style={row}>
           Frequency sweep
           <input

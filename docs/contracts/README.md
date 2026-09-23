@@ -5,7 +5,7 @@ no implementation. This is the sole input to the blind contract test suite.
 
 | Module | Methods | Testable | Unreachable |
 |---|---|---|---|
-| [`mcp/acousim.js`](mcp_acousim_js.spec.md) | 30 | 10 | 20 |
+| [`mcp/acousim.js`](mcp_acousim_js.spec.md) | 32 | 10 | 22 |
 | [`mcp/builders.js`](mcp_builders_js.spec.md) | 19 | 15 | 4 |
 | [`mcp/http.js`](mcp_http_js.spec.md) | 3 | 0 | 3 |
 | [`mcp/test-client.mjs`](mcp_test-client_mjs.spec.md) | 2 | 0 | 2 |
@@ -44,7 +44,7 @@ no implementation. This is the sole input to the blind contract test suite.
 | [`src/engine/geometry.js`](src_engine_geometry_js.spec.md) | 5 | 5 | 0 |
 | [`src/engine/metrics.js`](src_engine_metrics_js.spec.md) | 4 | 2 | 2 |
 | [`src/engine/nonlinear.js`](src_engine_nonlinear_js.spec.md) | 12 | 12 | 0 |
-| [`src/engine/pipeline.js`](src_engine_pipeline_js.spec.md) | 3 | 1 | 2 |
+| [`src/engine/pipeline.js`](src_engine_pipeline_js.spec.md) | 4 | 1 | 3 |
 | [`src/engine/project.js`](src_engine_project_js.spec.md) | 2 | 2 | 0 |
 | [`src/engine/solver.js`](src_engine_solver_js.spec.md) | 14 | 6 | 8 |
 | [`src/engine/worker.js`](src_engine_worker_js.spec.md) | 1 | 0 | 1 |
@@ -58,6 +58,17 @@ no implementation. This is the sole input to the blind contract test suite.
 | [`src/schema/toLegacy.js`](src_schema_toLegacy_js.spec.md) | 6 | 1 | 5 |
 | [`src/schema/validate.js`](src_schema_validate_js.spec.md) | 7 | 4 | 3 |
 | [`src/selection.js`](src_selection_js.spec.md) | 5 | 5 | 0 |
+| [`src/spice/adapt.js`](src_spice_adapt_js.spec.md) | 4 | 2 | 2 |
+| [`src/spice/compile.js`](src_spice_compile_js.spec.md) | 2 | 2 | 0 |
+| [`src/spice/elements.js`](src_spice_elements_js.spec.md) | 13 | 6 | 7 |
+| [`src/spice/fit.js`](src_spice_fit_js.spec.md) | 8 | 6 | 2 |
+| [`src/spice/line.js`](src_spice_line_js.spec.md) | 4 | 1 | 3 |
+| [`src/spice/netlist.js`](src_spice_netlist_js.spec.md) | 8 | 4 | 4 |
+| [`src/spice/nets.js`](src_spice_nets_js.spec.md) | 7 | 3 | 4 |
+| [`src/spice/networks.js`](src_spice_networks_js.spec.md) | 8 | 8 | 0 |
+| [`src/spice/physics.js`](src_spice_physics_js.spec.md) | 5 | 5 | 0 |
+| [`src/spice/run.js`](src_spice_run_js.spec.md) | 4 | 2 | 2 |
+| [`src/spice/wiring.js`](src_spice_wiring_js.spec.md) | 2 | 1 | 1 |
 | [`src/store.js`](src_store_js.spec.md) | 125 | 114 | 11 |
 | [`src/toolbarItems.js`](src_toolbarItems_js.spec.md) | 6 | 4 | 2 |
 | [`src/utils/backdrop.js`](src_utils_backdrop_js.spec.md) | 3 | 1 | 2 |
@@ -69,4 +80,4 @@ no implementation. This is the sole input to the blind contract test suite.
 | [`test/contracts.mjs`](test_contracts_mjs.spec.md) | 2 | 0 | 2 |
 | [`test/drivers.mjs`](test_drivers_mjs.spec.md) | 2 | 0 | 2 |
 | [`test/support/loader.mjs`](test_support_loader_mjs.spec.md) | 2 | 2 | 0 |
-| **Total** | **749** | **407** | **342** |
+| **Total** | **817** | **447** | **370** |

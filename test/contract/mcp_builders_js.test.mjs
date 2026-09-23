@@ -59,14 +59,14 @@ function splitExtKey() {
 
 // CONTRACT: "### `BUILDERS` — Enclosure builders keyed by topology name. ...
 // Keys: `sealed`, `ported`, `bandpass4`, `bandpass6`"
-test('BUILDERS: the dispatch table is keyed by topology name', () => {
+test('BUILDERS: the dispatch table is keyed by topology name', async () => {
   assert.deepEqual(Object.keys(BUILDERS).sort(), ['bandpass4', 'bandpass6', 'ported', 'sealed'])
   for (const k of Object.keys(BUILDERS)) assert.equal(typeof BUILDERS[k], 'function')
 })
 
 // CONTRACT: "### `__internals` — Keys: `nid`, `pos`, `baseProject`, `addNode`,
 // `edge`"
-test('__internals: publishes exactly the documented internal helpers', () => {
+test('__internals: publishes exactly the documented internal helpers', async () => {
   assert.deepEqual(Object.keys(__internals).sort(), ['addNode', 'baseProject', 'edge', 'nid', 'pos'])
 })
 
@@ -76,14 +76,14 @@ test('__internals: publishes exactly the documented internal helpers', () => {
 
 // CONTRACT: "Filters are conjunctive and every one is optional, so an empty
 // argument returns the whole library."
-test('searchDrivers: an empty argument returns the whole library', () => {
+test('searchDrivers: an empty argument returns the whole library', async () => {
   assert.ok(Array.isArray(LIB))
   assert.ok(LIB.length > 0)
   assert.deepEqual(searchDrivers({}), LIB)
 })
 
 // CONTRACT: "Matching records, in library order."
-test('searchDrivers: results are in library order', () => {
+test('searchDrivers: results are in library order', async () => {
   const brand = D0.brand
   const hits = searchDrivers({ brand })
   const expected = LIB.filter((r) => r.brand === brand)
@@ -91,7 +91,7 @@ test('searchDrivers: results are in library order', () => {
 })
 
 // CONTRACT: "Text matching on `query` and `brand` is case-insensitive"
-test('searchDrivers: brand matching is case-insensitive', () => {
+test('searchDrivers: brand matching is case-insensitive', async () => {
   const lower = searchDrivers({ brand: D0.brand.toLowerCase() })
   const upper = searchDrivers({ brand: D0.brand.toUpperCase() })
   assert.ok(lower.length > 0)
@@ -100,7 +100,7 @@ test('searchDrivers: brand matching is case-insensitive', () => {
 
 // CONTRACT: "`query` matches against the joined brand and model." /
 // "Text matching on `query` and `brand` is case-insensitive"
-test('searchDrivers: query matches the joined brand and model, case-insensitively', () => {
+test('searchDrivers: query matches the joined brand and model, case-insensitively', async () => {
   const hits = searchDrivers({ query: NAME0.toUpperCase() })
   assert.ok(hits.some((r) => r.brand === D0.brand && r.model === D0.model))
   assert.deepEqual(hits, searchDrivers({ query: NAME0.toLowerCase() }))
@@ -109,7 +109,7 @@ test('searchDrivers: query matches the joined brand and model, case-insensitivel
 // CONTRACT: "Filters are conjunctive" / "The numeric filters read the record's
 // own field names — `Fs`, `Xmax`, `Sd`, capitalised as the driver schema
 // spells them"
-test('searchDrivers: filters are conjunctive', () => {
+test('searchDrivers: filters are conjunctive', async () => {
   const fsValues = LIB.map((r) => r.Fs).filter((v) => typeof v === 'number')
   assert.ok(fsValues.length > 0, 'library rows carry an Fs figure')
   const mid = fsValues.slice().sort((a, b) => a - b)[Math.floor(fsValues.length / 2)]
@@ -126,7 +126,7 @@ test('searchDrivers: filters are conjunctive', () => {
 // CONTRACT: "`criteria.fs_min` — Minimum Fs, Hz." / "`criteria.fs_max` —
 // Maximum Fs, Hz." / "`criteria.xmax_min` — Minimum Xmax, mm." /
 // "`criteria.sd_min`" / "`criteria.sd_max`" — read as `Fs`, `Xmax`, `Sd`.
-test('searchDrivers: the numeric filters bound the capitalised schema fields', () => {
+test('searchDrivers: the numeric filters bound the capitalised schema fields', async () => {
   const fsValues = LIB.map((r) => r.Fs).filter((v) => typeof v === 'number').sort((a, b) => a - b)
   const lo = fsValues[0]
   const hi = fsValues[fsValues.length - 1]
@@ -149,7 +149,7 @@ test('searchDrivers: the numeric filters bound the capitalised schema fields', (
 
 // CONTRACT: "a row missing the field being filtered on is excluded, exactly as
 // for an extended parameter."
-test('searchDrivers: a row missing the core field being filtered on is excluded', () => {
+test('searchDrivers: a row missing the core field being filtered on is excluded', async () => {
   for (const [criterion, field] of [
     ['fs_min', 'Fs'],
     ['fs_max', 'Fs'],
@@ -174,7 +174,7 @@ test('searchDrivers: a row missing the core field being filtered on is excluded'
 
 // CONTRACT: "Rows lacking the extended field being filtered on are excluded
 // rather than passed through."
-test('searchDrivers: rows lacking the filtered extended field are excluded', () => {
+test('searchDrivers: rows lacking the filtered extended field are excluded', async () => {
   const pick = splitExtKey()
   assert.ok(pick, 'the catalog declares an extended column carried by some rows but not all')
   const filtered = searchDrivers({ ext: { [pick.key]: pick.value } })
@@ -189,7 +189,7 @@ test('searchDrivers: rows lacking the filtered extended field are excluded', () 
 
 // CONTRACT: "a number key accepts `{min}`, `{max}` or an exact value, and a
 // text key matches by substring."
-test('searchDrivers: an extended key accepts min/max/exact for numbers and substrings for text', () => {
+test('searchDrivers: an extended key accepts min/max/exact for numbers and substrings for text', async () => {
   const pick = splitExtKey()
   assert.ok(pick)
   if (typeof pick.value === 'number') {
@@ -218,7 +218,7 @@ test('searchDrivers: an extended key accepts min/max/exact for numbers and subst
 // CONTRACT: @throws Error "When `ext` names a field that is not in the schema
 // — a silent empty result would look like \"no such driver\" rather than \"no
 // such column\"."
-test('searchDrivers: an ext key not in the schema throws, naming the column', () => {
+test('searchDrivers: an ext key not in the schema throws, naming the column', async () => {
   assert.throws(
     () => searchDrivers({ ext: { no_such_column_xyz: 1 } }),
     (e) => e instanceof Error && String(e.message).includes('no_such_column_xyz'),
@@ -228,7 +228,7 @@ test('searchDrivers: an ext key not in the schema throws, naming the column', ()
 })
 
 // CONTRACT: Postcondition — "The library is not modified."
-test('searchDrivers: the library is not modified', () => {
+test('searchDrivers: the library is not modified', async () => {
   const before = structuredClone(searchDrivers())
   searchDrivers({ brand: D0.brand, fs_min: 1, query: 'x' })
   assert.deepEqual(structuredClone(searchDrivers()), before)
@@ -236,7 +236,7 @@ test('searchDrivers: the library is not modified', () => {
 
 // CONTRACT: @pure — "Calling it twice with equal inputs must produce equal
 // output and change nothing observable."
-test('searchDrivers: @pure — equal inputs give equal output and leave arguments alone', () => {
+test('searchDrivers: @pure — equal inputs give equal output and leave arguments alone', async () => {
   const criteria = { brand: D0.brand, fs_min: 1 }
   const snapshot = structuredClone(criteria)
   const a = searchDrivers(structuredClone(criteria))
@@ -251,7 +251,7 @@ test('searchDrivers: @pure — equal inputs give equal output and leave argument
 
 // CONTRACT: "Resolve a query to exactly one driver." / "An exact match on the
 // full name ... breaks a tie"
-test('findDriver: an exact full-name match resolves, for every uniquely named row', () => {
+test('findDriver: an exact full-name match resolves, for every uniquely named row', async () => {
   const seen = new Map()
   for (const r of LIB) {
     const k = `${r.brand} ${r.model}`
@@ -273,7 +273,7 @@ test('findDriver: an exact full-name match resolves, for every uniquely named ro
 // is exact, not longest: a model that is a strict substring of another model
 // resolves only if it matches one of them exactly, so `SA-12` is fine while
 // `SA-1` is ambiguous."
-test('findDriver: an exact model match resolves, however many rows it substring-matches', () => {
+test('findDriver: an exact model match resolves, however many rows it substring-matches', async () => {
   const byModel = new Map()
   for (const r of LIB) byModel.set(r.model, (byModel.get(r.model) || 0) + 1)
   let checked = 0
@@ -296,7 +296,7 @@ test('findDriver: an exact model match resolves, however many rows it substring-
 // CONTRACT: "\"exact\" is exact, not longest ... `SA-1` is ambiguous." — a
 // query that is a strict substring of several entries and equals none of them
 // exactly must not silently resolve to the longest or the first.
-test('findDriver: a strict substring matching several entries and none exactly is ambiguous', () => {
+test('findDriver: a strict substring matching several entries and none exactly is ambiguous', async () => {
   const exactNames = new Set()
   for (const r of LIB) {
     exactNames.add(r.model.toLowerCase())
@@ -329,7 +329,7 @@ test('findDriver: a strict substring matching several entries and none exactly i
 
 // CONTRACT: @throws Error "When nothing matches ... Both messages name the
 // alternatives or point at `driver_search`."
-test('findDriver: nothing matching throws and points at driver_search', () => {
+test('findDriver: nothing matching throws and points at driver_search', async () => {
   assert.throws(
     () => findDriver('zzz-no-such-driver-zzz'),
     (e) => e instanceof Error && /driver_search/.test(e.message),
@@ -341,7 +341,7 @@ test('findDriver: nothing matching throws and points at driver_search', () => {
 // CONTRACT: "Ambiguity is an error rather than a silent first-match" /
 // @throws "when several do and none is an exact name match. Both messages name
 // the alternatives".
-test('findDriver: ambiguity is an error naming the alternatives', () => {
+test('findDriver: ambiguity is an error naming the alternatives', async () => {
   const byBrand = new Map()
   for (const r of LIB) {
     const list = byBrand.get(r.brand) || []
@@ -367,7 +367,7 @@ test('findDriver: ambiguity is an error naming the alternatives', () => {
 })
 
 // CONTRACT: @pure
-test('findDriver: @pure — equal inputs give equal output', () => {
+test('findDriver: @pure — equal inputs give equal output', async () => {
   assert.deepEqual(findDriver(NAME0), findDriver(NAME0))
 })
 
@@ -381,7 +381,7 @@ test('findDriver: @pure — equal inputs give equal output', () => {
 // rather than spreading the record."
 // and (driver-fields.js) Postcondition: "The result contains no `ext`,
 // `source`, `suspect` or `brand` key, whatever the input carries."
-test('driverParams: projects rather than spreads — ext, source, suspect and brand never appear', () => {
+test('driverParams: projects rather than spreads — ext, source, suspect and brand never appear', async () => {
   for (const spec of [{ db: NAME0 }, { db: NAME0, count: 4, wiring: 'series' }]) {
     const p = driverParams(spec)
     assert.equal(typeof p, 'object')
@@ -402,7 +402,7 @@ test('driverParams: projects rather than spreads — ext, source, suspect and br
 // this projects through `driverToParams` rather than spreading the record."
 // (driver-fields.js) "Node params: `label` from the model name, plus each
 // present core T/S field." / "Fields the record omits stay absent".
-test('driverParams: the library-derived part is exactly driverToParams', () => {
+test('driverParams: the library-derived part is exactly driverToParams', async () => {
   const projected = driverToParams(D0)
   assert.deepEqual(
     driverParams({ db: NAME0 }),
@@ -428,7 +428,7 @@ test('driverParams: the library-derived part is exactly driverToParams', () => {
 // CONTRACT: "`spec.count` — Drivers in this node." _(default `1`)_ /
 // "`spec.wiring` — Defaults to `parallel` when count > 1, `single` otherwise."
 // / "`spec.label` — defaults to the library model name, or \"Driver\"."
-test('driverParams: documented defaults for count, wiring and label', () => {
+test('driverParams: documented defaults for count, wiring and label', async () => {
   const bare = driverParams()
   assert.equal(bare.count, 1)
   assert.equal(bare.wiring, 'single')
@@ -448,7 +448,7 @@ test('driverParams: documented defaults for count, wiring and label', () => {
 
 // CONTRACT: "Wiring defaults to parallel for a multi-driver node" — but an
 // explicit wiring is a documented parameter and must be honoured.
-test('driverParams: an explicit wiring and label are honoured', () => {
+test('driverParams: an explicit wiring and label are honoured', async () => {
   const p = driverParams({ db: NAME0, count: 4, wiring: 'series-parallel', label: 'Bank A' })
   assert.equal(p.wiring, 'series-parallel')
   assert.equal(p.label, 'Bank A')
@@ -457,7 +457,7 @@ test('driverParams: an explicit wiring and label are honoured', () => {
 
 // CONTRACT: "A spec may name a library driver, give explicit T/S values, or
 // both — in which case the explicit values win"
-test('driverParams: explicit values win over the library row', () => {
+test('driverParams: explicit values win over the library row', async () => {
   const fromLib = driverParams({ db: NAME0 })
   const key = Object.keys(fromLib).find(
     (k) => typeof fromLib[k] === 'number' && k !== 'count',
@@ -469,13 +469,13 @@ test('driverParams: explicit values win over the library row', () => {
 })
 
 // CONTRACT: @throws Error "When `spec.db` matches no driver or is ambiguous."
-test('driverParams: an unknown db throws', () => {
+test('driverParams: an unknown db throws', async () => {
   assert.throws(() => driverParams({ db: 'zzz-no-such-driver-zzz' }), Error)
   assert.doesNotThrow(() => driverParams({ db: NAME0 }))
 })
 
 // CONTRACT: @pure
-test('driverParams: @pure — arguments unmodified, equal results', () => {
+test('driverParams: @pure — arguments unmodified, equal results', async () => {
   const spec = { db: NAME0, count: 2 }
   const snapshot = structuredClone(spec)
   const a = driverParams(structuredClone(spec))
@@ -491,7 +491,7 @@ test('driverParams: @pure — arguments unmodified, equal results', () => {
 // CONTRACT: "`ecFactor` — _(optional, default `0.85`)_ ... The default is the
 // flanged value, which is what a port gets at a box at one end and at open air
 // at the other."
-test('portLengthGuess: ecFactor defaults to 0.85', () => {
+test('portLengthGuess: ecFactor defaults to 0.85', async () => {
   assert.equal(portLengthGuess(32, 60, 100), portLengthGuess(32, 60, 100, 0.85))
   assert.notEqual(portLengthGuess(32, 60, 100), portLengthGuess(32, 60, 100, 0.1))
 })
@@ -508,7 +508,7 @@ test('portLengthGuess: ecFactor defaults to 0.85', () => {
 // reading assumed: it is a SMALL port area on a LARGE box at a HIGH tuning
 // that drives the required length below the floor — not a large port on a
 // small box, which the contract now explicitly says makes the port *longer*.
-test('portLengthGuess: never below 1 cm, and 1 signals an unreachable tuning', () => {
+test('portLengthGuess: never below 1 cm, and 1 signals an unreachable tuning', async () => {
   const normal = portLengthGuess(32, 60, 100)
   assert.equal(typeof normal, 'number')
   assert.ok(Number.isFinite(normal))
@@ -531,14 +531,14 @@ test('portLengthGuess: never below 1 cm, and 1 signals an unreachable tuning', (
 // longer, not shorter, and can run to metres." — the opposite geometry from
 // the floor-triggering one must not be floored; it should run well past a
 // normal port length.
-test('portLengthGuess: a large port on a small box makes the port longer, not shorter', () => {
+test('portLengthGuess: a large port on a small box makes the port longer, not shorter', async () => {
   const small = portLengthGuess(32, 60, 100)
   const large = portLengthGuess(32, 1, 2000)
   assert.ok(large > small, `a large port on a small box (${large}) must be longer than the baseline (${small})`)
 })
 
 // CONTRACT: @pure
-test('portLengthGuess: @pure — equal inputs give equal output', () => {
+test('portLengthGuess: @pure — equal inputs give equal output', async () => {
   assert.equal(portLengthGuess(32, 60, 100), portLengthGuess(32, 60, 100))
 })
 
@@ -550,7 +550,7 @@ const SPEC_DRIVER = { db: NAME0 }
 
 // CONTRACT: "`{project: object, notes: string[]}` — The project and notes
 // explaining the topology."
-test('buildSealedBox: returns a project and string notes', () => {
+test('buildSealedBox: returns a project and string notes', async () => {
   const out = buildSealedBox({ driver: SPEC_DRIVER, volume: 40, name: 'Sealed' })
   assert.equal(typeof out.project, 'object')
   assert.ok(Array.isArray(out.notes))
@@ -561,14 +561,14 @@ test('buildSealedBox: returns a project and string notes', () => {
 
 // CONTRACT: @throws Error "When the driver spec names an unknown or ambiguous
 // library driver."
-test('buildSealedBox: an unknown library driver throws', () => {
+test('buildSealedBox: an unknown library driver throws', async () => {
   assert.throws(() => buildSealedBox({ driver: { db: 'zzz-nope-zzz' }, volume: 40 }), Error)
   assert.doesNotThrow(() => buildSealedBox({ driver: SPEC_DRIVER, volume: 40 }))
 })
 
 // CONTRACT: "Consumes ids from the module counter, so two calls produce
 // projects with different node ids."
-test('buildSealedBox: two calls produce projects with different node ids', () => {
+test('buildSealedBox: two calls produce projects with different node ids', async () => {
   const a = buildSealedBox({ driver: SPEC_DRIVER, volume: 40 }).project
   const b = buildSealedBox({ driver: SPEC_DRIVER, volume: 40 }).project
   const idsA = new Set(a.nodes.map((n) => n.id))
@@ -578,7 +578,7 @@ test('buildSealedBox: two calls produce projects with different node ids', () =>
 // CONTRACT: "`{project: object, ports: string[], notes: string[]}` — The
 // project, the port node ids for calibration, and notes." /
 // "`spec.port_count` — _(default `1`)_ — Number of identical ports."
-test('buildPortedBox: returns port node ids, one per port_count', () => {
+test('buildPortedBox: returns port node ids, one per port_count', async () => {
   const one = buildPortedBox({ driver: SPEC_DRIVER, volume: 60 })
   assert.ok(Array.isArray(one.ports))
   assert.equal(one.ports.length, 1)
@@ -593,7 +593,7 @@ test('buildPortedBox: returns port node ids, one per port_count', () => {
 
 // CONTRACT: "`spec.port_length` — Explicit port length, cm, bypassing the
 // tuning calculation." / "`spec.tuning` — Ignored when `port_length` is given."
-test('buildPortedBox: an explicit port_length bypasses the tuning calculation', () => {
+test('buildPortedBox: an explicit port_length bypasses the tuning calculation', async () => {
   const a = buildPortedBox({ driver: SPEC_DRIVER, volume: 60, tuning: 25, port_length: 30 })
   const b = buildPortedBox({ driver: SPEC_DRIVER, volume: 60, tuning: 45, port_length: 30 })
   const pa = a.project.nodes.find((n) => n.id === a.ports[0]).params
@@ -607,14 +607,14 @@ test('buildPortedBox: an explicit port_length bypasses the tuning calculation', 
 
 // CONTRACT: @throws Error "When the driver spec names an unknown or ambiguous
 // library driver."
-test('buildPortedBox: an unknown library driver throws', () => {
+test('buildPortedBox: an unknown library driver throws', async () => {
   assert.throws(() => buildPortedBox({ driver: { db: 'zzz-nope-zzz' }, volume: 60 }), Error)
   assert.doesNotThrow(() => buildPortedBox({ driver: SPEC_DRIVER, volume: 60 }))
 })
 
 // CONTRACT: "`{project: object, ports: string[], notes: string[]}` — The
 // project, the port node id, and notes." (4th-order: one port)
-test('buildBandpass4: returns one port node id', () => {
+test('buildBandpass4: returns one port node id', async () => {
   const out = buildBandpass4({ driver: SPEC_DRIVER, front_volume: 30, rear_volume: 40 })
   assert.equal(typeof out.project, 'object')
   assert.ok(Array.isArray(out.ports))
@@ -625,7 +625,7 @@ test('buildBandpass4: returns one port node id', () => {
 
 // CONTRACT: @throws Error "When the driver spec names an unknown or ambiguous
 // library driver."
-test('buildBandpass4: an unknown library driver throws', () => {
+test('buildBandpass4: an unknown library driver throws', async () => {
   assert.throws(
     () => buildBandpass4({ driver: { db: 'zzz-nope-zzz' }, front_volume: 30, rear_volume: 40 }),
     Error,
@@ -637,7 +637,7 @@ test('buildBandpass4: an unknown library driver throws', () => {
 
 // CONTRACT: "`{project: object, ports: string[], notes: string[]}` — The
 // project, both port node ids, and notes."
-test('buildBandpass6: returns both port node ids', () => {
+test('buildBandpass6: returns both port node ids', async () => {
   const out = buildBandpass6({ driver: SPEC_DRIVER, front_volume: 30, rear_volume: 40 })
   assert.ok(Array.isArray(out.ports))
   assert.equal(out.ports.length, 2)
@@ -648,7 +648,7 @@ test('buildBandpass6: returns both port node ids', () => {
 
 // CONTRACT: @throws Error "When the driver spec names an unknown or ambiguous
 // library driver."
-test('buildBandpass6: an unknown library driver throws', () => {
+test('buildBandpass6: an unknown library driver throws', async () => {
   assert.throws(
     () => buildBandpass6({ driver: { db: 'zzz-nope-zzz' }, front_volume: 30, rear_volume: 40 }),
     Error,
@@ -692,13 +692,13 @@ function makeFakeSim(id) {
 // CONTRACT: "it re-simulates and converges on the length that actually puts the
 // impedance minimum where it was asked for" / "the search stops early once it
 // is within 0.05 Hz" / "The calibrated port length in cm, rounded to 0.1 cm."
-test('calibratePort: converges to within the documented tolerance and rounds to 0.1 cm', () => {
+test('calibratePort: converges to within the documented tolerance and rounds to 0.1 cm', async () => {
   assert.ok(LEN_KEY, 'the port node carries a length parameter in cm')
   const built = buildPortedBox({ driver: SPEC_DRIVER, volume: 60, port_length: 30 })
   const portId = built.ports[0]
   const sim = makeFakeSim(portId)
 
-  const L = calibratePort(built.project, portId, 100, sim.fn)
+  const L = await calibratePort(built.project, portId, 100, sim.fn)
 
   assert.equal(typeof L, 'number')
   // rounded to 0.1 cm
@@ -711,25 +711,25 @@ test('calibratePort: converges to within the documented tolerance and rounds to 
 
 // CONTRACT: "it widens the interval up to four times in each direction before
 // bisecting, so a poor initial guess still converges."
-test('calibratePort: a poor initial guess still converges', () => {
+test('calibratePort: a poor initial guess still converges', async () => {
   assert.ok(LEN_KEY)
   // Start far below the answer, then far above it.
   for (const start of [2, 150]) {
     const built = buildPortedBox({ driver: SPEC_DRIVER, volume: 60, port_length: start })
     const portId = built.ports[0]
     const sim = makeFakeSim(portId)
-    const L = calibratePort(built.project, portId, 100, sim.fn)
+    const L = await calibratePort(built.project, portId, 100, sim.fn)
     assert.ok(Math.abs(L - 50) <= 0.1, `from ${start} cm, expected ~50 cm, got ${L}`)
   }
 })
 
 // CONTRACT: @mutates "Writes the calibrated length into the project's port node."
-test('calibratePort: writes the calibrated length into the project port node', () => {
+test('calibratePort: writes the calibrated length into the project port node', async () => {
   assert.ok(LEN_KEY)
   const built = buildPortedBox({ driver: SPEC_DRIVER, volume: 60, port_length: 30 })
   const portId = built.ports[0]
   const sim = makeFakeSim(portId)
-  const L = calibratePort(built.project, portId, 100, sim.fn)
+  const L = await calibratePort(built.project, portId, 100, sim.fn)
   const node = built.project.nodes.find((n) => n.id === portId)
   assert.equal(node.params[LEN_KEY], L)
 })
@@ -737,23 +737,23 @@ test('calibratePort: writes the calibrated length into the project port node', (
 // CONTRACT: @sideeffect "Runs the supplied simulation up to ~22 times".
 // AMBIGUITY: "~22" is approximate; the strictest defensible reading is that it
 // never exceeds 22 calls.
-test('calibratePort: runs the supplied simulation no more than 22 times', () => {
+test('calibratePort: runs the supplied simulation no more than 22 times', async () => {
   assert.ok(LEN_KEY)
   const built = buildPortedBox({ driver: SPEC_DRIVER, volume: 60, port_length: 2 })
   const portId = built.ports[0]
   const sim = makeFakeSim(portId)
-  calibratePort(built.project, portId, 100, sim.fn)
+  await calibratePort(built.project, portId, 100, sim.fn)
   assert.ok(sim.calls.n <= 22, `simulation ran ${sim.calls.n} times`)
 })
 
 // CONTRACT: "A simulation that returns `null` — a graph with no identifiable
 // tuning — ends the search at the current length rather than looping."
-test('calibratePort: a null-returning simulation ends the search', () => {
+test('calibratePort: a null-returning simulation ends the search', async () => {
   assert.ok(LEN_KEY)
   const built = buildPortedBox({ driver: SPEC_DRIVER, volume: 60, port_length: 30 })
   const portId = built.ports[0]
   let calls = 0
-  const L = calibratePort(built.project, portId, 100, () => {
+  const L = await calibratePort(built.project, portId, 100, () => {
     calls++
     return null
   })
@@ -771,7 +771,7 @@ test('calibratePort: a null-returning simulation ends the search', () => {
 // "cost is one baseline evaluation of the starting design plus
 // `rounds × params × gridN` for the search itself" with defaults rounds 3,
 // gridN 9.
-test('optimizeProject: returns the documented shape and the documented evaluation count', () => {
+test('optimizeProject: returns the documented shape and the documented evaluation count', async () => {
   assert.ok(LEN_KEY)
   const built = buildPortedBox({ driver: SPEC_DRIVER, volume: 60, port_length: 30 })
   const portId = built.ports[0]
@@ -780,7 +780,7 @@ test('optimizeProject: returns the documented shape and the documented evaluatio
   const score = (p) => -Math.abs(read(p) - 40)
 
   const before = structuredClone(built.project)
-  const out = optimizeProject(built.project, [{ node: portId, param: LEN_KEY, min: 10, max: 100 }], score)
+  const out = (await optimizeProject(built.project, [{ node: portId, param: LEN_KEY, min: 10, max: 100 }], score))
 
   assert.equal(typeof out.best, 'object')
   assert.equal(typeof out.bestScore, 'number')
@@ -801,7 +801,7 @@ test('optimizeProject: returns the documented shape and the documented evaluatio
 })
 
 // CONTRACT: "`opts.rounds` — _(default `3`)_" / "`opts.gridN` — _(default `9`)_"
-test('optimizeProject: rounds and gridN control the evaluation budget', () => {
+test('optimizeProject: rounds and gridN control the evaluation budget', async () => {
   assert.ok(LEN_KEY)
   const built = buildPortedBox({ driver: SPEC_DRIVER, volume: 60, port_length: 30 })
   const portId = built.ports[0]
@@ -810,20 +810,20 @@ test('optimizeProject: rounds and gridN control the evaluation budget', () => {
   const params = [{ node: portId, param: LEN_KEY, min: 10, max: 100 }]
 
   assert.equal(
-    optimizeProject(built.project, params, score, {}).evals,
-    optimizeProject(built.project, params, score).evals,
+    (await optimizeProject(built.project, params, score, {})).evals,
+    (await optimizeProject(built.project, params, score)).evals,
   )
-  assert.equal(optimizeProject(built.project, params, score).evals, 1 + 3 * 1 * 9)
-  const small = optimizeProject(built.project, params, score, { rounds: 1, gridN: 5 })
+  assert.equal((await optimizeProject(built.project, params, score)).evals, 1 + 3 * 1 * 9)
+  const small = (await optimizeProject(built.project, params, score, { rounds: 1, gridN: 5 }))
   assert.equal(small.evals, 1 + 1 * 1 * 5, 'evals must track rounds and gridN')
-  const big = optimizeProject(built.project, params, score, { rounds: 2, gridN: 11 })
+  const big = (await optimizeProject(built.project, params, score, { rounds: 2, gridN: 11 }))
   assert.equal(big.evals, 1 + 2 * 1 * 11)
 })
 
 // CONTRACT: "A parameter whose starting value is outside its own bounds is
 // moved to mid-range first, so a caller can pass bounds that exclude the
 // current design without the search starting from an invalid point."
-test('optimizeProject: a starting value outside its bounds is moved to mid-range first', () => {
+test('optimizeProject: a starting value outside its bounds is moved to mid-range first', async () => {
   assert.ok(LEN_KEY)
   // Start at 5 cm; bounds [50, 100] exclude it. Optimum at 75.
   const built = buildPortedBox({ driver: SPEC_DRIVER, volume: 60, port_length: 5 })
@@ -831,7 +831,7 @@ test('optimizeProject: a starting value outside its bounds is moved to mid-range
   const read = (p) => p.nodes.find((n) => n.id === portId).params[LEN_KEY]
   const score = (p) => -Math.abs(read(p) - 75)
 
-  const out = optimizeProject(built.project, [{ node: portId, param: LEN_KEY, min: 50, max: 100 }], score)
+  const out = (await optimizeProject(built.project, [{ node: portId, param: LEN_KEY, min: 50, max: 100 }], score))
   assert.ok(out.values[0] >= 50 && out.values[0] <= 100, `values[0]=${out.values[0]} left its bounds`)
   // Spacing over [50, 100] with 9 points is 6.25; half of that is 3.125.
   assert.ok(Math.abs(out.values[0] - 75) <= 3.125, `values[0]=${out.values[0]}`)
@@ -839,7 +839,7 @@ test('optimizeProject: a starting value outside its bounds is moved to mid-range
 
 // CONTRACT: "`params` — Free parameters. Omit `node` to target a sweep setting
 // rather than a node param."
-test('optimizeProject: omitting node targets a sweep setting', () => {
+test('optimizeProject: omitting node targets a sweep setting', async () => {
   const built = buildSealedBox({ driver: SPEC_DRIVER, volume: 40 })
   const settingKey = Object.keys(built.project.settings).find(
     (k) => typeof built.project.settings[k] === 'number',
@@ -848,7 +848,7 @@ test('optimizeProject: omitting node targets a sweep setting', () => {
   const read = (p) => p.settings[settingKey]
   const score = (p) => -Math.abs(read(p) - 60)
 
-  const out = optimizeProject(built.project, [{ param: settingKey, min: 20, max: 100 }], score)
+  const out = (await optimizeProject(built.project, [{ param: settingKey, min: 20, max: 100 }], score))
   assert.equal(out.values.length, 1)
   assert.equal(read(out.best), out.values[0])
   // Spacing over [20, 100] with 9 points is 10; half of that is 5.
@@ -858,13 +858,13 @@ test('optimizeProject: omitting node targets a sweep setting', () => {
 // CONTRACT: "cost is one baseline evaluation of the starting design plus
 // `rounds × params × gridN` for the search itself, rather than `gridN ^
 // params`" — with two free parameters.
-test('optimizeProject: two free parameters cost 1 + rounds × params × gridN', () => {
+test('optimizeProject: two free parameters cost 1 + rounds × params × gridN', async () => {
   assert.ok(LEN_KEY)
   const built = buildPortedBox({ driver: SPEC_DRIVER, volume: 60, port_count: 2, port_length: 30 })
   const [p0, p1] = built.ports
   const read = (p, id) => p.nodes.find((n) => n.id === id).params[LEN_KEY]
   const score = (p) => -Math.abs(read(p, p0) - 40) - Math.abs(read(p, p1) - 20)
-  const out = optimizeProject(
+  const out = await optimizeProject(
     built.project,
     [
       { node: p0, param: LEN_KEY, min: 10, max: 100 },
@@ -882,7 +882,7 @@ test('optimizeProject: two free parameters cost 1 + rounds × params × gridN', 
 
 // CONTRACT: "`t` — Node type, used as the prefix." / "A new node id." /
 // @sideeffect "Advances the module-level counter."
-test('nid: returns a fresh id prefixed with the node type', () => {
+test('nid: returns a fresh id prefixed with the node type', async () => {
   const a = nid('chamber')
   const b = nid('chamber')
   assert.equal(typeof a, 'string')
@@ -893,7 +893,7 @@ test('nid: returns a fresh id prefixed with the node type', () => {
 
 // CONTRACT: "`row` — _(optional, default `0`)_" / "`{x: number, y: number}` —
 // Canvas position." / @pure
-test('pos: row defaults to 0 and the result is a canvas position', () => {
+test('pos: row defaults to 0 and the result is a canvas position', async () => {
   const p = pos(1)
   assert.equal(typeof p.x, 'number')
   assert.equal(typeof p.y, 'number')
@@ -907,7 +907,7 @@ test('pos: row defaults to 0 and the result is a canvas position', () => {
 // CONTRACT: "An empty project with the builders' default sweep settings." /
 // "The default range is 10–200 Hz at 256 points" / "A project with no nodes or
 // edges." / "`settings` — Settings merged over the defaults."
-test('baseProject: an empty project with the documented default sweep settings', () => {
+test('baseProject: an empty project with the documented default sweep settings', async () => {
   const p = baseProject('My Box')
   assert.deepEqual(p.nodes, [])
   assert.deepEqual(p.edges, [])
@@ -927,7 +927,7 @@ test('baseProject: an empty project with the documented default sweep settings',
 })
 
 // CONTRACT: @pure for baseProject
-test('baseProject: @pure — arguments unmodified, equal results', () => {
+test('baseProject: @pure — arguments unmodified, equal results', async () => {
   const settings = { fmax: 300 }
   const snapshot = structuredClone(settings)
   assert.deepEqual(baseProject('n', structuredClone(settings)), baseProject('n', structuredClone(settings)))
@@ -936,7 +936,7 @@ test('baseProject: @pure — arguments unmodified, equal results', () => {
 
 // CONTRACT: "The new node's id, for wiring it up." / @mutates "Pushes onto the
 // project's node list." / "`row` — _(optional, default `0`)_"
-test('addNode: appends a node and returns its id', () => {
+test('addNode: appends a node and returns its id', async () => {
   const p = baseProject('x')
   const id = addNode(p, 'chamber', { volume: 40 }, 2)
   assert.equal(typeof id, 'string')
@@ -954,7 +954,7 @@ test('addNode: appends a node and returns its id', () => {
 
 // CONTRACT: "The new edge count, as returned by `Array.push`" / @mutates
 // "Pushes onto the project's edge list."
-test('edge: pushes onto the edge list and returns the new edge count', () => {
+test('edge: pushes onto the edge list and returns the new edge count', async () => {
   const p = baseProject('x')
   const a = addNode(p, 'driver', {}, 0)
   const b = addNode(p, 'chamber', {}, 1)

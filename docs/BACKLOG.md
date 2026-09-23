@@ -55,6 +55,18 @@ and exit port (up to 14 dB of phantom gain on a series-tuned test box). Loops
 are silently blocked. Fixed by construction in the SPICE engine
 (`docs/SPICE-PLAN.md`); until then, results on such graphs are wrong.
 
+## SPICE engine follow-ups
+
+- **Worker size.** The worker grew to ~700 kB because `src/schema/params.js`
+  imports the full mathjs to parse expressions. A small hand-written parser
+  for the restricted language (it has no units, matrices or assignment) would
+  remove it.
+- **Long lossy ducts are the expensive part.** The five-port box compiles to
+  ~2,700 elements, mostly √f loss ladders every λ/4 at the top of the sweep.
+  Coarser lumping where the loss is small, or one ladder per duct for short
+  ducts, would cut solve time several-fold.
+- **Legacy solver removal** (milestone 5) once the editor features land.
+
 ## Modelling questions
 
 - **What an edge between two ducts means** — straight seamless join, bend, or

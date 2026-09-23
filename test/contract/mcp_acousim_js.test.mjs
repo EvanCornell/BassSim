@@ -22,7 +22,7 @@ const { sig, labelOf, resolveNode, run, downsample, metricsSummary, summarize, j
 
 // CONTRACT: "### `__internals` — Keys: `sig`, `labelOf`, `resolveNode`, `run`,
 // `downsample`, `metricsSummary`, `summarize`, `jsonResult`, `errResult`"
-test('__internals: publishes exactly the documented internal helpers', () => {
+test('__internals: publishes exactly the documented internal helpers', async () => {
   assert.deepEqual(
     Object.keys(__internals).sort(),
     ['downsample', 'errResult', 'jsonResult', 'labelOf', 'metricsSummary', 'resolveNode', 'run', 'sig', 'summarize'],
@@ -35,7 +35,7 @@ test('__internals: publishes exactly the documented internal helpers', () => {
 
 // CONTRACT: "Round a number to a fixed significant-figure count for JSON
 // output." / "`n` — _(optional, default `4`)_ — Significant figures."
-test('sig: rounds to 4 significant figures by default', () => {
+test('sig: rounds to 4 significant figures by default', async () => {
   assert.equal(sig(1.23456), 1.235)
   assert.equal(sig(123456), 123500)
   assert.equal(sig(0.00123456), 0.001235)
@@ -45,7 +45,7 @@ test('sig: rounds to 4 significant figures by default', () => {
 })
 
 // CONTRACT: "`n` — Significant figures."
-test('sig: honours an explicit significant-figure count', () => {
+test('sig: honours an explicit significant-figure count', async () => {
   assert.equal(sig(1.23456, 2), 1.2)
   assert.equal(sig(1.23456, 1), 1)
   assert.equal(sig(1.23456, 6), 1.23456)
@@ -54,7 +54,7 @@ test('sig: honours an explicit significant-figure count', () => {
 // CONTRACT: "`number|null` — The rounded number, or `null` for absent and
 // non-finite values so the JSON carries an explicit \"no value\" rather than
 // `NaN`."
-test('sig: absent and non-finite values become null', () => {
+test('sig: absent and non-finite values become null', async () => {
   assert.equal(sig(null), null)
   assert.equal(sig(undefined), null)
   assert.equal(sig(NaN), null)
@@ -63,7 +63,7 @@ test('sig: absent and non-finite values become null', () => {
 })
 
 // CONTRACT: @pure
-test('sig: @pure — equal inputs give equal output', () => {
+test('sig: @pure — equal inputs give equal output', async () => {
   assert.equal(sig(1.23456), sig(1.23456))
   assert.equal(sig(1.23456, 3), sig(1.23456, 3))
 })
@@ -77,19 +77,19 @@ test('sig: @pure — equal inputs give equal output', () => {
 
 // CONTRACT: "Describe a node as `label (id)`, or just its id when it has no
 // label." / "an agent reads \"Port (waveguide_3)\""
-test('labelOf: formats a labelled node as "label (id)"', () => {
+test('labelOf: formats a labelled node as "label (id)"', async () => {
   const nodes = [{ id: 'waveguide_3', type: 'waveguide', data: { params: { label: 'Port' } } }]
   assert.equal(labelOf(nodes, 'waveguide_3'), 'Port (waveguide_3)')
 })
 
 // CONTRACT: "or just its id when it has no label"
-test('labelOf: an unlabelled node is described by its id alone', () => {
+test('labelOf: an unlabelled node is described by its id alone', async () => {
   const nodes = [{ id: 'waveguide_3', type: 'waveguide', data: { params: {} } }]
   assert.equal(labelOf(nodes, 'waveguide_3'), 'waveguide_3')
 })
 
 // CONTRACT: @pure
-test('labelOf: @pure — arguments unmodified, equal results', () => {
+test('labelOf: @pure — arguments unmodified, equal results', async () => {
   const nodes = [{ id: 'a', type: 'chamber', data: { params: { label: 'Box' } } }]
   const snapshot = structuredClone(nodes)
   assert.equal(labelOf(structuredClone(nodes), 'a'), labelOf(structuredClone(nodes), 'a'))
@@ -110,7 +110,7 @@ const NODES = [
 
 // CONTRACT: "Resolve a node reference, which may be an id or a label. ... Ids
 // are matched first, then labels case-insensitively."
-test('resolveNode: resolves by id and by label, case-insensitively', () => {
+test('resolveNode: resolves by id and by label, case-insensitively', async () => {
   assert.equal(resolveNode(NODES, 'waveguide_3').id, 'waveguide_3')
   assert.equal(resolveNode(NODES, 'Port').id, 'waveguide_3')
   assert.equal(resolveNode(NODES, 'port').id, 'waveguide_3')
@@ -119,7 +119,7 @@ test('resolveNode: resolves by id and by label, case-insensitively', () => {
 })
 
 // CONTRACT: "Ids are matched first, then labels case-insensitively."
-test('resolveNode: an id match wins over a label match', () => {
+test('resolveNode: an id match wins over a label match', async () => {
   const nodes = [
     { id: 'Port', type: 'chamber', data: { params: { label: 'Something Else' } } },
     { id: 'waveguide_3', type: 'waveguide', data: { params: { label: 'Port' } } },
@@ -129,7 +129,7 @@ test('resolveNode: an id match wins over a label match', () => {
 
 // CONTRACT: "`types` — _(optional, default `null`)_ — Restrict to these node
 // types. `null` searches every node."
-test('resolveNode: types restricts the search and null searches every node', () => {
+test('resolveNode: types restricts the search and null searches every node', async () => {
   assert.equal(resolveNode(NODES, 'Port', null).id, 'waveguide_3')
   assert.equal(resolveNode(NODES, 'Port'), resolveNode(NODES, 'Port', null))
   assert.equal(resolveNode(NODES, 'Port', ['waveguide']).id, 'waveguide_3')
@@ -138,7 +138,7 @@ test('resolveNode: types restricts the search and null searches every node', () 
 
 // CONTRACT: @throws Error "When nothing matches. The message lists the
 // available nodes, so an agent can correct itself without another round-trip."
-test('resolveNode: an unmatched reference throws, listing the available nodes', () => {
+test('resolveNode: an unmatched reference throws, listing the available nodes', async () => {
   assert.throws(
     () => resolveNode(NODES, 'no-such-node'),
     (e) =>
@@ -151,7 +151,7 @@ test('resolveNode: an unmatched reference throws, listing the available nodes', 
 })
 
 // CONTRACT: @pure
-test('resolveNode: @pure — arguments unmodified, equal results', () => {
+test('resolveNode: @pure — arguments unmodified, equal results', async () => {
   const snapshot = structuredClone(NODES)
   assert.deepEqual(
     resolveNode(structuredClone(NODES), 'Port'),
@@ -172,15 +172,15 @@ function freshProject() {
 }
 
 let CTX = null
-function ctx() {
-  if (!CTX) CTX = run(freshProject())
+async function ctx() {
+  if (!CTX) CTX = await run(freshProject())
   return CTX
 }
 
 // CONTRACT: "`{nodes, edges, settings, res, metrics}` — The hydrated graph, the
 // raw result, and metrics — `null` when the simulation failed."
-test('run: returns the hydrated graph, the raw result and metrics', () => {
-  const c = ctx()
+test('run: returns the hydrated graph, the raw result and metrics', async () => {
+  const c = await ctx()
   assert.ok(Array.isArray(c.nodes))
   assert.ok(Array.isArray(c.edges))
   assert.equal(typeof c.settings, 'object')
@@ -191,25 +191,28 @@ test('run: returns the hydrated graph, the raw result and metrics', () => {
 // CONTRACT: "Point count is capped at 1024 regardless of what the project asks
 // for, since a tool call is a synchronous request and an agent can otherwise
 // request an arbitrarily expensive sweep."
-test('run: point count is capped at 1024', () => {
+test('run: point count is capped at 1024', async () => {
   const p = freshProject()
   const pointsKey = Object.keys(p.settings).find((k) => p.settings[k] === 256)
   assert.ok(pointsKey, 'the builders default to a 256-point sweep')
   p.settings[pointsKey] = 50000
-  const c = run(p)
+  const c = await run(p)
   // AMBIGUITY: the spec does not say whether the returned `settings` reflects
   // the cap; the strictest defensible reading is that the sweep actually run
   // never exceeds 1024 points, which is what `settings` reports.
   assert.ok(c.settings[pointsKey] <= 1024, `points=${c.settings[pointsKey]}`)
 })
 
-// CONTRACT: @throws Error "When the project is structurally invalid,
-// propagated from `hydrateProject`."
-test('run: a structurally invalid project throws', () => {
-  assert.throws(() => run(null), Error)
-  assert.throws(() => run({ nodes: [{ id: 'a', type: 'chamber', params: {} }], edges: [{ source: 'a', sourceHandle: 'out', target: 'nope', targetHandle: 'in' }], settings: {} }), Error)
+// CONTRACT: @throws Error "When the project cannot be simulated; every reason
+// is on `projectErrors`."
+test('run: a structurally invalid project throws', async () => {
+  await assert.rejects(() => run(null), Error)
+  await assert.rejects(() => run({ nodes: [{ id: 'a', type: 'chamber', params: {} }], edges: [{ source: 'a', sourceHandle: 'out', target: 'nope', targetHandle: 'in' }], settings: {} }), (err) => {
+    assert.ok(err.projectErrors.some((m) => m.includes('not a node id')))
+    return true
+  })
   // Neighbouring valid input.
-  assert.doesNotThrow(() => run(freshProject()))
+  await assert.doesNotReject(() => run(freshProject()))
 })
 
 // ===========================================================================
@@ -225,7 +228,7 @@ CURVE[113] = -999
 // CONTRACT: "Reduce a curve to about `points` samples for a tool response." /
 // "`points` — _(optional, default `48`)_ — Target sample count. The result may
 // hold up to two more, for the extrema."
-test('downsample: returns about `points` samples, defaulting to 48', () => {
+test('downsample: returns about `points` samples, defaulting to 48', async () => {
   const out = downsample(FREQS, CURVE, 10)
   assert.ok(Array.isArray(out))
   assert.ok(out.length <= 12, `got ${out.length} samples for points=10`)
@@ -236,7 +239,7 @@ test('downsample: returns about `points` samples, defaulting to 48', () => {
 
 // CONTRACT: "`Array<[number|null, number|null]>` — `[frequency, value]` pairs
 // in ascending frequency order, rounded for output."
-test('downsample: emits [frequency, value] pairs in ascending frequency order', () => {
+test('downsample: emits [frequency, value] pairs in ascending frequency order', async () => {
   const out = downsample(FREQS, CURVE, 10)
   for (const pair of out) {
     assert.ok(Array.isArray(pair))
@@ -252,7 +255,7 @@ test('downsample: emits [frequency, value] pairs in ascending frequency order', 
 // CONTRACT: "the minimum and maximum are always added — without them, an
 // impedance peak or an excursion spike could fall between samples and the
 // agent would conclude the design is fine when it is not."
-test('downsample: the minimum and maximum are always included', () => {
+test('downsample: the minimum and maximum are always included', async () => {
   const out = downsample(FREQS, CURVE, 10)
   const values = out.map((p) => p[1])
   const freqs = out.map((p) => p[0])
@@ -264,7 +267,7 @@ test('downsample: the minimum and maximum are always included', () => {
 
 // CONTRACT: "`fmin` — Window the output to at or above this frequency." /
 // "`fmax` — Window the output to at or below this frequency." / defaults null.
-test('downsample: fmin and fmax window the output', () => {
+test('downsample: fmin and fmax window the output', async () => {
   const out = downsample(FREQS, CURVE, 10, 50, 100)
   assert.ok(out.length > 0)
   for (const [f] of out) {
@@ -275,7 +278,7 @@ test('downsample: fmin and fmax window the output', () => {
 })
 
 // CONTRACT: @pure
-test('downsample: @pure — arguments unmodified, equal results', () => {
+test('downsample: @pure — arguments unmodified, equal results', async () => {
   const f = structuredClone(FREQS)
   const a = structuredClone(CURVE)
   const fSnap = structuredClone(f)
@@ -291,14 +294,14 @@ test('downsample: @pure — arguments unmodified, equal results', () => {
 
 // CONTRACT: "`object|null` — A flat object of formatted metrics, or `null` when
 // there were none."
-test('metricsSummary: null metrics summarize to null', () => {
+test('metricsSummary: null metrics summarize to null', async () => {
   assert.equal(metricsSummary(null), null)
 })
 
 // CONTRACT: "Formatted metrics keyed by name ... Values are strings or numbers
 // except `impedance_peaks`, which is an array of one formatted string per peak."
-test('metricsSummary: values are strings or numbers, except impedance_peaks', () => {
-  const c = ctx()
+test('metricsSummary: values are strings or numbers, except impedance_peaks', async () => {
+  const c = await ctx()
   assert.notEqual(c.metrics, null, 'the sealed-box reference project must simulate')
   const s = metricsSummary(c.metrics)
   assert.equal(typeof s, 'object')
@@ -320,8 +323,8 @@ test('metricsSummary: values are strings or numbers, except impedance_peaks', ()
 // CONTRACT: "Absent figures are omitted rather than emitted as null, so a
 // sealed box's summary simply has no tuning field instead of one saying
 // `null`."
-test('metricsSummary: absent figures are omitted rather than emitted as null', () => {
-  const c = ctx()
+test('metricsSummary: absent figures are omitted rather than emitted as null', async () => {
+  const c = await ctx()
   const s = metricsSummary(c.metrics)
   for (const [k, v] of Object.entries(s)) {
     assert.notEqual(v, null, `${k} was emitted as null`)
@@ -334,8 +337,8 @@ test('metricsSummary: absent figures are omitted rather than emitted as null', (
 })
 
 // CONTRACT: @pure
-test('metricsSummary: @pure — arguments unmodified, equal results', () => {
-  const m = structuredClone(ctx().metrics)
+test('metricsSummary: @pure — arguments unmodified, equal results', async () => {
+  const m = structuredClone((await ctx()).metrics)
   const snapshot = structuredClone(m)
   assert.deepEqual(metricsSummary(structuredClone(m)), metricsSummary(structuredClone(m)))
   assert.deepEqual(m, snapshot)
@@ -348,8 +351,8 @@ test('metricsSummary: @pure — arguments unmodified, equal results', () => {
 // CONTRACT: "Build the JSON summary returned by `simulate`." / "`points` —
 // _(optional, default `40`)_ — Curve downsample resolution." / "The summary
 // object, ready to serialize."
-test('summarize: returns a serializable summary, defaulting to 40 curve points', () => {
-  const c = ctx()
+test('summarize: returns a serializable summary, defaulting to 40 curve points', async () => {
+  const c = await ctx()
   const s = summarize(c)
   assert.equal(typeof s, 'object')
   assert.notEqual(s, null)
@@ -358,8 +361,8 @@ test('summarize: returns a serializable summary, defaulting to 40 curve points',
 })
 
 // CONTRACT: "two downsampled curves" whose resolution is controlled by `points`
-test('summarize: points controls the curve downsample resolution', () => {
-  const c = ctx()
+test('summarize: points controls the curve downsample resolution', async () => {
+  const c = await ctx()
   const coarse = JSON.stringify(summarize(c, 8))
   const fine = JSON.stringify(summarize(c, 40))
   assert.notEqual(coarse, fine, 'the curve resolution must respond to `points`')
@@ -368,8 +371,8 @@ test('summarize: points controls the curve downsample resolution', () => {
 
 // CONTRACT: @pure — "Calling it twice with equal inputs must produce equal
 // output and change nothing observable."
-test('summarize: @pure — the run context is not modified', () => {
-  const c = ctx()
+test('summarize: @pure — the run context is not modified', async () => {
+  const c = await ctx()
   const snapshot = structuredClone({ nodes: c.nodes, edges: c.edges, settings: c.settings, metrics: c.metrics })
   const a = summarize(c)
   const b = summarize(c)
@@ -386,7 +389,7 @@ test('summarize: @pure — the run context is not modified', () => {
 
 // CONTRACT: "`{content: Array<{type: string, text: string}>}` — An MCP tool
 // result carrying the JSON as text."
-test('jsonResult: wraps a value as an MCP tool result carrying the JSON as text', () => {
+test('jsonResult: wraps a value as an MCP tool result carrying the JSON as text', async () => {
   const payload = { a: 1, b: ['x', null], c: { d: true } }
   const r = jsonResult(payload)
   assert.ok(Array.isArray(r.content))
@@ -398,7 +401,7 @@ test('jsonResult: wraps a value as an MCP tool result carrying the JSON as text'
 })
 
 // CONTRACT: @pure
-test('jsonResult: @pure — equal inputs give equal output', () => {
+test('jsonResult: @pure — equal inputs give equal output', async () => {
   const payload = { a: 1 }
   assert.deepEqual(jsonResult(structuredClone(payload)), jsonResult(structuredClone(payload)))
 })
@@ -406,7 +409,7 @@ test('jsonResult: @pure — equal inputs give equal output', () => {
 // CONTRACT: "Wrap an error as a failed MCP tool result. Returned rather than
 // thrown, so the agent receives the message" /
 // "`{isError: boolean, content: Array<{type: string, text: string}>}`"
-test('errResult: wraps an error as a failed MCP result carrying its message', () => {
+test('errResult: wraps an error as a failed MCP result carrying its message', async () => {
   const e = new Error('unique-failure-token')
   const r = errResult(e)
   assert.equal(r.isError, true)
@@ -417,7 +420,7 @@ test('errResult: wraps an error as a failed MCP result carrying its message', ()
 })
 
 // CONTRACT: @pure
-test('errResult: @pure — equal inputs give equal output', () => {
+test('errResult: @pure — equal inputs give equal output', async () => {
   assert.deepEqual(errResult(new Error('x')), errResult(new Error('x')))
 })
 
@@ -429,7 +432,7 @@ test('errResult: @pure — equal inputs give equal output', () => {
 // registered." / "A factory rather than a singleton because the HTTP transport
 // is stateless: each POST is handled by a fresh instance" / "A server ready to
 // connect to a transport."
-test('createServer: is a factory returning a fresh server ready to connect', () => {
+test('createServer: is a factory returning a fresh server ready to connect', async () => {
   const a = createServer()
   const b = createServer()
   assert.equal(typeof a, 'object')

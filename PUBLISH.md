@@ -86,6 +86,14 @@ Run in order. Step 6 is a one-way door — forks can appear within hours.
        `ACOUSIM_TOKEN`, `SMTP`, `BETTER_AUTH_SECRET` — all should be absent
 4. [ ] Secret scan the final tree (test fixtures are the usual culprit)
 5. [ ] `LICENSE`, `README.md`, `CONTRIBUTING.md` present and accurate.
+       The simulation engine is ngspice compiled to WebAssembly
+       (`eecircuit-engine`, MIT wrapper). ngspice is Modified BSD, but the
+       build statically includes KLU (LGPLv2) and very likely numparam
+       (LGPLv2). Credit ngspice and its components in the README and a
+       `THIRD_PARTY_NOTICES` file, and point to the eecircuit-engine and
+       ngspice sources, which satisfies LGPL for an unmodified library. The
+       build has no XSPICE code models, so the GPLv2 `icm/table` model is not
+       included — recheck this whenever the engine version changes.
        Runtime dependencies are all permissive — React, reactflow, recharts,
        zustand (MIT), mathjs (Apache-2.0) — so MIT or Apache-2.0 are both open.
        Note that Boundary Lab is GPL-3; there is no shared code, so no

@@ -9,6 +9,48 @@ is ngspice's, and is trusted.
 
 ---
 
+## Status
+
+Milestones 1–3 are built (`src/schema/`, `src/spice/`, `src/engine/pipeline.js`).
+SPICE is the default engine in the app and the MCP server; the legacy solver
+is a Settings toggle (`ACOUSIM_ENGINE=legacy` for the server) and refuses what
+it cannot represent. Milestones 4–5 remain: the graph features in the editor
+(loose connections, taps UI, wiring manager, probes, params editor) and
+deleting the legacy solver.
+
+### What was measured
+
+- **Accuracy against independent references** (all in the contract suite):
+  radiation network within 0.5% of Bessel/Struve up to ka = 3 (0.16% in
+  practice); √(jω) loss and Le·(jω)^n ladders within 0.5% across the band; a
+  lossless duct and a stepped horn equal to the exact line; distributed wall
+  loss within 1% of the exact lossy line; a complete sealed box and a
+  driver-plus-passive-radiator box within 0.5% in impedance and 0.05 dB in SPL
+  of closed-form models.
+- **Speed, warm:** ~40–60 ms for a ported box at 513 points (legacy ~65 ms);
+  ~330–390 ms for the five-port series-tuned box (≈2,700 elements, mostly loss
+  ladders). First run adds ~1–2 s to load the engine.
+- **Bundle:** engine chunk 20 MB raw (~5.7 MB gzipped), loaded on first
+  simulation. The worker is ~700 kB because it now carries the mathjs parser.
+
+### Decisions made while building
+
+- **Solid angle uses the image-source model**, `Z_Ω(S) = n·Z_half(n·S)`,
+  n = 2π/Ω. The legacy blend of resistance and reactance for free, quarter and
+  eighth space is not causal — no passive circuit can reproduce it — while
+  the image model is, and it has the limits the legacy formula aimed for
+  (resistance ×n and mass ×√n at low ka, 0.707 reactance in free space).
+- **Never a near-zero resistor as a wire.** A 1e-9 Ω "short" put a conductance
+  fourteen orders above its neighbours and cost ~0.9% accuracy. Nodes are
+  joined directly; the only small resistances are the 1e-3 DC ties (about a
+  millionth of any acoustic impedance), which keep loops of DC-short
+  elements from making the operating point singular.
+- **No XSPICE in the WASM build** — DSP filters will be built from ordinary
+  parts. Behavioural sources work in transient, which the flow-dependent port
+  loss needs later.
+- **Tuning search scans upward** for the first crossing, so a long port's
+  pipe modes can no longer be mistaken for its Helmholtz tuning.
+
 ## Why
 
 The current solver walks the graph as a tree from each driver. It cannot

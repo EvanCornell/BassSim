@@ -62,11 +62,12 @@ const call = async (name, args = {}) => {
 {
   const { text } = await call('validate', { project: ported })
   const j = JSON.parse(text)
-  check('validate ok', j.ok && j.warnings.some((w) => w.includes('Mouth is unconnected')), JSON.stringify(j.warnings))
+  check('validate ok', j.ok && j.errors.length === 0, JSON.stringify(j))
 }
 {
   const { r, text } = await call('validate', { project: bad })
-  check('validate catches broken project', r.isError === true && text.includes('not a node id'), text)
+  const j = JSON.parse(text)
+  check('validate catches broken project', !r.isError && j.ok === false && j.errors.some((e) => e.includes('not a node id')), text)
 }
 {
   const { text } = await call('simulate', { project: ported })

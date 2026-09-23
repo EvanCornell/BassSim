@@ -5,9 +5,11 @@ import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { z } from 'zod'
-import { runSimulation, validateGraph } from '../src/engine/solver.js'
-import { computeMetrics } from '../src/engine/metrics.js'
-import { hydrateProject } from '../src/engine/project.js'
+import { simulateProject, DEFAULT_ENGINE, ENGINES } from '../src/engine/pipeline.js'
+import { migrateProject } from '../src/schema/migrate.js'
+import { resolveProject } from '../src/schema/params.js'
+import { validateProject } from '../src/schema/validate.js'
+import { toEditor, fromEditor } from '../src/schema/editor.js'
 import { searchDrivers, BUILDERS, calibratePort, optimizeProject } from './builders.js'
 import {
   CORE_FIELDS, EXT_FIELDS, POPULATED_EXT_KEYS, DRIVER_BRANDS, SOURCE_LABELS,
@@ -76,6 +78,47 @@ function resolveNode(nodes, ref, types = null) {
 }
 
 /**
+ * Which engine the server simulates with: `ACOUSIM_ENGINE`, or the default.
+ */
+const ENGINE = ENGINES.includes(process.env.ACOUSIM_ENGINE) ? process.env.ACOUSIM_ENGINE : DEFAULT_ENGINE
+
+/**
+ * Bring a project to the current schema, applying any flat `settings` over it.
+ *
+ * Tools address sweep and drive settings by their flat names — `voltage`,
+ * `fmin`, `npts` — as older files stored them. A current-version project keeps
+ * those in its analyses, wiring and display sections instead, so a `settings`
+ * object on it is taken as overrides and folded in through the editor bridge.
+ *
+ * @param {object} projRaw - A serialized project, any schema version.
+ * @returns {object} A complete current-version project.
+ * @throws {TypeError} When `projRaw` is not an object.
+ * @pure
+ */
+function asCurrent(projRaw) {
+  if (!projRaw || typeof projRaw !== 'object') throw new TypeError('project must be an object')
+  const proj = migrateProject(projRaw)
+  if (Number(projRaw.schemaVersion) >= 3 && projRaw.settings) {
+    const ed = toEditor(proj)
+    ed.settings = { ...ed.settings, ...projRaw.settings }
+    return migrateProject(fromEditor(ed))
+  }
+  return proj
+}
+
+/**
+ * A project with a flat `settings` object that tools can read and override.
+ *
+ * @param {object} projRaw - A serialized project, any schema version.
+ * @returns {object} The same project with `settings` filled from its current values when it had none.
+ * @pure
+ */
+function withSettings(projRaw) {
+  if (projRaw.settings) return projRaw
+  return { ...projRaw, settings: toEditor(migrateProject(projRaw)).settings }
+}
+
+/**
  * Hydrate a project and simulate it.
  *
  * The shared entry point behind every simulating tool. Point count is
@@ -83,18 +126,17 @@ function resolveNode(nodes, ref, types = null) {
  * is a synchronous request and an agent can otherwise request an
  * arbitrarily expensive sweep.
  *
- * @param {object} projRaw - A serialized project.
- * @returns {{nodes: Array<object>, edges: Array<object>, settings: object, res: object, metrics: object|null}} The hydrated graph, the raw result, and metrics — `null` when the simulation failed.
- * @throws {Error} When the project is structurally invalid, propagated from `hydrateProject`.
- * @sideEffect Runs the solver, which is the expensive part of every tool call.
+ * @param {object} projRaw - A serialized project, any schema version.
+ * @returns {Promise<{nodes: Array<object>, edges: Array<object>, settings: object, res: object, metrics: object|null}>} The graph in the editor's shape (params at `data.params`), its flat settings, the raw result, and metrics.
+ * @throws {Error} When the project cannot be simulated; every reason is on `projectErrors`.
+ * @sideEffect Runs the engine, which is the expensive part of every tool call.
  */
-function run(projRaw) {
-  const { nodes, edges, settings } = hydrateProject(projRaw)
-  settings.npts = Math.min(settings.npts || 512, MAX_NPTS)
-  const res = runSimulation(nodes, edges, settings)
-  const xmaxNode = nodes.find((n) => n.type === 'driver')
-  const metrics = res.ok ? computeMetrics(res, { ...settings, xmax: xmaxNode?.data.params.Xmax }) : null
-  return { nodes, edges, settings, res, metrics }
+async function run(projRaw) {
+  const proj = asCurrent(projRaw)
+  proj.analyses[0].npts = Math.min(proj.analyses[0].npts || 512, MAX_NPTS)
+  const { results, metrics } = await simulateProject(proj, { engine: ENGINE })
+  const ed = toEditor(proj)
+  return { nodes: ed.nodes, edges: ed.edges, settings: ed.settings, res: results, metrics }
 }
 
 /**
@@ -459,11 +501,12 @@ server.registerTool('validate', {
   inputSchema: { project: projectParam },
 }, async ({ project }) => {
   try {
-    const { nodes, edges } = hydrateProject(project)
-    const v = validateGraph(nodes, edges)
+    const { project: resolved, errors: exprErrors } = resolveProject(asCurrent(project))
+    const v = validateProject(resolved)
+    const nodes = toEditor(resolved).nodes
     return jsonResult({
-      ok: v.errors.length === 0,
-      errors: v.errors,
+      ok: exprErrors.length + v.errors.length === 0,
+      errors: [...exprErrors, ...v.errors],
       warnings: Object.entries(v.warnings).flatMap(([id, ws]) => ws.map((w) => `${labelOf(nodes, id)}: ${w}`)),
       nodes: nodes.map((n) => `${n.id} [${n.type}] "${n.data.params.label}"`),
     })
@@ -478,7 +521,7 @@ server.registerTool('simulate', {
     points: z.number().int().min(8).max(200).optional().describe('Curve downsample resolution (default 40)'),
   },
 }, async ({ project, points }) => {
-  try { return jsonResult(summarize(run(project), points || 40)) } catch (e) { return errResult(e) }
+  try { return jsonResult(summarize(await run(project), points || 40)) } catch (e) { return errResult(e) }
 })
 
 server.registerTool('get_curve', {
@@ -496,7 +539,7 @@ server.registerTool('get_curve', {
   },
 }, async ({ project, quantity, node, points, fmin, fmax }) => {
   try {
-    const ctx = run(project)
+    const ctx = await run(project)
     if (!ctx.res.ok) return jsonResult(summarize(ctx))
     const q = QUANTITIES[quantity]
     let nodeId = null
@@ -538,19 +581,19 @@ server.registerTool('sweep_parameter', {
     }
     // resolve the node reference once against the hydrated graph
     let nodeId = null
-    if (node) {
-      const { nodes } = hydrateProject(project)
-      nodeId = resolveNode(nodes, node).id
-    }
-    const rows = grid.map((v) => {
-      const p = structuredClone(project)
+    if (node) nodeId = resolveNode(toEditor(asCurrent(project)).nodes, node).id
+    const base = withSettings(project)
+    const rows = []
+    for (const v of grid) rows.push(await (async () => {
+      const p = structuredClone(base)
       if (nodeId) {
         const target = p.nodes.find((n) => n.id === nodeId)
         target.params = { ...(target.params || {}), [param]: v }
       } else {
         p.settings = { ...(p.settings || {}), [param]: v }
       }
-      const ctx = run(p)
+      let ctx
+      try { ctx = await run(p) } catch (e) { return { value: sig(v), error: e.message } }
       if (!ctx.res.ok) return { value: sig(v), error: ctx.res.validation?.errors?.join('; ') || 'simulation failed' }
       const m = ctx.metrics || {}
       let vmax = 0
@@ -562,7 +605,7 @@ server.registerTool('sweep_parameter', {
         max_port_velocity_ms: vmax > 0.01 ? sig(vmax) : null,
         max_power_before_xmax_w: sig(m.maxPower),
       }
-    })
+    })())
     return jsonResult({
       swept: nodeId ? `node ${nodeId} param "${param}"` : `setting "${param}"`,
       rows,
@@ -679,19 +722,21 @@ server.registerTool('build_enclosure', {
    * Simulate a project and report its tuning, for port calibration.
    *
    * @param {object} p - The project to simulate.
-   * @returns {number|null} Tuning in Hz — the vented `fb`, falling back to a sealed box's `fc` — or `null` when the simulation failed.
+   * @returns {Promise<number|null>} Tuning in Hz — the vented `fb` — or `null` when the simulation failed.
    * @sideEffect Runs the solver.
    */
-  const simFb = (p) => { const c = run(p); return c.res.ok ? (c.metrics?.fb ?? null) : null }
+  const simFb = async (p) => {
+    try { const c = await run(p); return c.res.ok ? (c.metrics?.fb ?? null) : null } catch { return null }
+  }
     if (rest.tuning && !rest.port_length && (topology === 'ported' || topology === 'bandpass4')) {
       for (const pid of ports) {
-        const L = calibratePort(project, pid, rest.tuning, simFb)
-        calibration[pid] = `length ${L} cm → simulated fb ${sig(simFb(project))} Hz (target ${rest.tuning})`
+        const L = await calibratePort(project, pid, rest.tuning, simFb)
+        calibration[pid] = `length ${L} cm → simulated fb ${sig(await simFb(project))} Hz (target ${rest.tuning})`
       }
     }
     return jsonResult({
       notes, calibration: Object.keys(calibration).length ? calibration : undefined,
-      summary: summarize(run(project), 30),
+      summary: summarize(await run(project), 30),
       project,
     })
   } catch (e) { return errResult(e) }
@@ -739,13 +784,13 @@ function bandIndices(freqs, band) {
  * @param {number} [spec.constraints.max_port_velocity_ms] - Penalize peak port velocity above this.
  * @param {number} [spec.constraints.max_excursion_mm] - Excursion limit; defaults to each driver's own Xmax.
  * @param {boolean} [spec.constraints.respect_xmax] - Set false to drop the excursion penalty entirely.
- * @returns {(project: object) => number} A scoring function; higher is better.
+ * @returns {(project: object) => Promise<number>} A scoring function; higher is better.
  * @sideEffect The returned function runs a full simulation on every call.
  */
 function makeScore({ objective, band, constraints = {} }) {
-  return (projRaw) => {
+  return async (projRaw) => {
     let ctx
-    try { ctx = run(projRaw) } catch { return -1e9 }
+    try { ctx = await run(projRaw) } catch { return -1e9 }
     if (!ctx.res.ok) return -1e9
     const { res, metrics, nodes } = ctx
     let s
@@ -803,13 +848,14 @@ server.registerTool('optimize', {
     if ((objective === 'max_spl' || objective === 'flat') && !band) {
       throw new Error(`Objective "${objective}" needs a band [f1, f2].`)
     }
-    const { nodes } = hydrateProject(project)
+    const nodes = toEditor(asCurrent(project)).nodes
     const resolved = params.map((prm) => ({
       ...prm, node: prm.node ? resolveNode(nodes, prm.node).id : undefined,
     }))
     const score = makeScore({ objective, band, constraints })
-    const before = score(project)
-    const { best, bestScore, evals, values } = optimizeProject(project, resolved, score,
+    const start = withSettings(project)
+    const before = await score(start)
+    const { best, bestScore, evals, values } = await optimizeProject(start, resolved, score,
       { rounds: rounds || 3, gridN: grid || 9 })
     return jsonResult({
       objective: band ? `${objective} over ${band[0]}-${band[1]} Hz` : objective,
@@ -818,7 +864,7 @@ server.registerTool('optimize', {
         target: prm.node ? `${prm.node}.${prm.param}` : `settings.${prm.param}`,
         value: sig(values[i]),
       })),
-      summary: summarize(run(best), 30),
+      summary: summarize(await run(best), 30),
       project: best,
     })
   } catch (e) { return errResult(e) }
@@ -832,10 +878,11 @@ server.registerTool('compare', {
   },
 }, async ({ projects }) => {
   try {
-    const rows = projects.map((proj, i) => {
+    const rows = []
+    for (const [i, proj] of projects.entries()) rows.push(await (async () => {
       const name = proj.name || `design ${i + 1}`
       try {
-        const ctx = run(proj)
+        const ctx = await run(proj)
         if (!ctx.res.ok) return { name, error: ctx.res.validation?.errors?.join('; ') }
         let vmax = 0
         for (const arr of Object.values(ctx.res.velocity)) for (const v of arr) if (v > vmax) vmax = v
@@ -845,7 +892,7 @@ server.registerTool('compare', {
           max_port_velocity: vmax > 0.01 ? `${sig(vmax)} m/s` : undefined,
         }
       } catch (e) { return { name, error: e.message } }
-    })
+    })())
     return jsonResult({ comparison: rows })
   } catch (e) { return errResult(e) }
 })
