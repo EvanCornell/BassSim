@@ -338,8 +338,23 @@ chamber probes → `probes`; `Q`/`lossless` on waveguides → `loss`; empty
   path length.
 - **Neighbouring openings interact** at a shared wall; the model treats each
   as independent.
-- **Duct loss must become realizable.** The current α = k/2Q (loss rising in
-  proportion to frequency) is not a physical element; replace it with
-  per-segment resistance or a boundary-layer network.
+- **Loss, two mechanisms.**
+  - *Linear dissipation* — energy actually lost, present in both analyses.
+    Box leakage: a fixed resistor from the chamber to outside (the real
+    meaning of QL; replaces chamber `Q` as leakage). Wall friction and heat
+    exchange in ducts and chambers: a boundary-layer loss per unit length
+    rising as √f, realized as a short RL ladder (the same construction as
+    skin effect in wires), derived from geometry via hydraulic radius, so
+    narrow and slotted ducts lose more. This replaces α = k/2Q, which no
+    physical element can produce. Stuffing: reduced sound speed plus added
+    resistance per length. The waveguide `loss` multiplier (default 1)
+    scales the derived loss.
+  - *Flow-dependent resistance* — turbulence and jetting at duct ends,
+    Δp = K·½ρ·v|v|, K ≈ 1 for a sharp edge, ≈ 0.2 for a good radius. A
+    nonlinear behavioural element at each duct end, solved directly in
+    transient (compression, harmonics, inflow/outflow asymmetry). It
+    contributes nothing to the AC sweep by construction — the small-signal
+    linearization of v|v| at zero flow is zero — which is physically right.
+    K is an empirical geometry input. Phase 7, with nonlinear drivers.
 - **Radiation fit tolerance** — proposed: within 1% of the Bessel/Struve
   impedance up to ka = 3.
