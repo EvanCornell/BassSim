@@ -122,6 +122,43 @@ The file format should migrate once for all of this, not once per phase:
 - reserved per-driver fields for nonlinear curves and a thermal model
 - listener position(s) for combined output
 
+## Graph semantics, decided
+
+- **Connections have no direction.** Any handle joins any handle, on every
+  node type (React Flow 11 `connectionMode="loose"`). Ends keep identity only
+  for geometry — a waveguide's throat is its S1 end, mouth its S2 end — so
+  throat-to-throat and mouth-to-mouth are valid. Validation reduces to:
+  acoustic handles join acoustic handles (electrical to electrical, once the
+  amplifier node exists).
+- **Per-end termination.** Each end of a waveguide and of a chamber has its
+  own setting for when nothing is connected: open into a solid angle, or
+  closed. Defaults: waveguide ends open (half space), chamber ends closed.
+  The waveguide's single `space` migrates to its mouth.
+- **Chambers and waveguides compile to the same thing** — a line. They stay
+  separate node types because they are specified differently (volume and
+  length vs areas, length and flare) and carry different extras (stuffing,
+  probe, leakage on chambers; flare on waveguides).
+- **Taps** on waveguides and chambers: a list of `{ id, position }`, position
+  in cm from the S1 / `in` end, edited in the node editor and drawn as handles
+  along the node. Handle ids `tap:<id>`. A tap is an ideal junction; the
+  compiler splits the line there. Anything may attach. A tap beyond the
+  current length is a warning, never silently moved.
+- **Driver face on a duct end** — the cone is the end of the duct: its flow
+  enters the duct and the duct's pressure acts on it, so compression ratio
+  follows from the areas. The Karal step between Sd and the end area is an
+  inductor on the duct side. When Sd exceeds the end area, the editor warns
+  that this is physically impossible without a throat chamber and offers to
+  insert an ordinary chamber node there. The simulation still runs as an
+  ideal zero-volume coupling if the warning is ignored.
+- **Throat chamber calculator** — optional tool that computes the chamber's
+  volume from cone depth and shape plus excursion clearance. Output only;
+  the chamber stays an ordinary chamber node.
+- **Warnings vs errors.** Warnings flag physically unrealistic but
+  simulatable graphs and never block a run. Errors are only for what cannot
+  be simulated at all — no driver, invalid parameters.
+- **The compiler always emits a solvable netlist**, e.g. a very large
+  resistor to ground at every node so a sealed chamber is never floating.
+
 ## Modelling questions (not solver questions)
 
 - **What an edge between two ducts means** — a straight seamless join, a
