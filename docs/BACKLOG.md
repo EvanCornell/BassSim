@@ -9,28 +9,16 @@ done looks like, and where the code is.
 
 ## Driver output only where the cone is actually exposed
 
-**Today.** The output chart always offers a "driver output" series, and
-`splDriver` is not what its name says. In `runSimulation > propagateInto`,
-every radiator reached through the driver's *front* handle is summed into
-`emit.driverP` (`viaFront`), so in a 4th-order bandpass whose front vents
-through a ported chamber, "driver output" is the port. Meanwhile an
-unconnected *rear* loads the cone with a half-space radiation impedance but
-never emits anything, so an open-baffle or dipole driver loses its back wave
-entirely.
+**Today.** "Driver output" sums every radiator reached through the driver's
+front handle (`viaFront` in `runSimulation > propagateInto`), so in a
+4th-order bandpass it is really the port. An unconnected rear loads the cone
+but never radiates.
 
-**Done means.**
-- A driver side radiates directly only when that handle is unconnected, or
-  connected to a `radiation` node. Nothing reached through a chamber, duct or
-  other two-port counts as driver output.
-- Both sides count: an exposed rear radiates with inverted polarity, into the
-  solid angle the radiation node (or the driver) names.
-- The "driver output" series exists only when at least one side is exposed;
-  otherwise the checkbox is hidden or disabled, not showing a curve that
-  cannot exist.
-
-**Where.** `src/engine/solver.js` (front emission, `viaFront`, the rear
-branch), `splDriver` consumers in `src/components/OutputPanel.jsx` and
-`src/utils/export.js`, `mcp/acousim.js`.
+**Decided** for the SPICE engine (`docs/SPICE-PLAN.md`, Graph semantics):
+unconnected faces radiate as if in an infinite baffle; one exposed face is
+summed with every other radiator; with both exposed only the front counts;
+"driver output" is exposed faces only. Built with the new engine, not
+patched into the old solver.
 
 ---
 

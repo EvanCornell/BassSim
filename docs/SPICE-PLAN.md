@@ -164,6 +164,9 @@ display settings no longer take part in deciding whether to resimulate.
     `Q` → `leak.ql` with the same number, since that is how it has been
     used; chamber `lossless` → sealed.
 - Chamber `probe`/`probePos` move to `probes`.
+- Passive radiator: handles `front`/`rear` (the old `in` migrates to
+  `rear`, its front left open to radiate, matching today), `count`.
+- Driver and passive radiator `Q`/`lossless` removed, folded into `Rms`.
 - Reserved on drivers: `nl` (already present) and `thermal`.
 
 ### Parameters and expressions (provisional)
@@ -334,6 +337,36 @@ chamber probes → `probes`; loss as above; empty
   parallel. To check: whether the ngspice WASM build includes the XSPICE
   transfer-function block for filters in both analyses; otherwise build them
   from ordinary circuit parts.
+- **Unconnected driver faces — infinite baffle.** A driver face with
+  nothing attached radiates into half space, as if mounted in an infinite
+  baffle. No per-face setting.
+  - One face unconnected: its output is summed with every other radiating
+    element (rear with inverted polarity).
+  - Both faces unconnected: both load the cone, but only the front face
+    counts toward the output — the rear is on the far side of the baffle.
+  - "Driver output" is the output of exposed driver faces, nothing else.
+- **Listening position.** By default every distinct radiating element —
+  exposed driver face, open duct end, radiation node, passive radiator face
+  — is 1 m from a common listening point, so the combined output is their
+  coherent sum with no path differences. Per-source distances are the
+  reserved listener probes.
+- **Passive radiators have two faces**, `front`/`rear`, like a driver
+  without a motor, so one can sit between two chambers. Unconnected faces
+  follow the same infinite-baffle rule. `count` for several identical units.
+- **A radiation node is one shared opening.** Everything connected to it
+  joins at one point in the circuit, so two mouths on one radiation node act
+  as a single combined opening. Separate openings stay unconnected and
+  radiate independently.
+- **No `Q`/`lossless` on drivers or passive radiators.** Rms is the
+  mechanical loss; migration folds any extra into it
+  (Rms + 2π·Fs·Mms/Q), so results are unchanged.
+- **Units in the file are display units** — cm, L, cm², g — converted when
+  the netlist is built.
+- **Masking and taps.** With `masking` on, a chamber is one uniform
+  pressure, so its ends and taps become the same point; taps stay
+  connected, their positions stop mattering.
+- **Snapshots record the analysis id** they came from, so overlays never
+  mix a sweep with a transient.
 - **Warnings vs errors.** Warnings flag physically unrealistic but
   simulatable graphs and never block a run. Errors are only for what cannot
   be simulated at all — no driver, invalid parameters.
