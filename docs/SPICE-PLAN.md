@@ -174,6 +174,40 @@ The file format should migrate once for all of this, not once per phase:
   a `wiring` section — a list of amps, each with a series/parallel tree whose
   leaves are driver nodes. The global voltage/impedance/power/`rg` settings
   migrate into the default amp.
+- **Amps are channels; drive level lives on each channel.** Signal chain:
+  one program signal → per-channel DSP → per-channel amp → the drivers wired
+  to that channel. A channel stores one voltage: its output at master 0 dB,
+  which is its gain. The user may set it at any master level; it is stored
+  normalized to 0 dB. A project-wide master (dB, default 0) offsets every
+  channel together. Each channel displays nominal watts live — its voltage at
+  the current master, squared, over the nominal load derived from its wiring.
+  Volts are stored, never watts: rewiring a channel keeps its voltage and
+  changes its wattage, as on a real amp. DSP (polarity, delay, filters, EQ)
+  shapes each channel relative to its level and has no separate gain.
+  A driver on no channel is undriven with its coil open.
+
+  ```jsonc
+  "wiring": {
+    "masterDb": 0,
+    "channels": [{
+      "id": "ch1", "label": "Sub amp",
+      "volts": 31.6,                       // output at master 0 dB
+      "outputOhms": 0,                     // amp output + cable (today's rg)
+      "rated": { "watts": 1000, "ohms": 1 },   // optional; warnings, later clipping
+      "dsp": { "polarity": 1, "delayMs": 0, "filters": [
+        { "type": "highpass", "shape": "butterworth", "order": 4, "hz": 25 } ] },
+      "load": { "parallel": [ { "driver": "driver_a" },
+        { "series": [ { "driver": "driver_b" }, { "driver": "driver_c" } ] } ] }
+    }]
+  }
+  ```
+
+  A driver node is a leaf on at most one channel; its own count, wiring and
+  dual voice coil options stay inside the node. Migration: one channel with
+  the old voltage, `rg` as output resistance, no DSP, every driver node in
+  parallel. To check: whether the ngspice WASM build includes the XSPICE
+  transfer-function block for filters in both analyses; otherwise build them
+  from ordinary circuit parts.
 - **Warnings vs errors.** Warnings flag physically unrealistic but
   simulatable graphs and never block a run. Errors are only for what cannot
   be simulated at all — no driver, invalid parameters.
