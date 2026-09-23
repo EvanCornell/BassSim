@@ -130,10 +130,11 @@ The file format should migrate once for all of this, not once per phase:
   throat-to-throat and mouth-to-mouth are valid. Validation reduces to:
   acoustic handles join acoustic handles (electrical to electrical, once the
   amplifier node exists).
-- **Per-end termination.** Each end of a waveguide and of a chamber has its
-  own setting for when nothing is connected: open into a solid angle, or
-  closed. Defaults: waveguide ends open (half space), chamber ends closed.
-  The waveguide's single `space` migrates to its mouth.
+- **Unconnected ends.** A chamber end with nothing connected is always a
+  closed wall — no setting; either end may be connected, both, or neither.
+  Each waveguide end has its own setting for when nothing is connected: open
+  into a solid angle (default half space) or closed. The waveguide's single
+  `space` migrates to its mouth.
 - **Chambers and waveguides compile to the same thing** — a line. They stay
   separate node types because they are specified differently (volume and
   length vs areas, length and flare) and carry different extras (stuffing,
