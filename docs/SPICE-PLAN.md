@@ -154,6 +154,22 @@ The file format should migrate once for all of this, not once per phase:
 - **Throat chamber calculator** — optional tool that computes the chamber's
   volume from cone depth and shape plus excursion clearance. Output only;
   the chamber stays an ordinary chamber node.
+- **Electrical wiring lives outside the acoustic graph.** Drivers have no
+  electrical handles. The driver node keeps `count` with series/parallel
+  across that count, plus dual voice coil options: coil impedance, and coils
+  in series, in parallel, or one coil only. The node shows its resulting
+  nominal impedance. Dual-coil T/S data is **always** taken as both coils in
+  series — no user choice. Converting to parallel: Re ÷ 4, Bl ÷ 2, Le ≈ ÷ 4,
+  so Bl²/Re and Qes are unchanged and only the impedance moves. One coil
+  only: Re ÷ 2, Bl ÷ 2, Le ≈ ÷ 4, which doubles Qes.
+- **Wiring manager** for anything deeper: several amps or channels, series
+  connections between driver nodes, polarity per driver node, the load each
+  amp sees (nominal from the coils, minimum from the simulation); later cable
+  resistance, passive crossovers and DSP per channel. Default: one amp with
+  every driver node in parallel, which reproduces today's behaviour. Schema:
+  a `wiring` section — a list of amps, each with a series/parallel tree whose
+  leaves are driver nodes. The global voltage/impedance/power/`rg` settings
+  migrate into the default amp.
 - **Warnings vs errors.** Warnings flag physically unrealistic but
   simulatable graphs and never block a run. Errors are only for what cannot
   be simulated at all — no driver, invalid parameters.

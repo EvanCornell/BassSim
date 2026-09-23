@@ -67,6 +67,16 @@ and exit port (up to 14 dB of phantom gain on a series-tuned test box). Loops
 are silently blocked. Fixed by construction in the SPICE engine
 (`docs/SPICE-PLAN.md`); until then, results on such graphs are wrong.
 
+## Dual voice coil catalogue entries don't follow the series convention
+
+Dual-coil T/S data is always taken as both coils in series
+(`docs/SPICE-PLAN.md`). All eight dual-coil entries in the catalogue carry a
+single coil's Re instead — BL 12 D2, BL 15 D2, Q 18 D2, X-12 v3 D2,
+X-15 v3 D2 and ZV5 18" D2 at 1.8–1.9 Ω (series ≈ 3.8), SA-12 D4 and
+SA-15 D4 at 3.8 Ω (series ≈ 7.6). Check each against the manufacturer's
+datasheet and correct to the series figures before the dual voice coil
+options ship, or the app will model a D4 as a dual 2 Ω driver.
+
 ## Modelling questions
 
 - **What an edge between two ducts means** — straight seamless join, bend, or
