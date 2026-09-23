@@ -158,10 +158,14 @@ The file format should migrate once for all of this, not once per phase:
   electrical handles. The driver node keeps `count` with series/parallel
   across that count, plus dual voice coil options: coil impedance, and coils
   in series, in parallel, or one coil only. The node shows its resulting
-  nominal impedance. Dual-coil T/S data is **always** taken as both coils in
-  series — no user choice. Converting to parallel: Re ÷ 4, Bl ÷ 2, Le ≈ ÷ 4,
-  so Bl²/Re and Qes are unchanged and only the impedance moves. One coil
-  only: Re ÷ 2, Bl ÷ 2, Le ≈ ÷ 4, which doubles Qes.
+  nominal impedance.
+- **The driver database has no dual/single distinction** and never will.
+  Every driver's parameters are used exactly as given. Dual voice coil is
+  purely an electrical option the user can switch on for any driver; when
+  on, the given parameters are the both-coils-in-series configuration.
+  Parallel: Re ÷ 4, Bl ÷ 2, Le ≈ ÷ 4 — Bl²/Re and Qes unchanged, only the
+  impedance moves. One coil only: Re ÷ 2, Bl ÷ 2, Le ≈ ÷ 4, which doubles
+  Qes.
 - **Wiring manager** for anything deeper: several amps or channels, series
   connections between driver nodes, polarity per driver node, the load each
   amp sees (nominal from the coils, minimum from the simulation); later cable
