@@ -167,7 +167,7 @@ one point, so this steps down-right until the spot is clear.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
-### `graphSignature(nodes, edges, settings)`
+### `graphSignature(nodes, edges, settings, extras, engine)`
 
 - **Reachability:** INTERNAL
 - **Obtain via:** import { __internals } from '../../src/store.js'  →  __internals.graphSignature
@@ -183,6 +183,8 @@ around the canvas does not re-run the sweep.
 - `nodes` — `Array<object>` — Graph nodes.
 - `edges` — `Array<object>` — Graph edges.
 - `settings` — `object` — Sweep settings.
+- `extras` — `object` _(optional)_ — The project sections the editor carries without controls — params, wiring, analyses, probes, components, air.
+- `engine` — `string` _(optional)_ — The engine the result came from.
 
 **Returns**
 
@@ -190,7 +192,7 @@ around the canvas does not re-run the sweep.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
-## STORE ACTION (107)
+## STORE ACTION (108)
 
 ### `openContextMenu(x, y, target)`
 
@@ -1520,6 +1522,25 @@ Open the save-to-database prompt for one driver node, or close it.
 
 - Writes store state. The field is local to the window — `SHARED_KEYS` deliberately excludes it, so a popped-out panel keeps its own.
 
+### `setEngine(engine)`
+
+- **Reachability:** STORE ACTION
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().setEngine(…)
+
+Choose which engine simulates, remember it, and resimulate.
+
+**Parameters**
+
+- `engine` — `string` — One of the pipeline's `ENGINES`; anything else is ignored.
+
+**Returns**
+
+- `void`
+
+**Side effects**
+
+- Writes LocalStorage and store state, and schedules a resimulation.
+
 ### `scheduleCompute()`
 
 - **Reachability:** STORE ACTION
@@ -1563,7 +1584,7 @@ the layout of a saved graph would be worse than carrying it.
 
 **Returns**
 
-- `object` — The serialized project: `{schemaVersion, app, name, modified, settings, nodes, edges}`.
+- `object` — The serialized v3 project — see src/schema/version.js for its sections.
 
 **Side effects**
 
@@ -1576,9 +1597,11 @@ the layout of a saved graph would be worse than carrying it.
 
 Replace the current project with a deserialized one.
 
-Params are merged over the current defaults, so a project saved by an
-older build gains any parameter added since. Edges missing an id get one,
-which hand-written and MCP-generated projects routinely need.
+The file is first carried to the current schema by `migrateProject`,
+which also fills every param from the defaults, so a project saved by an
+older build gains any parameter added since and edges missing an id get
+one. A bare `{name, nodes, edges}` — a new empty file — keeps the current
+sweep, drive and display settings rather than resetting them.
 
 History, redo and selection are all cleared: they describe the project
 being replaced and would be meaningless against the new one. Snapshots are
@@ -2534,9 +2557,9 @@ The full shared slice, sent to a popped-out tab when it announces itself.
 
 - Current store state.
 
-## UNREACHABLE (9)
+## UNREACHABLE (11)
 
-### `simulateInWorker(project)`
+### `simulateInWorker(project, engine)`
 
 - **Reachability:** UNREACHABLE
 - **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
@@ -2549,11 +2572,12 @@ longer pending are dropped, which is what makes a superseded run harmless.
 
 **Parameters**
 
-- `project` — `object` — A serialized project: `{nodes, edges, settings}`.
+- `project` — `object` — A serialized v3 project.
+- `engine` — `string` — Which engine should run it.
 
 **Returns**
 
-- `Promise<{id: number, ok: boolean, results?: object, metrics?: object|null, error?: string, projectErrors?: string[]|null}>` — The worker's reply.
+- `Promise<{id: number, ok: boolean, results?: object, metrics?: object|null, warnings?: object, error?: string, projectErrors?: string[]|null}>` — The worker's reply.
 
 **Side effects**
 
@@ -2673,6 +2697,37 @@ report the folder as saved when nothing had been.
 **Side effects**
 
 - Schedules a timer that writes to the user's filesystem. Does nothing when no folder is connected, or when the connected one is locked.
+
+### `loadEngine()`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+The simulation engine this browser last chose.
+
+A preference of the person, not a property of the project, so it lives in
+LocalStorage rather than in the file.
+
+**Returns**
+
+- `string` — The engine name; the pipeline's default when nothing valid is stored or storage is unavailable.
+
+**Reads external mutable state**
+
+- LocalStorage.
+
+### `defaultExtras()`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+The editor sections of an empty project, for the initial state.
+
+**Returns**
+
+- `object` — The `extras` of a default v3 project.
+
+**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
 ### `freeSpotNear > taken(x, y)`
 

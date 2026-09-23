@@ -24,9 +24,9 @@
     "pure": "flag"
   },
   "stats": {
-    "modules": 63,
-    "methods": 710,
-    "documented": 710
+    "modules": 70,
+    "methods": 749,
+    "documented": 749
   },
   "modules": [
     {
@@ -7835,7 +7835,7 @@
           "exported": false,
           "async": true,
           "generator": false,
-          "line": 206,
+          "line": 208,
           "signature": [
             "e"
           ],
@@ -7876,7 +7876,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 222,
+          "line": 224,
           "signature": [],
           "documented": true,
           "summary": "Save the current window arrangement under a prompted name.",
@@ -7907,7 +7907,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 240,
+          "line": 242,
           "signature": [],
           "documented": true,
           "summary": "Add an empty project to the workspace and open it.",
@@ -7938,7 +7938,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 252,
+          "line": 254,
           "signature": [],
           "documented": true,
           "summary": "Open the file picker to import a project.",
@@ -7969,7 +7969,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 263,
+          "line": 265,
           "signature": [],
           "documented": true,
           "summary": "Download the whole workspace as one file.",
@@ -8000,7 +8000,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 273,
+          "line": 275,
           "signature": [],
           "documented": true,
           "summary": "Open the file picker to replace the workspace.",
@@ -8031,7 +8031,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 283,
+          "line": 285,
           "signature": [],
           "documented": true,
           "summary": "Connect the workspace to a folder on disk, or disconnect it.",
@@ -8062,7 +8062,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 297,
+          "line": 299,
           "signature": [],
           "documented": true,
           "summary": "Download every result series as a CSV.",
@@ -8093,7 +8093,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 307,
+          "line": 309,
           "signature": [],
           "documented": true,
           "summary": "Download a PNG of the node canvas.",
@@ -8124,7 +8124,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 317,
+          "line": 319,
           "signature": [],
           "documented": true,
           "summary": "Download a plain-text metrics summary.",
@@ -8155,7 +8155,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 346,
+          "line": 348,
           "signature": [],
           "documented": true,
           "summary": "Pop the focused panel out into its own browser tab.",
@@ -8186,7 +8186,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 361,
+          "line": 363,
           "signature": [],
           "documented": true,
           "summary": "Pop this specific panel out into its own browser tab.",
@@ -8217,7 +8217,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 374,
+          "line": 376,
           "signature": [],
           "documented": true,
           "summary": "Maximize the focused panel, or restore the one already maximized.",
@@ -8248,7 +8248,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 385,
+          "line": 387,
           "signature": [],
           "documented": true,
           "summary": "Restore the default workspace arrangement.",
@@ -8279,7 +8279,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 400,
+          "line": 402,
           "signature": [],
           "documented": true,
           "summary": "Apply this saved arrangement.",
@@ -8310,7 +8310,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 417,
+          "line": 419,
           "signature": [],
           "documented": true,
           "summary": "Delete this saved arrangement.",
@@ -8341,7 +8341,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 433,
+          "line": 435,
           "signature": [],
           "documented": true,
           "summary": "Toggle resonance masking, which lumps chambers to hide standing-wave artifacts.",
@@ -8372,7 +8372,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 444,
+          "line": 446,
           "signature": [],
           "documented": true,
           "summary": "Toggle phase unwrapping on the phase chart.",
@@ -8403,7 +8403,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 462,
+          "line": 464,
           "signature": [],
           "documented": true,
           "summary": "Discard every reference overlay.",
@@ -8434,7 +8434,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 477,
+          "line": 479,
           "signature": [],
           "documented": true,
           "summary": "Open the driver library browser.",
@@ -8465,7 +8465,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 487,
+          "line": 489,
           "signature": [],
           "documented": true,
           "summary": "Open the Thiele/Small parameter solver.",
@@ -8496,7 +8496,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 500,
+          "line": 502,
           "signature": [],
           "documented": true,
           "summary": "Open the Nonlinear Lab panel.",
@@ -8527,7 +8527,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 515,
+          "line": 517,
           "signature": [],
           "documented": true,
           "summary": "Turn experimental features on or off.",
@@ -8558,7 +8558,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 534,
+          "line": 536,
           "signature": [],
           "documented": true,
           "summary": "Open Settings at the keyboard section.",
@@ -8589,7 +8589,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 544,
+          "line": 546,
           "signature": [],
           "documented": true,
           "summary": "Show the about dialog.",
@@ -11420,7 +11420,7 @@
       "constants": [
         {
           "name": "__internals",
-          "line": 612,
+          "line": 611,
           "shape": {
             "kind": "object",
             "keys": [
@@ -11439,7 +11439,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 63,
+          "line": 67,
           "signature": [
             "arg0"
           ],
@@ -11536,7 +11536,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 97,
+          "line": 101,
           "signature": [
             "arg0"
           ],
@@ -11606,19 +11606,19 @@
           "other": []
         },
         {
-          "name": "QSection",
-          "qualified": "QSection",
+          "name": "LeakSection",
+          "qualified": "LeakSection",
           "kind": "function",
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 125,
+          "line": 127,
           "signature": [
             "arg0"
           ],
           "documented": true,
-          "summary": "The per-node loss control: a Q value with a lossless override.",
-          "description": "The per-node loss control: a Q value with a lossless override.\n\nEvery node has an independent Q applied as a complex loss term — wall\nflexure on chambers, port turbulence on waveguides, surround loss on\npassive radiators. Ticking ∞ disables loss entirely and greys the input,\nrather than expecting the user to know that a very large Q means the same\nthing.",
+          "summary": "A chamber's leakage: sealed, or a QL referred to a frequency.",
+          "description": "A chamber's leakage: sealed, or a QL referred to a frequency.\n\nQL is kept as the number people already think in; the engine turns it into\nthe leak resistance it implies. Ticking \"sealed\" removes the leak rather than\nexpecting the user to know that a very large QL means the same thing.",
           "params": [
             {
               "name": "props",
@@ -11644,7 +11644,7 @@
           ],
           "returns": {
             "type": "React.ReactElement",
-            "desc": "The Q control."
+            "desc": "The leakage controls."
           },
           "throws": [],
           "contract": {
@@ -11667,7 +11667,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 160,
+          "line": 164,
           "signature": [
             "arg0"
           ],
@@ -11722,7 +11722,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 180,
+          "line": 184,
           "signature": [],
           "documented": true,
           "summary": "The amplifier section: voltage, impedance and power, linked by P = V²/Z.",
@@ -11753,7 +11753,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 196,
+          "line": 200,
           "signature": [
             "field",
             "label",
@@ -11810,7 +11810,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 236,
+          "line": 240,
           "signature": [
             "v"
           ],
@@ -11849,7 +11849,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 255,
+          "line": 259,
           "signature": [
             "arg0"
           ],
@@ -11932,7 +11932,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 301,
+          "line": 305,
           "signature": [
             "arg0"
           ],
@@ -11980,7 +11980,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 320,
+          "line": 324,
           "signature": [
             "field",
             "unit",
@@ -12037,7 +12037,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 386,
+          "line": 385,
           "signature": [
             "arg0"
           ],
@@ -12085,7 +12085,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 423,
+          "line": 422,
           "signature": [
             "arg0"
           ],
@@ -12140,7 +12140,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 468,
+          "line": 473,
           "signature": [
             "arg0"
           ],
@@ -12188,7 +12188,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 509,
+          "line": 511,
           "signature": [
             "arg0"
           ],
@@ -12236,7 +12236,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 561,
+          "line": 560,
           "signature": [
             "arg0"
           ],
@@ -12284,7 +12284,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 592,
+          "line": 591,
           "signature": [],
           "documented": true,
           "summary": "The Parameters panel: the amplifier section plus the selected node's form.",
@@ -15387,7 +15387,7 @@
       "constants": [
         {
           "name": "nodeTypes",
-          "line": 221,
+          "line": 224,
           "shape": {
             "kind": "object",
             "keys": [
@@ -15759,7 +15759,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 209,
+          "line": 212,
           "signature": [
             "arg0"
           ],
@@ -19531,6 +19531,186 @@
       ]
     },
     {
+      "file": "src/engine/pipeline.js",
+      "module": {
+        "summary": "One simulation, from a saved project to results, for any engine.",
+        "description": "One simulation, from a saved project to results, for any engine.\n\nThe worker and the MCP server both call `simulateProject`, so a project\nsimulates identically in the browser and over the API. The stages are the\nsame whichever engine runs:\n\n  migrate → resolve expressions → validate → engine → metrics\n\nValidation errors stop the run; warnings travel with the results."
+      },
+      "constants": [
+        {
+          "name": "ENGINES",
+          "line": 20,
+          "shape": {
+            "kind": "array",
+            "length": 1,
+            "values": [
+              "legacy"
+            ]
+          },
+          "summary": "The engines `simulateProject` accepts.",
+          "description": "The engines `simulateProject` accepts."
+        },
+        {
+          "name": "DEFAULT_ENGINE",
+          "line": 23,
+          "shape": {
+            "kind": "literal",
+            "value": "legacy"
+          },
+          "summary": "The engine used when none is named.",
+          "description": "The engine used when none is named."
+        }
+      ],
+      "methods": [
+        {
+          "name": "projectError",
+          "qualified": "projectError",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 36,
+          "signature": [
+            "reasons"
+          ],
+          "documented": true,
+          "summary": "Build the error `simulateProject` throws for a project it cannot run.",
+          "description": "Build the error `simulateProject` throws for a project it cannot run.",
+          "params": [
+            {
+              "name": "reasons",
+              "type": "string[]",
+              "optional": false,
+              "default": null,
+              "desc": "Every problem found."
+            }
+          ],
+          "returns": {
+            "type": "Error",
+            "desc": "An error whose message joins them and whose `projectErrors` lists them."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "runLegacy",
+          "qualified": "runLegacy",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 50,
+          "signature": [
+            "project"
+          ],
+          "documented": true,
+          "summary": "Run the legacy engine on a resolved, validated v3 project.",
+          "description": "Run the legacy engine on a resolved, validated v3 project.",
+          "params": [
+            {
+              "name": "project",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "A resolved v3 project."
+            }
+          ],
+          "returns": {
+            "type": "{results: object, metrics: object|null}",
+            "desc": "The sweep and its metrics."
+          },
+          "throws": [
+            {
+              "type": "Error",
+              "desc": "When the project uses anything the legacy engine cannot represent."
+            }
+          ],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Runs the legacy solver."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "simulateProject",
+          "qualified": "simulateProject",
+          "kind": "function",
+          "exported": true,
+          "async": true,
+          "generator": false,
+          "line": 72,
+          "signature": [
+            "input",
+            "arg1"
+          ],
+          "documented": true,
+          "summary": "Simulate a saved project of any schema version.",
+          "description": "Simulate a saved project of any schema version.",
+          "params": [
+            {
+              "name": "input",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "A parsed `.acousim.json` project, any version."
+            },
+            {
+              "name": "opts",
+              "type": "object",
+              "optional": true,
+              "default": null,
+              "desc": "Options."
+            },
+            {
+              "name": "opts.engine",
+              "type": "string",
+              "optional": true,
+              "default": null,
+              "desc": "One of `ENGINES`; defaults to `DEFAULT_ENGINE`."
+            }
+          ],
+          "returns": {
+            "type": "Promise<{results: object, metrics: object|null, warnings: Object<string, string[]>}>",
+            "desc": "The sweep, its metrics, and the project's warnings keyed by node id."
+          },
+          "throws": [
+            {
+              "type": "Error",
+              "desc": "When the project cannot be simulated — unresolvable expressions, structural errors, or an engine that cannot represent it. Every reason is on `projectErrors`."
+            }
+          ],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Runs an engine."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        }
+      ]
+    },
+    {
       "file": "src/engine/project.js",
       "module": {
         "summary": "Project (.acousim.json) schema helpers shared by the app and the MCP server. A project is plain JSON: { name, settings, nodes: [{id,type,position,params}], edges: [{source,sourceHandle,target,targetHandle}] }.",
@@ -20622,82 +20802,36 @@
       "file": "src/engine/worker.js",
       "module": {
         "summary": "Simulation worker: the engine's host in the browser.",
-        "description": "Simulation worker: the engine's host in the browser.\n\nThe solver is pure and knows nothing about where it runs, so this module is\nthe whole of what makes it usable from the UI thread. It replaces the\n`/api/simulate` endpoint the app used to POST to; the request/response shape\nis deliberately the same, minus the transport.\n\nA sweep is fast enough that cancellation is not worth the cost of tearing\ndown and respawning a worker: the store tags every request with an id and\nignores replies it no longer wants. What the worker buys is that a long\nsweep — a large `npts`, or the iterating large-signal path — cannot freeze\nthe canvas mid-drag."
+        "description": "Simulation worker: the engine's host in the browser.\n\nEverything that turns a project into results lives in `pipeline.js`, which\nthe MCP server shares; this module only makes it reachable from the UI\nthread without freezing the canvas during a long sweep.\n\nA sweep is fast enough that cancellation is not worth the cost of tearing\ndown and respawning a worker: the store tags every request with an id and\nignores replies it no longer wants."
       },
       "constants": [],
       "methods": [
-        {
-          "name": "simulate",
-          "qualified": "simulate",
-          "kind": "function",
-          "exported": false,
-          "async": false,
-          "generator": false,
-          "line": 34,
-          "signature": [
-            "project"
-          ],
-          "documented": true,
-          "summary": "Run one sweep and derive its metrics.",
-          "description": "Run one sweep and derive its metrics.\n\nMirrors what the former `/api/simulate` handler did, so a project that\nsimulated through the server simulates identically here.",
-          "params": [
-            {
-              "name": "project",
-              "type": "object",
-              "optional": false,
-              "default": null,
-              "desc": "A serialized project: `{nodes, edges, settings}`."
-            }
-          ],
-          "returns": {
-            "type": "{results: object, metrics: object|null}",
-            "desc": "The raw sweep and its derived metrics, `metrics` being `null` when the simulation failed."
-          },
-          "throws": [
-            {
-              "type": "Error",
-              "desc": "When the project is structurally invalid; the error carries `projectErrors`."
-            }
-          ],
-          "contract": {
-            "pre": [],
-            "post": [],
-            "invariant": [],
-            "mutates": [],
-            "sideEffect": [
-              "Runs the solver."
-            ],
-            "reads": [],
-            "pure": false
-          },
-          "other": []
-        },
         {
           "name": "self.onmessage",
           "qualified": "self.onmessage",
           "kind": "function",
           "exported": false,
-          "async": false,
+          "async": true,
           "generator": false,
-          "line": 56,
+          "line": 22,
           "signature": [
             "e"
           ],
           "documented": true,
           "summary": "Handle one simulation request from the store.",
-          "description": "Handle one simulation request from the store.\n\nStructural errors come back as a failed reply rather than an exception, so\nthe caller sees a hand-edited project's problems the same way it saw the\nserver's 422 — as a list on `projectErrors`.",
+          "description": "Handle one simulation request from the store.\n\nA project that cannot be simulated comes back as a failed reply rather than\nan exception, carrying every reason on `projectErrors`.",
           "params": [
             {
               "name": "e",
               "type": "MessageEvent",
               "optional": false,
               "default": null,
-              "desc": "The request, `{id, project}`."
+              "desc": "The request, `{id, project, engine}`."
             }
           ],
           "returns": {
-            "type": "void",
-            "desc": ""
+            "type": "Promise<void>",
+            "desc": "Settles once the reply is posted."
           },
           "throws": [],
           "contract": {
@@ -20706,7 +20840,7 @@
             "invariant": [],
             "mutates": [],
             "sideEffect": [
-              "Posts a reply back to the main thread."
+              "Runs the simulation and posts a reply back to the main thread."
             ],
             "reads": [],
             "pure": false
@@ -23546,12 +23680,13 @@
           "line": 35,
           "shape": {
             "kind": "array",
-            "length": 17,
+            "length": 18,
             "values": [
               "nodes",
               "edges",
               "projectName",
               "settings",
+              "projectExtras",
               "workspace",
               "activeFile",
               "results",
@@ -23575,11 +23710,12 @@
           "line": 46,
           "shape": {
             "kind": "array",
-            "length": 3,
+            "length": 4,
             "values": [
               "nodes",
               "edges",
-              "settings"
+              "settings",
+              "projectExtras"
             ]
           },
           "summary": "Shared keys whose change invalidates the current result and forces a resolve.",
@@ -23778,6 +23914,1794 @@
           "other": []
         }
       ]
+    },
+    {
+      "file": "src/schema/editor.js",
+      "module": {
+        "summary": "The bridge between a v3 project file and the editor's working state.",
+        "description": "The bridge between a v3 project file and the editor's working state.\n\nThe editor still keeps a flat `settings` object for the controls it has\ntoday — sweep range, drive level, display options — and keeps a chamber's\nprobe on the chamber node, where its form shows it. The file keeps those in\n`analyses`, `wiring`, `display` and `probes`. These two functions convert\nin each direction; everything the editor has no control for yet (named\nparams, further channels, other probes, components) rides along untouched\nin `extras`, so a project round-trips through the editor without loss."
+      },
+      "constants": [],
+      "methods": [
+        {
+          "name": "clone",
+          "qualified": "clone",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 20,
+          "signature": [
+            "v"
+          ],
+          "documented": true,
+          "summary": "Deep-copy plain JSON data.",
+          "description": "Deep-copy plain JSON data.",
+          "params": [
+            {
+              "name": "v",
+              "type": "*",
+              "optional": false,
+              "default": null,
+              "desc": "A JSON-safe value."
+            }
+          ],
+          "returns": {
+            "type": "*",
+            "desc": "An independent copy."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "gain",
+          "qualified": "gain",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 29,
+          "signature": [
+            "db"
+          ],
+          "documented": true,
+          "summary": "The linear gain a master level in dB applies.",
+          "description": "The linear gain a master level in dB applies.",
+          "params": [
+            {
+              "name": "db",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Master level, dB."
+            }
+          ],
+          "returns": {
+            "type": "number",
+            "desc": "The voltage ratio."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "toEditor",
+          "qualified": "toEditor",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 43,
+          "signature": [
+            "proj"
+          ],
+          "documented": true,
+          "summary": "Split a v3 project into the editor's working state.",
+          "description": "Split a v3 project into the editor's working state.\n\n`settings.voltage` is the first channel's output at the current master\nlevel — the drive the user actually sees. A chamber's first pressure probe\nbecomes its `probe`/`probePos` params; any other probe stays in `extras`.",
+          "params": [
+            {
+              "name": "proj",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "A complete v3 project (see `migrateProject`)."
+            }
+          ],
+          "returns": {
+            "type": "{name: string, nodes: object[], edges: object[], settings: object, extras: object}",
+            "desc": "Nodes in React Flow's shape (`{id, type, position, data: {params}}`), edges, the flat settings, and everything else."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [
+              "proj is not modified"
+            ],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "fromEditor",
+          "qualified": "fromEditor",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 111,
+          "signature": [
+            "arg0"
+          ],
+          "documented": true,
+          "summary": "Assemble a v3 project from the editor's working state.",
+          "description": "Assemble a v3 project from the editor's working state.\n\nThe inverse of `toEditor`: the flat settings land back in the first\nanalysis, the first channel and the display section, and a probed chamber's\nprobe becomes an entry in `probes`.",
+          "params": [
+            {
+              "name": "state",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "The editor state."
+            },
+            {
+              "name": "state.name",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Project name."
+            },
+            {
+              "name": "state.nodes",
+              "type": "object[]",
+              "optional": false,
+              "default": null,
+              "desc": "Nodes in React Flow's shape."
+            },
+            {
+              "name": "state.edges",
+              "type": "object[]",
+              "optional": false,
+              "default": null,
+              "desc": "Edges."
+            },
+            {
+              "name": "state.settings",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "The flat settings."
+            },
+            {
+              "name": "state.extras",
+              "type": "object",
+              "optional": true,
+              "default": null,
+              "desc": "What `toEditor` set aside."
+            }
+          ],
+          "returns": {
+            "type": "object",
+            "desc": "A v3 project, without the `modified` stamp."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [
+              "state is not modified"
+            ],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        }
+      ]
+    },
+    {
+      "file": "src/schema/migrate.js",
+      "module": {
+        "summary": "Carry any saved project forward to the current format in one step.",
+        "description": "Carry any saved project forward to the current format in one step.\n\nv1 and v2 files kept everything the engine needed in one flat `settings`\nobject and gave every element a `Q`. v3 splits settings by purpose and\nreplaces `Q` with loss that has a physical meaning per element. The rules,\neach chosen so an old project keeps doing what its author meant:\n\n  waveguide   `space` → `mouthSpace`; `Q` → `loss: 1` (the old value\n              described a frequency law that no longer exists); `lossless`\n              → `loss: 0`.\n  chamber     `Q` → `leakQL` with the same number, since that is how it has\n              been used; `lossless` → sealed. `probe`/`probePos` become a\n              pressure probe in `probes`.\n  driver, pr  any extra `Q` folds into `Rms` — Rms + 2π·Fs·Mms/Q — so the\n              mechanical damping is unchanged. A passive radiator's `in`\n              handle becomes `rear`; its front is left open, as before.\n  settings    sweep range, `masking`, `nlEnabled` → one analysis; `voltage`\n              and `rg` → one channel; the rest → `display`."
+      },
+      "constants": [
+        {
+          "name": "__internals",
+          "line": 257,
+          "shape": {
+            "kind": "object",
+            "keys": [
+              "migrateNodeParams",
+              "splitSettings",
+              "normalize",
+              "prFs"
+            ]
+          },
+          "summary": null,
+          "description": null
+        }
+      ],
+      "methods": [
+        {
+          "name": "clone",
+          "qualified": "clone",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 40,
+          "signature": [
+            "v"
+          ],
+          "documented": true,
+          "summary": "Deep-copy plain JSON data.",
+          "description": "Deep-copy plain JSON data.",
+          "params": [
+            {
+              "name": "v",
+              "type": "*",
+              "optional": false,
+              "default": null,
+              "desc": "A JSON-safe value."
+            }
+          ],
+          "returns": {
+            "type": "*",
+            "desc": "An independent copy."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "prFs",
+          "qualified": "prFs",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 49,
+          "signature": [
+            "p"
+          ],
+          "documented": true,
+          "summary": "Resonance of a passive radiator from its display-unit params.",
+          "description": "Resonance of a passive radiator from its display-unit params.",
+          "params": [
+            {
+              "name": "p",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "Passive radiator params: `Mmd` and `addedMass` in g, `Cms` in mm/N."
+            }
+          ],
+          "returns": {
+            "type": "number",
+            "desc": "Fs in Hz."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "migrateNodeParams",
+          "qualified": "migrateNodeParams",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 68,
+          "signature": [
+            "node",
+            "from"
+          ],
+          "documented": true,
+          "summary": "Convert one node's params from the v1/v2 layout to v3.",
+          "description": "Convert one node's params from the v1/v2 layout to v3.\n\nParams are converted in place on a copy; fields v3 no longer has are\nremoved so they cannot be mistaken for live settings later. A chamber's\nprobe is returned separately because v3 keeps probes at project level.",
+          "params": [
+            {
+              "name": "node",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "A serialized v1/v2 node: `{id, type, position, params}`."
+            },
+            {
+              "name": "from",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Schema version the file was written with."
+            }
+          ],
+          "returns": {
+            "type": "{params: object, probe: object|null}",
+            "desc": "The v3 params, and a probe entry when the node was a probed chamber."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [
+              "node is not modified"
+            ],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "splitSettings",
+          "qualified": "splitSettings",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 121,
+          "signature": [
+            "s"
+          ],
+          "documented": true,
+          "summary": "Split a v1/v2 `settings` object into v3's analyses, wiring and display.",
+          "description": "Split a v1/v2 `settings` object into v3's analyses, wiring and display.",
+          "params": [
+            {
+              "name": "s",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "The old settings; missing fields take their old defaults."
+            }
+          ],
+          "returns": {
+            "type": "{analyses: object[], wiring: object, display: object}",
+            "desc": "The v3 sections."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [
+              "s is not modified"
+            ],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "pick",
+          "qualified": "splitSettings > pick",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 130,
+          "signature": [
+            "k",
+            "d"
+          ],
+          "documented": true,
+          "summary": "One old setting, or its old default when absent.",
+          "description": "One old setting, or its old default when absent.",
+          "params": [
+            {
+              "name": "k",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Setting name."
+            },
+            {
+              "name": "d",
+              "type": "*",
+              "optional": false,
+              "default": null,
+              "desc": "Default."
+            }
+          ],
+          "returns": {
+            "type": "*",
+            "desc": "The value."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [
+              "the enclosing settings."
+            ],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "normalize",
+          "qualified": "normalize",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 170,
+          "signature": [
+            "proj"
+          ],
+          "documented": true,
+          "summary": "Fill every section of a v3 project from the defaults.",
+          "description": "Fill every section of a v3 project from the defaults.\n\nNode params are merged over `DEFAULT_PARAMS` so a file gains any parameter\nadded since it was written; channels over `DEFAULT_CHANNEL`; the rest over\ntheir own defaults. Edges without an id get one that no other edge uses.",
+          "params": [
+            {
+              "name": "proj",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "A v3 project, possibly sparse — MCP tools and hand-written files usually are."
+            }
+          ],
+          "returns": {
+            "type": "object",
+            "desc": "A complete v3 project."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [
+              "proj is not modified"
+            ],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "freshId",
+          "qualified": "normalize > freshId",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 184,
+          "signature": [],
+          "documented": true,
+          "summary": "An edge id no other edge in this project uses.",
+          "description": "An edge id no other edge in this project uses.",
+          "params": [],
+          "returns": {
+            "type": "string",
+            "desc": "The id."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [
+              "the local `used` set and counter."
+            ],
+            "sideEffect": [],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "migrateProject",
+          "qualified": "migrateProject",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 235,
+          "signature": [
+            "proj"
+          ],
+          "documented": true,
+          "summary": "Bring any saved project to the current format.",
+          "description": "Bring any saved project to the current format.\n\nv1 and v2 files are converted (see the rules at the top of this module); a\nv3 file is only normalized. A file from a newer build is normalized as if\nit were v3 — whatever this build does not understand is kept where it can\nbe, and the caller decides whether to warn.\n\nIdempotent: migrating a migrated project changes nothing.",
+          "params": [
+            {
+              "name": "proj",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "A parsed `.acousim.json` project of any version."
+            }
+          ],
+          "returns": {
+            "type": "object",
+            "desc": "A complete project at `SCHEMA_VERSION`."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [
+              "proj is not modified"
+            ],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        }
+      ]
+    },
+    {
+      "file": "src/schema/params.js",
+      "module": {
+        "summary": "Named parameters and expressions.",
+        "description": "Named parameters and expressions.\n\nA project may define named values once — `{ name: 'Vb', value: 60 }` — and\nany numeric field may then hold an expression over them instead of a\nnumber: `\"volume\": \"Vb / 2\"`. Expressions are resolved here, before a\nnetlist is built, so the engine only ever sees numbers and an error names\nthe field it came from rather than surfacing from inside SPICE.\n\nThe language is deliberately small: numbers, the named params, `pi` and\n`e`, + − × ÷ ^, parentheses, and a short list of functions. It is parsed\nwith mathjs, but only the node types listed below are accepted, so nothing\ncan assign, define a function, reach a unit or call anything else."
+      },
+      "constants": [
+        {
+          "name": "__internals",
+          "line": 280,
+          "shape": {
+            "kind": "object",
+            "keys": [
+              "parseExpression"
+            ]
+          },
+          "summary": null,
+          "description": null
+        }
+      ],
+      "methods": [
+        {
+          "name": "isExpression",
+          "qualified": "isExpression",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 39,
+          "signature": [
+            "v"
+          ],
+          "documented": true,
+          "summary": "Whether a stored value is an expression rather than a plain number.",
+          "description": "Whether a stored value is an expression rather than a plain number.",
+          "params": [
+            {
+              "name": "v",
+              "type": "*",
+              "optional": false,
+              "default": null,
+              "desc": "A stored field value."
+            }
+          ],
+          "returns": {
+            "type": "boolean",
+            "desc": "True for a string — the only form an expression takes."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "isValidParamName",
+          "qualified": "isValidParamName",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 53,
+          "signature": [
+            "name"
+          ],
+          "documented": true,
+          "summary": "Whether a name may be used for a parameter.",
+          "description": "Whether a name may be used for a parameter.\n\nAn identifier that does not collide with a constant or a function name,\nso an expression can never be ambiguous about what a name refers to.",
+          "params": [
+            {
+              "name": "name",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "The proposed name."
+            }
+          ],
+          "returns": {
+            "type": "boolean",
+            "desc": "True when the name is usable."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "parseExpression",
+          "qualified": "parseExpression",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 67,
+          "signature": [
+            "src"
+          ],
+          "documented": true,
+          "summary": "Parse an expression and check it uses only the permitted language.",
+          "description": "Parse an expression and check it uses only the permitted language.",
+          "params": [
+            {
+              "name": "src",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "The expression text."
+            }
+          ],
+          "returns": {
+            "type": "{node: object|null, symbols: string[], error: string|null}",
+            "desc": "The parsed tree, the parameter names it references, and an error when it does not parse or uses anything outside the language."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "evaluateParams",
+          "qualified": "evaluateParams",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 115,
+          "signature": [
+            "params"
+          ],
+          "documented": true,
+          "summary": "Evaluate the project's named parameters, in dependency order.",
+          "description": "Evaluate the project's named parameters, in dependency order.\n\nParameters may reference each other. A reference to an unknown name, a\ncycle, a duplicate or invalid name, or a result that is not a finite\nnumber is reported, and that parameter (with anything depending on it) is\nleft out of `values`.",
+          "params": [
+            {
+              "name": "params",
+              "type": "Array<{name: string, value: number|string}>",
+              "optional": false,
+              "default": null,
+              "desc": "The project's `params` list."
+            }
+          ],
+          "returns": {
+            "type": "{values: Object<string, number>, errors: string[]}",
+            "desc": "Resolved values by name, and every problem found."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [
+              "params is not modified"
+            ],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "resolve",
+          "qualified": "evaluateParams > resolve",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 133,
+          "signature": [
+            "name",
+            "stack"
+          ],
+          "documented": true,
+          "summary": "Resolve one parameter, resolving its references first.",
+          "description": "Resolve one parameter, resolving its references first.",
+          "params": [
+            {
+              "name": "name",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Parameter name."
+            },
+            {
+              "name": "stack",
+              "type": "string[]",
+              "optional": false,
+              "default": null,
+              "desc": "Names being resolved above this one, for reporting a cycle."
+            }
+          ],
+          "returns": {
+            "type": "boolean",
+            "desc": "True when the parameter resolved to a finite number."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [
+              "the enclosing `values`, `state` and `errors`."
+            ],
+            "sideEffect": [],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "evaluateExpression",
+          "qualified": "evaluateExpression",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 179,
+          "signature": [
+            "src",
+            "values"
+          ],
+          "documented": true,
+          "summary": "Evaluate one field's expression against resolved parameter values.",
+          "description": "Evaluate one field's expression against resolved parameter values.",
+          "params": [
+            {
+              "name": "src",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "The expression."
+            },
+            {
+              "name": "values",
+              "type": "Object<string, number>",
+              "optional": false,
+              "default": null,
+              "desc": "Resolved parameters."
+            }
+          ],
+          "returns": {
+            "type": "{value: number, error: string|null}",
+            "desc": "The number, or an error and `NaN`."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "isNumericField",
+          "qualified": "isNumericField",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 197,
+          "signature": [
+            "type",
+            "field"
+          ],
+          "documented": true,
+          "summary": "Whether a node field is numeric, and so may hold an expression.",
+          "description": "Whether a node field is numeric, and so may hold an expression.",
+          "params": [
+            {
+              "name": "type",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Node type."
+            },
+            {
+              "name": "field",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Param name."
+            }
+          ],
+          "returns": {
+            "type": "boolean",
+            "desc": "True when the field's default is a number, or it is a numeric field that defaults to `null`."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "resolveProject",
+          "qualified": "resolveProject",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 215,
+          "signature": [
+            "proj"
+          ],
+          "documented": true,
+          "summary": "Replace every expression in a project with its value.",
+          "description": "Replace every expression in a project with its value.\n\nCovers node params, tap positions, the master level, channel volts and\noutput resistance, DSP delay and filter values, analysis ranges and probe\npositions. Anything that cannot be resolved is reported with where it is,\nand left as `NaN` so a caller that ignores the errors still cannot mistake\nit for a real value.",
+          "params": [
+            {
+              "name": "proj",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "A v3 project (see `migrateProject`)."
+            }
+          ],
+          "returns": {
+            "type": "{project: object, values: Object<string, number>, errors: string[]}",
+            "desc": "A copy holding only numbers, the resolved parameters, and every problem found."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [
+              "proj is not modified"
+            ],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "num",
+          "qualified": "resolveProject > num",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 225,
+          "signature": [
+            "v",
+            "where"
+          ],
+          "documented": true,
+          "summary": "Resolve one value if it is an expression.",
+          "description": "Resolve one value if it is an expression.",
+          "params": [
+            {
+              "name": "v",
+              "type": "*",
+              "optional": false,
+              "default": null,
+              "desc": "The stored value."
+            },
+            {
+              "name": "where",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Location used in any error message."
+            }
+          ],
+          "returns": {
+            "type": "*",
+            "desc": "The number for an expression; anything else unchanged."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [
+              "the enclosing `errors`."
+            ],
+            "sideEffect": [],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        }
+      ]
+    },
+    {
+      "file": "src/schema/toLegacy.js",
+      "module": {
+        "summary": "Translate a v3 project into the form the legacy solver reads.",
+        "description": "Translate a v3 project into the form the legacy solver reads.\n\nThe legacy engine (`src/engine/solver.js`) walks the graph as a tree from\neach driver, so it only understands directed edges from an output handle to\nan input handle, one drive voltage, and per-element `Q`. Anything a v3\nproject can say that it cannot is refused here with a message pointing at\nthe SPICE engine, rather than being quietly approximated."
+      },
+      "constants": [],
+      "methods": [
+        {
+          "name": "legacyHandle",
+          "qualified": "legacyHandle",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 24,
+          "signature": [
+            "node",
+            "handle"
+          ],
+          "documented": true,
+          "summary": "Map a v3 handle to its legacy name.",
+          "description": "Map a v3 handle to its legacy name.",
+          "params": [
+            {
+              "name": "node",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "The node the handle belongs to."
+            },
+            {
+              "name": "handle",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "The v3 handle."
+            }
+          ],
+          "returns": {
+            "type": "string",
+            "desc": "The legacy handle name."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "orient",
+          "qualified": "orient",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 36,
+          "signature": [
+            "a",
+            "ha",
+            "b",
+            "hb"
+          ],
+          "documented": true,
+          "summary": "Orient one undirected v3 edge the way the legacy engine needs it.",
+          "description": "Orient one undirected v3 edge the way the legacy engine needs it.",
+          "params": [
+            {
+              "name": "a",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "One end's node."
+            },
+            {
+              "name": "ha",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "That end's handle, legacy-named."
+            },
+            {
+              "name": "b",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "The other end's node."
+            },
+            {
+              "name": "hb",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "That end's handle, legacy-named."
+            }
+          ],
+          "returns": {
+            "type": "object|null",
+            "desc": "`{source, sourceHandle, target, targetHandle}`, or `null` when neither orientation is a legacy output-to-input edge."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "out",
+          "qualified": "orient > out",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 45,
+          "signature": [
+            "n",
+            "h"
+          ],
+          "documented": true,
+          "summary": "Whether a handle is a legacy output.",
+          "description": "Whether a handle is a legacy output.",
+          "params": [
+            {
+              "name": "n",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "Node."
+            },
+            {
+              "name": "h",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Legacy handle name."
+            }
+          ],
+          "returns": {
+            "type": "boolean",
+            "desc": "True for an output."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "inp",
+          "qualified": "orient > inp",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 54,
+          "signature": [
+            "n",
+            "h"
+          ],
+          "documented": true,
+          "summary": "Whether a handle is a legacy input.",
+          "description": "Whether a handle is a legacy input.",
+          "params": [
+            {
+              "name": "n",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "Node."
+            },
+            {
+              "name": "h",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Legacy handle name."
+            }
+          ],
+          "returns": {
+            "type": "boolean",
+            "desc": "True for an input."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "toLegacy",
+          "qualified": "toLegacy",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 69,
+          "signature": [
+            "proj"
+          ],
+          "documented": true,
+          "summary": "Convert a resolved v3 project into the legacy serialized form.",
+          "description": "Convert a resolved v3 project into the legacy serialized form.",
+          "params": [
+            {
+              "name": "proj",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "A v3 project with expressions resolved."
+            }
+          ],
+          "returns": {
+            "type": "{nodes: object[], edges: object[], settings: object}",
+            "desc": "The legacy project, ready for `hydrateProject`."
+          },
+          "throws": [
+            {
+              "type": "Error",
+              "desc": "When the project uses anything the legacy engine cannot represent. Every reason is on the error's `projectErrors` property."
+            }
+          ],
+          "contract": {
+            "pre": [],
+            "post": [
+              "proj is not modified"
+            ],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "need",
+          "qualified": "toLegacy > need",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 78,
+          "signature": [
+            "msg"
+          ],
+          "documented": true,
+          "summary": "Record a reason the legacy engine cannot run this project.",
+          "description": "Record a reason the legacy engine cannot run this project.",
+          "params": [
+            {
+              "name": "msg",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "What it cannot represent."
+            }
+          ],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [
+              "the enclosing `why` list."
+            ],
+            "sideEffect": [],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        }
+      ]
+    },
+    {
+      "file": "src/schema/validate.js",
+      "module": {
+        "summary": "Structural checks on a resolved v3 project.",
+        "description": "Structural checks on a resolved v3 project.\n\nTwo severities, and the line between them is deliberate. An *error* is\nsomething that cannot be simulated at all — a missing driver, an edge to a\nnode that does not exist, a volume of zero. A *warning* is something that\ncan be simulated but is physically questionable, or may not be what the\nuser meant; it never blocks a run. Warnings are keyed by node id so the\neditor can show each one on the node it concerns."
+      },
+      "constants": [],
+      "methods": [
+        {
+          "name": "nodeHandles",
+          "qualified": "nodeHandles",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 19,
+          "signature": [
+            "node"
+          ],
+          "documented": true,
+          "summary": "Every handle a node exposes, taps included.",
+          "description": "Every handle a node exposes, taps included.",
+          "params": [
+            {
+              "name": "node",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "A v3 node."
+            }
+          ],
+          "returns": {
+            "type": "string[]",
+            "desc": "Handle names an edge may use on it."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "loadLeaves",
+          "qualified": "loadLeaves",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 33,
+          "signature": [
+            "tree",
+            "out"
+          ],
+          "documented": true,
+          "summary": "Collect the driver ids at the leaves of a series/parallel load tree.",
+          "description": "Collect the driver ids at the leaves of a series/parallel load tree.",
+          "params": [
+            {
+              "name": "tree",
+              "type": "object|null",
+              "optional": false,
+              "default": null,
+              "desc": "`{parallel: [...]}`, `{series: [...]}` or `{driver: id}`."
+            },
+            {
+              "name": "out",
+              "type": "string[]",
+              "optional": true,
+              "default": null,
+              "desc": "Accumulator."
+            }
+          ],
+          "returns": {
+            "type": "string[]",
+            "desc": "Driver ids in tree order, duplicates included."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "driverChannels",
+          "qualified": "driverChannels",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 54,
+          "signature": [
+            "proj"
+          ],
+          "documented": true,
+          "summary": "Which channel drives each driver node.",
+          "description": "Which channel drives each driver node.\n\nA channel's explicit load tree claims its leaves. The one channel whose\n`load` is `null` takes every driver no tree claimed, in parallel — which is\nwhat keeps a newly added driver driven without anyone editing a tree. A\ndriver claimed by no channel is undriven.",
+          "params": [
+            {
+              "name": "proj",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "A v3 project."
+            }
+          ],
+          "returns": {
+            "type": "Map<string, string>",
+            "desc": "Driver node id → channel id."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "endArea",
+          "qualified": "endArea",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 83,
+          "signature": [
+            "node",
+            "handle"
+          ],
+          "documented": true,
+          "summary": "The area a node presents at one of its handles, cm², for the throat-chamber check.",
+          "description": "The area a node presents at one of its handles, cm², for the throat-chamber check.",
+          "params": [
+            {
+              "name": "node",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "A v3 node."
+            },
+            {
+              "name": "handle",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "The handle."
+            }
+          ],
+          "returns": {
+            "type": "number|null",
+            "desc": "Area in cm², or `null` where the handle has no meaningful face area (a tap enters from the side)."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "validateProject",
+          "qualified": "validateProject",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 103,
+          "signature": [
+            "proj"
+          ],
+          "documented": true,
+          "summary": "Check a resolved v3 project for anything that prevents or questions a run.",
+          "description": "Check a resolved v3 project for anything that prevents or questions a run.",
+          "params": [
+            {
+              "name": "proj",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "A v3 project whose expressions are already resolved (see `resolveProject`)."
+            }
+          ],
+          "returns": {
+            "type": "{errors: string[], warnings: Object<string, string[]>}",
+            "desc": "Blocking errors, and warnings keyed by node id."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [
+              "proj is not modified"
+            ],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "warn",
+          "qualified": "validateProject > warn",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 114,
+          "signature": [
+            "id",
+            "msg"
+          ],
+          "documented": true,
+          "summary": "Record a warning against a node.",
+          "description": "Record a warning against a node.",
+          "params": [
+            {
+              "name": "id",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Node id."
+            },
+            {
+              "name": "msg",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "The warning."
+            }
+          ],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [
+              "the enclosing `warnings`."
+            ],
+            "sideEffect": [],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "connected",
+          "qualified": "validateProject > connected",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 157,
+          "signature": [
+            "id",
+            "h"
+          ],
+          "documented": true,
+          "summary": "Whether a handle has anything attached.",
+          "description": "Whether a handle has anything attached.",
+          "params": [
+            {
+              "name": "id",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Node id."
+            },
+            {
+              "name": "h",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Handle name."
+            }
+          ],
+          "returns": {
+            "type": "boolean",
+            "desc": "True when connected."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [
+              "the enclosing `conns` index."
+            ],
+            "pure": false
+          },
+          "other": []
+        }
+      ]
+    },
+    {
+      "file": "src/schema/version.js",
+      "module": {
+        "summary": "Project file format, version 3: the defaults every loader fills from.",
+        "description": "Project file format, version 3: the defaults every loader fills from.\n\nA v3 project is plain JSON:\n\n  { schemaVersion, app, name, modified,\n    air, params, nodes, edges, wiring, analyses, probes, components, display }\n\n`nodes` and `edges` are the acoustic graph. `wiring` holds the amplifier\nchannels that drive it. `analyses` says what to simulate, `probes` what to\nmeasure beyond the automatic outputs, and `display` how to show it. Numeric\nfields anywhere may hold an expression over the named `params` instead of a\nnumber — see `src/schema/params.js`.\n\nUnits in the file are display units (cm, L, cm², g, mm/N, mH); conversion to\nSI happens only when a netlist is built."
+      },
+      "constants": [
+        {
+          "name": "SCHEMA_VERSION",
+          "line": 26,
+          "shape": {
+            "kind": "literal",
+            "value": 3
+          },
+          "summary": "Version of the `.acousim.json` project format this build reads and writes.",
+          "description": "Version of the `.acousim.json` project format this build reads and writes.\n\nv2 changed the meaning of `ecFactor`. v3 splits `settings` into `analyses`,\n`wiring` and `display`, replaces per-element `Q` with physical loss\nparameters, gives passive radiators two faces, gives waveguides a solid\nangle per end, and adds taps, named parameters, probes and components.\n`migrateProject` carries any v1 or v2 file forward in one step."
+        },
+        {
+          "name": "DEFAULT_PARAMS",
+          "line": 39,
+          "shape": {
+            "kind": "object",
+            "keys": [
+              "driver",
+              "chamber",
+              "waveguide",
+              "pr",
+              "radiation"
+            ],
+            "nested": {
+              "driver": [
+                "Fs",
+                "Qts",
+                "Qes",
+                "Qms",
+                "Vas",
+                "Re",
+                "Bl",
+                "Mms",
+                "Cms",
+                "Sd",
+                "Le",
+                "LeExp",
+                "Xmax",
+                "Rms",
+                "count",
+                "wiring",
+                "label"
+              ],
+              "chamber": [
+                "volume",
+                "length",
+                "shape",
+                "stuffing",
+                "leakQL",
+                "leakHz",
+                "taps",
+                "label"
+              ],
+              "waveguide": [
+                "S1",
+                "S2",
+                "length",
+                "flare",
+                "ecFactor",
+                "throatSpace",
+                "mouthSpace",
+                "loss",
+                "taps",
+                "label"
+              ],
+              "pr": [
+                "Mmd",
+                "Cms",
+                "Rms",
+                "Sd",
+                "addedMass",
+                "count",
+                "label"
+              ],
+              "radiation": [
+                "space",
+                "label"
+              ]
+            }
+          },
+          "summary": "Default params for each node type, in display units.",
+          "description": "Default params for each node type, in display units.\n\nDoubles as the node-type registry: a type absent from this map is unknown,\nand every saved node is merged over its entry so a file written by an older\nbuild gains any parameter added since. A field whose default is a number is\nnumeric, which is what decides where an expression may stand in for a value.\n\n`leakQL: null` is a sealed chamber. `loss` scales a waveguide's derived wall\nloss — 1 is the physical estimate, 0 is lossless."
+        },
+        {
+          "name": "NODE_HANDLES",
+          "line": 64,
+          "shape": {
+            "kind": "object",
+            "keys": [
+              "driver",
+              "chamber",
+              "waveguide",
+              "pr",
+              "radiation"
+            ]
+          },
+          "summary": "The handles each node type exposes, taps aside.",
+          "description": "The handles each node type exposes, taps aside.\n\nConnections carry no direction, so these are simply the names an edge may\nuse. A waveguide or chamber also exposes `tap:<id>` for each entry in its\n`taps` list."
+        },
+        {
+          "name": "DEFAULT_ANALYSIS",
+          "line": 79,
+          "shape": {
+            "kind": "object",
+            "keys": [
+              "id",
+              "type",
+              "fmin",
+              "fmax",
+              "npts",
+              "masking",
+              "nlEnabled"
+            ]
+          },
+          "summary": "The analysis a new project runs: one frequency sweep.",
+          "description": "The analysis a new project runs: one frequency sweep.\n\n`masking` swaps every chamber's transmission line for a lumped volume.\n`nlEnabled` is the legacy engine's large-signal mode, carried until\ntransient analysis replaces it."
+        },
+        {
+          "name": "DEFAULT_CHANNEL",
+          "line": 90,
+          "shape": {
+            "kind": "object",
+            "keys": [
+              "id",
+              "label",
+              "volts",
+              "outputOhms",
+              "dsp",
+              "load"
+            ],
+            "nested": {
+              "dsp": [
+                "polarity",
+                "delayMs",
+                "filters"
+              ]
+            }
+          },
+          "summary": "The amplifier channel a new project drives its drivers with.",
+          "description": "The amplifier channel a new project drives its drivers with.\n\n`volts` is the channel's output at master 0 dB — its gain. `load: null`\nmeans the default wiring, every driver node in parallel, which is what\nkeeps a newly added driver driven without anyone editing a tree."
+        },
+        {
+          "name": "DEFAULT_WIRING",
+          "line": 99,
+          "shape": {
+            "kind": "object",
+            "keys": [
+              "masterDb",
+              "channels"
+            ]
+          },
+          "summary": "Default wiring: a master level and one channel.",
+          "description": "Default wiring: a master level and one channel."
+        },
+        {
+          "name": "DEFAULT_DISPLAY",
+          "line": 107,
+          "shape": {
+            "kind": "object",
+            "keys": [
+              "vThreshold",
+              "unwrapPhase",
+              "delayOffset",
+              "nominalOhms"
+            ]
+          },
+          "summary": "Default display preferences — nothing here changes a simulation.",
+          "description": "Default display preferences — nothing here changes a simulation.\n\n`nominalOhms` is the impedance the drive-level control uses to show watts\nalongside volts, until each channel derives its load from its wiring."
+        },
+        {
+          "name": "DEFAULT_AIR",
+          "line": 114,
+          "shape": {
+            "kind": "object",
+            "keys": [
+              "temperatureC",
+              "altitudeM"
+            ]
+          },
+          "summary": "Default air: 20 °C at sea level. Reserved — not yet read by any engine.",
+          "description": "Default air: 20 °C at sea level. Reserved — not yet read by any engine."
+        }
+      ],
+      "methods": []
     },
     {
       "file": "src/selection.js",
@@ -24036,7 +25960,7 @@
       "constants": [
         {
           "name": "SNAPSHOT_LIMIT",
-          "line": 124,
+          "line": 128,
           "shape": {
             "kind": "literal",
             "value": 3
@@ -24046,7 +25970,7 @@
         },
         {
           "name": "SNAPSHOT_COLORS",
-          "line": 129,
+          "line": 133,
           "shape": {
             "kind": "array",
             "length": 3,
@@ -24061,14 +25985,14 @@
         },
         {
           "name": "useStore",
-          "line": 383,
+          "line": 418,
           "shape": null,
           "summary": null,
           "description": null
         },
         {
           "name": "__internals",
-          "line": 2695,
+          "line": 2743,
           "shape": {
             "kind": "object",
             "keys": [
@@ -24091,9 +26015,10 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 62,
+          "line": 66,
           "signature": [
-            "project"
+            "project",
+            "engine"
           ],
           "documented": true,
           "summary": "Run one sweep in the simulation worker.",
@@ -24104,11 +26029,18 @@
               "type": "object",
               "optional": false,
               "default": null,
-              "desc": "A serialized project: `{nodes, edges, settings}`."
+              "desc": "A serialized v3 project."
+            },
+            {
+              "name": "engine",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Which engine should run it."
             }
           ],
           "returns": {
-            "type": "Promise<{id: number, ok: boolean, results?: object, metrics?: object|null, error?: string, projectErrors?: string[]|null}>",
+            "type": "Promise<{id: number, ok: boolean, results?: object, metrics?: object|null, warnings?: object, error?: string, projectErrors?: string[]|null}>",
             "desc": "The worker's reply."
           },
           "throws": [],
@@ -24132,7 +26064,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 75,
+          "line": 79,
           "signature": [
             "e"
           ],
@@ -24173,7 +26105,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 105,
+          "line": 109,
           "signature": [
             "ids",
             "active"
@@ -24222,7 +26154,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 140,
+          "line": 144,
           "signature": [],
           "documented": true,
           "summary": "Whether the user has already been asked where their workspace lives.",
@@ -24253,7 +26185,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 173,
+          "line": 177,
           "signature": [],
           "documented": true,
           "summary": "Load the persisted workspace, or build a first-run one.",
@@ -24284,7 +26216,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 211,
+          "line": 215,
           "signature": [],
           "documented": true,
           "summary": "Load the persisted dock layout, falling back to the default.",
@@ -24315,7 +26247,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 229,
+          "line": 233,
           "signature": [],
           "documented": true,
           "summary": "Load the user's saved layout arrangements.",
@@ -24346,7 +26278,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 249,
+          "line": 253,
           "signature": [],
           "documented": true,
           "summary": "Load the quick-bar arrangement.",
@@ -24377,7 +26309,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 298,
+          "line": 302,
           "signature": [],
           "documented": true,
           "summary": "Queue a folder write.",
@@ -24410,7 +26342,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 318,
+          "line": 322,
           "signature": [
             "type"
           ],
@@ -24445,13 +26377,73 @@
           "other": []
         },
         {
+          "name": "loadEngine",
+          "qualified": "loadEngine",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 337,
+          "signature": [],
+          "documented": true,
+          "summary": "The simulation engine this browser last chose.",
+          "description": "The simulation engine this browser last chose.\n\nA preference of the person, not a property of the project, so it lives in\nLocalStorage rather than in the file.",
+          "params": [],
+          "returns": {
+            "type": "string",
+            "desc": "The engine name; the pipeline's default when nothing valid is stored or storage is unavailable."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [
+              "LocalStorage."
+            ],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "defaultExtras",
+          "qualified": "defaultExtras",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 351,
+          "signature": [],
+          "documented": true,
+          "summary": "The editor sections of an empty project, for the initial state.",
+          "description": "The editor sections of an empty project, for the initial state.",
+          "params": [],
+          "returns": {
+            "type": "object",
+            "desc": "The `extras` of a default v3 project."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
           "name": "freeSpotNear",
           "qualified": "freeSpotNear",
           "kind": "function",
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 338,
+          "line": 369,
           "signature": [
             "spot",
             "nodes",
@@ -24516,7 +26508,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 346,
+          "line": 377,
           "signature": [
             "x",
             "y"
@@ -24565,11 +26557,13 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 365,
+          "line": 398,
           "signature": [
             "nodes",
             "edges",
-            "settings"
+            "settings",
+            "extras",
+            "engine"
           ],
           "documented": true,
           "summary": "A value that changes exactly when the simulation would produce a different result.",
@@ -24595,6 +26589,20 @@
               "optional": false,
               "default": null,
               "desc": "Sweep settings."
+            },
+            {
+              "name": "extras",
+              "type": "object",
+              "optional": true,
+              "default": null,
+              "desc": "The project sections the editor carries without controls — params, wiring, analyses, probes, components, air."
+            },
+            {
+              "name": "engine",
+              "type": "string",
+              "optional": true,
+              "default": null,
+              "desc": "The engine the result came from."
             }
           ],
           "returns": {
@@ -24620,7 +26628,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 403,
+          "line": 438,
           "signature": [
             "partial",
             "replace"
@@ -24671,7 +26679,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 486,
+          "line": 527,
           "signature": [
             "x",
             "y",
@@ -24728,7 +26736,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 497,
+          "line": 538,
           "signature": [],
           "documented": true,
           "summary": "Dismiss the context menu.",
@@ -24759,7 +26767,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 506,
+          "line": 547,
           "signature": [
             "id"
           ],
@@ -24800,7 +26808,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 517,
+          "line": 558,
           "signature": [
             "id"
           ],
@@ -24841,7 +26849,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 525,
+          "line": 566,
           "signature": [
             "id"
           ],
@@ -24882,7 +26890,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 534,
+          "line": 575,
           "signature": [
             "v",
             "section"
@@ -24931,7 +26939,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 542,
+          "line": 583,
           "signature": [
             "id"
           ],
@@ -24972,7 +26980,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 554,
+          "line": 595,
           "signature": [
             "id",
             "combos"
@@ -25021,7 +27029,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 571,
+          "line": 612,
           "signature": [
             "id",
             "combo"
@@ -25070,7 +27078,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 589,
+          "line": 630,
           "signature": [
             "id",
             "combo"
@@ -25119,7 +27127,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 596,
+          "line": 637,
           "signature": [],
           "documented": true,
           "summary": "Restore every command to its default combos.",
@@ -25150,7 +27158,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 613,
+          "line": 654,
           "signature": [
             "tree"
           ],
@@ -25191,7 +27199,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 630,
+          "line": 671,
           "signature": [
             "stackId",
             "panelId"
@@ -25240,7 +27248,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 640,
+          "line": 681,
           "signature": [
             "panelId",
             "stackId",
@@ -25297,7 +27305,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 649,
+          "line": 690,
           "signature": [
             "panelId",
             "edge"
@@ -25346,7 +27354,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 660,
+          "line": 701,
           "signature": [
             "splitId",
             "index",
@@ -25411,7 +27419,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 674,
+          "line": 715,
           "signature": [
             "panelId",
             "stackId",
@@ -25468,7 +27476,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 695,
+          "line": 736,
           "signature": [
             "panelId"
           ],
@@ -25509,7 +27517,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 712,
+          "line": 753,
           "signature": [
             "panelId"
           ],
@@ -25550,7 +27558,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 724,
+          "line": 765,
           "signature": [
             "panelId"
           ],
@@ -25591,7 +27599,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 735,
+          "line": 776,
           "signature": [],
           "documented": true,
           "summary": "Restore the default workspace arrangement.",
@@ -25622,7 +27630,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 745,
+          "line": 786,
           "signature": [
             "name"
           ],
@@ -25663,7 +27671,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 764,
+          "line": 805,
           "signature": [
             "name"
           ],
@@ -25704,7 +27712,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 788,
+          "line": 829,
           "signature": [
             "ids"
           ],
@@ -25745,7 +27753,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 804,
+          "line": 845,
           "signature": [
             "id"
           ],
@@ -25786,7 +27794,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 816,
+          "line": 857,
           "signature": [
             "id",
             "delta"
@@ -25835,7 +27843,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 830,
+          "line": 871,
           "signature": [],
           "documented": true,
           "summary": "Restore the default quick-bar arrangement.",
@@ -25866,7 +27874,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 839,
+          "line": 880,
           "signature": [
             "name"
           ],
@@ -25907,7 +27915,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 857,
+          "line": 898,
           "signature": [
             "id",
             "range"
@@ -25956,7 +27964,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 873,
+          "line": 914,
           "signature": [],
           "documented": true,
           "summary": "Record the current graph as an undo point.",
@@ -25987,7 +27995,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 886,
+          "line": 927,
           "signature": [],
           "documented": true,
           "summary": "Step back one entry in the history.",
@@ -26018,7 +28026,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 903,
+          "line": 944,
           "signature": [],
           "documented": true,
           "summary": "Step forward one entry in the history.",
@@ -26049,7 +28057,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 928,
+          "line": 969,
           "signature": [
             "changes"
           ],
@@ -26090,7 +28098,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 942,
+          "line": 983,
           "signature": [
             "changes"
           ],
@@ -26131,7 +28139,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 954,
+          "line": 995,
           "signature": [
             "conn"
           ],
@@ -26172,7 +28180,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 966,
+          "line": 1007,
           "signature": [
             "id"
           ],
@@ -26213,7 +28221,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 979,
+          "line": 1020,
           "signature": [
             "type",
             "position"
@@ -26262,7 +28270,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1009,
+          "line": 1050,
           "signature": [
             "id",
             "params"
@@ -26311,7 +28319,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1036,
+          "line": 1077,
           "signature": [
             "id"
           ],
@@ -26352,7 +28360,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1057,
+          "line": 1098,
           "signature": [
             "id",
             "name"
@@ -26401,7 +28409,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1087,
+          "line": 1128,
           "signature": [
             "id",
             "field",
@@ -26458,7 +28466,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1110,
+          "line": 1151,
           "signature": [
             "id"
           ],
@@ -26499,7 +28507,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1138,
+          "line": 1179,
           "signature": [
             "id",
             "field",
@@ -26556,7 +28564,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1162,
+          "line": 1203,
           "signature": [
             "id",
             "patch"
@@ -26605,7 +28613,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1184,
+          "line": 1225,
           "signature": [],
           "documented": true,
           "summary": "Delete the selected nodes and edges.",
@@ -26636,7 +28644,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1209,
+          "line": 1250,
           "signature": [],
           "documented": true,
           "summary": "Copy the selected nodes in place, offset down-right.",
@@ -26667,7 +28675,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1234,
+          "line": 1275,
           "signature": [],
           "documented": true,
           "summary": "Select every node on the canvas.",
@@ -26698,7 +28706,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1249,
+          "line": 1290,
           "signature": [
             "ids",
             "additive"
@@ -26747,7 +28755,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1282,
+          "line": 1323,
           "signature": [],
           "documented": true,
           "summary": "Copy the selected nodes and their internal edges to the in-app clipboard.",
@@ -26778,7 +28786,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1308,
+          "line": 1349,
           "signature": [],
           "documented": true,
           "summary": "Copy the selection, then delete it.",
@@ -26809,7 +28817,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1329,
+          "line": 1370,
           "signature": [
             "at"
           ],
@@ -26850,7 +28858,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1377,
+          "line": 1418,
           "signature": [
             "type"
           ],
@@ -26891,7 +28899,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1393,
+          "line": 1434,
           "signature": [
             "delta"
           ],
@@ -26932,7 +28940,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1406,
+          "line": 1447,
           "signature": [],
           "documented": true,
           "summary": "Force a resimulation even though nothing has changed.",
@@ -26963,7 +28971,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1419,
+          "line": 1460,
           "signature": [
             "patch"
           ],
@@ -27004,7 +29012,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1435,
+          "line": 1476,
           "signature": [
             "field",
             "value"
@@ -27053,7 +29061,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1468,
+          "line": 1509,
           "signature": [],
           "documented": true,
           "summary": "Freeze the current result as a labelled reference overlay.",
@@ -27084,7 +29092,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1504,
+          "line": 1545,
           "signature": [
             "id"
           ],
@@ -27125,7 +29133,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1516,
+          "line": 1557,
           "signature": [
             "id",
             "label"
@@ -27174,7 +29182,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1529,
+          "line": 1570,
           "signature": [
             "id"
           ],
@@ -27215,7 +29223,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1537,
+          "line": 1578,
           "signature": [
             "v"
           ],
@@ -27256,7 +29264,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1545,
+          "line": 1586,
           "signature": [
             "v"
           ],
@@ -27297,7 +29305,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1553,
+          "line": 1594,
           "signature": [
             "id"
           ],
@@ -27332,13 +29340,54 @@
           "other": []
         },
         {
+          "name": "setEngine",
+          "qualified": "setEngine",
+          "kind": "method",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 1602,
+          "signature": [
+            "engine"
+          ],
+          "documented": true,
+          "summary": "Choose which engine simulates, remember it, and resimulate.",
+          "description": "Choose which engine simulates, remember it, and resimulate.",
+          "params": [
+            {
+              "name": "engine",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "One of the pipeline's `ENGINES`; anything else is ignored."
+            }
+          ],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Writes LocalStorage and store state, and schedules a resimulation."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
           "name": "scheduleCompute",
           "qualified": "scheduleCompute",
           "kind": "method",
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1584,
+          "line": 1638,
           "signature": [],
           "documented": true,
           "summary": "Schedule a debounced simulation run.",
@@ -27369,7 +29418,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1625,
+          "line": 1678,
           "signature": [],
           "documented": true,
           "summary": "Capture the project as a plain, saveable object.",
@@ -27377,7 +29426,7 @@
           "params": [],
           "returns": {
             "type": "object",
-            "desc": "The serialized project: `{schemaVersion, app, name, modified, settings, nodes, edges}`."
+            "desc": "The serialized v3 project — see src/schema/version.js for its sections."
           },
           "throws": [],
           "contract": {
@@ -27400,13 +29449,13 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1653,
+          "line": 1701,
           "signature": [
             "proj"
           ],
           "documented": true,
           "summary": "Replace the current project with a deserialized one.",
-          "description": "Replace the current project with a deserialized one.\n\nParams are merged over the current defaults, so a project saved by an\nolder build gains any parameter added since. Edges missing an id get one,\nwhich hand-written and MCP-generated projects routinely need.\n\nHistory, redo and selection are all cleared: they describe the project\nbeing replaced and would be meaningless against the new one. Snapshots are\nnot — they belong to the workspace and are the whole point of opening\nanother file.",
+          "description": "Replace the current project with a deserialized one.\n\nThe file is first carried to the current schema by `migrateProject`,\nwhich also fills every param from the defaults, so a project saved by an\nolder build gains any parameter added since and edges missing an id get\none. A bare `{name, nodes, edges}` — a new empty file — keeps the current\nsweep, drive and display settings rather than resetting them.\n\nHistory, redo and selection are all cleared: they describe the project\nbeing replaced and would be meaningless against the new one. Snapshots are\nnot — they belong to the workspace and are the whole point of opening\nanother file.",
           "params": [
             {
               "name": "proj",
@@ -27441,7 +29490,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1678,
+          "line": 1726,
           "signature": [],
           "documented": true,
           "summary": "Download the open project as a standalone JSON file.",
@@ -27472,7 +29521,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1695,
+          "line": 1743,
           "signature": [
             "proj",
             "filename"
@@ -27521,7 +29570,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1728,
+          "line": 1776,
           "signature": [
             "ws"
           ],
@@ -27562,7 +29611,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1743,
+          "line": 1791,
           "signature": [
             "name"
           ],
@@ -27603,7 +29652,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1757,
+          "line": 1805,
           "signature": [],
           "documented": true,
           "summary": "Write the editor's current project back into its file.",
@@ -27634,7 +29683,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1775,
+          "line": 1823,
           "signature": [
             "path"
           ],
@@ -27675,7 +29724,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1791,
+          "line": 1839,
           "signature": [
             "folder"
           ],
@@ -27716,7 +29765,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1812,
+          "line": 1860,
           "signature": [
             "parent"
           ],
@@ -27757,7 +29806,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1835,
+          "line": 1883,
           "signature": [
             "from",
             "to"
@@ -27806,7 +29855,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1872,
+          "line": 1920,
           "signature": [
             "path"
           ],
@@ -27847,7 +29896,7 @@
           "exported": false,
           "async": true,
           "generator": false,
-          "line": 1904,
+          "line": 1952,
           "signature": [],
           "documented": true,
           "summary": "Download the whole workspace, and record that it happened.",
@@ -27878,7 +29927,7 @@
           "exported": false,
           "async": true,
           "generator": false,
-          "line": 1933,
+          "line": 1981,
           "signature": [
             "file"
           ],
@@ -27919,7 +29968,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1957,
+          "line": 2005,
           "signature": [
             "ws"
           ],
@@ -27960,7 +30009,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1991,
+          "line": 2039,
           "signature": [
             "paths"
           ],
@@ -28001,7 +30050,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2001,
+          "line": 2049,
           "signature": [
             "path",
             "open"
@@ -28050,7 +30099,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2015,
+          "line": 2063,
           "signature": [],
           "documented": true,
           "summary": "Collapse every folder in the explorer.",
@@ -28081,7 +30130,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2030,
+          "line": 2078,
           "signature": [
             "mode",
             "path"
@@ -28130,7 +30179,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2041,
+          "line": 2089,
           "signature": [],
           "documented": true,
           "summary": "Dismiss the explorer's inline editor.",
@@ -28161,7 +30210,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2056,
+          "line": 2104,
           "signature": [
             "paths",
             "cut"
@@ -28210,7 +30259,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2069,
+          "line": 2117,
           "signature": [
             "folder"
           ],
@@ -28251,7 +30300,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2096,
+          "line": 2144,
           "signature": [
             "path"
           ],
@@ -28292,7 +30341,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2112,
+          "line": 2160,
           "signature": [
             "from",
             "folder"
@@ -28341,7 +30390,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2134,
+          "line": 2182,
           "signature": [
             "mode",
             "parent",
@@ -28398,7 +30447,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2168,
+          "line": 2216,
           "signature": [
             "kind"
           ],
@@ -28439,7 +30488,7 @@
           "exported": false,
           "async": true,
           "generator": false,
-          "line": 2199,
+          "line": 2247,
           "signature": [
             "confirmAdopt"
           ],
@@ -28480,7 +30529,7 @@
           "exported": false,
           "async": true,
           "generator": false,
-          "line": 2232,
+          "line": 2280,
           "signature": [],
           "documented": true,
           "summary": "Renew permission on a remembered folder and open it again.",
@@ -28511,7 +30560,7 @@
           "exported": false,
           "async": true,
           "generator": false,
-          "line": 2255,
+          "line": 2303,
           "signature": [],
           "documented": true,
           "summary": "Stop keeping the workspace in a folder.",
@@ -28544,7 +30593,7 @@
           "exported": false,
           "async": true,
           "generator": false,
-          "line": 2280,
+          "line": 2328,
           "signature": [
             "handle",
             "read",
@@ -28603,7 +30652,7 @@
           "exported": false,
           "async": true,
           "generator": false,
-          "line": 2321,
+          "line": 2369,
           "signature": [
             "prune"
           ],
@@ -28646,7 +30695,7 @@
           "exported": false,
           "async": true,
           "generator": false,
-          "line": 2363,
+          "line": 2411,
           "signature": [
             "since"
           ],
@@ -28689,7 +30738,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2396,
+          "line": 2444,
           "signature": [
             "drivers"
           ],
@@ -28730,7 +30779,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2418,
+          "line": 2466,
           "signature": [
             "id"
           ],
@@ -28771,7 +30820,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2434,
+          "line": 2482,
           "signature": [
             "id"
           ],
@@ -28812,7 +30861,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2457,
+          "line": 2505,
           "signature": [
             "id"
           ],
@@ -28853,7 +30902,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2484,
+          "line": 2532,
           "signature": [
             "id"
           ],
@@ -28894,7 +30943,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2500,
+          "line": 2548,
           "signature": [
             "stackId"
           ],
@@ -28935,7 +30984,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2524,
+          "line": 2572,
           "signature": [
             "panelId",
             "stackId"
@@ -28984,7 +31033,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2544,
+          "line": 2592,
           "signature": [
             "id"
           ],
@@ -29025,7 +31074,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2555,
+          "line": 2603,
           "signature": [
             "id"
           ],
@@ -29066,7 +31115,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2574,
+          "line": 2622,
           "signature": [
             "patch"
           ],
@@ -29109,7 +31158,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2584,
+          "line": 2632,
           "signature": [],
           "documented": true,
           "summary": "The full shared slice, sent to a popped-out tab when it announces itself.",
@@ -29140,7 +31189,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2648,
+          "line": 2696,
           "signature": [
             "arg0"
           ],

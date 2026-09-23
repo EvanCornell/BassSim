@@ -36,7 +36,8 @@ import {
 } from '../../src/layout.js'
 import { loadBindings, findConflict } from '../../src/keymap.js'
 import { PANEL_IDS } from '../../src/panelMeta.js'
-import { SCHEMA_VERSION, DEFAULT_PARAMS, DEFAULT_SETTINGS } from '../../src/engine/project.js'
+import { DEFAULT_SETTINGS } from '../../src/engine/project.js'
+import { SCHEMA_VERSION, DEFAULT_PARAMS } from '../../src/schema/version.js'
 import { SHARED_KEYS } from '../../src/popout.js'
 
 const st = () => useStore.getState()
@@ -61,9 +62,11 @@ const LS_KEYMAP = 'acousim:keymap'
 
 const ls = () => globalThis.localStorage
 
+// A v2 file: flat `settings`, which the store carries forward on load. Tests
+// that need a v3 file build one explicitly.
 function blank(over = {}) {
   return {
-    schemaVersion: SCHEMA_VERSION,
+    schemaVersion: 2,
     app: 'acousim',
     name: 'contract-test',
     modified: new Date().toISOString(),
@@ -1550,19 +1553,37 @@ test('setShowTSCalc: writes showTSCalc', () => {
   assert.equal(st().showTSCalc, false)
 })
 
-// CONTRACT: "`object` — The serialized project: `{schemaVersion, app, name,
-// modified, settings, nodes, edges}`."
+// CONTRACT: "`object` — The serialized v3 project — see src/schema/version.js
+// for its sections."
 test('serialize: returns the documented project shape', () => {
   const p = st().serialize()
   assert.deepEqual(
     Object.keys(p).slice().sort(),
-    ['app', 'edges', 'modified', 'name', 'nodes', 'schemaVersion', 'settings'].sort(),
+    ['air', 'analyses', 'app', 'components', 'display', 'edges', 'modified', 'name', 'nodes',
+      'params', 'probes', 'schemaVersion', 'wiring'].sort(),
   )
   assert.equal(p.schemaVersion, SCHEMA_VERSION)
   assert.equal(p.name, st().projectName, 'the project name is carried through')
   assert.ok(Array.isArray(p.nodes))
   assert.ok(Array.isArray(p.edges))
-  assert.equal(typeof p.settings, 'object')
+  assert.ok(Array.isArray(p.analyses) && p.analyses.length === 1)
+  assert.ok(Array.isArray(p.wiring.channels) && p.wiring.channels.length === 1)
+})
+
+// CONTRACT (serialize, loadSerialized): the editor's flat settings land in the
+// first analysis, the first channel and the display section, and come back.
+test('serialize: settings round-trip through the v3 sections', () => {
+  st().loadSerialized(blank({ settings: { ...DEFAULT_SETTINGS, fmin: 15, npts: 300, voltage: 8, rg: 0.2, vThreshold: 20 } }))
+  const p = st().serialize()
+  assert.equal(p.analyses[0].fmin, 15)
+  assert.equal(p.analyses[0].npts, 300)
+  assert.equal(p.wiring.channels[0].volts, 8)
+  assert.equal(p.wiring.channels[0].outputOhms, 0.2)
+  assert.equal(p.display.vThreshold, 20)
+  st().loadSerialized(p)
+  assert.equal(st().settings.fmin, 15)
+  assert.equal(st().settings.voltage, 8)
+  assert.equal(st().settings.rg, 0.2)
 })
 
 // CONTRACT: "Node positions are included — they are editor state, but losing
@@ -1599,8 +1620,8 @@ test('loadSerialized: replaces nodes, edges, settings and name', () => {
   assert.equal(st().projectName, 'loaded')
 })
 
-// CONTRACT: "Params are merged over the current defaults, so a project saved by
-// an older build gains any parameter added since."
+// CONTRACT: "which also fills every param from the defaults, so a project saved
+// by an older build gains any parameter added since"
 test('loadSerialized: params are merged over the current defaults', () => {
   st().loadSerialized(blank({
     nodes: [{ id: 'x1', type: T_DRIVER, position: { x: 0, y: 0 }, params: {} }],

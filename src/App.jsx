@@ -27,7 +27,7 @@ const DEMO = {
   nodes: [
     { id: 'drv1', type: 'driver', position: { x: 260, y: 40 }, params: { label: 'Driver' } },
     { id: 'rad1', type: 'radiation', position: { x: 520, y: 40 }, params: { space: 'half', label: 'Front radiation' } },
-    { id: 'ch1', type: 'chamber', position: { x: 40, y: 170 }, params: { volume: 60, length: 50, Q: 30, label: 'Box 60 L' } },
+    { id: 'ch1', type: 'chamber', position: { x: 40, y: 170 }, params: { volume: 60, length: 50, label: 'Box 60 L' } },
     { id: 'wg1', type: 'waveguide', position: { x: 40, y: 330 }, params: { S1: 100, S2: 100, length: 25, flare: 'conical', label: 'Port' } },
     { id: 'rad2', type: 'radiation', position: { x: 40, y: 500 }, params: { space: 'half', label: 'Port radiation' } },
   ],

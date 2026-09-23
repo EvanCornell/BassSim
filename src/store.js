@@ -26,7 +26,10 @@
 
 import { create } from 'zustand'
 import { applyNodeChanges, applyEdgeChanges, addEdge } from 'reactflow'
-import { SCHEMA_VERSION, DEFAULT_PARAMS, migrateParams } from './engine/project'
+import { SCHEMA_VERSION, DEFAULT_PARAMS } from './schema/version'
+import { migrateProject } from './schema/migrate'
+import { toEditor, fromEditor } from './schema/editor'
+import { ENGINES, DEFAULT_ENGINE } from './engine/pipeline'
 import * as L from './layout'
 import * as D from './driverParams'
 import { PANEL_META, PANEL_IDS } from './panelMeta'
@@ -55,11 +58,12 @@ const simPending = new Map()
  * be in flight without their replies being confused. Replies whose id is no
  * longer pending are dropped, which is what makes a superseded run harmless.
  *
- * @param {object} project - A serialized project: `{nodes, edges, settings}`.
- * @returns {Promise<{id: number, ok: boolean, results?: object, metrics?: object|null, error?: string, projectErrors?: string[]|null}>} The worker's reply.
+ * @param {object} project - A serialized v3 project.
+ * @param {string} engine - Which engine should run it.
+ * @returns {Promise<{id: number, ok: boolean, results?: object, metrics?: object|null, warnings?: object, error?: string, projectErrors?: string[]|null}>} The worker's reply.
  * @sideEffect Spawns the worker on first call and posts a message to it.
  */
-function simulateInWorker(project) {
+function simulateInWorker(project, engine) {
   if (!simWorker) {
     simWorker = new Worker(new URL('./engine/worker.js', import.meta.url), { type: 'module' })
     /**
@@ -82,7 +86,7 @@ function simulateInWorker(project) {
   const id = ++simReqId
   return new Promise((resolve) => {
     simPending.set(id, resolve)
-    simWorker.postMessage({ id, project })
+    simWorker.postMessage({ id, project, engine })
   })
 }
 
@@ -319,6 +323,33 @@ export const nextId = (type) => `${type}_${Date.now().toString(36)}_${idCounter+
 
 const HISTORY_LIMIT = 80
 
+const ENGINE_KEY = 'acousim:engine'
+
+/**
+ * The simulation engine this browser last chose.
+ *
+ * A preference of the person, not a property of the project, so it lives in
+ * LocalStorage rather than in the file.
+ *
+ * @returns {string} The engine name; the pipeline's default when nothing valid is stored or storage is unavailable.
+ * @reads LocalStorage.
+ */
+function loadEngine() {
+  try {
+    const v = localStorage.getItem(ENGINE_KEY)
+    if (ENGINES.includes(v)) return v
+  } catch { /* storage unavailable */ }
+  return DEFAULT_ENGINE
+}
+
+/**
+ * The editor sections of an empty project, for the initial state.
+ *
+ * @returns {object} The `extras` of a default v3 project.
+ * @pure
+ */
+const defaultExtras = () => toEditor(migrateProject({ schemaVersion: SCHEMA_VERSION })).extras
+
 // Adding several elements without moving the mouse would stack them all on
 // one point, so step down-right until the spot is clear.
 /**
@@ -359,15 +390,19 @@ function freeSpotNear(spot, nodes, step = 34, limit = 40) {
  * @param {Array<object>} nodes - Graph nodes.
  * @param {Array<object>} edges - Graph edges.
  * @param {object} settings - Sweep settings.
+ * @param {object} [extras] - The project sections the editor carries without controls — params, wiring, analyses, probes, components, air.
+ * @param {string} [engine] - The engine the result came from.
  * @returns {string} A JSON signature, compared by equality against the last solved one.
  * @pure
  */
-function graphSignature(nodes, edges, settings) {
+function graphSignature(nodes, edges, settings, extras = {}, engine = '') {
   return JSON.stringify([
     nodes.map((n) => [n.id, n.type, n.data.params]),
     edges.map((e) => [e.source, e.sourceHandle, e.target, e.targetHandle]),
     settings.fmin, settings.fmax, settings.npts, settings.voltage, settings.rg, settings.masking,
     settings.nlEnabled,
+    extras.params, extras.wiring, extras.analyses, extras.probes, extras.components, extras.air,
+    engine,
   ])
 }
 
@@ -456,6 +491,12 @@ export const useStore = create((rawSet, get) => {
     vThreshold: 17, masking: false, unwrapPhase: true, delayOffset: 0,
     nlEnabled: false,
   },
+  // The v3 sections the editor has no controls for yet — named params, the
+  // full wiring, analyses beyond the first, probes, components, air. Carried
+  // so a project round-trips intact; see src/schema/editor.js.
+  projectExtras: defaultExtras(),
+  // Which engine simulates: a preference of this browser, not of the project.
+  engine: loadEngine(),
   // ---- dockable workspace ----
   // `layout` is the tree from src/layout.js; every mutation goes through
   // layoutOps so persistence happens in exactly one place.
@@ -979,7 +1020,7 @@ export const useStore = create((rawSet, get) => {
   addNode: (type, position) => {
     get().pushHistory()
     const id = nextId(type)
-    const params = { ...DEFAULT_PARAMS[type] }
+    const params = JSON.parse(JSON.stringify(DEFAULT_PARAMS[type]))
     // A new node arrives selected — and alone in the selection — so it can be
     // copied, nudged or deleted straight away without clicking it first.
     const node = { id, type, position, data: { params }, selected: true }
@@ -1343,7 +1384,7 @@ export const useStore = create((rawSet, get) => {
         type: n.type,
         position: { x: n.position.x + dx, y: n.position.y + dy },
         selected: true,
-        data: { params: { ...DEFAULT_PARAMS[n.type], ...JSON.parse(JSON.stringify(n.params)) } },
+        data: { params: JSON.parse(JSON.stringify({ ...DEFAULT_PARAMS[n.type], ...n.params })) },
       }
     })
     const freshEdges = clip.edges.map((e) => ({
@@ -1551,6 +1592,19 @@ export const useStore = create((rawSet, get) => {
    * @sideEffect Writes store state. The field is local to the window — `SHARED_KEYS` deliberately excludes it, so a popped-out panel keeps its own.
    */
   setSaveDriverFor: (id) => set({ saveDriverFor: id }),
+  /**
+   * Choose which engine simulates, remember it, and resimulate.
+   *
+   * @param {string} engine - One of the pipeline's `ENGINES`; anything else is ignored.
+   * @returns {void}
+   * @sideEffect Writes LocalStorage and store state, and schedules a resimulation.
+   */
+  setEngine: (engine) => {
+    if (!ENGINES.includes(engine)) return
+    try { localStorage.setItem(ENGINE_KEY, engine) } catch { /* storage unavailable */ }
+    set({ engine })
+    get().scheduleCompute()
+  },
 
   // ---- compute pipeline (debounced 150 ms) ----
   // Simulation runs in a Web Worker: the engine ships with the app, but off
@@ -1588,17 +1642,16 @@ export const useStore = create((rawSet, get) => {
     const st = get()
     if (st._computeTimer) clearTimeout(st._computeTimer)
     const timer = setTimeout(async () => {
-      const { nodes, edges, settings } = get()
+      const { nodes, edges, settings, projectExtras, projectName, engine } = get()
       if (!nodes.length) return
-      const sig = graphSignature(nodes, edges, settings)
+      const sig = graphSignature(nodes, edges, settings, projectExtras, engine)
       if (sig === get()._lastSig && get().results) return
       const token = {}
       set({ _simToken: token })
-      const reply = await simulateInWorker({
-        nodes: nodes.map((n) => ({ id: n.id, type: n.type, params: n.data.params })),
-        edges: edges.map((e) => ({ source: e.source, sourceHandle: e.sourceHandle, target: e.target, targetHandle: e.targetHandle })),
-        settings,
-      })
+      const reply = await simulateInWorker(
+        fromEditor({ name: projectName, nodes, edges, settings, extras: projectExtras }),
+        engine,
+      )
       if (get()._simToken !== token) return // a newer request superseded this one
       if (reply.ok) {
         set({ results: reply.results, metrics: reply.metrics, _lastSig: sig, simError: null })
@@ -1619,27 +1672,22 @@ export const useStore = create((rawSet, get) => {
    * export. Node positions are included — they are editor state, but losing
    * the layout of a saved graph would be worse than carrying it.
    *
-   * @returns {object} The serialized project: `{schemaVersion, app, name, modified, settings, nodes, edges}`.
+   * @returns {object} The serialized v3 project — see src/schema/version.js for its sections.
    * @sideEffect Reads the current time for the `modified` stamp.
    */
   serialize: () => {
-    const { nodes, edges, projectName, settings } = get()
-    return {
-      schemaVersion: SCHEMA_VERSION,
-      app: 'AcouSim',
-      name: projectName,
-      modified: new Date().toISOString(),
-      settings,
-      nodes: nodes.map((n) => ({ id: n.id, type: n.type, position: n.position, params: n.data.params })),
-      edges: edges.map((e) => ({ id: e.id, source: e.source, sourceHandle: e.sourceHandle, target: e.target, targetHandle: e.targetHandle })),
-    }
+    const { nodes, edges, projectName, settings, projectExtras } = get()
+    const proj = fromEditor({ name: projectName, nodes, edges, settings, extras: projectExtras })
+    return { ...proj, modified: new Date().toISOString() }
   },
   /**
    * Replace the current project with a deserialized one.
    *
-   * Params are merged over the current defaults, so a project saved by an
-   * older build gains any parameter added since. Edges missing an id get one,
-   * which hand-written and MCP-generated projects routinely need.
+   * The file is first carried to the current schema by `migrateProject`,
+   * which also fills every param from the defaults, so a project saved by an
+   * older build gains any parameter added since and edges missing an id get
+   * one. A bare `{name, nodes, edges}` — a new empty file — keeps the current
+   * sweep, drive and display settings rather than resetting them.
    *
    * History, redo and selection are all cleared: they describe the project
    * being replaced and would be meaningless against the new one. Snapshots are
@@ -1651,16 +1699,16 @@ export const useStore = create((rawSet, get) => {
    * @sideEffect Replaces store state and schedules a resimulation.
    */
   loadSerialized: (proj) => {
-    const from = Number(proj.schemaVersion) || 1
-    const nodes = (proj.nodes || []).map((n) => ({
-      id: n.id, type: n.type, position: n.position,
-      data: { params: { ...DEFAULT_PARAMS[n.type], ...migrateParams(n.type, n.params || {}, from) } },
-    }))
-    const edges = (proj.edges || []).map((e) => ({ ...e, id: e.id || `e_${e.source}_${e.target}_${Math.random().toString(36).slice(2, 7)}` }))
+    const ed = toEditor(migrateProject(proj))
+    const bare = !proj.settings && !proj.analyses && !proj.wiring && !proj.display
+    const cur = get()
     set({
-      nodes, edges,
+      nodes: ed.nodes, edges: ed.edges,
       projectName: proj.name || '',
-      settings: { ...get().settings, ...(proj.settings || {}) },
+      settings: bare ? cur.settings : { ...cur.settings, ...ed.settings },
+      projectExtras: bare
+        ? { ...ed.extras, wiring: cur.projectExtras.wiring, analyses: cur.projectExtras.analyses, display: cur.projectExtras.display }
+        : ed.extras,
       history: [], future: [], selectedNodeId: null,
     })
     get().scheduleCompute()

@@ -42,13 +42,13 @@ Anything absent from this list is local UI. The dock layout and the quick bar
 stay per-window on purpose: a popped-out tab shows one panel, not a copy of
 the workspace.
 
-Values: `nodes`, `edges`, `projectName`, `settings`, `workspace`, `activeFile`, `results`, `metrics`, `selectedNodeId`, `velocityPopupNodeId`, `simError`, `xZoom`, `clipboard`, `folderStatus`, `folderName`, `folderError`, `folderSaved`
+Values: `nodes`, `edges`, `projectName`, `settings`, `projectExtras`, `workspace`, `activeFile`, `results`, `metrics`, `selectedNodeId`, `velocityPopupNodeId`, `simError`, `xZoom`, `clipboard`, `folderStatus`, `folderName`, `folderError`, `folderSaved`
 
 ### `SIM_INPUT_KEYS`
 
 Shared keys whose change invalidates the current result and forces a resolve.
 
-Values: `nodes`, `edges`, `settings`
+Values: `nodes`, `edges`, `settings`, `projectExtras`
 
 ### `channel`
 

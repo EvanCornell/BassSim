@@ -93,7 +93,7 @@ export function ChamberNode({ id, data, selected }) {
       <Head type="chamber" label={p.label || 'Chamber'} warn={warn} />
       <div className="node-body">
         <span className="node-readout">{p.volume} L</span> · L {p.length} cm<br />
-        1st mode <span className="node-readout">{fRes.toFixed(0)} Hz</span> · Q {p.lossless ? '∞' : p.Q}
+        1st mode <span className="node-readout">{fRes.toFixed(0)} Hz</span> · {Number(p.leakQL) > 0 ? `QL ${p.leakQL}` : 'sealed'}
       </div>
       <Handle type="target" position={Position.Top} id="in" title="Inlet (toward driver)" />
       <Handle type="source" position={Position.Bottom} id="out" title="Outlet (toward load) — leave open for sealed" />
@@ -184,9 +184,12 @@ export function PRNode({ id, data, selected }) {
       <Head type="pr" label={p.label || 'Passive Radiator'} warn={warn} />
       <div className="node-body">
         Sd {p.Sd} cm² · M {p.Mmd}{p.addedMass ? `+${p.addedMass}` : ''} g<br />
-        Fs <span className="node-readout">{fs.toFixed(1)} Hz</span>
+        Fs <span className="node-readout">{fs.toFixed(1)} Hz</span>{p.count > 1 && <> · <span className="node-readout">{p.count}×</span></>}
       </div>
-      <Handle type="target" position={Position.Top} id="in" title="Mounts to a chamber face" />
+      <Handle type="target" position={Position.Top} id="rear" title="Rear face — mounts to a chamber" />
+      <Handle type="source" position={Position.Bottom} id="front" title="Front face — unconnected, it radiates as if in an infinite baffle" />
+      <span className="handle-label" style={{ top: 1, left: '54%' }}>rear</span>
+      <span className="handle-label" style={{ bottom: 1, left: '54%' }}>front</span>
     </div>
   )
 }

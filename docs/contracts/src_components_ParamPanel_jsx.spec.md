@@ -112,18 +112,16 @@ A labelled dropdown parameter bound to one node field.
 
 - Subscribes to the store. Changing it updates the node's params, which triggers a resimulation.
 
-### `QSection(props)`
+### `LeakSection(props)`
 
 - **Reachability:** UNREACHABLE
 - **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
 
-The per-node loss control: a Q value with a lossless override.
+A chamber's leakage: sealed, or a QL referred to a frequency.
 
-Every node has an independent Q applied as a complex loss term — wall
-flexure on chambers, port turbulence on waveguides, surround loss on
-passive radiators. Ticking ∞ disables loss entirely and greys the input,
-rather than expecting the user to know that a very large Q means the same
-thing.
+QL is kept as the number people already think in; the engine turns it into
+the leak resistance it implies. Ticking "sealed" removes the leak rather than
+expecting the user to know that a very large QL means the same thing.
 
 **Parameters**
 
@@ -133,7 +131,7 @@ thing.
 
 **Returns**
 
-- `React.ReactElement` — The Q control.
+- `React.ReactElement` — The leakage controls.
 
 **Side effects**
 

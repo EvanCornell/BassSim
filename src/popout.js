@@ -33,7 +33,7 @@ export const SYNC_CHANNEL = 'acousim-sync'
  * the workspace.
  */
 export const SHARED_KEYS = [
-  'nodes', 'edges', 'projectName', 'settings', 'workspace', 'activeFile',
+  'nodes', 'edges', 'projectName', 'settings', 'projectExtras', 'workspace', 'activeFile',
   'results', 'metrics',
   'selectedNodeId', 'velocityPopupNodeId', 'simError', 'xZoom', 'clipboard',
   // Where the workspace is kept. Mirrored so a popped-out explorer reports the
@@ -43,7 +43,7 @@ export const SHARED_KEYS = [
 ]
 
 /** Shared keys whose change invalidates the current result and forces a resolve. */
-export const SIM_INPUT_KEYS = ['nodes', 'edges', 'settings']
+export const SIM_INPUT_KEYS = ['nodes', 'edges', 'settings', 'projectExtras']
 
 /**
  * Every panel id this window was opened to show.

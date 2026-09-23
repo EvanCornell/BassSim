@@ -24,8 +24,12 @@ const TIPS = {
   LeExp: 'Semi-inductance exponent: 1 = pure inductor, ~0.6–0.7 with shorting rings.',
   Xmax: 'Linear excursion limit (one-way).',
   Rms: 'Mechanical resistance of the suspension.',
-  Q: 'Element loss Q: lower = more internal loss. Physical meaning depends on the element.',
-  count: 'Number of identical drivers in the array.',
+  leakQL: 'Box leakage as the familiar QL: lower = leakier. Compiled to the equivalent leak resistance at the reference frequency.',
+  leakHz: 'Frequency QL is referred to — conventionally the box tuning.',
+  loss: 'Scales the wall loss worked out from this duct’s size and shape: 1 is the physical estimate, 0 is lossless, above 1 adds loss the model misses.',
+  throatSpace: 'Solid angle the throat radiates into when nothing is connected to it; plugged closes it.',
+  mouthSpace: 'Solid angle the mouth radiates into when nothing is connected to it; plugged closes it.',
+  count: 'Number of identical units.',
   wiring: 'Electrical wiring of the array — changes Re, Le and Bl of the equivalent driver.',
   volume: 'Internal net air volume.',
   length: 'Longest internal dimension — sets the first standing-wave frequency c/2L.',
@@ -37,7 +41,7 @@ const TIPS = {
   ecFactor: 'Scales the end corrections this duct gets. Those are worked out from what each end opens into — nearly 0.85·a into a box, nothing into a duct of its own area, and nothing into open air, where the radiation impedance already carries it. 1 leaves that alone.',
   Mmd: 'Moving mass of the passive radiator cone (without air load).',
   addedMass: 'Extra mass bolted to the cone to lower its resonance.',
-  space: 'Solid angle the opening radiates into — boundary loading. On a duct it applies only when the mouth is left unconnected; plugged means it loads the circuit but emits nothing.',
+  space: 'Solid angle the opening radiates into — boundary loading.',
   label: 'Display name for this node.',
 }
 
@@ -108,42 +112,42 @@ function SelectField({ id, field, value, label, options }) {
 }
 
 /**
- * The per-node loss control: a Q value with a lossless override.
+ * A chamber's leakage: sealed, or a QL referred to a frequency.
  *
- * Every node has an independent Q applied as a complex loss term — wall
- * flexure on chambers, port turbulence on waveguides, surround loss on
- * passive radiators. Ticking ∞ disables loss entirely and greys the input,
- * rather than expecting the user to know that a very large Q means the same
- * thing.
+ * QL is kept as the number people already think in; the engine turns it into
+ * the leak resistance it implies. Ticking "sealed" removes the leak rather than
+ * expecting the user to know that a very large QL means the same thing.
  *
  * @param {object} props - Component props.
  * @param {string} props.id - Node id.
  * @param {object} props.p - The node's params.
- * @returns {React.ReactElement} The Q control.
+ * @returns {React.ReactElement} The leakage controls.
  * @sideEffect Subscribes to the store.
  */
-function QSection({ id, p }) {
+function LeakSection({ id, p }) {
   const updateParams = useStore((s) => s.updateParams)
+  const sealed = !(Number(p.leakQL) > 0)
   return (
     <>
       <div className="param-row">
-        <label title={TIPS.Q}>Q factor</label>
+        <label title={TIPS.leakQL}>Leakage QL</label>
         <input
           type="number" step="1" min="1"
-          value={p.lossless ? '' : p.Q}
-          placeholder="∞"
-          disabled={p.lossless}
+          value={sealed ? '' : p.leakQL}
+          placeholder="sealed"
+          disabled={sealed}
           onChange={(e) => {
             const v = parseFloat(e.target.value)
-            if (!Number.isNaN(v)) updateParams(id, { Q: Math.max(1, v) })
+            if (!Number.isNaN(v)) updateParams(id, { leakQL: Math.max(1, v) })
           }}
         />
         <span className="unit">
           <label style={{ display: 'flex', gap: 3, alignItems: 'center', fontSize: 10 }}>
-            <input type="checkbox" checked={!!p.lossless} onChange={(e) => updateParams(id, { lossless: e.target.checked })} />∞
+            <input type="checkbox" checked={sealed} onChange={(e) => updateParams(id, { leakQL: e.target.checked ? null : 10 })} />sealed
           </label>
         </span>
       </div>
+      {!sealed && <NumField id={id} field="leakHz" value={p.leakHz} label="QL at" unit="Hz" min="1" />}
     </>
   )
 }
@@ -366,11 +370,6 @@ function DriverForm({ node }) {
           ['single', 'Single'], ['series', 'Series'], ['parallel', 'Parallel'], ['series-parallel', 'Series-parallel'],
         ]} />
       </div>
-      <div className="panel-section">
-        <h4>Losses</h4>
-        <QSection id={id} p={p} />
-        <div style={{ fontSize: 10.5, color: 'var(--text-3)' }}>Adds mechanical loss beyond the datasheet Rms.</div>
-      </div>
     </>
   )
 }
@@ -394,10 +393,10 @@ function ChamberForm({ node }) {
       <NumField id={id} field="length" value={p.length} label="Length" unit="cm" />
       <SelectField id={id} field="shape" value={p.shape} options={[['rectangular', 'Rectangular'], ['cylindrical', 'Cylindrical']]} />
       <NumField id={id} field="stuffing" value={p.stuffing} label="Stuffing" unit="g/L" min="0" />
-      <QSection id={id} p={p} />
+      <LeakSection id={id} p={p} />
       <ProbeSection id={id} p={p} />
       <div style={{ fontSize: 10.5, color: 'var(--text-3)', lineHeight: 1.4 }}>
-        Low Q (5–10) ≈ flexible panel / car door. High Q (50+) ≈ rigid MDF.
+        Typical QL: 5–10 for a leaky box or car door, 15+ for a well-sealed enclosure.
         First standing wave at c/2L = {(344 / (2 * p.length / 100)).toFixed(0)} Hz.
       </div>
     </div>
@@ -457,6 +456,12 @@ function ProbeSection({ id, p }) {
   )
 }
 
+/** Choices for what an unconnected waveguide end opens into. */
+const END_SPACES = [
+  ['free', 'Free space 4π'], ['half', 'Half space 2π'], ['quarter', 'Quarter space π'],
+  ['eighth', 'Eighth space π/2'], ['rigid', 'Plugged (closed)'],
+]
+
 /**
  * Parameter form for a waveguide, with derived cutoff and volume readouts.
  *
@@ -479,20 +484,17 @@ function WaveguideForm({ node }) {
         ['conical', 'Conical'], ['exponential', 'Exponential'], ['parabolic', 'Parabolic'],
         ['hypex', 'Hyperbolic-exp (hypex)'], ['tractrix', 'Tractrix ≈'], ['lecleach', 'Le Cléac’h ≈'],
       ]} />
-      <SelectField id={id} field="space" value={p.space} label="Mouth radiates into" options={[
-        ['free', 'Free space 4π'], ['half', 'Half space 2π'], ['quarter', 'Quarter space π'],
-        ['eighth', 'Eighth space π/2'], ['rigid', 'Plugged (no output)'],
-      ]} />
+      <SelectField id={id} field="throatSpace" value={p.throatSpace} label="Open throat into" options={END_SPACES} />
+      <SelectField id={id} field="mouthSpace" value={p.mouthSpace} label="Open mouth into" options={END_SPACES} />
       <NumField id={id} field="ecFactor" value={p.ecFactor} label="End corr. ×" step="0.05" min="0" />
-      <QSection id={id} p={p} />
+      <NumField id={id} field="loss" value={p.loss} label="Wall loss ×" step="0.1" min="0" />
       <div style={{ fontSize: 11, color: 'var(--text-2)', marginBottom: 4 }}>
         Internal volume: <b>{(waveguideVolume(p.flare, p.S1 * 1e-4, p.S2 * 1e-4, p.length / 100) * 1000).toFixed(2)} L</b>
       </div>
       <div style={{ fontSize: 10.5, color: 'var(--text-3)' }}>
-        Set S1 = S2 for a straight port. Q here models port turbulence and wall loss.
-        End corrections come from what each end meets, so splitting a duct into
-        several segments does not change it. The solid angle applies only while
-        the mouth is unconnected.
+        Set S1 = S2 for a straight port. End corrections come from what each end
+        meets, so splitting a duct into several segments does not change it. An
+        end's solid angle applies only while nothing is connected to it.
       </div>
     </div>
   )
@@ -541,10 +543,7 @@ function PRForm({ node }) {
       <NumField id={id} field="Rms" value={p.Rms} unit="kg/s" step="0.1" />
       <NumField id={id} field="Sd" value={p.Sd} unit="cm²" />
       <NumField id={id} field="addedMass" value={p.addedMass} label="Added mass" unit="g" min="0" />
-      <SelectField id={id} field="space" value={p.space} label="Radiates into" options={[
-        ['free', 'Free space 4π'], ['half', 'Half space 2π'], ['quarter', 'Quarter space π'], ['eighth', 'Eighth space π/2'],
-      ]} />
-      <QSection id={id} p={p} />
+      <NumField id={id} field="count" value={p.count} label="Units" step="1" min="1" />
       <div style={{ fontSize: 11, color: 'var(--text-2)' }}>Resonance as configured: <b>{fs.toFixed(1)} Hz</b></div>
     </div>
   )

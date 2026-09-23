@@ -181,8 +181,10 @@ export default function MenuBar() {
           alert('That is a workspace, not a project. Use File ▸ Import Workspace… to open it.')
           return
         }
-        if (proj.schemaVersion !== SCHEMA_VERSION) {
-          if (!confirm(`This file uses schema v${proj.schemaVersion ?? '?'} but the app expects v${SCHEMA_VERSION}. Attempt to load anyway?`)) return
+        // Older files are carried forward on load; only a newer one may hold
+        // something this build cannot represent.
+        if (Number(proj.schemaVersion) > SCHEMA_VERSION) {
+          if (!confirm(`This file was saved by a newer AcouSim (schema v${proj.schemaVersion}); this build reads up to v${SCHEMA_VERSION}. Anything it does not understand may be lost. Load anyway?`)) return
         }
         store.importProject(proj, file.name)
       } catch {
