@@ -112,15 +112,135 @@ The AC run agreed with a hand-built reference of identical elements to 1e-13.
 7. **Nonlinear drivers and thermal** — Bl(x), Kms(x), Le(x), voice-coil
    heating; THD, compression, maximum SPL.
 
-## Schema, designed once
+## Schema v3
 
-The file format should migrate once for all of this, not once per phase:
+The file format migrates once for all of this, not once per phase. Items
+marked *provisional* are first designs, expected to change once they can be
+used; items marked *reserved* are shapes held open but not built yet.
 
-- a project-level analysis spec — which analyses, with which signals
-- source nodes on the electrical side (amplifier, filters) feeding drivers
-- per-driver channel, polarity and delay
-- reserved per-driver fields for nonlinear curves and a thermal model
-- listener position(s) for combined output
+```jsonc
+{
+  "schemaVersion": 3,
+  "app": "AcouSim", "name": "…", "modified": "…",
+  "air":       { "temperatureC": 20, "altitudeM": 0 },   // reserved
+  "params":    [ … ],          // named parameters (provisional)
+  "nodes":     [ … ],          // the acoustic graph
+  "edges":     [ … ],          // undirected joins between handles
+  "wiring":    { … },          // channels, DSP, load trees (see Graph semantics)
+  "analyses":  [ … ],          // what to simulate
+  "probes":    [ … ],          // extra outputs (provisional)
+  "components":[ … ],          // groups / sub-circuits (reserved)
+  "display":   { … }           // chart scales, phase unwrap, velocity threshold, delay offset
+}
+```
+
+Today's `settings` is split three ways: sweep range and `masking` go to
+`analyses`, drive and `rg` to `wiring`, everything else to `display`. The
+display settings no longer take part in deciding whether to resimulate.
+
+### Nodes and edges
+
+- Node shape unchanged: `{ id, type, position, params }`.
+- Edges keep React Flow's `source`/`target` fields but mean only "these two
+  handles are joined"; order carries no meaning.
+- Handles: `throat`/`mouth` (waveguide), `in`/`out` (chamber), `front`/`rear`
+  (driver), `in` (radiation, passive radiator), `tap:<id>` (waveguide and
+  chamber taps).
+- New params: `taps: [{ id, position }]` (cm from the S1/`in` end) on
+  waveguides and chambers; `throatSpace`/`mouthSpace` on waveguides (solid
+  angle or `rigid`; the old `space` migrates to `mouthSpace`); dual voice coil
+  options on drivers (`dvc: { coilOhms, coils: 'series'|'parallel'|'one' }`,
+  absent = single coil).
+- Duct loss: `Q` and `lossless` on waveguides become one `loss` multiplier on
+  a physically derived wall loss (default 1, 0 = lossless). The exact
+  migration of old `Q` values is settled when the realizable loss model is.
+- Chamber `probe`/`probePos` move to `probes`.
+- Reserved on drivers: `nl` (already present) and `thermal`.
+
+### Parameters and expressions (provisional)
+
+```jsonc
+"params": [
+  { "name": "Vb",      "value": 60,        "note": "net box volume, L" },
+  { "name": "portA",   "value": 80 },
+  { "name": "portLen", "value": "Vb / 2" }
+]
+```
+
+- Any numeric field — node params, channel volts, DSP filter values, tap
+  positions — holds either a number or an expression string, e.g.
+  `"volume": "Vb / 2"`. Text fields (labels, flare, shape) never do.
+- Expressions: arithmetic, parentheses, `pi`, `sqrt`, `min`, `max`, `abs`,
+  `log`, `exp`, and references to named params. No references to other
+  nodes' fields for now. Parsed with the mathjs parser (already a
+  dependency) restricted to those node types — no assignment, no function
+  definitions.
+- Params are plain numbers, used in the units of the field they land in.
+  They may reference each other; a cycle is an error naming the params
+  involved.
+- Evaluated in JavaScript before compiling, so the netlist holds plain
+  numbers and errors point at the field, not at SPICE.
+- The optimizer and sweeps address params by name.
+
+### Analyses
+
+```jsonc
+"analyses": [
+  { "id": "sweep", "type": "ac", "fmin": 10, "fmax": 1000, "npts": 512,
+    "masking": false,
+    "sweep": { "param": "portLen", "values": [20, 25, 30] } }   // optional overlay
+]
+```
+
+Later: `{ "type": "transient", "signal": { … }, "duration": …, "step": … }`.
+
+### Probes (provisional)
+
+Default outputs stay automatic — SPL, impedance, excursion, velocity in every
+duct. Probes add anything else:
+
+```jsonc
+"probes": [
+  { "id": "cabin",  "label": "Driver's seat", "kind": "pressure",
+    "at": { "node": "chamber_cabin", "position": 120 } },
+  { "id": "throat", "kind": "velocity", "at": { "node": "waveguide_1", "handle": "throat" } },
+  { "id": "tap1",   "kind": "pressure", "at": { "node": "waveguide_1", "handle": "tap:t1" } }
+]
+```
+
+- `kind`: `pressure` (shown as SPL), `flow`, `velocity`. Later: channel
+  `current` and `voltage`.
+- `at`: a handle (an end or a tap), or a `position` in cm along a chamber or
+  waveguide.
+- Migration: a chamber with `probe: true` becomes a pressure probe at its
+  `probePos` converted to cm.
+- Reserved: listener positions for combined output with source spacing,
+  as a probe kind holding a distance per radiating source (default 1 m).
+
+### Groups and sub-circuits (reserved)
+
+```jsonc
+"components": [{
+  "id": "tappedHorn", "name": "Tapped horn section",
+  "nodes": [ … ], "edges": [ … ],
+  "ports":  [ { "name": "drvFront", "node": "…", "handle": "tap:t1" } ],
+  "params": [ { "name": "L", "value": 250 } ]
+}]
+```
+
+An instance is a node `{ "type": "group", "params": { "component": "tappedHorn",
+"overrides": { "L": 300 } } }` whose handles are the component's port names.
+Components may nest but not recurse. The compiler flattens them (or emits
+`.subckt`). Nothing here is built until later; the shape is held so saved
+files never need a second migration for it.
+
+### Migration v1/v2 → v3
+
+One step, applied on load: settings split as above; one channel carrying the
+old voltage and `rg`, every driver node in parallel; `space` → `mouthSpace`;
+chamber probes → `probes`; `Q`/`lossless` on waveguides → `loss`; empty
+`params`, `probes`, `components`. Existing `migrateParams` (v1 → v2
+`ecFactor`) runs first.
 
 ## Graph semantics, decided
 
@@ -166,14 +286,11 @@ The file format should migrate once for all of this, not once per phase:
   Parallel: Re ÷ 4, Bl ÷ 2, Le ≈ ÷ 4 — Bl²/Re and Qes unchanged, only the
   impedance moves. One coil only: Re ÷ 2, Bl ÷ 2, Le ≈ ÷ 4, which doubles
   Qes.
-- **Wiring manager** for anything deeper: several amps or channels, series
-  connections between driver nodes, polarity per driver node, the load each
-  amp sees (nominal from the coils, minimum from the simulation); later cable
-  resistance, passive crossovers and DSP per channel. Default: one amp with
-  every driver node in parallel, which reproduces today's behaviour. Schema:
-  a `wiring` section — a list of amps, each with a series/parallel tree whose
-  leaves are driver nodes. The global voltage/impedance/power/`rg` settings
-  migrate into the default amp.
+- **Wiring manager** for anything deeper: amp channels, series/parallel
+  connections between driver nodes, per-channel DSP, the load each channel
+  sees (nominal from the coils, minimum from the simulation); later cable
+  resistance and passive crossovers. Default: one channel with every driver
+  node in parallel, which reproduces today's behaviour.
 - **Amps are channels; drive level lives on each channel.** Signal chain:
   one program signal → per-channel DSP → per-channel amp → the drivers wired
   to that channel. A channel stores one voltage: its output at master 0 dB,
