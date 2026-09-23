@@ -2,9 +2,10 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import {
   besselJ1, besselJ0, struveH1, radiationImpedance,
-  tlineMatrix, seriesMassMatrix, waveguideMatrix, chamberMatrix, combineQ,
+  tlineMatrix, seriesMassMatrix, seriesResistanceMatrix, waveguideMatrix, chamberMatrix, combineQ,
   SOLID_ANGLES,
 } from '../../src/engine/acoustics.js'
+import { C } from '../../src/engine/complex.js'
 // `C_AIR` is the documented default for `tlineMatrix`'s `c`, and ρc is the
 // characteristic impedance `radiationImpedance` returns for `anechoic`. Both
 // constants are published by src/engine/geometry.js, which is the only place
@@ -517,6 +518,42 @@ test('seriesMassMatrix: @pure — equal inputs give equal outputs', () => {
     snapMat(seriesMassMatrix(12.5, 628.3)),
     snapMat(seriesMassMatrix(12.5, 628.3)),
   )
+})
+
+// CONTRACT: "Omitted, `null`, `Infinity` or ≤0 all mean lossless."
+test('seriesMassMatrix: Q omitted, null, Infinity or ≤0 is lossless', () => {
+  const ref = seriesMassMatrix(12.5, 628.3)
+  for (const Q of [undefined, null, Infinity, 0, -5]) {
+    assert.deepEqual(snapMat(seriesMassMatrix(12.5, 628.3, Q)), snapMat(ref), `Q=${Q}`)
+  }
+})
+
+// CONTRACT: "A short slice of `tlineMatrix` at attenuation `k/2Q` has a series
+// resistance of exactly `1/2Q` of its reactance, and the same ratio is used
+// here." So an end-correction slug and the same air inside the duct are lossy
+// at one rate — the property that stops a mostly-end-correction port from
+// reading as a better resonator than a long one.
+test('seriesMassMatrix: a lossy slug matches a short lossy line of the same mass', () => {
+  const S = 0.008, dx = 1e-4, w = 2 * Math.PI * 45
+  for (const Q of [3, 7, 50]) {
+    const slug = seriesMassMatrix((RHO * dx) / S, w, Q)
+    const line = tlineMatrix(S, dx, w, Q)
+    relNear(slug[0][1].re, line[0][1].re, 1e-4, `Q=${Q} R:`)
+    relNear(slug[0][1].im, line[0][1].im, 1e-4, `Q=${Q} X:`)
+    relNear(slug[0][1].re / slug[0][1].im, 1 / (2 * Q), 1e-12, `Q=${Q} R/X:`)
+  }
+})
+
+// ---------------------------------------------------------------------------
+// seriesResistanceMatrix(R)
+
+// CONTRACT: "ABCD matrix of a lumped series resistance: `[[1, R], [0, 1]]`."
+test('seriesResistanceMatrix: returns [[1, R], [0, 1]]', () => {
+  for (const R of [0, 1, 437.5]) {
+    const A = seriesResistanceMatrix(R)
+    assertIsABCD(A)
+    assert.deepEqual(snapMat(A), snapMat([[C(1, 0), C(R, 0)], [C(0, 0), C(1, 0)]]), `R=${R}`)
+  }
 })
 
 // ---------------------------------------------------------------------------

@@ -39,13 +39,13 @@ no implementation. This is the sole input to the blind contract test suite.
 | [`src/data/driver-fields.js`](src_data_driver-fields_js.spec.md) | 2 | 2 | 0 |
 | [`src/data/drivers.js`](src_data_drivers_js.spec.md) | 1 | 0 | 1 |
 | [`src/driverParams.js`](src_driverParams_js.spec.md) | 15 | 9 | 6 |
-| [`src/engine/acoustics.js`](src_engine_acoustics_js.spec.md) | 9 | 9 | 0 |
+| [`src/engine/acoustics.js`](src_engine_acoustics_js.spec.md) | 10 | 10 | 0 |
 | [`src/engine/complex.js`](src_engine_complex_js.spec.md) | 18 | 18 | 0 |
 | [`src/engine/geometry.js`](src_engine_geometry_js.spec.md) | 5 | 5 | 0 |
 | [`src/engine/metrics.js`](src_engine_metrics_js.spec.md) | 4 | 2 | 2 |
 | [`src/engine/nonlinear.js`](src_engine_nonlinear_js.spec.md) | 12 | 12 | 0 |
 | [`src/engine/project.js`](src_engine_project_js.spec.md) | 2 | 2 | 0 |
-| [`src/engine/solver.js`](src_engine_solver_js.spec.md) | 13 | 6 | 7 |
+| [`src/engine/solver.js`](src_engine_solver_js.spec.md) | 14 | 6 | 8 |
 | [`src/engine/worker.js`](src_engine_worker_js.spec.md) | 2 | 0 | 2 |
 | [`src/keymap.js`](src_keymap_js.spec.md) | 28 | 28 | 0 |
 | [`src/layout.js`](src_layout_js.spec.md) | 22 | 21 | 1 |
@@ -63,4 +63,4 @@ no implementation. This is the sole input to the blind contract test suite.
 | [`test/contracts.mjs`](test_contracts_mjs.spec.md) | 2 | 0 | 2 |
 | [`test/drivers.mjs`](test_drivers_mjs.spec.md) | 2 | 0 | 2 |
 | [`test/support/loader.mjs`](test_support_loader_mjs.spec.md) | 2 | 2 | 0 |
-| **Total** | **708** | **385** | **323** |
+| **Total** | **710** | **386** | **324** |

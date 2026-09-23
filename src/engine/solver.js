@@ -21,7 +21,7 @@ import {
 } from './complex.js'
 import {
   RHO, C_AIR, SOLID_ANGLES, radiationImpedance, waveguideMatrix, chamberMatrix,
-  junctionCorrection, seriesMassMatrix, flareCutoff, combineQ,
+  junctionCorrection, seriesMassMatrix, seriesResistanceMatrix, flareCutoff, combineQ,
 } from './acoustics.js'
 import { cycleAverage, complianceRatio, hasNL } from './nonlinear.js'
 
@@ -459,6 +459,32 @@ export function runSimulation(nodes, edges, settings) {
     return junctionCorrection(self, total)
   }
 
+  /**
+   * The radiation load a duct's mouth works into, when it opens to free air.
+   *
+   * At an open mouth the outer end correction is not a geometric term — it is
+   * the reactance of the radiation impedance itself. That air belongs to the
+   * duct as much as the air inside it, so the solver needs to see it in order
+   * to charge it the duct's loss. The load is the one the backward walk will
+   * find: the mouth's own solid angle when nothing is connected, or the
+   * radiation nodes it drives, each at its override area or the mouth's.
+   *
+   * @param {object} node - A waveguide node.
+   * @param {number} S2 - The duct's mouth area, m².
+   * @param {number} w - Angular frequency ω, rad/s.
+   * @returns {Complex|null} The radiation impedance at the mouth, Pa·s/m³, or `null` when the mouth feeds anything other than open air.
+   * @reads The adjacency index and node params.
+   */
+  const openMouthLoad = (node, S2, w) => {
+    const neighbours = adj.get(`${node.id}:mouth`) || []
+    if (!neighbours.length) return radiationImpedance(S2, node.data.params.space || 'half', w)
+    if (!neighbours.every((o) => o.node.type === 'radiation')) return null
+    return parallel(neighbours.map((o) => {
+      const rp = o.node.data.params
+      return radiationImpedance(rp.areaOverride ? rp.areaOverride * 1e-4 : S2, rp.space || 'half', w)
+    }))
+  }
+
   const nlIters = nlActive ? 4 : 1
   for (let nlIter = 0; nlIter < nlIters; nlIter++) {
   for (let i = 0; i < npts; i++) {
@@ -492,11 +518,17 @@ export function runSimulation(nodes, edges, settings) {
         const S2 = Math.max((p.S2 || 50) * 1e-4, 1e-6)
         const L = Math.max((p.length || 10) * 1e-2, 1e-4)
         const k = p.ecFactor ?? 1
+        const Q = normQ(p)
         M = waveguideMatrix({
-          S1, S2, L, flare: p.flare || 'conical', Q: normQ(p),
+          S1, S2, L, flare: p.flare || 'conical', Q,
           ecThroat: k * faceCorrection(node, 'throat'),
           ecMouth: k * faceCorrection(node, 'mouth'),
         }, w)
+        // An open mouth's outer air is the radiation reactance, which is the
+        // load's to hold and not the duct's. Its loss is the duct's, though,
+        // at the same 1/2Q of reactance the rest of the duct's air pays.
+        const open = isFinite(Q) ? openMouthLoad(node, S2, w) : null
+        if (open && open.im > 0) M = matMul(M, seriesResistanceMatrix(open.im / (2 * Q)))
         M.S1 = S1; M.S2 = S2
       } else if (node.type === 'chamber') {
         const V = Math.max((p.volume || 20) * 1e-3, 1e-5)
@@ -506,10 +538,13 @@ export function runSimulation(nodes, edges, settings) {
         // A chamber is nearly always the wider side of its junctions and so
         // carries nothing; this fires only where one is narrower than what it
         // meets, which the same rule has to cover to stay consistent.
+        // The mass is lossy at the chamber's own rate, stuffing included, as
+        // the air inside it is.
         const ecIn = faceCorrection(node, 'in')
         const ecOut = faceCorrection(node, 'out')
-        if (ecIn > 0) M = matMul(seriesMassMatrix((RHO * ecIn) / S, w), M)
-        if (ecOut > 0) M = matMul(M, seriesMassMatrix((RHO * ecOut) / S, w))
+        const qEff = combineQ(normQ(p), p.stuffing > 0 ? 30 / p.stuffing : Infinity)
+        if (ecIn > 0) M = matMul(seriesMassMatrix((RHO * ecIn) / S, w, qEff), M)
+        if (ecOut > 0) M = matMul(M, seriesMassMatrix((RHO * ecOut) / S, w, qEff))
         M.S1 = S; M.S2 = S
       }
       matCache.set(key, M)

@@ -253,7 +253,7 @@ whole sweep.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
-## UNREACHABLE (7)
+## UNREACHABLE (8)
 
 ### `validateGraph > connected(id, h)`
 
@@ -345,6 +345,34 @@ with the small area of one.
 **Returns**
 
 - `number` — Added effective length in m, zero for an open end or for the side that does not own the junction.
+
+**Reads external mutable state**
+
+- The adjacency index and node params.
+
+### `runSimulation > openMouthLoad(node, S2, w)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+The radiation load a duct's mouth works into, when it opens to free air.
+
+At an open mouth the outer end correction is not a geometric term — it is
+the reactance of the radiation impedance itself. That air belongs to the
+duct as much as the air inside it, so the solver needs to see it in order
+to charge it the duct's loss. The load is the one the backward walk will
+find: the mouth's own solid angle when nothing is connected, or the
+radiation nodes it drives, each at its override area or the mouth's.
+
+**Parameters**
+
+- `node` — `object` — A waveguide node.
+- `S2` — `number` — The duct's mouth area, m².
+- `w` — `number` — Angular frequency ω, rad/s.
+
+**Returns**
+
+- `Complex|null` — The radiation impedance at the mouth, Pa·s/m³, or `null` when the mouth feeds anything other than open air.
 
 **Reads external mutable state**
 

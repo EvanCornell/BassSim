@@ -175,6 +175,11 @@ Two normalisations while transcribing:
   same thing two ways, collapsed by `normQ`. The contract has one field:
   `Q: number | null`, where `null` means lossless. Two representations of one
   state is a bug source, and `Q: 0` read literally divides by zero.
+  A two-port's `Q` applies to all of its acoustic mass at `R/X = 1/2Q`: the
+  air inside it, the end corrections it owns, and — for a duct opening to free
+  air — the radiation reactance at its mouth. Charging only the air between
+  the ends made a short narrow port, which is mostly end correction, a better
+  resonator than a long wide one at the same tuning.
 - **`chamber.probe` is a measurement request, not a property of the box.**
   `probePos` is genuinely physical (a location), but *whether to compute
   interior SPL there* is an analysis decision. Keep the position in the model,

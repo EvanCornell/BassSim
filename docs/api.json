@@ -25,8 +25,8 @@
   },
   "stats": {
     "modules": 63,
-    "methods": 708,
-    "documented": 708
+    "methods": 710,
+    "documented": 710
   },
   "modules": [
     {
@@ -17232,14 +17232,15 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 213,
+          "line": 222,
           "signature": [
             "M",
-            "w"
+            "w",
+            "Q"
           ],
           "documented": true,
-          "summary": "ABCD matrix of a lumped series acoustic mass: `[[1, jωM], [0, 1]]`.",
-          "description": "ABCD matrix of a lumped series acoustic mass: `[[1, jωM], [0, 1]]`.\n\nModels the slug of air that moves with a port but sits outside its physical\nlength — the end correction. Applied at a waveguide's throat and mouth by\n`waveguideMatrix`.",
+          "summary": "ABCD matrix of a lumped series acoustic mass: `[[1, ωM·(1/2Q + j)], [0, 1]]`.",
+          "description": "ABCD matrix of a lumped series acoustic mass: `[[1, ωM·(1/2Q + j)], [0, 1]]`.\n\nModels the slug of air that moves with a port but sits outside its physical\nlength — the end correction. Applied at a waveguide's throat and mouth by\n`waveguideMatrix`.\n\nThe slug is lossy on the same terms as the air inside the duct it belongs\nto. A short slice of `tlineMatrix` at attenuation `k/2Q` has a series\nresistance of exactly `1/2Q` of its reactance, and the same ratio is used\nhere. Without it, a port's loss would be spread over only the part of its\nmass that lies inside the tube — and a short, narrow port, which is mostly\nend correction, would come out as a better resonator than a long wide one\ntuned to the same frequency.",
           "params": [
             {
               "name": "M",
@@ -17254,11 +17255,57 @@
               "optional": false,
               "default": null,
               "desc": "Angular frequency ω, rad/s."
+            },
+            {
+              "name": "Q",
+              "type": "number|null",
+              "optional": true,
+              "default": null,
+              "desc": "Loss factor of the element the mass belongs to. Omitted, `null`, `Infinity` or ≤0 all mean lossless."
             }
           ],
           "returns": {
             "type": "ABCD",
             "desc": "The two-port matrix for the mass."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "seriesResistanceMatrix",
+          "qualified": "seriesResistanceMatrix",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 237,
+          "signature": [
+            "R"
+          ],
+          "documented": true,
+          "summary": "ABCD matrix of a lumped series resistance: `[[1, R], [0, 1]]`.",
+          "description": "ABCD matrix of a lumped series resistance: `[[1, R], [0, 1]]`.",
+          "params": [
+            {
+              "name": "R",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Acoustic resistance, Pa·s/m³."
+            }
+          ],
+          "returns": {
+            "type": "ABCD",
+            "desc": "The two-port matrix for the resistance."
           },
           "throws": [],
           "contract": {
@@ -17279,7 +17326,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 247,
+          "line": 273,
           "signature": [
             "arg0",
             "w",
@@ -17287,7 +17334,7 @@
           ],
           "documented": true,
           "summary": "ABCD matrix of a waveguide segment — port, duct or horn.",
-          "description": "ABCD matrix of a waveguide segment — port, duct or horn.\n\nThe segment is discretized into N short uniform slices sampled at the\nmidpoint of the exact area profile, then cascaded. Stepwise-constant area\nconverges well for smooth flares because each slice is far shorter than a\nwavelength in the modelled band; 24 slices is the point past which the\nresponse stops visibly changing.\n\nEnd corrections are applied as series masses outside the sliced section, so\nthey shift the tuning without adding length to the geometry the user drew.",
+          "description": "ABCD matrix of a waveguide segment — port, duct or horn.\n\nThe segment is discretized into N short uniform slices sampled at the\nmidpoint of the exact area profile, then cascaded. Stepwise-constant area\nconverges well for smooth flares because each slice is far shorter than a\nwavelength in the modelled band; 24 slices is the point past which the\nresponse stops visibly changing.\n\nEnd corrections are applied as series masses outside the sliced section, so\nthey shift the tuning without adding length to the geometry the user drew.\nThey carry the segment's own Q, so the whole acoustic mass of the duct is\nlossy at one rate rather than only the part between its ends.",
           "params": [
             {
               "name": "seg",
@@ -17387,7 +17434,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 286,
+          "line": 312,
           "signature": [
             "arg0",
             "w",
@@ -17474,7 +17521,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 320,
+          "line": 346,
           "signature": [
             "...qs"
           ],
@@ -19736,7 +19783,7 @@
       "constants": [
         {
           "name": "__internals",
-          "line": 868,
+          "line": 903,
           "shape": {
             "kind": "object",
             "keys": [
@@ -20310,13 +20357,70 @@
           "other": []
         },
         {
+          "name": "openMouthLoad",
+          "qualified": "runSimulation > openMouthLoad",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 478,
+          "signature": [
+            "node",
+            "S2",
+            "w"
+          ],
+          "documented": true,
+          "summary": "The radiation load a duct's mouth works into, when it opens to free air.",
+          "description": "The radiation load a duct's mouth works into, when it opens to free air.\n\nAt an open mouth the outer end correction is not a geometric term — it is\nthe reactance of the radiation impedance itself. That air belongs to the\nduct as much as the air inside it, so the solver needs to see it in order\nto charge it the duct's loss. The load is the one the backward walk will\nfind: the mouth's own solid angle when nothing is connected, or the\nradiation nodes it drives, each at its override area or the mouth's.",
+          "params": [
+            {
+              "name": "node",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "A waveguide node."
+            },
+            {
+              "name": "S2",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "The duct's mouth area, m²."
+            },
+            {
+              "name": "w",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Angular frequency ω, rad/s."
+            }
+          ],
+          "returns": {
+            "type": "Complex|null",
+            "desc": "The radiation impedance at the mouth, Pa·s/m³, or `null` when the mouth feeds anything other than open air."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [
+              "The adjacency index and node params."
+            ],
+            "pure": false
+          },
+          "other": []
+        },
+        {
           "name": "getMatrix",
           "qualified": "runSimulation > getMatrix",
           "kind": "function",
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 485,
+          "line": 511,
           "signature": [
             "node",
             "Sup"
@@ -20367,7 +20471,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 544,
+          "line": 579,
           "signature": [
             "node",
             "fromHandle",
@@ -20436,7 +20540,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 630,
+          "line": 665,
           "signature": [
             "node",
             "fromHandle",

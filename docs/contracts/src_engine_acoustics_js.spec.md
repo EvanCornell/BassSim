@@ -23,7 +23,7 @@ step down halves the space: baffle against a wall, then into a corner.
 
 Keys: `free`, `half`, `quarter`, `eighth`
 
-## EXPORTED (9)
+## EXPORTED (10)
 
 ### `besselJ1(x)`
 
@@ -178,25 +178,51 @@ fraction of amplitude per wavelength at every frequency.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
-### `seriesMassMatrix(M, w)`
+### `seriesMassMatrix(M, w, Q)`
 
 - **Reachability:** EXPORTED
 - **Obtain via:** import { seriesMassMatrix } from '../../src/engine/acoustics.js'
 
-ABCD matrix of a lumped series acoustic mass: `[[1, jωM], [0, 1]]`.
+ABCD matrix of a lumped series acoustic mass: `[[1, ωM·(1/2Q + j)], [0, 1]]`.
 
 Models the slug of air that moves with a port but sits outside its physical
 length — the end correction. Applied at a waveguide's throat and mouth by
 `waveguideMatrix`.
 
+The slug is lossy on the same terms as the air inside the duct it belongs
+to. A short slice of `tlineMatrix` at attenuation `k/2Q` has a series
+resistance of exactly `1/2Q` of its reactance, and the same ratio is used
+here. Without it, a port's loss would be spread over only the part of its
+mass that lies inside the tube — and a short, narrow port, which is mostly
+end correction, would come out as a better resonator than a long wide one
+tuned to the same frequency.
+
 **Parameters**
 
 - `M` — `number` — Acoustic mass, kg/m⁴ (ρ·ΔL/S).
 - `w` — `number` — Angular frequency ω, rad/s.
+- `Q` — `number|null` _(optional)_ — Loss factor of the element the mass belongs to. Omitted, `null`, `Infinity` or ≤0 all mean lossless.
 
 **Returns**
 
 - `ABCD` — The two-port matrix for the mass.
+
+**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
+
+### `seriesResistanceMatrix(R)`
+
+- **Reachability:** EXPORTED
+- **Obtain via:** import { seriesResistanceMatrix } from '../../src/engine/acoustics.js'
+
+ABCD matrix of a lumped series resistance: `[[1, R], [0, 1]]`.
+
+**Parameters**
+
+- `R` — `number` — Acoustic resistance, Pa·s/m³.
+
+**Returns**
+
+- `ABCD` — The two-port matrix for the resistance.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
@@ -215,6 +241,8 @@ response stops visibly changing.
 
 End corrections are applied as series masses outside the sliced section, so
 they shift the tuning without adding length to the geometry the user drew.
+They carry the segment's own Q, so the whole acoustic mass of the duct is
+lossy at one rate rather than only the part between its ends.
 
 **Parameters**
 

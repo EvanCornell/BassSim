@@ -199,20 +199,44 @@ export function tlineMatrix(S, L, w, Q, c = C_AIR, extraAlpha = 0) {
 }
 
 /**
- * ABCD matrix of a lumped series acoustic mass: `[[1, jωM], [0, 1]]`.
+ * ABCD matrix of a lumped series acoustic mass: `[[1, ωM·(1/2Q + j)], [0, 1]]`.
  *
  * Models the slug of air that moves with a port but sits outside its physical
  * length — the end correction. Applied at a waveguide's throat and mouth by
  * `waveguideMatrix`.
  *
+ * The slug is lossy on the same terms as the air inside the duct it belongs
+ * to. A short slice of `tlineMatrix` at attenuation `k/2Q` has a series
+ * resistance of exactly `1/2Q` of its reactance, and the same ratio is used
+ * here. Without it, a port's loss would be spread over only the part of its
+ * mass that lies inside the tube — and a short, narrow port, which is mostly
+ * end correction, would come out as a better resonator than a long wide one
+ * tuned to the same frequency.
+ *
  * @param {number} M - Acoustic mass, kg/m⁴ (ρ·ΔL/S).
  * @param {number} w - Angular frequency ω, rad/s.
+ * @param {number|null} [Q] - Loss factor of the element the mass belongs to. Omitted, `null`, `Infinity` or ≤0 all mean lossless.
  * @returns {ABCD} The two-port matrix for the mass.
  * @pure
  */
-export function seriesMassMatrix(M, w) {
+export function seriesMassMatrix(M, w, Q) {
+  const lossy = Q && isFinite(Q) && Q > 0
   return [
-    [ONE, C(0, w * M)],
+    [ONE, C(lossy ? (w * M) / (2 * Q) : 0, w * M)],
+    [ZERO, ONE],
+  ]
+}
+
+/**
+ * ABCD matrix of a lumped series resistance: `[[1, R], [0, 1]]`.
+ *
+ * @param {number} R - Acoustic resistance, Pa·s/m³.
+ * @returns {ABCD} The two-port matrix for the resistance.
+ * @pure
+ */
+export function seriesResistanceMatrix(R) {
+  return [
+    [ONE, C(R, 0)],
     [ZERO, ONE],
   ]
 }
@@ -228,6 +252,8 @@ export function seriesMassMatrix(M, w) {
  *
  * End corrections are applied as series masses outside the sliced section, so
  * they shift the tuning without adding length to the geometry the user drew.
+ * They carry the segment's own Q, so the whole acoustic mass of the duct is
+ * lossy at one rate rather than only the part between its ends.
  *
  * @param {object} seg - Segment geometry.
  * @param {number} seg.S1 - Throat area, m².
@@ -248,12 +274,12 @@ export function waveguideMatrix({ S1, S2, L, flare, Q, ecThroat = 0, ecMouth = 0
   const prof = areaProfile(flare, S1, S2, L)
   const dx = L / N
   let M = matIdentity()
-  if (ecThroat > 0) M = matMul(M, seriesMassMatrix((RHO * ecThroat) / S1, w))
+  if (ecThroat > 0) M = matMul(M, seriesMassMatrix((RHO * ecThroat) / S1, w, Q))
   for (let i = 0; i < N; i++) {
     const S = prof((i + 0.5) * dx)
     M = matMul(M, tlineMatrix(S, dx, w, Q))
   }
-  if (ecMouth > 0) M = matMul(M, seriesMassMatrix((RHO * ecMouth) / S2, w))
+  if (ecMouth > 0) M = matMul(M, seriesMassMatrix((RHO * ecMouth) / S2, w, Q))
   return M
 }
 

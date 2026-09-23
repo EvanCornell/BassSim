@@ -845,6 +845,38 @@ test('end corrections: ecFactor scales them', () => {
   assert.ok(neutral > doubled, `expected ${neutral} > ${doubled}`)
 })
 
+// CONTRACT (seriesMassMatrix, and runSimulation > getMatrix): a duct's loss is
+// charged on all of its acoustic mass — the end corrections and the open
+// mouth's radiation reactance as well as the air inside the tube. A narrow port
+// is mostly end correction, so when only the tube was lossy it came out as the
+// better resonator: at Q = 7, 10 cm² read 0.73 dB louder at tuning than an
+// 80 cm² port tuned to the same frequency. Loss must never reward narrowing.
+test('port loss: a narrower port at the same tuning gains nothing from its loss', () => {
+  const box = (areaCm2, lenCm, Q) => {
+    const g = portedBox(lenCm, 1)
+    Object.assign(g.nodes.find((n) => n.id === 'p0').data.params, { S1: areaCm2, S2: areaCm2, Q })
+    g.settings = { ...g.settings, npts: 1200 }
+    return g
+  }
+  const splAt = (g, f) => {
+    const r = runSimulation(g.nodes, g.edges, g.settings)
+    return r.splCombined[r.freqs.indexOf(f)]
+  }
+  for (const Q of [7, 3]) {
+    const wide = box(80, 30, Q)
+    const fb = tuningOf(wide)
+    let lo = 0.05, hi = 30
+    for (let k = 0; k < 24; k++) {
+      const mid = (lo + hi) / 2
+      if (tuningOf(box(10, mid, Q)) > fb) lo = mid; else hi = mid
+    }
+    const narrow = box(10, (lo + hi) / 2, Q)
+    assert.equal(tuningOf(narrow), fb, `Q=${Q}: tuning not matched`)
+    const gain = splAt(narrow, fb) - splAt(wide, fb)
+    assert.ok(gain < 0.05, `Q=${Q}: 10 cm² reads ${gain.toFixed(2)} dB over 80 cm² at ${fb.toFixed(2)} Hz`)
+  }
+})
+
 // CONTRACT (propagateInto): "An unconnected mouth radiates into whatever the
 // node says it faces ... A plugged port ('rigid') loaded the circuit on the way
 // in and emits nothing."
