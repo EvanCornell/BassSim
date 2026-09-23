@@ -151,9 +151,18 @@ display settings no longer take part in deciding whether to resimulate.
   angle or `rigid`; the old `space` migrates to `mouthSpace`); dual voice coil
   options on drivers (`dvc: { coilOhms, coils: 'series'|'parallel'|'one' }`,
   absent = single coil).
-- Duct loss: `Q` and `lossless` on waveguides become one `loss` multiplier on
-  a physically derived wall loss (default 1, 0 = lossless). The exact
-  migration of old `Q` values is settled when the realizable loss model is.
+- Loss (decided):
+  - Waveguides: `Q` and `lossless` become one `loss` multiplier on the
+    geometry-derived boundary-layer loss (default 1, 0 = lossless).
+  - Chambers: `Q` and `lossless` become leakage, entered as
+    `leak: { ql, hz }` — the familiar QL, referred to a frequency (default
+    30 Hz, editable) and compiled to the equivalent resistor
+    `R = ql / (2π·hz·C_box)`. Absent = sealed. Chamber wall loss is derived
+    from geometry like a duct's.
+  - Migration: waveguide `Q` → `loss: 1` (the old value expressed a
+    frequency law that no longer exists), `lossless` → `loss: 0`; chamber
+    `Q` → `leak.ql` with the same number, since that is how it has been
+    used; chamber `lossless` → sealed.
 - Chamber `probe`/`probePos` move to `probes`.
 - Reserved on drivers: `nl` (already present) and `thermal`.
 
@@ -238,7 +247,7 @@ files never need a second migration for it.
 
 One step, applied on load: settings split as above; one channel carrying the
 old voltage and `rg`, every driver node in parallel; `space` → `mouthSpace`;
-chamber probes → `probes`; `Q`/`lossless` on waveguides → `loss`; empty
+chamber probes → `probes`; loss as above; empty
 `params`, `probes`, `components`. Existing `migrateParams` (v1 → v2
 `ecFactor`) runs first.
 
@@ -340,8 +349,8 @@ chamber probes → `probes`; `Q`/`lossless` on waveguides → `loss`; empty
   as independent.
 - **Loss, two mechanisms.**
   - *Linear dissipation* — energy actually lost, present in both analyses.
-    Box leakage: a fixed resistor from the chamber to outside (the real
-    meaning of QL; replaces chamber `Q` as leakage). Wall friction and heat
+    Box leakage: a fixed resistor from the chamber to outside, entered as QL
+    (replaces chamber `Q`). Wall friction and heat
     exchange in ducts and chambers: a boundary-layer loss per unit length
     rising as √f, realized as a short RL ladder (the same construction as
     skin effect in wires), derived from geometry via hydraulic radius, so
