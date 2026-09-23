@@ -59,6 +59,21 @@ Depends on the per-source identity work in the entry above.
 
 ---
 
+## Known wrong in the current solver — superseded, not to be patched
+
+The tree-walk solver mis-solves paths that split and rejoin. Five ports from
+one chamber into another are solved as five copies of the downstream chamber
+and exit port (up to 14 dB of phantom gain on a series-tuned test box). Loops
+are silently blocked. Fixed by construction in the SPICE engine
+(`docs/SPICE-PLAN.md`); until then, results on such graphs are wrong.
+
+## Modelling questions
+
+- **What an edge between two ducts means** — straight seamless join, bend, or
+  user-specified. A bend adds loss and mass and changes effective length.
+- **Neighbouring openings interact** at a shared wall; each is currently
+  treated as independent.
+
 ## Carried over
 
 - **Snapshot browser check.** Snapshots surviving project switches and

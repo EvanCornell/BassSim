@@ -60,6 +60,7 @@ Everything here must be absent from the exported tree.
 | `docs/ENGINE-CONTRACT.md` | Contract for the commercial engine |
 | `docs/analysis-metrics.md` | Paid analysis feature set |
 | `docs/BACKLOG.md` | Internal work queue and known defects |
+| `docs/SPICE-PLAN.md` | Internal engine plan |
 | `.claude/` | Agent configuration and workflow |
 | `test/contract/TRIAGE.md` | Internal audit findings |
 | `test/contract/FINDINGS.md` | Internal audit findings |
