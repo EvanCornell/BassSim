@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { useStore } from '../store'
 import { NL_PARAMS, defaultNL, evalCurve, derivedRatios, parseCurveCSV, normalizeTable, curveHasContent } from '../engine/nonlinear'
 
-// EXPERIMENTAL — large-signal T/S curve lab.
+// Driver curve editor — large-signal Bl(x), Kms(x)/Cms(x), Le(x).
 // Parametric-EQ style editor: click the curve to add a control point, drag it
 // (gain/position), tune width with the slider. Wheel zooms about the cursor,
 // shift-drag (or middle-drag) pans, Delete removes the selected point, and a
@@ -371,12 +371,13 @@ function CurveEditor({ driverId, param, nl, xmax, width, height, refv }) {
      *
      * @param {KeyboardEvent} e - The keydown event.
      * @returns {void}
-     * @sideEffect Removes the selected point, which triggers a resimulation. Ignored while a text field has focus or another panel is focused.
+     * @sideEffect Removes the selected point, which triggers a resimulation. Ignored while a text field has focus or the curve editor is not the view on screen.
      */
     const onKey = (e) => {
       const tag = e.target.tagName
       if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return
-      if (useStore.getState().focusedPanel !== 'nllab') return
+      const st = useStore.getState()
+      if (!(st.tdOpen && st.tdTab === 'nonlinear')) return
       if ((e.key === 'Delete' || e.key === 'Backspace') && selected >= 0 && curveRef.current.points?.[selected]) {
         e.preventDefault()
         removePoint(selected)
@@ -487,19 +488,72 @@ function CurveEditor({ driverId, param, nl, xmax, width, height, refv }) {
 }
 
 /**
- * The Nonlinear Lab: edit a driver's large-signal curves and see their effect.
+ * Enter a curve as polynomial coefficients, as measurement reports publish them.
  *
- * Experimental. Curves describe how Bl, Cms/Kms and Le vary with excursion;
- * the solver then iterates a quasi-linear sweep against them, which captures
- * power compression and resonance drift but produces no harmonic distortion
- * — that needs a time-domain engine.
+ * Coefficients are in the parameter's absolute units with x in mm, constant
+ * term first — Bl(x) = b0 + b1·x + b2·x² … — over the range they were fitted
+ * on. The curve becomes P(x)/P(0), held at its end values outside that range.
  *
- * @returns {React.ReactElement} The panel.
+ * @param {object} props - Component props.
+ * @param {object} props.curve - The curve being edited.
+ * @param {string} props.param - Its parameter name.
+ * @param {{v: number, unit: string}} props.refv - The driver's small-signal value, shown for comparison.
+ * @param {Function} props.setCurve - Writes a patch to the curve.
+ * @returns {React.ReactElement} The button, and its form when open.
+ * @sideEffect Holds the form's text in component state.
+ */
+function PolyButton({ curve, param, refv, setCurve }) {
+  const [open, setOpen] = useState(false)
+  const [text, setText] = useState(curve.poly ? curve.poly.coeffs.join(', ') : '')
+  const [lo, setLo] = useState(curve.poly?.min ?? -10)
+  const [hi, setHi] = useState(curve.poly?.max ?? 10)
+  const coeffs = text.split(/[\s,;]+/).filter(Boolean).map(Number)
+  const ok = coeffs.length > 1 && coeffs.every(Number.isFinite) && coeffs[0] !== 0 && Number(hi) > Number(lo)
+  return (
+    <span style={{ position: 'relative' }}>
+      <button onClick={() => setOpen(!open)}>Polynomial…</button>
+      {open && (
+        <div className="poly-pop">
+          <div style={{ fontSize: 11.5, color: 'var(--text-2)', marginBottom: 6 }}>
+            {param}(x) = k0 + k1·x + k2·x² + …, x in mm, in {refv.unit} — constant term first.
+          </div>
+          <textarea rows={3} value={text} spellCheck={false} placeholder="e.g. 15.2, -0.021, -0.0082, 0.00011"
+            onChange={(e) => setText(e.target.value)} />
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center', fontSize: 12, margin: '6px 0' }}>
+            Valid from <input type="number" value={lo} style={{ width: 60 }} onChange={(e) => setLo(e.target.value)} />
+            to <input type="number" value={hi} style={{ width: 60 }} onChange={(e) => setHi(e.target.value)} /> mm
+          </div>
+          {coeffs.length > 0 && Number.isFinite(coeffs[0]) && (
+            <div style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 6 }}>
+              k0 = {coeffs[0]} {refv.unit}; this driver's {param} is {fmtVal(refv.v)} {refv.unit}. The curve is used as a ratio of k0.
+            </div>
+          )}
+          <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
+            <button onClick={() => setOpen(false)}>Cancel</button>
+            <button className="primary" disabled={!ok} onClick={() => {
+              setCurve({ poly: { coeffs, min: Number(lo), max: Number(hi) } })
+              setOpen(false)
+            }}>Apply</button>
+          </div>
+        </div>
+      )}
+    </span>
+  )
+}
+
+/**
+ * The driver curve editor: a driver's large-signal Bl, Kms/Cms and Le curves.
+ *
+ * Curves describe how each parameter varies with excursion, as a ratio of
+ * its small-signal value. Nonlinear time-domain runs use them directly; the
+ * frequency sweep does not, since it is the small-signal model.
+ *
+ * @returns {React.ReactElement} The editor.
  * @sideEffect Subscribes to the store; edits update the driver's params.
  */
 export default function NLLab() {
   const nodes = useStore((s) => s.nodes)
-  const layoutOps = useStore((s) => s.layoutOps)
+  const closeTimeDomain = useStore((s) => s.closeTimeDomain)
   const updateParams = useStore((s) => s.updateParams)
   const results = useStore((s) => s.results)
   const drivers = nodes.filter((n) => n.type === 'driver')
@@ -525,7 +579,7 @@ export default function NLLab() {
       <div style={{ padding: 30 }}>
         <h3>Nonlinear Lab</h3>
         <p style={{ color: 'var(--text-3)' }}>Add a Driver node to the circuit first.</p>
-        <button onClick={() => layoutOps.open('canvas')}>← Back to editor</button>
+        <button onClick={closeTimeDomain}>← Back to editor</button>
       </div>
     )
   }
@@ -588,7 +642,7 @@ export default function NLLab() {
   return (
     <div ref={wrapRef} style={{ padding: '12px 20px', height: '100%', display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'hidden' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6, flexWrap: 'wrap' }}>
-        <h3 style={{ margin: 0 }}>Nonlinear Lab <span style={{ fontSize: 11, color: 'var(--amber)' }}>EXPERIMENTAL</span></h3>
+        <h3 style={{ margin: 0 }}>Driver nonlinearity</h3>
         <select value={driver.id} onChange={(e) => setDriverId(e.target.value)} style={{ width: 170 }}>
           {drivers.map((d) => <option key={d.id} value={d.id}>{d.data.params.label || d.id}</option>)}
         </select>
@@ -615,14 +669,17 @@ export default function NLLab() {
         </label>
         <span style={{ flex: 1 }} />
         <button onClick={() => fileRef.current?.click()}>Import CSV…</button>
+        <PolyButton curve={curve} param={param} refv={refv} setCurve={setCurve} />
         <input ref={fileRef} type="file" accept=".csv,.txt" style={{ display: 'none' }} onChange={importCSV} />
         {curve.table && <button className="danger" onClick={() => setCurve({ table: null })}>Clear table</button>}
-        <button onClick={() => setCurve({ points: [], table: null })}>Reset {param}(x)</button>
+        {curve.poly && <button className="danger" onClick={() => setCurve({ poly: null })}>Clear polynomial</button>}
+        <button onClick={() => setCurve({ points: [], table: null, poly: null })}>Reset {param}(x)</button>
       </div>
       <div style={{ fontSize: 11.5, color: 'var(--text-3)', marginBottom: 6 }}>
         {PARAM_INFO[param].hint}{' '}
         Reference (flat line) = small-signal {param} = <b style={{ color: 'var(--text-2)' }}>{fmtVal(refv.v)} {refv.unit}</b>; a flat curve reproduces the linear engine.
-        {curve.table && <b> Imported table active as baseline; points deform it.</b>}
+        {curve.table && !curve.poly && <b> Imported table active as baseline; points deform it.</b>}
+        {curve.poly && <b> Polynomial active as baseline (x from {curve.poly.min} to {curve.poly.max} mm, held beyond); points deform it.</b>}
         {suspConflict && <b style={{ color: 'var(--amber)' }}> Both Cms(x) and Kms(x) have content — Kms(x) takes precedence; reset one of them.</b>}
       </div>
       <CurveEditor key={driver.id + param} driverId={driver.id} param={param} nl={nl} xmax={xmax} width={size.w - 40} height={size.h} refv={refv} />
@@ -637,7 +694,7 @@ export default function NLLab() {
             <span>Fs → <b>{(p.Fs * der.Fs).toFixed(1)} Hz</b></span>
             <span>Qes → <b>{(der.Qes * 100).toFixed(0)}%</b></span>
             <span>Vas → <b>{(der.Vas * 100).toFixed(0)}%</b></span>
-            <span style={{ color: 'var(--text-3)', fontSize: 10.5 }}>Fs/Qes/Vas derive from Bl(x) & Cms(x) — consequences, not inputs.</span>
+            <span style={{ color: 'var(--text-3)', fontSize: 10.5 }}>Cycle averages at the sweep's peak excursion — a guide only; transient runs use the curves themselves.</span>
           </>
         ) : <span style={{ color: 'var(--text-3)' }}>Run a simulation to see effective large-signal parameters.</span>}
       </div>

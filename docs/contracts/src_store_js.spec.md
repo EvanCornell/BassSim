@@ -37,6 +37,16 @@ Names this module publishes that are not methods. The method contracts
 above and below refer to these by role — a command, a node type, a panel —
 so this is the vocabulary they assume.
 
+### `TD_DEFAULTS`
+
+The time-domain settings a new project starts with, per section.
+
+Keys: `linear`, `transient`, `distortion`
+
+- `linear` holds: `bandwidth`, `resolution`, `burstHz`, `burstCycles`, `csdSlices`, `csdStepMs`
+- `transient` holds: `signal`, `levelDb`, `fs`, `duration`, `bandwidth`, `nonlinear`, `compareLinear`
+- `distortion` holds: `mode`, `hz`, `levelDb`, `harmonics`, `bandwidth`, `f1`, `f2`, `points`, `levels`, `bands`, `xLimit`, `nonlinear`
+
 ### `SNAPSHOT_LIMIT`
 
 How many reference overlays a chart will carry.
@@ -58,7 +68,27 @@ Values: `#f59e0b`, `#10b981`, `#8b5cf6`
 
 Keys: `loadLayout`, `loadPresets`, `loadToolbar`, `freeSpotNear`, `graphSignature`
 
-## EXPORTED (1)
+## EXPORTED (2)
+
+### `tdSettingsOf(extras)`
+
+- **Reachability:** EXPORTED
+- **Obtain via:** import { tdSettingsOf } from '../../src/store.js'
+
+The project's time-domain settings, defaults filled in.
+
+They live in the project's `analyses` as one entry of type `timedomain`,
+so a project reopens with the settings it was last run with.
+
+**Parameters**
+
+- `extras` — `object` — The editor's extra project sections.
+
+**Returns**
+
+- `{linear: object, transient: object, distortion: object}` — The settings.
+
+**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
 ### `nextId(type)`
 
@@ -192,7 +222,7 @@ around the canvas does not re-run the sweep.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
-## STORE ACTION (113)
+## STORE ACTION (120)
 
 ### `openContextMenu(x, y, target)`
 
@@ -1654,6 +1684,131 @@ Choose which engine simulates, remember it, and resimulate.
 
 - Writes LocalStorage and store state, and schedules a resimulation.
 
+### `openTimeDomain(tab)`
+
+- **Reachability:** STORE ACTION
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().openTimeDomain(…)
+
+Open the time-domain workspace, optionally at a tab.
+
+**Parameters**
+
+- `tab` — `string` _(optional)_ — `linear`, `transient`, `distortion` or `nonlinear`.
+
+**Returns**
+
+- `void`
+
+**Side effects**
+
+- Writes store state.
+
+### `closeTimeDomain()`
+
+- **Reachability:** STORE ACTION
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().closeTimeDomain(…)
+
+Return to the editor. A running job carries on.
+
+**Returns**
+
+- `void`
+
+**Side effects**
+
+- Writes store state.
+
+### `setTdTab(tab)`
+
+- **Reachability:** STORE ACTION
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().setTdTab(…)
+
+Show one tab of the time-domain workspace.
+
+**Parameters**
+
+- `tab` — `string` — The tab.
+
+**Returns**
+
+- `void`
+
+**Side effects**
+
+- Writes store state.
+
+### `setTdSettings(section, patch)`
+
+- **Reachability:** STORE ACTION
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().setTdSettings(…)
+
+Change the project's time-domain settings for one section.
+
+**Parameters**
+
+- `section` — `'linear'|'transient'|'distortion'` — Which.
+- `patch` — `object` — Fields to merge.
+
+**Returns**
+
+- `void`
+
+**Side effects**
+
+- Writes the project's analyses; does not start a run.
+
+### `tdSignature()`
+
+- **Reachability:** STORE ACTION
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().tdSignature(…)
+
+The signature of what a time-domain result depends on — the graph, the extras and the engine.
+
+**Returns**
+
+- `string` — A signature to compare results against.
+
+**Reads external mutable state**
+
+- the project state.
+
+### `runTimeDomain(kind, mode)`
+
+- **Reachability:** STORE ACTION
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().runTimeDomain(…)
+
+Run a time-domain analysis with the project's settings for it.
+
+One job at a time: starting another cancels the one running.
+
+**Parameters**
+
+- `kind` — `'linear'|'transient'|'distortion'` — Which analysis.
+- `mode` — `string` _(optional)_ — For distortion: `harmonics`, `thd`, `compression` or `maxspl`; the settings' mode by default.
+
+**Returns**
+
+- `void`
+
+**Side effects**
+
+- Starts a worker job; writes progress, results or an error into store state.
+
+### `cancelTimeDomain()`
+
+- **Reachability:** STORE ACTION
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().cancelTimeDomain(…)
+
+Stop the running time-domain job.
+
+**Returns**
+
+- `void`
+
+**Side effects**
+
+- Terminates the worker and clears the job.
+
 ### `scheduleCompute()`
 
 - **Reachability:** STORE ACTION
@@ -2670,7 +2825,7 @@ The full shared slice, sent to a popped-out tab when it announces itself.
 
 - Current store state.
 
-## UNREACHABLE (12)
+## UNREACHABLE (15)
 
 ### `simulateInWorker(project, engine)`
 
@@ -2717,6 +2872,60 @@ the request was superseded and its entry already removed.
 **Side effects**
 
 - Removes the request from `simPending` and resolves its promise.
+
+### `startTdJob(msg, onMessage)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+Start a time-domain job in its worker.
+
+**Parameters**
+
+- `msg` — `object` — `{kind, project, opts, mode}`, as `tdWorker.js` takes it.
+- `onMessage` — `Function` — Called with each message the job posts.
+
+**Returns**
+
+- `number` — The job id.
+
+**Side effects**
+
+- Spawns the worker when there is none, and posts to it.
+
+### `startTdJob > tdWorker.onmessage(e)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+Pass this job's messages on; ignore any from a job since abandoned.
+
+**Parameters**
+
+- `e` — `MessageEvent` — A message from the worker.
+
+**Returns**
+
+- `void`
+
+**Side effects**
+
+- Calls `onMessage`.
+
+### `stopTdWorker()`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+Stop whatever the time-domain worker is doing.
+
+**Returns**
+
+- `void`
+
+**Side effects**
+
+- Terminates the worker; the next job spawns a fresh one.
 
 ### `syncPopoutUrl(ids, active)`
 

@@ -14,7 +14,6 @@ import { PANEL_META, PANEL_IDS, MAIN_IDS, CHART_IDS } from '../panelMeta'
 import { exportCSV, exportSchematicPNG, exportMetricsTxt } from '../utils/export'
 import { formatCombo } from '../keymap'
 import { ItemList } from './MenuItem'
-import { useBackdropDismiss } from '../utils/backdrop'
 
 
 // ---------- dropdown primitives ----------
@@ -73,8 +72,6 @@ function Menu({ title, items, open, onOpen, onHover }) {
 export default function MenuBar() {
   const store = useStore()
   const [open, setOpen] = useState(null)
-  const [showExpWarning, setShowExpWarning] = useState(false)
-  const expWarningDismiss = useBackdropDismiss(() => setShowExpWarning(false))
   const fileRef = useRef(null)
   const workspaceRef = useRef(null)
   const barRef = useRef(null)
@@ -225,8 +222,6 @@ export default function MenuBar() {
     const name = prompt('Save the current window arrangement as:', `Layout ${layoutPresets.length + 1}`)
     if (name?.trim()) store.saveLayoutPreset(name.trim())
   }
-
-  const nlLocked = !settings.nlEnabled
 
   const MENUS = [
     ['File', [
@@ -490,36 +485,25 @@ export default function MenuBar() {
       },
       { label: '-' },
       {
-        label: 'Nonlinear Lab',
-        disabled: nlLocked,
-        hint: nlLocked ? 'experimental' : '',
+        label: 'Time Domain & Distortion',
+        hint: key('view.timedomain'),
         /**
-         * Open the Nonlinear Lab panel.
+         * Open the time-domain workspace.
          *
          * @returns {*} Whatever the action returns; the menu ignores it.
-         * @sideEffect Changes and persists the layout.
+         * @sideEffect Replaces the dock with the time-domain view.
          */
-        onClick: () => layoutOps.open('nllab'),
+        onClick: () => store.openTimeDomain(),
       },
       {
-        label: 'Experimental features',
-        checked: !!settings.nlEnabled,
+        label: 'Driver Nonlinearity (Bl, Kms, Le)',
         /**
-         * Turn experimental features on or off.
+         * Open the time-domain workspace at the driver curve editor.
          *
-         * Turning them off also closes the Nonlinear Lab, which would
-         * otherwise stay docked with nothing to show. Turning them on shows a
-         * warning first rather than enabling immediately.
-         *
-         * @returns {void}
-         * @sideEffect Either changes a setting and closes a panel, or opens the warning dialog.
+         * @returns {*} Whatever the action returns; the menu ignores it.
+         * @sideEffect Replaces the dock with the time-domain view.
          */
-        onClick: () => {
-          if (settings.nlEnabled) {
-            updateSettings({ nlEnabled: false })
-            layoutOps.close('nllab')
-          } else setShowExpWarning(true)
-        },
+        onClick: () => store.openTimeDomain('nonlinear'),
       },
     ]],
 
@@ -576,34 +560,6 @@ export default function MenuBar() {
       <input ref={fileRef} type="file" accept=".json,application/json" style={{ display: 'none' }} onChange={onLoadFile} />
       <input ref={workspaceRef} type="file" accept=".zip,.json,application/zip,application/json" style={{ display: 'none' }} onChange={onLoadWorkspace} />
 
-      {showExpWarning && (
-        <div className="modal-backdrop" {...expWarningDismiss}>
-          <div className="modal" style={{ maxWidth: 480, minWidth: 380 }}>
-            <h3 style={{ color: 'var(--amber)' }}>Experimental features</h3>
-            <p style={{ fontSize: 13, lineHeight: 1.55 }}>
-              You are enabling <b>large-signal T/S nonlinearity</b> simulation.
-            </p>
-            <p style={{ fontSize: 12.5, lineHeight: 1.55, color: 'var(--text-2)' }}>
-              This feature is experimental. Its accuracy depends entirely on the accuracy
-              of the Bl(x), Cms(x) and Le(x) curves you provide — without measured data,
-              results are plausible-looking guesses. The solver models power compression
-              and resonance drift only; it does not produce harmonic distortion. It may
-              interact unexpectedly with complex circuits.
-            </p>
-            <p style={{ fontSize: 12.5, color: 'var(--text-2)' }}>
-              A flat curve at 1.0 reproduces the standard engine exactly.
-            </p>
-            <div className="close-row">
-              <button onClick={() => setShowExpWarning(false)}>Cancel</button>
-              <button className="primary" onClick={() => {
-                updateSettings({ nlEnabled: true })
-                setShowExpWarning(false)
-                layoutOps.open('nllab')
-              }}>I understand — continue</button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

@@ -56,7 +56,7 @@ const LISTED_COMMAND_KEYS = [
   'edit.undo', 'edit.redo', 'edit.cut', 'edit.copy', 'edit.paste', 'edit.duplicate',
   'edit.selectAll', 'edit.delete', 'drive.up', 'drive.down', 'drive.upFine', 'drive.downFine',
   'project.new', 'project.save', 'sim.snapshot', 'sim.mask', 'sim.recompute',
-  'view.settings', 'view.maximize', 'view.popout',
+  'view.settings', 'view.maximize', 'view.popout', 'view.timedomain',
 ]
 
 // CONTRACT (constants): "`DEFAULT_BINDINGS` — The default combo (or combos) for each command.
@@ -69,7 +69,7 @@ const DEFAULT_BINDING_KEYS = [
   'edit.selectAll', 'edit.delete', ...ADD_COMMAND_IDS,
   'drive.up', 'drive.down', 'drive.upFine', 'drive.downFine',
   'project.new', 'project.save', 'sim.snapshot', 'sim.mask', 'sim.recompute',
-  'view.settings', 'view.maximize', 'view.popout',
+  'view.settings', 'view.maximize', 'view.popout', 'view.timedomain',
 ]
 
 function ev(over = {}) {

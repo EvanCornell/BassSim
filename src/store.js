@@ -91,6 +91,79 @@ function simulateInWorker(project, engine) {
   })
 }
 
+// ---- time-domain worker ----
+// A separate worker, so a distortion sweep does not hold up the live
+// frequency response. Cancelling terminates it; the next job spawns another.
+let tdWorker = null
+let tdReqId = 0
+
+/**
+ * Start a time-domain job in its worker.
+ *
+ * @param {object} msg - `{kind, project, opts, mode}`, as `tdWorker.js` takes it.
+ * @param {Function} onMessage - Called with each message the job posts.
+ * @returns {number} The job id.
+ * @sideEffect Spawns the worker when there is none, and posts to it.
+ */
+function startTdJob(msg, onMessage) {
+  if (!tdWorker) tdWorker = new Worker(new URL('./engine/tdWorker.js', import.meta.url), { type: 'module' })
+  const id = ++tdReqId
+  /**
+   * Pass this job's messages on; ignore any from a job since abandoned.
+   *
+   * @param {MessageEvent} e - A message from the worker.
+   * @returns {void}
+   * @sideEffect Calls `onMessage`.
+   */
+  tdWorker.onmessage = (e) => { if (e.data.id === id) onMessage(e.data) }
+  tdWorker.postMessage({ id, ...msg })
+  return id
+}
+
+/**
+ * Stop whatever the time-domain worker is doing.
+ *
+ * @returns {void}
+ * @sideEffect Terminates the worker; the next job spawns a fresh one.
+ */
+function stopTdWorker() {
+  if (tdWorker) tdWorker.terminate()
+  tdWorker = null
+}
+
+/** The time-domain settings a new project starts with, per section. */
+export const TD_DEFAULTS = {
+  linear: { bandwidth: 2000, resolution: 0.5, burstHz: 40, burstCycles: 6.5, csdSlices: 8, csdStepMs: 5 },
+  transient: {
+    signal: { type: 'burst', hz: 40, cycles: 6.5, f1: 10, f2: 500, length: 1 },
+    levelDb: 0, fs: 8000, duration: 0.5, bandwidth: 1000, nonlinear: true, compareLinear: true,
+  },
+  distortion: {
+    mode: 'harmonics', hz: 40, levelDb: 0, harmonics: 10, bandwidth: 1000,
+    f1: 15, f2: 200, points: 12, levels: [-12, -6, 0, 6, 12],
+    bands: [20, 25, 31.5, 40, 50, 63], xLimit: 1.5, nonlinear: true,
+  },
+}
+
+/**
+ * The project's time-domain settings, defaults filled in.
+ *
+ * They live in the project's `analyses` as one entry of type `timedomain`,
+ * so a project reopens with the settings it was last run with.
+ *
+ * @param {object} extras - The editor's extra project sections.
+ * @returns {{linear: object, transient: object, distortion: object}} The settings.
+ * @pure
+ */
+export function tdSettingsOf(extras) {
+  const a = (extras?.analyses || []).find((x) => x.type === 'timedomain') || {}
+  return {
+    linear: { ...TD_DEFAULTS.linear, ...(a.linear || {}) },
+    transient: { ...TD_DEFAULTS.transient, ...(a.transient || {}), signal: { ...TD_DEFAULTS.transient.signal, ...(a.transient?.signal || {}) } },
+    distortion: { ...TD_DEFAULTS.distortion, ...(a.distortion || {}) },
+  }
+}
+
 /**
  * Rewrite a popped-out tab's own URL to match what it now holds.
  *
@@ -498,6 +571,15 @@ export const useStore = create((rawSet, get) => {
   projectExtras: defaultExtras(),
   // Which engine simulates: a preference of this browser, not of the project.
   engine: loadEngine(),
+  // ---- the time-domain workspace ----
+  // A full-screen view of its own, replacing the dock while it is open.
+  // Results belong to this window and this project; each records the graph
+  // signature it was run from, so the view can say when it is out of date.
+  tdOpen: false,
+  tdTab: 'linear',
+  tdJob: null,
+  tdError: null,
+  tdResults: { linear: null, transient: null, distortion: {} },
   // ---- dockable workspace ----
   // `layout` is the tree from src/layout.js; every mutation goes through
   // layoutOps so persistence happens in exactly one place.
@@ -1746,6 +1828,108 @@ export const useStore = create((rawSet, get) => {
     get().scheduleCompute()
   },
 
+  // ---- time domain ----
+  /**
+   * Open the time-domain workspace, optionally at a tab.
+   *
+   * @param {string} [tab] - `linear`, `transient`, `distortion` or `nonlinear`.
+   * @returns {void}
+   * @sideEffect Writes store state.
+   */
+  openTimeDomain: (tab) => set({ tdOpen: true, ...(tab ? { tdTab: tab } : {}) }),
+  /**
+   * Return to the editor. A running job carries on.
+   *
+   * @returns {void}
+   * @sideEffect Writes store state.
+   */
+  closeTimeDomain: () => set({ tdOpen: false }),
+  /**
+   * Show one tab of the time-domain workspace.
+   *
+   * @param {string} tab - The tab.
+   * @returns {void}
+   * @sideEffect Writes store state.
+   */
+  setTdTab: (tab) => set({ tdTab: tab }),
+  /**
+   * Change the project's time-domain settings for one section.
+   *
+   * @param {'linear'|'transient'|'distortion'} section - Which.
+   * @param {object} patch - Fields to merge.
+   * @returns {void}
+   * @sideEffect Writes the project's analyses; does not start a run.
+   */
+  setTdSettings: (section, patch) => {
+    const ex = get().projectExtras
+    const cur = tdSettingsOf(ex)
+    const others = (ex.analyses || []).filter((x) => x.type !== 'timedomain')
+    const base = (ex.analyses || []).find((x) => x.type === 'timedomain') || { id: 'timedomain', type: 'timedomain' }
+    const next = { ...base, [section]: { ...cur[section], ...patch } }
+    set({ projectExtras: { ...ex, analyses: [...others, next] } })
+    get().saveActiveFile()
+  },
+  /**
+   * The signature of what a time-domain result depends on — the graph, the extras and the engine.
+   *
+   * @returns {string} A signature to compare results against.
+   * @reads the project state.
+   */
+  tdSignature: () => {
+    const { nodes, edges, settings, projectExtras } = get()
+    const ex = { ...projectExtras, analyses: (projectExtras.analyses || []).filter((a) => a.type !== 'timedomain') }
+    return graphSignature(nodes, edges, settings, ex, 'td')
+  },
+  /**
+   * Run a time-domain analysis with the project's settings for it.
+   *
+   * One job at a time: starting another cancels the one running.
+   *
+   * @param {'linear'|'transient'|'distortion'} kind - Which analysis.
+   * @param {string} [mode] - For distortion: `harmonics`, `thd`, `compression` or `maxspl`; the settings' mode by default.
+   * @returns {void}
+   * @sideEffect Starts a worker job; writes progress, results or an error into store state.
+   */
+  runTimeDomain: (kind, mode) => {
+    const st = get()
+    if (!st.nodes.length) return
+    if (st.tdJob) stopTdWorker()
+    const cfg = tdSettingsOf(st.projectExtras)
+    const m = kind === 'distortion' ? (mode || cfg.distortion.mode) : undefined
+    const project = fromEditor({ name: st.projectName, nodes: st.nodes, edges: st.edges, settings: st.settings, extras: st.projectExtras })
+    const sig = st.tdSignature()
+    const opts = cfg[kind]
+    set({ tdJob: { kind, mode: m, fraction: 0, message: 'Starting' }, tdError: null })
+    startTdJob({ kind, project, opts, mode: m }, (msg) => {
+      if (msg.type === 'progress') {
+        set({ tdJob: { kind, mode: m, fraction: msg.fraction, message: msg.message } })
+        return
+      }
+      if (msg.type === 'error') {
+        set({ tdJob: null, tdError: msg.projectErrors?.length ? msg.projectErrors.join('; ') : msg.error })
+        return
+      }
+      const r = get().tdResults
+      const entry = { ...msg.result, sig, opts, at: Date.now() }
+      set({
+        tdJob: null,
+        tdResults: kind === 'distortion'
+          ? { ...r, distortion: { ...r.distortion, [m]: entry } }
+          : { ...r, [kind]: entry },
+      })
+    })
+  },
+  /**
+   * Stop the running time-domain job.
+   *
+   * @returns {void}
+   * @sideEffect Terminates the worker and clears the job.
+   */
+  cancelTimeDomain: () => {
+    stopTdWorker()
+    set({ tdJob: null })
+  },
+
   // ---- compute pipeline (debounced 150 ms) ----
   // Simulation runs in a Web Worker: the engine ships with the app, but off
   // the UI thread. The debounce collapses slider drags; a token identifies
@@ -1850,6 +2034,8 @@ export const useStore = create((rawSet, get) => {
         ? { ...ed.extras, wiring: cur.projectExtras.wiring, analyses: cur.projectExtras.analyses, display: cur.projectExtras.display }
         : ed.extras,
       history: [], future: [], selectedNodeId: null,
+      // time-domain results describe the project being replaced
+      tdResults: { linear: null, transient: null, distortion: {} }, tdError: null,
     })
     get().scheduleCompute()
   },

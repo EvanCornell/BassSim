@@ -296,6 +296,19 @@ export const COMMANDS = {
      */
     run: (s) => s.toggleMaximize(s.maximized || s.focusedPanel),
   },
+  'view.timedomain': {
+    label: 'Time domain & distortion',
+    group: 'View',
+    scope: 'global',
+    /**
+     * Open the time-domain workspace, or return to the editor from it.
+     * @param {object} s - The store state, with actions bound.
+     * @returns {*} Whatever the store action returns; the key handler ignores it.
+     * @sideEffect Swaps the dock and the time-domain view.
+     * @reads `tdOpen`.
+     */
+    run: (s) => (s.tdOpen ? s.closeTimeDomain() : s.openTimeDomain()),
+  },
   'view.popout': {
     label: 'Open focused panel in a new tab',
     group: 'View',
@@ -364,6 +377,7 @@ export const DEFAULT_BINDINGS = {
   'view.settings': ['mod+,'],
   'view.maximize': ['alt+enter'],
   'view.popout': ['alt+o'],
+  'view.timedomain': ['alt+t'],
 }
 
 // ---------- combos ----------

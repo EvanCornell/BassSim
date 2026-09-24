@@ -1865,3 +1865,45 @@ test('addProbe: fresh ids', () => {
   assert.equal(st().addProbe({ kind: 'flow', at: { node: 'w', handle: 'mouth' } }), 'probe1')
   assert.deepEqual(st().projectExtras.probes.map((p) => p.id), ['p', 'probe1'])
 })
+
+// ------------------------------------------------------ time domain ---
+
+// CONTRACT (tdSettingsOf): "The project's time-domain settings, defaults
+// filled in"; (setTdSettings) "Writes the project's analyses".
+test('time domain: settings live in the project analyses, defaults filled', async () => {
+  const { tdSettingsOf, TD_DEFAULTS } = await import('../../src/store.js')
+  st().loadSerialized(m4())
+  assert.deepEqual(tdSettingsOf(st().projectExtras), TD_DEFAULTS)
+  st().setTdSettings('transient', { levelDb: 6, signal: { type: 'sine', hz: 30 } })
+  const cfg = tdSettingsOf(st().projectExtras)
+  assert.equal(cfg.transient.levelDb, 6)
+  assert.equal(cfg.transient.signal.type, 'sine')
+  assert.equal(cfg.transient.signal.cycles, TD_DEFAULTS.transient.signal.cycles, 'signal fields merge too')
+  const entry = st().projectExtras.analyses.find((a) => a.type === 'timedomain')
+  assert.equal(entry.id, 'timedomain')
+  assert.equal(st().projectExtras.analyses[0].type, 'ac', 'the sweep stays first')
+  const saved = st().serialize()
+  assert.ok(saved.analyses.some((a) => a.type === 'timedomain'), 'saved with the project')
+})
+
+// CONTRACT (openTimeDomain / closeTimeDomain / setTdTab).
+test('time domain: open, switch tab, close', () => {
+  st().openTimeDomain('distortion')
+  assert.equal(st().tdOpen, true)
+  assert.equal(st().tdTab, 'distortion')
+  st().setTdTab('nonlinear')
+  assert.equal(st().tdTab, 'nonlinear')
+  st().closeTimeDomain()
+  assert.equal(st().tdOpen, false)
+  assert.equal(st().tdTab, 'nonlinear', 'remembers the tab')
+})
+
+// CONTRACT (tdSignature): changes with the graph, not with the time-domain settings.
+test('time domain: the signature follows the project, not its own settings', () => {
+  st().loadSerialized(m4())
+  const a = st().tdSignature()
+  st().setTdSettings('linear', { burstHz: 55 })
+  assert.equal(st().tdSignature(), a)
+  st().updateParams('c', { volume: 70 })
+  assert.notEqual(st().tdSignature(), a)
+})

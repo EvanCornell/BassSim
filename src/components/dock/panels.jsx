@@ -11,7 +11,6 @@ import FileBrowser from '../FileBrowser'
 import FlowCanvas from '../FlowCanvas'
 import NodePalette from '../NodePalette'
 import ParamPanel from '../ParamPanel'
-import NLLab from '../NLLab'
 import WiringPanel from '../WiringPanel'
 import VariablesPanel from '../VariablesPanel'
 import ProbesPanel from '../ProbesPanel'
@@ -66,7 +65,6 @@ const COMPONENTS = {
   files: FileBrowser,
   canvas: CanvasPanel,
   params: ParamPanel,
-  nllab: NLLab,
   wiring: WiringPanel,
   vars: VariablesPanel,
   probes: ProbesPanel,

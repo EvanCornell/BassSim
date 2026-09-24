@@ -47,7 +47,7 @@ modifier when matching, so a single default set fits both platforms.
 
 ### `COMMANDS`
 
-Keys: `edit.undo`, `edit.redo`, `edit.cut`, `edit.copy`, `edit.paste`, `edit.duplicate`, `edit.selectAll`, `edit.delete`, `drive.up`, `drive.down`, `drive.upFine`, `drive.downFine`, `project.new`, `project.save`, `sim.snapshot`, `sim.mask`, `sim.recompute`, `view.settings`, `view.maximize`, `view.popout`
+Keys: `edit.undo`, `edit.redo`, `edit.cut`, `edit.copy`, `edit.paste`, `edit.duplicate`, `edit.selectAll`, `edit.delete`, `drive.up`, `drive.down`, `drive.upFine`, `drive.downFine`, `project.new`, `project.save`, `sim.snapshot`, `sim.mask`, `sim.recompute`, `view.settings`, `view.maximize`, `view.timedomain`, `view.popout`
 
 **This list is incomplete.** Further keys are added at construction
 time and are not visible in the source declaration, so treat it as a
@@ -72,6 +72,7 @@ subset rather than the full set.
 - `sim.recompute` holds: `label`, `group`, `scope`, `run`
 - `view.settings` holds: `label`, `group`, `scope`, `run`
 - `view.maximize` holds: `label`, `group`, `scope`, `run`
+- `view.timedomain` holds: `label`, `group`, `scope`, `run`
 - `view.popout` holds: `label`, `group`, `scope`, `run`
 
 ### `COMMAND_IDS`
@@ -92,7 +93,7 @@ The default combo (or combos) for each command.
 Bare letters are safe here because canvas-scoped commands never fire while a
 text field has focus, and they make placing a chain of elements fast.
 
-Keys: `edit.undo`, `edit.redo`, `edit.cut`, `edit.copy`, `edit.paste`, `edit.duplicate`, `edit.selectAll`, `edit.delete`, `add.driver`, `add.chamber`, `add.waveguide`, `add.pr`, `add.radiation`, `drive.up`, `drive.down`, `drive.upFine`, `drive.downFine`, `project.new`, `project.save`, `sim.snapshot`, `sim.mask`, `sim.recompute`, `view.settings`, `view.maximize`, `view.popout`
+Keys: `edit.undo`, `edit.redo`, `edit.cut`, `edit.copy`, `edit.paste`, `edit.duplicate`, `edit.selectAll`, `edit.delete`, `add.driver`, `add.chamber`, `add.waveguide`, `add.pr`, `add.radiation`, `drive.up`, `drive.down`, `drive.upFine`, `drive.downFine`, `project.new`, `project.save`, `sim.snapshot`, `sim.mask`, `sim.recompute`, `view.settings`, `view.maximize`, `view.popout`, `view.timedomain`
 
 ### `KEYMAP_KEY`
 
@@ -260,7 +261,7 @@ stealing copy from the rest of the app.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
-## COMMAND (21)
+## COMMAND (22)
 
 ### `edit.undo > run(s)`
 
@@ -653,6 +654,29 @@ Maximize the focused panel, or restore the one already maximized.
 **Reads external mutable state**
 
 - `maximized` and `focusedPanel`, so the same key both maximizes and restores.
+
+### `view.timedomain > run(s)`
+
+- **Reachability:** COMMAND
+- **Obtain via:** import { COMMANDS } from '../../src/keymap.js'  →  COMMANDS['<id>'].run(storeState)
+
+Open the time-domain workspace, or return to the editor from it.
+
+**Parameters**
+
+- `s` — `object` — The store state, with actions bound.
+
+**Returns**
+
+- `*` — Whatever the store action returns; the key handler ignores it.
+
+**Side effects**
+
+- Swaps the dock and the time-domain view.
+
+**Reads external mutable state**
+
+- `tdOpen`.
 
 ### `view.popout > run(s)`
 

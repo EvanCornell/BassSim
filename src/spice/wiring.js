@@ -9,6 +9,34 @@
 import { loadLeaves } from '../schema/validate.js'
 import { fmt, resistor } from './netlist.js'
 import { filterSections, compileSections } from './filters.js'
+import { signalExpression, signalPoints } from './dsp.js'
+
+/**
+ * A channel's source for a transient run: the test signal at the channel's level.
+ *
+ * The channel's volts are RMS, as in the sweep: a tone's peak is √2 times
+ * them, and noise has them as its RMS. The run's `levelDb` moves every
+ * channel together, like the master.
+ *
+ * @param {object} ctx - Compile context carrying `tran: {signal, levelDb, fs}`.
+ * @param {string} node - The source node.
+ * @param {number} volts - The channel's RMS volts at the master level, negative for inverted polarity.
+ * @param {string} label - Channel label, for the comment.
+ * @returns {void}
+ * @mutates ctx.nl.
+ */
+function transientSource(ctx, node, volts, label) {
+  const { signal, levelDb = 0, fs } = ctx.tran
+  const rms = volts * Math.pow(10, levelDb / 20)
+  if (signal.type === 'noise') {
+    const pts = signalPoints(signal, rms, fs).map((v) => fmt(v))
+    const rows = []
+    for (let i = 0; i < pts.length; i += 16) rows.push(`+ ${pts.slice(i, i + 16).join(' ')}`)
+    ctx.nl.add('V', [node, '0'], `DC 0 PWL(\n${rows.join('\n')}\n+ )`, `${label} source`)
+    return
+  }
+  ctx.nl.add('B', [node, '0'], `V=${signalExpression(signal, rms * Math.SQRT2)}`, `${label} source`)
+}
 
 /**
  * Compile every channel, and assign each driver its electrical terminals.
@@ -62,7 +90,8 @@ export function compileWiring(ctx, proj) {
     nl.comment(`channel ${label}`)
     const src = nl.node()
     const phase = dsp.polarity === -1 ? 180 : 0
-    nl.add('V', [src, '0'], `DC 0 AC ${fmt(Number(c.volts) * master)} ${phase}`, `${label} source`)
+    if (ctx.tran) transientSource(ctx, src, Number(c.volts) * master * (phase ? -1 : 1), label)
+    else nl.add('V', [src, '0'], `DC 0 AC ${fmt(Number(c.volts) * master)} ${phase}`, `${label} source`)
     let drive = src
     const delay = Number(dsp.delayMs) * 1e-3
     if (delay > 0) {

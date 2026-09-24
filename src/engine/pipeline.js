@@ -86,6 +86,22 @@ async function runSpice(project, warnings) {
 }
 
 /**
+ * Carry a saved project to a resolved, validated v3 project.
+ *
+ * @param {object} input - A parsed `.acousim.json` project, any version.
+ * @returns {{project: object, warnings: Object<string, string[]>}} The project with every expression resolved, and its warnings keyed by node id.
+ * @throws {Error} When expressions do not resolve or the project cannot be simulated; every reason is on `projectErrors`.
+ * @pure
+ */
+export function prepareProject(input) {
+  const { project, errors: exprErrors } = resolveProject(migrateProject(input))
+  const { errors, warnings } = validateProject(project)
+  const blocking = [...exprErrors, ...errors]
+  if (blocking.length) throw projectError(blocking)
+  return { project, warnings }
+}
+
+/**
  * Simulate a saved project of any schema version.
  *
  * @param {object} input - A parsed `.acousim.json` project, any version.
@@ -97,10 +113,7 @@ async function runSpice(project, warnings) {
  */
 export async function simulateProject(input, { engine = DEFAULT_ENGINE } = {}) {
   if (!ENGINES.includes(engine)) throw projectError([`unknown engine "${engine}"`])
-  const { project, errors: exprErrors } = resolveProject(migrateProject(input))
-  const { errors, warnings } = validateProject(project)
-  const blocking = [...exprErrors, ...errors]
-  if (blocking.length) throw projectError(blocking)
+  const { project, warnings } = prepareProject(input)
   if (engine === 'spice') {
     try {
       const { results, metrics, netlist } = await runSpice(project, warnings)

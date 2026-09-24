@@ -156,7 +156,7 @@ driver faces are joined to it, its output is driver output.
 
 - ctx.nl and ctx.map.
 
-## UNREACHABLE (9)
+## UNREACHABLE (12)
 
 ### `noteOf(node)`
 
@@ -321,6 +321,37 @@ Connect a node's taps to the nets joined to them.
 
 - ctx.nl and ctx.map.handleFlows.
 
+### `exitLoss(ctx, from, to, senseName, K, S, note)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+Add the flow-dependent loss at a duct end: Δp = K·½ρ·v|v|.
+
+Jetting and separation where a duct opens into a larger space dissipate
+the dynamic pressure of the flow. It is a series behavioural source,
+opposing the flow through the end's sense source. The small-signal
+linearisation of v|v| at rest is zero, so it is only ever added to
+nonlinear transient runs.
+
+**Parameters**
+
+- `ctx` — `object` — Compile context.
+- `from` — `string` — Node the flow arrives on.
+- `to` — `string|undefined` — Node to end on; a new one by default.
+- `senseName` — `string` — The sense source carrying the flow from `from` onward.
+- `K` — `number` — Loss coefficient: about 1 for a sharp edge, 0.2 for a generous radius.
+- `S` — `number` — End area, m².
+- `note` — `string` — Comment.
+
+**Returns**
+
+- `string` — The node beyond the loss.
+
+**Mutates**
+
+- ctx.nl.
+
 ### `compileChamber > area()`
 
 - **Reachability:** UNREACHABLE
@@ -361,3 +392,38 @@ the rear is on the far side of the baffle — though both load the cone.
 **Mutates**
 
 - ctx.nl and ctx.map.
+
+### `driverCurves(p, xmax)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+A driver's large-signal curves as expression builders, or `null` when it has none.
+
+**Parameters**
+
+- `p` — `object` — Driver params, with `nl` curves.
+- `xmax` — `number` — Xmax, mm.
+
+**Returns**
+
+- `{bl: Function|null, k: Function|null, le: Function|null, leSlope: Function|null}|null` — Each takes the excursion expression (m) and returns the ratio expression; `leSlope` the slope of the Le ratio per metre.
+
+**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
+
+### `driverCurves > expr(f)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+An expression builder for a function of excursion.
+
+**Parameters**
+
+- `f` — `Function|null` — mm → value.
+
+**Returns**
+
+- `Function|null` — Excursion expression → value expression.
+
+**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.

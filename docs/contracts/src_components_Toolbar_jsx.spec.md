@@ -35,7 +35,7 @@ controls onto a second row.
 
 - Subscribes to the store.
 
-## UNREACHABLE (6)
+## UNREACHABLE (7)
 
 ### `UndoRedo()`
 
@@ -141,6 +141,24 @@ here.
 **Returns**
 
 - `React.ReactElement|null` — The readout, or `null` when the id is not a metric.
+
+**Side effects**
+
+- Subscribes to the store.
+
+### `TimeDomainButton()`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+The switch between the editor and the time-domain workspace.
+
+Always on the bar rather than one of its configurable items: it changes
+the whole window, so it should always be where the user left it.
+
+**Returns**
+
+- `React.ReactElement` — The button.
 
 **Side effects**
 

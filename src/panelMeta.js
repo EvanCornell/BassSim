@@ -52,13 +52,6 @@ export const PANEL_META = {
     closable: true,
     dock: { nextTo: 'params', zone: 'center', edge: 'right' },
   },
-  nllab: {
-    title: 'Nonlinear Lab',
-    group: 'main',
-    closable: true,
-    dock: { nextTo: 'canvas', zone: 'center', edge: 'right' },
-    requires: 'nlEnabled',
-  },
 
   // Every plot is an independent panel, so any combination of them can be
   // tiled side by side instead of hidden behind one another.

@@ -33,7 +33,28 @@ The engine used when none is named.
 
 Value: `"spice"`
 
-## EXPORTED (1)
+## EXPORTED (2)
+
+### `prepareProject(input)`
+
+- **Reachability:** EXPORTED
+- **Obtain via:** import { prepareProject } from '../../src/engine/pipeline.js'
+
+Carry a saved project to a resolved, validated v3 project.
+
+**Parameters**
+
+- `input` — `object` — A parsed `.acousim.json` project, any version.
+
+**Returns**
+
+- `{project: object, warnings: Object<string, string[]>}` — The project with every expression resolved, and its warnings keyed by node id.
+
+**Throws**
+
+- `Error` — When expressions do not resolve or the project cannot be simulated; every reason is on `projectErrors`.
+
+**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
 ### `simulateProject(input, opts)`
 

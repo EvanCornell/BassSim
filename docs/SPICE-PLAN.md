@@ -17,6 +17,56 @@ server; the legacy solver is a Settings toggle (`ACOUSIM_ENGINE=legacy` for
 the server) and refuses what it cannot represent. Milestone 5 remains:
 deleting the legacy solver.
 
+### Time domain and nonlinearity, as built
+
+Everything lives in its own full-screen workspace (quick-bar **Time Domain**
+button, View/Tools menus, Alt+T), which replaces the dock rather than
+docking in it; the dock stays mounted underneath. Four tabs:
+
+- **Linear response** — impulse and step (per volt of channel 1), tone burst
+  (at the channels' levels), cumulative spectral decay. Inverse FFT of a
+  linear `.ac lin` sweep of the same circuit (default 2 kHz band, 0.5 Hz
+  steps). Re-runs itself while open. A linear transient burst matches it to
+  5e-4 relative — the check that the transient path is right.
+- **Transient** — sine (faded in), Hann tone burst, log sweep, pink noise
+  (seeded, PWL source) through the circuit in time, at the channels' levels
+  plus an offset. Waveforms: pressure at 1 m, excursion, amplifier current
+  and voltage, duct velocity, probes, output spectrum; optional linear run
+  overlaid. Run on demand.
+- **Distortion** — harmonics of a steady tone (whole periods at a sample
+  rate that is a multiple of the tone, so no leakage), THD/H2/H3 across
+  frequency, compression across level (against a single-point AC run),
+  and a CEA-2010-style burst max SPL (3 dB steps then bisection to 0.25 dB,
+  CEA harmonic limits or an excursion limit × Xmax).
+- **Driver nonlinearity** — the Nonlinear Lab curve editor, now with
+  polynomial entry (Klippel-style coefficients over a range, used as
+  P(x)/P(0)), and the duct exit loss K per waveguide end.
+
+How it is built:
+- `src/spice/run.js` `runTransient`; `.options interp` puts samples on the
+  grid; the max internal step is capped at 0.9× the shortest T-line delay
+  (ngspice's lossless line fails otherwise). "Timestep too small" and
+  "aborted" are now fatal.
+- In a transient compile, far-field pressure is `v` across a ρ-henry
+  inductor fed Σ U/Ω by F sources, and excursion is a 1 F capacitor fed the
+  cone velocity — solved by the same integrator as the rest.
+- Nonlinear driver (`src/spice/nonlinear.js`): Bl(x) replaces both H
+  sources with B sources; Kms(x)/Cms(x) replaces the compliance capacitor
+  with V = K0·k(x)·x; Le(x) scales a shadow copy of the coil inductance
+  network and adds the motional term i·Le·dr/dx·u and the reluctance force
+  ½i²·Le·dr/dx. Curves are sampled from exactly the Lab's `evalCurve` into
+  `pwl()`, pinned flat beyond ±max(4·Xmax, 20 mm).
+- Duct exit loss: series B source K·ρ/(2S²)·U|U| at radiating ends and at
+  ends meeting a larger area; only in nonlinear transient runs. Default K 0.5.
+- Jobs run in a second worker (`src/engine/tdWorker.js`) with progress;
+  cancel terminates it. Settings are stored in the project's `analyses` as
+  one `{type: 'timedomain'}` entry; results are not saved.
+- The legacy quasi-linear "Experimental features" mode is retired from the
+  UI (the legacy engine still reads `nlEnabled` from old files).
+- Checks (contract suite): linear transient = IFFT; tone fundamental = AC
+  level; flat curve THD < 1e-4; symmetric curves → odd harmonics, asymmetric
+  Bl and Le(x) → H2; exit loss → odd harmonics and growing compression.
+
 ### Milestone 4, as built
 
 - **Loose connections.** The canvas runs React Flow in loose mode; every

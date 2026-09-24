@@ -33,7 +33,9 @@ export const SCHEMA_VERSION = 3
  * build gains any parameter added since. A field whose default is a number is
  * numeric, which is what decides where an expression may stand in for a value.
  *
- * `leakQL: null` is a sealed chamber. `dvc: null` is a single voice coil;
+ * `throatK`/`mouthK` are a waveguide end's flow loss coefficient, used only
+ * by nonlinear time-domain runs: about 1 for a sharp edge, 0.2 for a generous
+ * radius. `leakQL: null` is a sealed chamber. `dvc: null` is a single voice coil;
  * `dvc: {coils: 'series'|'parallel'|'one'}` a dual one, whose catalogue
  * figures are always taken as both coils in series. `loss` scales a waveguide's derived wall
  * loss — 1 is the physical estimate, 0 is lossless.
@@ -50,7 +52,7 @@ export const DEFAULT_PARAMS = {
   },
   waveguide: {
     S1: 80, S2: 80, length: 30, flare: 'conical', ecFactor: 1,
-    throatSpace: 'half', mouthSpace: 'half', loss: 1, taps: [], label: 'Port',
+    throatSpace: 'half', mouthSpace: 'half', loss: 1, throatK: 0.5, mouthK: 0.5, taps: [], label: 'Port',
   },
   pr: { Mmd: 85, Cms: 0.35, Rms: 3, Sd: 480, addedMass: 0, count: 1, label: 'Passive Radiator' },
   radiation: { space: 'half', label: 'Radiation' },

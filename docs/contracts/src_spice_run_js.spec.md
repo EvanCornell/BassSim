@@ -12,7 +12,7 @@ The engine is loaded on first use — it is several megabytes — and kept for
 the life of the process. ngspice holds one circuit at a time, so runs are
 queued rather than interleaved.
 
-## EXPORTED (2)
+## EXPORTED (3)
 
 ### `isFatal(line)`
 
@@ -37,6 +37,7 @@ Notes and warnings that the engine recovered from are not failures.
 
 - **Reachability:** EXPORTED
 - **Obtain via:** import { runNetlist } from '../../src/spice/run.js'
+- **Async:** returns a Promise
 
 Run one AC netlist and return its complex vectors.
 
@@ -56,7 +57,34 @@ Run one AC netlist and return its complex vectors.
 
 - Runs the engine; queued behind any run already in progress.
 
-## UNREACHABLE (2)
+### `runTransient(netlist)`
+
+- **Reachability:** EXPORTED
+- **Obtain via:** import { runTransient } from '../../src/spice/run.js'
+- **Async:** returns a Promise
+
+Run one transient netlist and return its real vectors.
+
+The netlist should set `.options interp` so the samples fall on the
+`.tran` step exactly; the time axis returned is whatever ngspice produced.
+
+**Parameters**
+
+- `netlist` — `string` — A complete netlist ending in `.end`.
+
+**Returns**
+
+- `Promise<{time: number[], vec: Function, names: string[]}>` — The sample times, s; `vec(name)` → a Float64Array for a saved vector; and every name returned.
+
+**Throws**
+
+- `Error` — When ngspice reports an error; the message lines are on `spiceErrors`.
+
+**Side effects**
+
+- Runs the engine; queued behind any run already in progress.
+
+## UNREACHABLE (3)
 
 ### `engine()`
 
@@ -73,25 +101,43 @@ The shared ngspice instance, started on first call.
 
 - Loads the WebAssembly engine the first time.
 
-### `runNetlist > vec(name)`
+### `runRaw(netlist, kind)`
 
 - **Reachability:** UNREACHABLE
 - **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
 
-One saved vector.
+Run one netlist and collect its vectors, queued behind any run in progress.
 
 **Parameters**
 
-- `name` — `string` — Lowercase vector name, e.g. `i(v3)`.
+- `netlist` — `string` — A complete netlist ending in `.end`.
+- `kind` — `'complex'|'real'` — The result type the analysis must produce: `complex` for `.ac`, `real` for `.tran`.
 
 **Returns**
 
-- `{re: Float64Array, im: Float64Array}` — Its complex values.
+- `Promise<{scale: number[], vectors: Map<string, object>}>` — The sweep variable (frequency or time) and every other vector: `{re, im}` for complex, a Float64Array for real.
 
 **Throws**
 
-- `Error` — When the vector was not returned.
+- `Error` — When ngspice reports an error or returns the wrong kind of result; the message lines are on `spiceErrors`.
 
-**Reads external mutable state**
+**Side effects**
 
-- the parsed result.
+- Runs the engine. A run that throws inside the engine drops it, so the next run starts a fresh one.
+
+### `lookup(vectors)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+A lookup for one saved vector, failing loudly when it is missing.
+
+**Parameters**
+
+- `vectors` — `Map<string, object>` — The run's vectors.
+
+**Returns**
+
+- `Function` — `(name) → vector`.
+
+**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.

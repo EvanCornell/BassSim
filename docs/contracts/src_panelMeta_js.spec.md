@@ -30,7 +30,7 @@ Doubles as the panel registry: `layout.sanitize` treats an id absent from
 this map as unknown and drops it, which is what keeps an old saved layout
 from referencing a panel that no longer exists.
 
-Keys: `files`, `canvas`, `params`, `wiring`, `vars`, `probes`, `nllab`, `spl`, `zin`, `exc`, `vel`, `int`, `pfl`, `pow`, `eff`, `pe`, `ph`
+Keys: `files`, `canvas`, `params`, `wiring`, `vars`, `probes`, `spl`, `zin`, `exc`, `vel`, `int`, `pfl`, `pow`, `eff`, `pe`, `ph`
 
 - `files` holds: `title`, `group`, `closable`, `dock`
 - `canvas` holds: `title`, `group`, `closable`, `dock`
@@ -38,7 +38,6 @@ Keys: `files`, `canvas`, `params`, `wiring`, `vars`, `probes`, `nllab`, `spl`, `
 - `wiring` holds: `title`, `group`, `closable`, `dock`
 - `vars` holds: `title`, `group`, `closable`, `dock`
 - `probes` holds: `title`, `group`, `closable`, `dock`
-- `nllab` holds: `title`, `group`, `closable`, `dock`, `requires`
 - `spl` holds: `title`, `group`
 - `zin` holds: `title`, `group`
 - `exc` holds: `title`, `group`

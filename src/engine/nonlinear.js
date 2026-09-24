@@ -1,4 +1,4 @@
-// EXPERIMENTAL: large-signal T/S nonlinearity (quasi-linear method).
+// Large-signal driver curves, and the legacy engine's quasi-linear use of them.
 //
 // Each driver may carry three ratio curves — Bl(x), Cms(x), Le(x) — expressed
 // relative to the small-signal value (1.0 = datasheet number). A curve is a
@@ -53,7 +53,31 @@ export function defaultNL() {
  * @pure
  */
 export function curveHasContent(curve) {
-  return (curve?.points?.length || 0) > 0 || (curve?.table?.length || 0) > 0
+  return (curve?.points?.length || 0) > 0 || (curve?.table?.length || 0) > 0 || (curve?.poly?.coeffs?.length || 0) > 1
+}
+
+/**
+ * A polynomial curve's ratio at x: P(x)/P(0), held at its end values outside its range.
+ *
+ * Measurement reports (Klippel's among them) publish Bl(x), Kms(x) and
+ * Le(x) as polynomial coefficients in absolute units over a stated range —
+ * Bl(x) = b0 + b1·x + b2·x² … with x in mm. Dividing by b0 makes it a ratio
+ * like every other curve; outside the range the fit means nothing, so the
+ * end values hold.
+ *
+ * @param {{coeffs: number[], min?: number, max?: number}} poly - Coefficients from the constant term up, x in mm, and the range they were fitted over.
+ * @param {number} x - Displacement, mm.
+ * @returns {number} The ratio.
+ * @pure
+ */
+export function polyRatio(poly, x) {
+  const c = poly.coeffs
+  const lo = Number.isFinite(poly.min) ? poly.min : -Infinity
+  const hi = Number.isFinite(poly.max) ? poly.max : Infinity
+  const xc = Math.min(Math.max(x, lo), hi)
+  let v = 0
+  for (let i = c.length - 1; i >= 0; i--) v = v * xc + c[i]
+  return c[0] ? v / c[0] : 1
 }
 
 // Effective compliance ratio at excursion X: from Kms if defined, else Cms.
@@ -83,9 +107,9 @@ export function complianceRatio(nl, X, xmax = 0) {
 /**
  * The curve's baseline at displacement x, before control points are applied.
  *
- * An imported table is interpolated linearly and clamped at both ends —
- * measured data should not extrapolate itself. With no table the baseline is a
- * flat 1.0.
+ * A polynomial takes precedence (see `polyRatio`). An imported table is
+ * interpolated linearly and clamped at both ends — measured data should not
+ * extrapolate itself. With neither the baseline is a flat 1.0.
  *
  * @param {object|null|undefined} curve - The curve to evaluate.
  * @param {number} x - Displacement, mm. Signed: positive is outward.
@@ -94,6 +118,7 @@ export function complianceRatio(nl, X, xmax = 0) {
  * @pure
  */
 function baseValue(curve, x) {
+  if ((curve?.poly?.coeffs?.length || 0) > 1) return polyRatio(curve.poly, x)
   const t = curve?.table
   if (!t || t.length === 0) return 1
   if (x <= t[0][0]) return t[0][1]
@@ -189,7 +214,7 @@ export function evalCurve(curve, x, xmax = 0) {
  * @pure
  */
 export function cycleAverage(curve, X, xmax = 0) {
-  if ((!curve?.points || curve.points.length === 0) && !curve?.table) return 1
+  if (!curveHasContent(curve)) return 1
   const N = 24
   let s = 0
   for (let k = 0; k < N; k++) {

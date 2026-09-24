@@ -54,6 +54,21 @@ are silently blocked. Fixed by construction in the SPICE engine
 - **Legacy solver removal** (milestone 5). The editor features have landed;
   the legacy engine refuses projects that use them.
 
+## Time-domain follow-ups
+
+- **Voice-coil heating** (Re(T), thermal RC network) — needs its own
+  approach, since heating time constants are seconds to minutes.
+- **Le(i)** and eddy-current nonlinearity are not modelled; Le(x) with a
+  semi-inductance ladder scales the whole ladder and uses Le at 1 kHz for
+  the motional and reluctance terms.
+- **MCP tools** for transient and distortion runs.
+- **Max SPL speed**: ~6–7 s per band; a smarter first guess (the linear
+  excursion limit) would halve the search.
+- **Imported audio** as a transient signal; amplifier clipping from the
+  channel's `rated` watts.
+- Distortion runs model the driver's curves and duct exit losses only;
+  chamber air nonlinearity and suspension creep are not modelled.
+
 ## Editor follow-ups from milestone 4
 
 - **Channel `rated` watts** — in the schema, not in the Wiring panel yet;

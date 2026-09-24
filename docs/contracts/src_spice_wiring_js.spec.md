@@ -43,7 +43,33 @@ that connect to nothing — an open coil.
 
 - ctx.nl and ctx.map.channels.
 
-## UNREACHABLE (1)
+## UNREACHABLE (2)
+
+### `transientSource(ctx, node, volts, label)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+A channel's source for a transient run: the test signal at the channel's level.
+
+The channel's volts are RMS, as in the sweep: a tone's peak is √2 times
+them, and noise has them as its RMS. The run's `levelDb` moves every
+channel together, like the master.
+
+**Parameters**
+
+- `ctx` — `object` — Compile context carrying `tran: {signal, levelDb, fs}`.
+- `node` — `string` — The source node.
+- `volts` — `number` — The channel's RMS volts at the master level, negative for inverted polarity.
+- `label` — `string` — Channel label, for the comment.
+
+**Returns**
+
+- `void`
+
+**Mutates**
+
+- ctx.nl.
 
 ### `compileWiring > wire(tree, a, b)`
 

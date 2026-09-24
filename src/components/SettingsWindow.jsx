@@ -25,7 +25,7 @@ const dim = { color: 'var(--text-3)', fontSize: 12, lineHeight: 1.5 }
 // ---------- application settings ----------
 
 /**
- * The Application section: sweep range, display options and experimental features.
+ * The Application section: engine, sweep range and display options.
  *
  * @returns {React.ReactElement} The section.
  * @sideEffect Subscribes to the store.
@@ -33,7 +33,6 @@ const dim = { color: 'var(--text-3)', fontSize: 12, lineHeight: 1.5 }
 function ApplicationSection() {
   const settings = useStore((s) => s.settings)
   const updateSettings = useStore((s) => s.updateSettings)
-  const layoutOps = useStore((s) => s.layoutOps)
   const engine = useStore((s) => s.engine)
   const setEngine = useStore((s) => s.setEngine)
   const row = { display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, marginBottom: 8 }
@@ -94,22 +93,6 @@ function ApplicationSection() {
             onChange={(e) => updateSettings({ unwrapPhase: e.target.checked })} />
           Unwrap phase in the Phase &amp; Group Delay chart
         </label>
-      </div>
-      <div style={card}>
-        <h4 style={h}>Experimental features</h4>
-        <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, cursor: 'pointer' }}>
-          <input type="checkbox" checked={!!settings.nlEnabled}
-            onChange={(e) => {
-              updateSettings({ nlEnabled: e.target.checked })
-              if (!e.target.checked) layoutOps.close('nllab')
-            }} />
-          Large-signal T/S nonlinearity (Nonlinear Lab)
-        </label>
-        <div style={{ ...dim, marginTop: 6 }}>
-          Quasi-linear approximation of Bl(x)/Cms(x)/Le(x) effects — power
-          compression and resonance drift, not harmonic distortion. Results
-          depend entirely on the curves you provide.
-        </div>
       </div>
     </>
   )

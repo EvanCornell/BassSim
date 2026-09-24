@@ -12,6 +12,7 @@ import { fmt, resistor, sense } from './netlist.js'
 import { radiationLoad, fractionalSeries } from './networks.js'
 import { compileLine } from './line.js'
 import { endCorrection, faceArea } from './nets.js'
+import { curveSpan, pwlOf, stiffnessRatio, ratioOf, slopeOf } from './nonlinear.js'
 
 /**
  * A readable name for a graph node in netlist comments.
@@ -151,6 +152,31 @@ function connectTaps(ctx, node, line, areaAt) {
 }
 
 /**
+ * Add the flow-dependent loss at a duct end: Δp = K·½ρ·v|v|.
+ *
+ * Jetting and separation where a duct opens into a larger space dissipate
+ * the dynamic pressure of the flow. It is a series behavioural source,
+ * opposing the flow through the end's sense source. The small-signal
+ * linearisation of v|v| at rest is zero, so it is only ever added to
+ * nonlinear transient runs.
+ *
+ * @param {object} ctx - Compile context.
+ * @param {string} from - Node the flow arrives on.
+ * @param {string|undefined} to - Node to end on; a new one by default.
+ * @param {string} senseName - The sense source carrying the flow from `from` onward.
+ * @param {number} K - Loss coefficient: about 1 for a sharp edge, 0.2 for a generous radius.
+ * @param {number} S - End area, m².
+ * @param {string} note - Comment.
+ * @returns {string} The node beyond the loss.
+ * @mutates ctx.nl.
+ */
+function exitLoss(ctx, from, to, senseName, K, S, note) {
+  const out = to || ctx.nl.node()
+  ctx.nl.add('B', [from, out], `V=${fmt((K * RHO) / (2 * S * S))}*i(${senseName})*abs(i(${senseName}))`, `${note} exit loss`)
+  return out
+}
+
+/**
  * Compile a waveguide — port, duct or horn segment.
  *
  * Every end gets a flow sense. A connected end joins its junction through the
@@ -183,20 +209,26 @@ export function compileWaveguide(ctx, node) {
   const k = p.ecFactor ?? 1
   const ends = {}
   for (const [h, endNode, S, space] of [['throat', line.start, S1, p.throatSpace], ['mouth', line.end, S2, p.mouthSpace]]) {
+    const K = Number(h === 'throat' ? p.throatK : p.mouthK) || 0
     if (ctx.nets.connected(node.id, h)) {
+      const step = endCorrection(ctx.nets, node, h) > 0
       const dl = k * endCorrection(ctx.nets, node, h)
-      const s = sense(ctx.nl, ctx.nets.netOf(node.id, h), `${note} ${h} flow`, dl > 0 ? undefined : endNode)
-      if (dl > 0) endMass(ctx, s.out, endNode, dl, S, loss, `${note} ${h}`)
+      const jet = ctx.nonlinear && step && K > 0
+      const s = sense(ctx.nl, ctx.nets.netOf(node.id, h), `${note} ${h} flow`, dl > 0 || jet ? undefined : endNode)
+      let at = s.out
+      if (jet) at = exitLoss(ctx, at, dl > 0 ? undefined : endNode, s.name, K, S, `${note} ${h}`)
+      if (dl > 0) endMass(ctx, at, endNode, dl, S, loss, `${note} ${h}`)
       ends[h] = { sense: s.name, S }
       recordFlow(ctx, node.id, h, s.name, 1, S)
     } else if ((space || 'half') !== 'rigid') {
       const s = sense(ctx.nl, endNode, `${note} ${h} radiates`)
       const n = (2 * Math.PI) / (SOLID_ANGLE[space] ?? SOLID_ANGLE.half)
       const radLen = (8 / (3 * Math.PI)) * Math.sqrt(S / Math.PI) * Math.sqrt(n)
-      let radIn = s.out
+      let radIn = ctx.nonlinear && K > 0 ? exitLoss(ctx, s.out, undefined, s.name, K, S, `${note} ${h}`) : s.out
       if (loss > 0) {
+        const from = radIn
         radIn = ctx.nl.node()
-        fractionalSeries(ctx.nl, s.out, radIn, 0.5, loss * viscousCoeff(S, perimeter(S)) * radLen, ctx.band, `${note} ${h} radiation-air loss`)
+        fractionalSeries(ctx.nl, from, radIn, 0.5, loss * viscousCoeff(S, perimeter(S)) * radLen, ctx.band, `${note} ${h} radiation-air loss`)
       }
       const omega = radiationLoad(ctx.nl, radIn, S, space || 'half', `${note} ${h} radiation`)
       ends[h] = { sense: s.name, S }
@@ -304,6 +336,31 @@ function exposedFaces(ctx, node, Sd, isDriver) {
 }
 
 /**
+ * A driver's large-signal curves as expression builders, or `null` when it has none.
+ *
+ * @param {object} p - Driver params, with `nl` curves.
+ * @param {number} xmax - Xmax, mm.
+ * @returns {{bl: Function|null, k: Function|null, le: Function|null, leSlope: Function|null}|null} Each takes the excursion expression (m) and returns the ratio expression; `leSlope` the slope of the Le ratio per metre.
+ * @pure
+ */
+function driverCurves(p, xmax) {
+  const span = curveSpan(xmax)
+  const bl = ratioOf(p.nl?.Bl, xmax)
+  const k = stiffnessRatio(p.nl, xmax)
+  const le = ratioOf(p.nl?.Le, xmax)
+  if (!bl && !k && !le) return null
+  /**
+   * An expression builder for a function of excursion.
+   *
+   * @param {Function|null} f - mm → value.
+   * @returns {Function|null} Excursion expression → value expression.
+   * @pure
+   */
+  const expr = (f) => (f ? (x) => pwlOf(f, span, x) : null)
+  return { bl: expr(bl), k: expr(k), le: expr(le), leSlope: expr(le && slopeOf(le)) }
+}
+
+/**
  * Compile a driver.
  *
  * Electrical side: Re, the voice coil inductance (a fitted ladder when LeExp
@@ -327,23 +384,52 @@ export function compileDriver(ctx, node, terms) {
   const rear = ctx.nets.netOf(node.id, 'rear')
   const x1 = nl.node(); const x2 = nl.node(); const x3 = nl.node()
   const m1 = nl.node(); const m2 = nl.node(); const m3 = nl.node(); const m4 = nl.node(); const m5 = nl.node()
-  nl.comment(`driver ${note}`)
-  resistor(nl, terms.ep, x1, d.Re, `${note} Re`)
-  if (d.LeExp >= 0.999 || !(d.Le > 0)) nl.add('L', [x1, x2], fmt(Math.max(d.Le, 1e-9)), `${note} Le`)
-  else fractionalSeries(nl, x1, x2, d.LeExp, d.Le, ctx.band, `${note} Le^${d.LeExp}`, 3)
   // Controlling sources are named before they are defined; SPICE resolves them after parsing.
   const vm = `V_${m5}`
   const ve = `V_${x3}`
-  nl.add('H', [x2, x3, vm], fmt(d.Bl), `${note} back EMF`)
+  nl.comment(`driver ${note}`)
+  // Excursion, x = ∫u dt, as a node — the transient outputs and the
+  // nonlinear elements both read it. Not needed in the sweep.
+  let xn = null
+  if (ctx.tran) {
+    xn = nl.node()
+    nl.add('F', ['0', xn, vm], '1', `${note} excursion`)
+    nl.add('C', [xn, '0'], '1')
+    resistor(nl, xn, '0', 1e12)
+  }
+  const curves = ctx.nonlinear && xn ? driverCurves(node.params, d.Xmax * 1000) : null
+  const x = xn && `v(${xn})`
+  resistor(nl, terms.ep, x1, d.Re, `${note} Re`)
+  if (curves?.le) {
+    // Le(x): the coil's own inductance network, driven by a copy of the coil
+    // current, scaled by the curve — plus the motional term i·dLe/dx·u.
+    const sh = nl.node()
+    nl.add('F', ['0', sh, ve], '1', `${note} Le(x) reference`)
+    if (d.LeExp >= 0.999 || !(d.Le > 0)) nl.add('L', [sh, '0'], fmt(Math.max(d.Le, 1e-9)))
+    else fractionalSeries(nl, sh, '0', d.LeExp, d.Le, ctx.band, `${note} Le^${d.LeExp}`, 3)
+    nl.add('B', [x1, x2], `V=${curves.le(x)}*v(${sh})+${fmt(d.Le)}*${curves.leSlope(x)}*i(${ve})*i(${vm})`, `${note} Le(x)`)
+  } else if (d.LeExp >= 0.999 || !(d.Le > 0)) nl.add('L', [x1, x2], fmt(Math.max(d.Le, 1e-9)), `${note} Le`)
+  else fractionalSeries(nl, x1, x2, d.LeExp, d.Le, ctx.band, `${note} Le^${d.LeExp}`, 3)
+  const bl = curves?.bl ? `${fmt(d.Bl)}*${curves.bl(x)}` : null
+  if (bl) nl.add('B', [x2, x3], `V=${bl}*i(${vm})`, `${note} back EMF, Bl(x)`)
+  else nl.add('H', [x2, x3, vm], fmt(d.Bl), `${note} back EMF`)
   nl.lines.push(`${ve} ${x3} ${terms.em} DC 0 ; ${note} coil current`)
-  nl.add('H', [m1, '0', ve], fmt(d.Bl), `${note} motor force`)
+  let force = m1
+  if (curves?.le) {
+    // reluctance force ½·i²·dLe/dx, in series with the motor force
+    force = nl.node()
+    nl.add('B', [m1, force], `V=${fmt(0.5 * d.Le)}*${curves.leSlope(x)}*i(${ve})*i(${ve})`, `${note} reluctance force`)
+  }
+  if (bl) nl.add('B', [force, '0'], `V=${bl}*i(${ve})`, `${note} motor force, Bl(x)`)
+  else nl.add('H', [force, '0', ve], fmt(d.Bl), `${note} motor force`)
   resistor(nl, m1, m2, d.Rms, `${note} Rms`)
   nl.add('L', [m2, m3], fmt(d.Mms), `${note} Mms`)
-  nl.add('C', [m3, m4], fmt(d.Cms), `${note} Cms`)
+  if (curves?.k) nl.add('B', [m3, m4], `V=${fmt(1 / d.Cms)}*${curves.k(x)}*${x}`, `${note} Kms(x)`)
+  else nl.add('C', [m3, m4], fmt(d.Cms), `${note} Cms`)
   nl.add('E', [m4, m5, front, rear], fmt(d.Sd), `${note} acoustic reaction`)
   nl.lines.push(`${vm} ${m5} 0 DC 0 ; ${note} cone velocity`)
   nl.add('F', [rear, front, vm], fmt(d.Sd), `${note} cone flow`)
-  ctx.map.drivers.push({ id: node.id, velocity: vm, Xmax: d.Xmax })
+  ctx.map.drivers.push({ id: node.id, velocity: vm, Xmax: d.Xmax, x: xn, nonlinear: !!curves })
   for (const face of ['front', 'rear']) recordFlow(ctx, node.id, face, vm, d.Sd, d.Sd)
   exposedFaces(ctx, node, d.Sd, true)
 }

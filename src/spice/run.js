@@ -37,7 +37,74 @@ function engine() {
  * @pure
  */
 export function isFatal(line) {
-  return /error|singular matrix|not parsed|failed/i.test(line) && !/^\s*note:/i.test(line)
+  return /error|singular matrix|not parsed|failed|timestep too small|aborted/i.test(line) && !/^\s*note:/i.test(line)
+}
+
+/**
+ * Run one netlist and collect its vectors, queued behind any run in progress.
+ *
+ * @param {string} netlist - A complete netlist ending in `.end`.
+ * @param {'complex'|'real'} kind - The result type the analysis must produce: `complex` for `.ac`, `real` for `.tran`.
+ * @returns {Promise<{scale: number[], vectors: Map<string, object>}>} The sweep variable (frequency or time) and every other vector: `{re, im}` for complex, a Float64Array for real.
+ * @throws {Error} When ngspice reports an error or returns the wrong kind of result; the message lines are on `spiceErrors`.
+ * @sideEffect Runs the engine. A run that throws inside the engine drops it, so the next run starts a fresh one.
+ */
+function runRaw(netlist, kind) {
+  const job = queue.then(async () => {
+    const sim = await engine()
+    let res
+    try {
+      sim.setNetList(netlist)
+      res = await sim.runSim()
+    } catch (err) {
+      enginePromise = null
+      throw new Error(`SPICE stopped: ${err.message || err}`)
+    }
+    const messages = sim.getError() || []
+    const fatal = messages.filter(isFatal)
+    if (fatal.length || !res || res.numPoints < 1 || res.dataType !== kind) {
+      const err = new Error(`SPICE could not solve this circuit: ${(fatal[0] || messages[0] || 'no result').trim()}`)
+      err.spiceErrors = messages
+      throw err
+    }
+    const vectors = new Map()
+    let scale = []
+    for (const d of res.data) {
+      if (d.type === 'frequency' || d.type === 'time') {
+        scale = d.values.map((v) => (typeof v === 'number' ? v : v.real))
+        continue
+      }
+      vectors.set(d.name.toLowerCase(), kind === 'complex'
+        ? { re: Float64Array.from(d.values, (v) => v.real), im: Float64Array.from(d.values, (v) => v.img) }
+        : Float64Array.from(d.values, (v) => (typeof v === 'number' ? v : v.real)))
+    }
+    return { scale, vectors }
+  })
+  queue = job.catch(() => {})
+  return job
+}
+
+/**
+ * A lookup for one saved vector, failing loudly when it is missing.
+ *
+ * @param {Map<string, object>} vectors - The run's vectors.
+ * @returns {Function} `(name) → vector`.
+ * @pure
+ */
+function lookup(vectors) {
+  /**
+   * One saved vector.
+   *
+   * @param {string} name - Lowercase vector name, e.g. `i(v3)`.
+   * @returns {object} Its values.
+   * @throws {Error} When the vector was not returned.
+   * @reads the parsed result.
+   */
+  return (name) => {
+    const v = vectors.get(name.toLowerCase())
+    if (!v) throw new Error(`SPICE result has no vector ${name}`)
+    return v
+  }
 }
 
 /**
@@ -48,45 +115,23 @@ export function isFatal(line) {
  * @throws {Error} When ngspice reports an error; the message lines are on `spiceErrors`.
  * @sideEffect Runs the engine; queued behind any run already in progress.
  */
-export function runNetlist(netlist) {
-  const job = queue.then(async () => {
-    const sim = await engine()
-    sim.setNetList(netlist)
-    const res = await sim.runSim()
-    const messages = sim.getError() || []
-    const fatal = messages.filter(isFatal)
-    if (fatal.length || !res || res.numPoints < 1 || res.dataType !== 'complex') {
-      const err = new Error(`SPICE could not solve this circuit: ${(fatal[0] || messages[0] || 'no result').trim()}`)
-      err.spiceErrors = messages
-      throw err
-    }
-    const vectors = new Map()
-    let freqs = []
-    for (const d of res.data) {
-      if (d.type === 'frequency') { freqs = d.values.map((v) => v.real); continue }
-      vectors.set(d.name.toLowerCase(), {
-        re: Float64Array.from(d.values, (v) => v.real),
-        im: Float64Array.from(d.values, (v) => v.img),
-      })
-    }
-    return {
-      freqs,
-      names: [...vectors.keys()],
-      /**
-       * One saved vector.
-       *
-       * @param {string} name - Lowercase vector name, e.g. `i(v3)`.
-       * @returns {{re: Float64Array, im: Float64Array}} Its complex values.
-       * @throws {Error} When the vector was not returned.
-       * @reads the parsed result.
-       */
-      vec: (name) => {
-        const v = vectors.get(name.toLowerCase())
-        if (!v) throw new Error(`SPICE result has no vector ${name}`)
-        return v
-      },
-    }
-  })
-  queue = job.catch(() => {})
-  return job
+export async function runNetlist(netlist) {
+  const { scale, vectors } = await runRaw(netlist, 'complex')
+  return { freqs: scale, names: [...vectors.keys()], vec: lookup(vectors) }
+}
+
+/**
+ * Run one transient netlist and return its real vectors.
+ *
+ * The netlist should set `.options interp` so the samples fall on the
+ * `.tran` step exactly; the time axis returned is whatever ngspice produced.
+ *
+ * @param {string} netlist - A complete netlist ending in `.end`.
+ * @returns {Promise<{time: number[], vec: Function, names: string[]}>} The sample times, s; `vec(name)` → a Float64Array for a saved vector; and every name returned.
+ * @throws {Error} When ngspice reports an error; the message lines are on `spiceErrors`.
+ * @sideEffect Runs the engine; queued behind any run already in progress.
+ */
+export async function runTransient(netlist) {
+  const { scale, vectors } = await runRaw(netlist, 'real')
+  return { time: scale, names: [...vectors.keys()], vec: lookup(vectors) }
 }

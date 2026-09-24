@@ -5,7 +5,7 @@
 
 ## Module
 
-EXPERIMENTAL: large-signal T/S nonlinearity (quasi-linear method).
+Large-signal driver curves, and the legacy engine's quasi-linear use of them.
 
 Each driver may carry three ratio curves — Bl(x), Cms(x), Le(x) — expressed
 relative to the small-signal value (1.0 = datasheet number). A curve is a
@@ -36,7 +36,7 @@ Values: `Bl`, `Cms`, `Kms`, `Le`
 
 Keys: `baseValue`, `rawEval`
 
-## EXPORTED (10)
+## EXPORTED (11)
 
 ### `emptyCurve()`
 
@@ -82,6 +82,30 @@ so an untouched driver costs nothing.
 **Returns**
 
 - `boolean` — True when the curve would evaluate to anything other than a constant 1.0.
+
+**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
+
+### `polyRatio(poly, x)`
+
+- **Reachability:** EXPORTED
+- **Obtain via:** import { polyRatio } from '../../src/engine/nonlinear.js'
+
+A polynomial curve's ratio at x: P(x)/P(0), held at its end values outside its range.
+
+Measurement reports (Klippel's among them) publish Bl(x), Kms(x) and
+Le(x) as polynomial coefficients in absolute units over a stated range —
+Bl(x) = b0 + b1·x + b2·x² … with x in mm. Dividing by b0 makes it a ratio
+like every other curve; outside the range the fit means nothing, so the
+end values hold.
+
+**Parameters**
+
+- `poly` — `{coeffs: number[], min?: number, max?: number}` — Coefficients from the constant term up, x in mm, and the range they were fitted over.
+- `x` — `number` — Displacement, mm.
+
+**Returns**
+
+- `number` — The ratio.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
@@ -278,9 +302,9 @@ field — are skipped, so exports that carry a title row import without editing.
 
 The curve's baseline at displacement x, before control points are applied.
 
-An imported table is interpolated linearly and clamped at both ends —
-measured data should not extrapolate itself. With no table the baseline is a
-flat 1.0.
+A polynomial takes precedence (see `polyRatio`). An imported table is
+interpolated linearly and clamped at both ends — measured data should not
+extrapolate itself. With neither the baseline is a flat 1.0.
 
 **Parameters**
 

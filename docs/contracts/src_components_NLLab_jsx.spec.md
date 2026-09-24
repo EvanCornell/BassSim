@@ -20,16 +20,15 @@ Keys: `refValue`, `fmtVal`, `niceTicks`
 - **Reachability:** EXPORTED
 - **Obtain via:** import { NLLab } from '../../src/components/NLLab.jsx'
 
-The Nonlinear Lab: edit a driver's large-signal curves and see their effect.
+The driver curve editor: a driver's large-signal Bl, Kms/Cms and Le curves.
 
-Experimental. Curves describe how Bl, Cms/Kms and Le vary with excursion;
-the solver then iterates a quasi-linear sweep against them, which captures
-power compression and resonance drift but produces no harmonic distortion
-— that needs a time-domain engine.
+Curves describe how each parameter varies with excursion, as a ratio of
+its small-signal value. Nonlinear time-domain runs use them directly; the
+frequency sweep does not, since it is the small-signal model.
 
 **Returns**
 
-- `React.ReactElement` — The panel.
+- `React.ReactElement` — The editor.
 
 **Side effects**
 
@@ -106,7 +105,7 @@ exactly on it.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
-## UNREACHABLE (19)
+## UNREACHABLE (20)
 
 ### `CurveEditor(props)`
 
@@ -442,7 +441,34 @@ remove graph nodes, and both panels can be on screen at once.
 
 **Side effects**
 
-- Removes the selected point, which triggers a resimulation. Ignored while a text field has focus or another panel is focused.
+- Removes the selected point, which triggers a resimulation. Ignored while a text field has focus or the curve editor is not the view on screen.
+
+### `PolyButton(props)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+Enter a curve as polynomial coefficients, as measurement reports publish them.
+
+Coefficients are in the parameter's absolute units with x in mm, constant
+term first — Bl(x) = b0 + b1·x + b2·x² … — over the range they were fitted
+on. The curve becomes P(x)/P(0), held at its end values outside that range.
+
+**Parameters**
+
+- `props` — `object` — Component props.
+- `props.curve` — `object` — The curve being edited.
+- `props.param` — `string` — Its parameter name.
+- `props.refv` — `{v: number, unit: string}` — The driver's small-signal value, shown for comparison.
+- `props.setCurve` — `Function` — Writes a patch to the curve.
+
+**Returns**
+
+- `React.ReactElement` — The button, and its form when open.
+
+**Side effects**
+
+- Holds the form's text in component state.
 
 ### `NLLab > setCurve(patch)`
 

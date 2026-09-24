@@ -535,7 +535,7 @@ Open the Thiele/Small parameter solver.
 - **Reachability:** UNREACHABLE
 - **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
 
-Open the Nonlinear Lab panel.
+Open the time-domain workspace.
 
 **Returns**
 
@@ -543,26 +543,22 @@ Open the Nonlinear Lab panel.
 
 **Side effects**
 
-- Changes and persists the layout.
+- Replaces the dock with the time-domain view.
 
 ### `MenuBar > onClick()`
 
 - **Reachability:** UNREACHABLE
 - **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
 
-Turn experimental features on or off.
-
-Turning them off also closes the Nonlinear Lab, which would
-otherwise stay docked with nothing to show. Turning them on shows a
-warning first rather than enabling immediately.
+Open the time-domain workspace at the driver curve editor.
 
 **Returns**
 
-- `void`
+- `*` — Whatever the action returns; the menu ignores it.
 
 **Side effects**
 
-- Either changes a setting and closes a panel, or opens the warning dialog.
+- Replaces the dock with the time-domain view.
 
 ### `MenuBar > onClick()`
 
