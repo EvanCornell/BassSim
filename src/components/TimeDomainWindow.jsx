@@ -819,6 +819,7 @@ function JobStatus() {
     <div className="td-job">
       <div className="td-bar"><div style={{ width: `${Math.round(job.fraction * 100)}%` }} /></div>
       <span>{job.message}</span>
+      {job.threads > 1 && <span className="td-threads" title="Independent runs, and the pieces of a frequency sweep, go to one engine per processor thread">{job.threads} threads</span>}
       <button onClick={cancel}>Cancel</button>
     </div>
   )

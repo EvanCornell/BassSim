@@ -922,6 +922,7 @@ svg.ws-chevron.open { transform: rotate(90deg); }
 }
 .td-job { display: flex; align-items: center; gap: 8px; font-size: 11.5px; color: var(--text-2); min-width: 0; }
 .td-job span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 320px; }
+.td-job .td-threads { color: var(--text-3); font-variant-numeric: tabular-nums; flex-shrink: 0; }
 .td-bar { width: 140px; height: 6px; background: var(--surface-2); border: 1px solid var(--border); }
 .td-bar div { height: 100%; background: var(--accent); transition: width 0.2s; }
 .td-table { border-collapse: collapse; font-size: 12px; width: 100%; background: var(--surface); }

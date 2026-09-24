@@ -12,6 +12,10 @@ frequency response keeps updating while a distortion sweep runs.
 Cancelling a job terminates this worker; the store spawns a fresh one for
 the next job. That is the only way to stop ngspice mid-run.
 
+The analyses run no SPICE here: every netlist goes to the page's thread
+pool (see `pool.js`), and the analyses start as many at once as the pool
+has threads, which each job message carries.
+
 ## UNREACHABLE (2)
 
 ### `self.onmessage(e)`
@@ -24,7 +28,7 @@ Run one time-domain job and post its progress and result.
 
 **Parameters**
 
-- `e` — `MessageEvent` — The request: `{id, kind, project, opts, mode}` — `kind` is `linear`, `transient` or `distortion`; `mode` the distortion analysis.
+- `e` — `MessageEvent` — The request: `{id, kind, project, opts, mode, threads}` — `kind` is `linear`, `transient` or `distortion`; `mode` the distortion analysis; `threads` the pool's size. The pool's own messages are left to its listener.
 
 **Returns**
 

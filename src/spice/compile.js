@@ -26,6 +26,28 @@ export function pointsPerDecade(fmin, fmax, npts) {
 }
 
 /**
+ * A millionth of a step: how far past its last point a decade sweep's top is written.
+ *
+ * Enough that no rounding drops the last point; too little to move any
+ * point that ngspice stretches the steps to reach the top.
+ */
+const TOP_HAIR = 1e-6
+
+/**
+ * A point of a decade sweep, written exactly for an `.ac` line.
+ *
+ * @param {number} fstart - The sweep's first frequency, Hz.
+ * @param {number} ppd - Points per decade.
+ * @param {number} i - Steps from the start.
+ * @param {boolean} [top] - Written as a sweep's top: a hair past the point.
+ * @returns {string} The frequency, fifteen significant figures.
+ * @pure
+ */
+export function decadeStep(fstart, ppd, i, top = false) {
+  return Number((fstart * Math.pow(10, (i + (top ? TOP_HAIR : 0)) / ppd)).toPrecision(15)).toString()
+}
+
+/**
  * Add the far-field pressure and cone excursion to a transient netlist.
  *
  * In the sweep these are worked out from the saved flows afterwards. In a
@@ -138,12 +160,29 @@ export function compileProject(proj, analysis, opts = {}) {
     // A retry after a failed run trades speed for robustness: Gear
     // integration damps the stiff corners trapezoidal rings on, and more
     // Newton iterations per point stop a hard step from being cut to nothing.
-    nl.lines.push(tran.robust ? '.options interp method=gear maxord=2 itl4=100 reltol=0.002' : '.options interp')
-    nl.lines.push(`.tran ${fmt(step)} ${fmt(tran.tstop)} 0 ${fmt(maxStep)}`)
+    //
+    // KLU, ngspice's other sparse solver, steps these circuits — long
+    // chains of two- and three-terminal parts — two to three times faster
+    // than its default, with the same answers. It will not factor a node
+    // that only the rshunt conductances tie down at DC (the cone's side of
+    // Cms, a chamber's air), so the run skips the DC operating point
+    // (`uic`) and starts from rest, as it would anyway: every source is
+    // silent at t = 0. ngspice then reports no sample at t = 0; `runTransient`
+    // adds it.
+    nl.lines.push(tran.robust ? '.options interp klu method=gear maxord=2 itl4=100 reltol=0.002' : '.options interp klu')
+    nl.lines.push(`.tran ${fmt(step)} ${fmt(tran.tstop)} 0 ${fmt(maxStep)} uic`)
   } else if (analysis.scale === 'lin') {
     nl.lines.push(`.ac lin ${Math.round(analysis.npts)} ${analysis.fmin} ${analysis.fmax}`)
   } else {
-    nl.lines.push(`.ac dec ${pointsPerDecade(analysis.fmin, analysis.fmax, analysis.npts)} ${analysis.fmin} ${analysis.fmax}`)
+    // The top frequency is moved onto the grid — a whole number of steps
+    // from the bottom, plus a hair — because ngspice stretches the steps of
+    // a sweep over a decade long so its last point lands on the top, and
+    // rounding in its logarithms can drop a step that lands exactly there.
+    // On the grid, the sweep and any piece of it (see split.js) agree point
+    // for point.
+    const ppd = pointsPerDecade(analysis.fmin, analysis.fmax, analysis.npts)
+    const steps = Math.max(1, Math.round(ppd * Math.log10(analysis.fmax / analysis.fmin)))
+    nl.lines.push(`.ac dec ${ppd} ${analysis.fmin} ${decadeStep(analysis.fmin, ppd, steps, true)}`)
   }
   nl.lines.push('.end')
   return { netlist: nl.text(), map: m, saves: unique }

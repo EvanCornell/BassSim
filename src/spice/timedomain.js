@@ -12,9 +12,13 @@
 // Every analysis takes a resolved, validated project (see `prepareProject`)
 // and reports progress through an optional callback, so a worker can show it
 // and the caller can abandon the run.
+//
+// Runs that do not depend on each other are started together: where the
+// engine sits behind a thread pool (see `run.js`), they go side by side, one
+// per thread; in a single process they simply queue.
 
 import { compileProject } from './compile.js'
-import { runNetlist, runTransient } from './run.js'
+import { runNetlist, runTransient, threadCount } from './run.js'
 import { RHO } from './physics.js'
 import { normalizeSignal, signalLength, irfft, rfft, harmonics, thd, nextPow2, signalFunction } from './dsp.js'
 
@@ -380,13 +384,14 @@ export async function transientAnalysis(project, opts = {}, onProgress = () => {
   const signal = normalizeSignal(o.signal)
   const tstop = Math.max(o.duration, 1 / o.fs * 16)
   const base = { signal, levelDb: o.levelDb, fs: o.fs, tstop, bandwidth: o.bandwidth }
-  onProgress(0.05, o.nonlinear ? 'Nonlinear run' : 'Linear run')
-  const run = await transientRun(project, { ...base, nonlinear: o.nonlinear })
-  let linear = null
-  if (o.compareLinear && o.nonlinear && (run.nonlinearDrivers.length || hasExitLoss(project))) {
-    onProgress(0.5, 'Linear run, for comparison')
-    linear = await transientRun(project, { ...base, nonlinear: false })
-  }
+  // The linear run for comparison goes alongside the nonlinear one, when
+  // there is anything nonlinear for it to differ from.
+  const compare = o.compareLinear && o.nonlinear && (hasExitLoss(project) || hasCurves(project, o.bandwidth))
+  onProgress(0.05, compare ? 'Nonlinear run, and a linear one for comparison' : o.nonlinear ? 'Nonlinear run' : 'Linear run')
+  const [run, linear] = await Promise.all([
+    transientRun(project, { ...base, nonlinear: o.nonlinear }),
+    compare ? transientRun(project, { ...base, nonlinear: false }) : null,
+  ])
   onProgress(1, 'Done')
   return { run, linear, signal, fs: o.fs }
 }
@@ -400,6 +405,20 @@ export async function transientAnalysis(project, opts = {}, onProgress = () => {
  */
 function hasExitLoss(project) {
   return (project.nodes || []).some((n) => n.type === 'waveguide' && (Number(n.params.throatK) > 0 || Number(n.params.mouthK) > 0))
+}
+
+/**
+ * Whether any driver in the project carries a large-signal curve.
+ *
+ * @param {object} project - A resolved project.
+ * @param {number} bandwidth - The model bandwidth, Hz, as the run compiles it.
+ * @returns {boolean} True when some driver compiles as nonlinear.
+ * @pure
+ */
+function hasCurves(project, bandwidth) {
+  const signal = normalizeSignal({ type: 'sine', hz: 50 })
+  const { map } = compileProject(project, modelFor(project, bandwidth || 1000), { tran: { signal, levelDb: 0, fs: 1000, tstop: 0.01, nonlinear: true } })
+  return map.drivers.some((d) => d.nonlinear)
 }
 
 /** CEA-2010 distortion limits: harmonic → allowed level relative to the fundamental, dB. */
@@ -563,6 +582,72 @@ export async function measureBurst(project, hz, levelDb, o) {
 }
 
 /**
+ * The highest level that breaks no limit, searched with several levels tested at once.
+ *
+ * Levels are assumed to break limits from some threshold up. Until a level
+ * that passes and one that breaks are both known, the search steps 3 dB
+ * at a time from `start` — upward from a pass, downward from a failure,
+ * `width()` steps per round; then it tests `width()` evenly spaced levels
+ * inside the bracket each round, narrowing it by that many plus one, until
+ * it is 0.25 dB wide. With a width of 1 this is a plain step-then-halve search.
+ *
+ * @param {object} s - The search.
+ * @param {number} s.start - First level, dB.
+ * @param {number} s.top - Highest level to try, dB.
+ * @param {number} s.bottom - Lowest level to try, dB.
+ * @param {Function} s.test - `(L) → Promise<{broke: string|null, …}>`.
+ * @param {Function} s.width - `() → number`: levels to test per round, now.
+ * @param {Function} [s.onRound] - Called with the search's progress, 0–1, after each round.
+ * @returns {Promise<{lo: object|null, hi: object|null, tried: number}>} The highest passing level below the lowest breaking one — each `{L, …test's result}` — and the number of levels tested.
+ * @sideEffect Calls `test`, several at a time.
+ */
+export async function maxLevel(s) {
+  const tried = []
+  /**
+   * The current bracket: the lowest breaking level, and the highest passing one below it.
+   *
+   * @returns {{lo: object|null, hi: object|null}} Either may be missing.
+   * @reads the levels tried.
+   */
+  const bracket = () => {
+    let hi = null
+    for (const r of tried) if (r.broke && (!hi || r.L < hi.L)) hi = r
+    let lo = null
+    for (const r of tried) if (!r.broke && (!hi || r.L < hi.L) && (!lo || r.L > lo.L)) lo = r
+    return { lo, hi }
+  }
+  const TOL = 0.25
+  for (let round = 0; round < 40; round++) {
+    const { lo, hi } = bracket()
+    if (lo && hi && hi.L - lo.L <= TOL) break
+    const k = Math.max(1, Math.floor(s.width()))
+    let levels
+    if (lo && hi) {
+      levels = Array.from({ length: k }, (_, j) => lo.L + ((hi.L - lo.L) * (j + 1)) / (k + 1))
+    } else if (lo) {
+      levels = Array.from({ length: k }, (_, j) => lo.L + 3 * (j + 1)).filter((L) => L <= s.top + 1e-9)
+    } else if (hi) {
+      levels = Array.from({ length: k }, (_, j) => hi.L - 3 * (j + 1)).filter((L) => L >= s.bottom - 1e-9)
+    } else {
+      // first round: the start, then upward twice as far as downward
+      const steps = [0]
+      let up = 0
+      let down = 0
+      while (steps.length < k) steps.push(steps.length % 3 === 0 ? -3 * ++down : 3 * ++up)
+      levels = steps.map((d) => s.start + d).filter((L) => L <= s.top + 1e-9 && L >= s.bottom - 1e-9)
+    }
+    if (!levels.length) break
+    const results = await Promise.all(levels.map(async (L) => ({ L, ...(await s.test(L)) })))
+    tried.push(...results)
+    if (s.onRound) {
+      const b = bracket()
+      s.onRound(b.lo && b.hi ? 0.5 + 0.5 * Math.min(1, Math.log(3 / Math.max(b.hi.L - b.lo.L, TOL)) / Math.log(3 / TOL)) : 0.25)
+    }
+  }
+  return { ...bracket(), tried: tried.length }
+}
+
+/**
  * Distortion analyses.
  *
  * - `harmonics`: one tone at `hz`, `levelDb` — its harmonic levels, THD and
@@ -574,7 +659,8 @@ export async function measureBurst(project, hz, levelDb, o) {
  *   model's, as compression in dB.
  * - `maxspl`: for each band frequency, the highest burst level that breaks
  *   neither the CEA-2010 distortion limits nor `xLimit` × Xmax of excursion,
- *   found by stepping up 3 dB then halving to 0.25 dB.
+ *   found by stepping 3 dB then narrowing to 0.25 dB (see `maxLevel`),
+ *   every band at once.
  *
  * @param {object} project - A resolved, validated project.
  * @param {string} mode - `harmonics`, `thd`, `compression` or `maxspl`.
@@ -594,75 +680,104 @@ export async function distortionAnalysis(project, mode, opts = {}, onProgress = 
   }
   const freqs = logFreqs(o.f1, o.f2, o.points)
   if (mode === 'thd') {
-    const rows = []
-    for (const [i, f] of freqs.entries()) {
-      onProgress(i / freqs.length, `${f} Hz (${i + 1} of ${freqs.length})`)
+    // every frequency at once, the lowest (longest) first
+    let done = 0
+    onProgress(0, `${freqs.length} tones`)
+    const rows = await Promise.all(freqs.map(async (f) => {
       const m = await measureTone(project, f, o.levelDb, o)
-      rows.push({ hz: f, thd: m.thd, h2: m.harmonics[1]?.db, h3: m.harmonics[2]?.db, spl: m.spl, xPeak: m.xPeak })
-    }
+      done++
+      onProgress(done / freqs.length, `${done} of ${freqs.length} tones done`)
+      return { hz: f, thd: m.thd, h2: m.harmonics[1]?.db, h3: m.harmonics[2]?.db, spl: m.spl, xPeak: m.xPeak }
+    }))
     onProgress(1, 'Done')
     return { mode, levelDb: o.levelDb, rows }
   }
   if (mode === 'compression') {
-    const rows = freqs.map((hz) => ({ hz }))
+    // The linear model's level scales with the drive, so one small AC run
+    // per frequency serves every level; the tones all go at once.
     const total = freqs.length * o.levels.length
-    let k = 0
-    for (const L of o.levels) {
-      for (const row of rows) {
-        onProgress(k / total, `${row.hz} Hz at ${L >= 0 ? '+' : ''}${L} dB (${k + 1} of ${total})`)
-        const m = await measureTone(project, row.hz, L, o)
-        const lin = await linearLevel(project, row.hz, L)
-        row[`spl${L}`] = m.spl
-        row[`cmp${L}`] = m.spl - lin
-        k++
+    let done = 0
+    onProgress(0, `${total} tones`)
+    const [lins, tones] = await Promise.all([
+      Promise.all(freqs.map((hz) => linearLevel(project, hz, 0))),
+      Promise.all(o.levels.flatMap((L) => freqs.map(async (hz) => {
+        const m = await measureTone(project, hz, L, o)
+        done++
+        onProgress(done / total, `${done} of ${total} tones done`)
+        return { hz, L, spl: m.spl }
+      }))),
+    ])
+    const rows = freqs.map((hz, i) => {
+      const row = { hz }
+      for (const t of tones.filter((x) => x.hz === hz)) {
+        row[`spl${t.L}`] = t.spl
+        row[`cmp${t.L}`] = t.spl - (lins[i] + t.L)
       }
-    }
+      return row
+    })
     onProgress(1, 'Done')
     return { mode, levels: o.levels, rows }
   }
   if (mode === 'maxspl') {
     const xmax = Object.fromEntries((project.nodes || []).filter((n) => n.type === 'driver').map((n) => [n.id, (Number(n.params.Xmax) || 0) * o.xLimit]))
-    const rows = []
-    for (const [i, f] of o.bands.entries()) {
-      const frac = i / o.bands.length
-      const step = 1 / o.bands.length
-      let lo = null
-      let hi = null
-      let last = null
-      let L = o.levelDb
-      let tries = 0
-      // step up until a limit breaks, or down until none does
-      let m = await measureBurst(project, f, L, o)
-      let broke = brokenLimit(m, xmax)
-      if (!broke) { lo = { L, m } } else { hi = { L, m, broke } }
-      while (tries < 16 && (lo == null || hi == null)) {
-        tries++
-        onProgress(frac + step * Math.min(0.5, tries / 20), `${f} Hz: trying ${L >= 0 ? '+' : ''}${L} dB`)
-        L += lo ? 3 : -3
-        if (L - o.levelDb > o.maxBoostDb) break
-        m = await measureBurst(project, f, L, o)
-        broke = brokenLimit(m, xmax)
-        if (!broke) lo = { L, m }
-        else hi = { L, m, broke }
-      }
-      while (lo && hi && hi.L - lo.L > 0.25 && tries < 30) {
-        tries++
-        onProgress(frac + step * Math.min(0.95, 0.5 + tries / 60), `${f} Hz: narrowing`)
-        const mid = (lo.L + hi.L) / 2
-        m = await measureBurst(project, f, mid, o)
-        broke = brokenLimit(m, xmax)
-        if (!broke) lo = { L: mid, m }
-        else hi = { L: mid, m, broke }
-      }
-      last = lo
-      rows.push({
-        hz: f,
-        spl: last ? last.m.spl : null,
-        levelDb: last ? last.L : null,
-        limit: hi ? hi.broke : 'none within range',
-        xPeak: last ? last.m.xPeak : null,
+    const bands = o.bands
+    let active = bands.length
+    const partial = new Array(bands.length).fill(0)
+    /**
+     * Report the search's progress: bands finished, and how far along the rest are.
+     *
+     * @param {string} message - What is running.
+     * @returns {void}
+     * @sideEffect Calls `onProgress`.
+     */
+    const report = (message) => onProgress(partial.reduce((a, b) => a + b, 0) / bands.length, message)
+    const rows = await Promise.all(bands.map(async (f, bi) => {
+      const found = await maxLevel({
+        start: o.levelDb,
+        top: o.levelDb + o.maxBoostDb,
+        bottom: o.levelDb - 48,
+        /**
+         * Test one level at this band.
+         *
+         * @param {number} L - Level offset, dB.
+         * @returns {Promise<{m: object, broke: string|null}>} The measurement and the limit it breaks.
+         * @sideEffect Runs the engine.
+         */
+        test: async (L) => {
+          const m = await measureBurst(project, f, L, o)
+          return { m, broke: brokenLimit(m, xmax) }
+        },
+        /**
+         * How many levels this band may test at once: its share of the threads.
+         *
+         * @returns {number} At least 1.
+         * @reads the thread count and the bands still searching.
+         */
+        width: () => Math.max(1, Math.ceil(threadCount() / Math.max(active, 1))),
+        /**
+         * Note a round's end.
+         *
+         * @param {number} fraction - How far this band's search has come, 0–1.
+         * @returns {void}
+         * @sideEffect Reports progress.
+         */
+        onRound: (fraction) => {
+          partial[bi] = Math.min(0.95, fraction)
+          report(`${bands.length - active} of ${bands.length} bands done`)
+        },
       })
-    }
+      active--
+      partial[bi] = 1
+      report(`${bands.length - active} of ${bands.length} bands done`)
+      const lo = found.lo
+      return {
+        hz: f,
+        spl: lo ? lo.m.spl : null,
+        levelDb: lo ? lo.L : null,
+        limit: found.hi ? found.hi.broke : 'none within range',
+        xPeak: lo ? lo.m.xPeak : null,
+      }
+    }))
     onProgress(1, 'Done')
     return { mode, rows }
   }

@@ -15,6 +15,9 @@ A sweep is fast enough that cancellation is not worth the cost of tearing
 down and respawning a worker: the store tags every request with an id and
 ignores replies it no longer wants.
 
+SPICE runs go to the page's thread pool (see `pool.js`), which splits the
+sweep across whichever engine workers are free.
+
 ## UNREACHABLE (1)
 
 ### `self.onmessage(e)`
@@ -30,7 +33,7 @@ an exception, carrying every reason on `projectErrors`.
 
 **Parameters**
 
-- `e` — `MessageEvent` — The request, `{id, project, engine}`.
+- `e` — `MessageEvent` — The request, `{id, project, engine}`; the pool's own messages are left to its listener.
 
 **Returns**
 

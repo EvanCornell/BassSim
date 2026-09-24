@@ -62,8 +62,15 @@ are silently blocked. Fixed by construction in the SPICE engine
   semi-inductance ladder scales the whole ladder and uses Le at 1 kHz for
   the motional and reluctance terms.
 - **MCP tools** for transient and distortion runs.
-- **Max SPL speed**: ~6–7 s per band; a smarter first guess (the linear
-  excursion limit) would halve the search.
+- **Max SPL speed**: bands now search in parallel, several levels per
+  round; a smarter first guess (the linear excursion limit) would still cut
+  the rounds.
+- **Threads for the MCP server**: it runs one engine in-process. A
+  `worker_threads` pool behind `setRunner` would give it the same
+  parallelism as the browser.
+- **Single long transient runs** use one thread; ngspice cannot split a run
+  in time. Fewer ladder sections where accuracy allows (`LC_PER`) is the
+  remaining lever.
 - **Imported audio** as a transient signal; amplifier clipping from the
   channel's `rated` watts.
 - Distortion runs model the driver's curves and duct exit losses only;

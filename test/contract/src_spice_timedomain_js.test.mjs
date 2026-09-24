@@ -8,8 +8,9 @@ import { compileProject } from '../../src/spice/compile.js'
 import { normalizeSignal } from '../../src/spice/dsp.js'
 import {
   linearResponses, transientRun, transientAnalysis, measureTone, linearLevel, distortionAnalysis,
-  logFreqs, brokenLimit, levels, splOf, CEA2010_LIMITS,
+  logFreqs, brokenLimit, levels, splOf, CEA2010_LIMITS, maxLevel,
 } from '../../src/spice/timedomain.js'
+import { setThreads } from '../../src/spice/run.js'
 
 const DRV = { Fs: 30, Qts: 0.45, Qes: 0.5, Qms: 5, Vas: 60, Re: 3.6, Bl: 15, Mms: 150, Cms: 0.19, Sd: 480, Le: 1.5, LeExp: 0.7, Xmax: 10, Rms: 4 }
 
@@ -118,7 +119,8 @@ test('transient netlist: interpolated output, ladders for lines, a bounded step'
   const { netlist } = compileProject(box(), { fmin: 10, fmax: 1000, npts: 50 }, {
     tran: { signal: normalizeSignal({ type: 'sine', hz: 40 }), levelDb: 0, fs: 1000, tstop: 0.1, nonlinear: false },
   })
-  assert.match(netlist, /\.options interp\n/)
+  assert.match(netlist, /\.options interp klu\n/)
+  assert.match(netlist, /\.tran .* uic\n/)
   const m = /\.tran (\S+) (\S+) 0 (\S+)/.exec(netlist)
   assert.equal(Number(m[1]), 1e-3)
   assert.ok(Number(m[3]) <= 1 / 8000 + 1e-15)
@@ -186,4 +188,53 @@ test('hard signals run without stalling', async () => {
       assert.ok(r.pressure.every(Number.isFinite))
     }
   }
+})
+
+// CONTRACT (maxLevel): "the highest passing level below the lowest breaking
+// one", to 0.25 dB, whatever the width; wider rounds need no more of them.
+test('maxLevel: finds the threshold, in fewer rounds when wider', async () => {
+  for (const T of [7.3, -5.1, 0.1]) {
+    const rounds = {}
+    for (const width of [1, 3, 8]) {
+      let n = 0
+      const r = await maxLevel({
+        start: 0, top: 30, bottom: -48, width: () => width,
+        test: async (L) => ({ broke: L > T ? 'H3' : null }),
+        onRound: () => { n++ },
+      })
+      assert.ok(r.lo.L <= T && T - r.lo.L <= 0.25, `T ${T} width ${width}: lo ${r.lo.L}`)
+      assert.ok(r.hi.L > T && r.hi.L - r.lo.L <= 0.25)
+      assert.equal(r.hi.broke, 'H3')
+      rounds[width] = n
+    }
+    assert.ok(rounds[8] <= rounds[3] && rounds[3] < rounds[1], JSON.stringify(rounds))
+  }
+})
+
+// CONTRACT (maxLevel): the range bounds the search: nothing breaks → no
+// `hi`; everything breaks → no `lo`.
+test('maxLevel: limits of the range', async () => {
+  const none = await maxLevel({ start: 0, top: 12, bottom: -48, width: () => 4, test: async () => ({ broke: null }) })
+  assert.equal(none.hi, null)
+  assert.equal(none.lo.L, 12)
+  const all = await maxLevel({ start: 0, top: 12, bottom: -9, width: () => 2, test: async () => ({ broke: 'excursion' }) })
+  assert.equal(all.lo, null)
+  assert.equal(all.hi.L, -9)
+})
+
+// CONTRACT (distortionAnalysis maxspl, transientAnalysis): the parallel
+// forms give the same answers as one run at a time.
+test('maxspl with several threads matches one thread', async () => {
+  const opts = { bands: [30, 45], bandwidth: 400, xLimit: 1.5, maxBoostDb: 18 }
+  const p = box({ Bl: { points: [{ x: 6, g: -0.35, w: 5 }], symmetric: true } })
+  setThreads(1)
+  const one = await distortionAnalysis(p, 'maxspl', opts)
+  setThreads(6)
+  try {
+    const many = await distortionAnalysis(p, 'maxspl', opts)
+    one.rows.forEach((r, i) => {
+      assert.equal(many.rows[i].limit, r.limit)
+      assert.ok(Math.abs(many.rows[i].levelDb - r.levelDb) <= 0.25, `${r.hz} Hz: ${r.levelDb} vs ${many.rows[i].levelDb}`)
+    })
+  } finally { setThreads(1) }
 })

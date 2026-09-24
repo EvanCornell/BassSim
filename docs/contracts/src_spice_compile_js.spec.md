@@ -7,7 +7,7 @@
 
 A resolved v3 project → a SPICE netlist, plus a map of what its outputs mean.
 
-## EXPORTED (2)
+## EXPORTED (3)
 
 ### `pointsPerDecade(fmin, fmax, npts)`
 
@@ -28,6 +28,26 @@ points.
 **Returns**
 
 - `number` — Points per decade, at least 1.
+
+**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
+
+### `decadeStep(fstart, ppd, i, top)`
+
+- **Reachability:** EXPORTED
+- **Obtain via:** import { decadeStep } from '../../src/spice/compile.js'
+
+A point of a decade sweep, written exactly for an `.ac` line.
+
+**Parameters**
+
+- `fstart` — `number` — The sweep's first frequency, Hz.
+- `ppd` — `number` — Points per decade.
+- `i` — `number` — Steps from the start.
+- `top` — `boolean` _(optional)_ — Written as a sweep's top: a hair past the point.
+
+**Returns**
+
+- `string` — The frequency, fifteen significant figures.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 

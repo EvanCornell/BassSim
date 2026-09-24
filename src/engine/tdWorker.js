@@ -4,18 +4,28 @@
 //
 // Cancelling a job terminates this worker; the store spawns a fresh one for
 // the next job. That is the only way to stop ngspice mid-run.
+//
+// The analyses run no SPICE here: every netlist goes to the page's thread
+// pool (see `pool.js`), and the analyses start as many at once as the pool
+// has threads, which each job message carries.
 import { prepareProject } from './pipeline'
+import { installRemoteRunner, isPoolMessage } from './remote'
+import { setThreads } from '../spice/run'
 import { linearResponses, transientAnalysis, distortionAnalysis } from '../spice/timedomain'
+
+installRemoteRunner()
 
 /**
  * Run one time-domain job and post its progress and result.
  *
- * @param {MessageEvent} e - The request: `{id, kind, project, opts, mode}` — `kind` is `linear`, `transient` or `distortion`; `mode` the distortion analysis.
+ * @param {MessageEvent} e - The request: `{id, kind, project, opts, mode, threads}` — `kind` is `linear`, `transient` or `distortion`; `mode` the distortion analysis; `threads` the pool's size. The pool's own messages are left to its listener.
  * @returns {Promise<void>} Settles once the reply is posted.
  * @sideEffect Runs the engine and posts `progress` messages, then one `done` or `error` message.
  */
 self.onmessage = async (e) => {
-  const { id, kind, project, opts, mode } = e.data
+  if (isPoolMessage(e.data)) return
+  const { id, kind, project, opts, mode, threads } = e.data
+  setThreads(threads || 1)
   /**
    * Report progress to the store.
    *

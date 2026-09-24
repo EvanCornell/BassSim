@@ -150,7 +150,10 @@ export function signalPoints(sig, amp, fs) {
   const f = signalFunction(sig, fs)
   const n = Math.ceil(signalLength(sig) * fs)
   const out = []
-  for (let i = 0; i <= n; i++) out.push(i / fs, amp * f(i / fs))
+  // Starting from zero, like every other signal: a transient run begins at
+  // rest, with every source silent (see `.tran … uic` in compile.js).
+  out.push(0, 0)
+  for (let i = 1; i <= n; i++) out.push(i / fs, amp * f(i / fs))
   out.push((n + 1) / fs, 0)
   return out
 }

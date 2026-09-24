@@ -24,9 +24,9 @@
     "pure": "flag"
   },
   "stats": {
-    "modules": 94,
-    "methods": 975,
-    "documented": 975
+    "modules": 99,
+    "methods": 1018,
+    "documented": 1018
   },
   "modules": [
     {
@@ -16485,7 +16485,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 838,
+          "line": 839,
           "signature": [],
           "documented": true,
           "summary": "The time-domain workspace: its own full-screen view under the menu and quick bar.",
@@ -22824,6 +22824,899 @@
       ]
     },
     {
+      "file": "src/engine/pool.js",
+      "module": {
+        "summary": "The simulation thread pool: one ngspice engine per processor thread.",
+        "description": "The simulation thread pool: one ngspice engine per processor thread.\n\nngspice solves one circuit at a time on one thread, so the way to use a\nmachine's cores is to run many circuits at once. The pool keeps a set of\nengine workers (`spiceWorker.js`) as large as the machine has threads,\nand the workers that coordinate a job — the live sweep's, the time-domain\nanalyses' — send it netlists rather than running them. It then:\n\n- runs independent netlists side by side, one per free worker;\n- splits a frequency sweep across the free workers, since every frequency\n  is solved on its own (see `spice/split.js`), and joins the pieces;\n- puts the live sweep ahead of time-domain work, and keeps one worker\n  beyond the thread count for it, so a long distortion run never holds\n  up the frequency response;\n- stops a lane's runs on cancel, terminating the workers they are on.\n\nWorkers are started and warmed (their engine loaded) ahead of need, since\nloading takes most of a second."
+      },
+      "constants": [
+        {
+          "name": "LANES",
+          "line": 23,
+          "shape": {
+            "kind": "array",
+            "length": 2,
+            "values": [
+              "live",
+              "td"
+            ]
+          },
+          "summary": "Lanes, in priority order: the live sweep first, then time-domain work.",
+          "description": "Lanes, in priority order: the live sweep first, then time-domain work."
+        },
+        {
+          "name": "RESERVE",
+          "line": 26,
+          "shape": {
+            "kind": "literal",
+            "value": 1
+          },
+          "summary": "Workers kept beyond the thread count, for the live sweep only.",
+          "description": "Workers kept beyond the thread count, for the live sweep only."
+        }
+      ],
+      "methods": [
+        {
+          "name": "poolSize",
+          "qualified": "poolSize",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 35,
+          "signature": [
+            "nav"
+          ],
+          "documented": true,
+          "summary": "How many engines to run at once on this machine: one per processor thread.",
+          "description": "How many engines to run at once on this machine: one per processor thread.",
+          "params": [
+            {
+              "name": "nav",
+              "type": "object",
+              "optional": true,
+              "default": null,
+              "desc": "The `navigator` to read."
+            }
+          ],
+          "returns": {
+            "type": "number",
+            "desc": "Logical processors reported, at least 1; 4 when unknown."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [
+              "navigator.hardwareConcurrency."
+            ],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "cancelled",
+          "qualified": "cancelled",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 45,
+          "signature": [],
+          "documented": true,
+          "summary": "The error a cancelled run rejects with.",
+          "description": "The error a cancelled run rejects with.",
+          "params": [],
+          "returns": {
+            "type": "Error",
+            "desc": "Named `Cancelled`."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "createPool",
+          "qualified": "createPool",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 60,
+          "signature": [
+            "arg0"
+          ],
+          "documented": true,
+          "summary": "Create a pool.",
+          "description": "Create a pool.",
+          "params": [
+            {
+              "name": "opts",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "Options."
+            },
+            {
+              "name": "opts.spawn",
+              "type": "Function",
+              "optional": false,
+              "default": null,
+              "desc": "`() → Worker` running `spiceWorker.js` (or anything with `postMessage`, `onmessage`, `onerror` and `terminate`)."
+            },
+            {
+              "name": "opts.size",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Threads to use; the time-domain lane runs at most this many at once."
+            }
+          ],
+          "returns": {
+            "type": "{run: Function, warm: Function, cancel: Function, stats: Function, size: number}",
+            "desc": "The pool."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "limit",
+          "qualified": "createPool > limit",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 72,
+          "signature": [
+            "lane"
+          ],
+          "documented": true,
+          "summary": "Most workers a lane may start.",
+          "description": "Most workers a lane may start.",
+          "params": [
+            {
+              "name": "lane",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "The lane."
+            }
+          ],
+          "returns": {
+            "type": "number",
+            "desc": "The thread count, plus the reserve for the live sweep."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "add",
+          "qualified": "createPool > add",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 81,
+          "signature": [],
+          "documented": true,
+          "summary": "Start one worker.",
+          "description": "Start one worker.",
+          "params": [],
+          "returns": {
+            "type": "object",
+            "desc": "Its entry, idle and not yet warm."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [
+              "the pool's worker list."
+            ],
+            "sideEffect": [
+              "Spawns a worker."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "?.onmessage",
+          "qualified": "createPool > add > ?.onmessage",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 90,
+          "signature": [
+            "e"
+          ],
+          "documented": true,
+          "summary": "A reply from the worker: warmed, or a run finished.",
+          "description": "A reply from the worker: warmed, or a run finished.",
+          "params": [
+            {
+              "name": "e",
+              "type": "MessageEvent",
+              "optional": false,
+              "default": null,
+              "desc": "`{warm: true}` or `{tid, ok, scale, vectors, error, spiceErrors}`."
+            }
+          ],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Settles the run's promise and hands the worker its next run."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "?.onerror",
+          "qualified": "createPool > add > ?.onerror",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 111,
+          "signature": [],
+          "documented": true,
+          "summary": "The worker died: fail its run and drop it.",
+          "description": "The worker died: fail its run and drop it.",
+          "params": [],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Rejects the run and dispatches the queue to the remaining workers."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "drop",
+          "qualified": "createPool > drop",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 132,
+          "signature": [
+            "entry"
+          ],
+          "documented": true,
+          "summary": "Terminate a worker and forget it.",
+          "description": "Terminate a worker and forget it.",
+          "params": [
+            {
+              "name": "entry",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "Its entry."
+            }
+          ],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [
+              "the pool's worker list."
+            ],
+            "sideEffect": [
+              "Terminates the worker."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "idle",
+          "qualified": "createPool > idle",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 144,
+          "signature": [],
+          "documented": true,
+          "summary": "An idle worker, warm ones first.",
+          "description": "An idle worker, warm ones first.",
+          "params": [],
+          "returns": {
+            "type": "object|null",
+            "desc": "Its entry."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [
+              "the pool's workers."
+            ],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "dispatch",
+          "qualified": "createPool > dispatch",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 153,
+          "signature": [],
+          "documented": true,
+          "summary": "Hand queued runs to free workers, live sweep first, starting workers up to each lane's limit.",
+          "description": "Hand queued runs to free workers, live sweep first, starting workers up to each lane's limit.",
+          "params": [],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [
+              "the queue and the workers' tasks."
+            ],
+            "sideEffect": [
+              "Posts runs to workers; may spawn workers."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "submit",
+          "qualified": "createPool > submit",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 183,
+          "signature": [
+            "netlist",
+            "kind",
+            "lane"
+          ],
+          "documented": true,
+          "summary": "Queue one netlist.",
+          "description": "Queue one netlist.",
+          "params": [
+            {
+              "name": "netlist",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "The netlist."
+            },
+            {
+              "name": "kind",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "`complex` or `real`."
+            },
+            {
+              "name": "lane",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "`live` or `td`."
+            }
+          ],
+          "returns": {
+            "type": "Promise<{scale: number[], vectors: Map<string, object>}>",
+            "desc": "Its result."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Queues the run and dispatches."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "pieces",
+          "qualified": "createPool > pieces",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 195,
+          "signature": [
+            "lane"
+          ],
+          "documented": true,
+          "summary": "How many pieces to split a sweep into for a lane, now.",
+          "description": "How many pieces to split a sweep into for a lane, now.",
+          "params": [
+            {
+              "name": "lane",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "The lane."
+            }
+          ],
+          "returns": {
+            "type": "number",
+            "desc": "For the live sweep, the warm workers free (it never waits on an engine loading); for time-domain work, the lane's free threads."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [
+              "the pool's state."
+            ],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "run",
+          "qualified": "createPool > run",
+          "kind": "function",
+          "exported": false,
+          "async": true,
+          "generator": false,
+          "line": 211,
+          "signature": [
+            "netlist",
+            "kind",
+            "lane"
+          ],
+          "documented": true,
+          "summary": "Run one netlist, splitting a frequency sweep across the free workers.",
+          "description": "Run one netlist, splitting a frequency sweep across the free workers.",
+          "params": [
+            {
+              "name": "netlist",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "A complete netlist."
+            },
+            {
+              "name": "kind",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "`complex` for an AC sweep, `real` for a transient run."
+            },
+            {
+              "name": "lane",
+              "type": "string",
+              "optional": true,
+              "default": null,
+              "desc": "`live` or `td`."
+            }
+          ],
+          "returns": {
+            "type": "Promise<{scale: number[], vectors: Map<string, object>}>",
+            "desc": "The result, as one run returns it."
+          },
+          "throws": [
+            {
+              "type": "Error",
+              "desc": "When SPICE fails, or the run is cancelled (named `Cancelled`)."
+            }
+          ],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Runs engines in the pool."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "warm",
+          "qualified": "createPool > warm",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 225,
+          "signature": [
+            "n"
+          ],
+          "documented": true,
+          "summary": "Start and warm workers up to a count, so the next runs need not wait for an engine to load.",
+          "description": "Start and warm workers up to a count, so the next runs need not wait for an engine to load.",
+          "params": [
+            {
+              "name": "n",
+              "type": "number",
+              "optional": true,
+              "default": null,
+              "desc": "Workers wanted; at most the thread count."
+            }
+          ],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Spawns workers and posts them a warm-up."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "cancel",
+          "qualified": "createPool > cancel",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 237,
+          "signature": [
+            "lane"
+          ],
+          "documented": true,
+          "summary": "Stop every run of a lane: queued ones are dropped, running ones' workers terminated.",
+          "description": "Stop every run of a lane: queued ones are dropped, running ones' workers terminated.",
+          "params": [
+            {
+              "name": "lane",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "The lane."
+            }
+          ],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [
+              "the queue and the worker list."
+            ],
+            "sideEffect": [
+              "Rejects the lane's runs as `Cancelled` and terminates their workers; fresh ones start with the next runs."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "stats",
+          "qualified": "createPool > stats",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 256,
+          "signature": [],
+          "documented": true,
+          "summary": "The pool's state, for display.",
+          "description": "The pool's state, for display.",
+          "params": [],
+          "returns": {
+            "type": "{size: number, workers: number, busy: number, queued: number}",
+            "desc": "Threads, workers started, workers running, runs waiting."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [
+              "the pool's state."
+            ],
+            "pure": false
+          },
+          "other": []
+        }
+      ]
+    },
+    {
+      "file": "src/engine/poolHost.js",
+      "module": {
+        "summary": "The main thread's end of the simulation thread pool: one pool for the page, and the relay that carries a coordinating worker's netlists to it and the results back.",
+        "description": "The main thread's end of the simulation thread pool: one pool for the\npage, and the relay that carries a coordinating worker's netlists to it\nand the results back."
+      },
+      "constants": [],
+      "methods": [
+        {
+          "name": "spawnEngine",
+          "qualified": "spawnEngine",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 14,
+          "signature": [],
+          "documented": true,
+          "summary": "Start one engine worker.",
+          "description": "Start one engine worker.",
+          "params": [],
+          "returns": {
+            "type": "Worker",
+            "desc": "A worker running `spiceWorker.js`."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Spawns a worker."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "getPool",
+          "qualified": "getPool",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 24,
+          "signature": [],
+          "documented": true,
+          "summary": "The page's pool, created on first use.",
+          "description": "The page's pool, created on first use.",
+          "params": [],
+          "returns": {
+            "type": "object",
+            "desc": "The pool (see `createPool`)."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Creates the pool the first time; its workers start as runs arrive or on `warm`."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "buffers",
+          "qualified": "buffers",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 38,
+          "signature": [
+            "vectors"
+          ],
+          "documented": true,
+          "summary": "Every buffer in a result, so the relay can move them rather than copy them.",
+          "description": "Every buffer in a result, so the relay can move them rather than copy them.",
+          "params": [
+            {
+              "name": "vectors",
+              "type": "Map<string, object>",
+              "optional": false,
+              "default": null,
+              "desc": "A run's vectors."
+            }
+          ],
+          "returns": {
+            "type": "ArrayBuffer[]",
+            "desc": "Their buffers."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "relay",
+          "qualified": "relay",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 56,
+          "signature": [
+            "worker",
+            "data",
+            "lane"
+          ],
+          "documented": true,
+          "summary": "Serve a coordinating worker's run request from the pool.",
+          "description": "Serve a coordinating worker's run request from the pool.",
+          "params": [
+            {
+              "name": "worker",
+              "type": "Worker",
+              "optional": false,
+              "default": null,
+              "desc": "The coordinating worker."
+            },
+            {
+              "name": "data",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "A message from it."
+            },
+            {
+              "name": "lane",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "`live` or `td`."
+            }
+          ],
+          "returns": {
+            "type": "boolean",
+            "desc": "True when the message was a run request (and is being served); false for any other message."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Runs the netlist in the pool and posts `{type: 'spice-reply', …}` back to the worker."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "cancelLane",
+          "qualified": "cancelLane",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 72,
+          "signature": [
+            "lane"
+          ],
+          "documented": true,
+          "summary": "Stop every run of a lane, if the pool has started.",
+          "description": "Stop every run of a lane, if the pool has started.",
+          "params": [
+            {
+              "name": "lane",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "`live` or `td`."
+            }
+          ],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Cancels the lane's runs (see `createPool`)."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        }
+      ]
+    },
+    {
       "file": "src/engine/project.js",
       "module": {
         "summary": "Project (.acousim.json) schema helpers shared by the app and the MCP server. A project is plain JSON: { name, settings, nodes: [{id,type,position,params}], edges: [{source,sourceHandle,target,targetHandle}] }.",
@@ -23057,6 +23950,96 @@
             "post": [
               "proj is not modified — nodes and params are copied, not aliased."
             ],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        }
+      ]
+    },
+    {
+      "file": "src/engine/remote.js",
+      "module": {
+        "summary": "The coordinator's side of the simulation thread pool.",
+        "description": "The coordinator's side of the simulation thread pool.\n\nA worker that coordinates a job — the live sweep's, the time-domain\nanalyses' — compiles netlists and reads results, but runs none itself:\neach netlist goes to the main thread, which hands it to the pool (see\n`pool.js` and `poolHost.js`), and the vectors come back."
+      },
+      "constants": [],
+      "methods": [
+        {
+          "name": "installRemoteRunner",
+          "qualified": "installRemoteRunner",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 19,
+          "signature": [
+            "scope"
+          ],
+          "documented": true,
+          "summary": "Send this worker's runs to the pool through the main thread.",
+          "description": "Send this worker's runs to the pool through the main thread.\n\nReplies arrive as `{type: 'spice-reply', rid, …}` messages; the worker's\nown message handler must ignore them.",
+          "params": [
+            {
+              "name": "scope",
+              "type": "object",
+              "optional": true,
+              "default": null,
+              "desc": "The worker's global scope."
+            }
+          ],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Installs a message listener and swaps the SPICE runner."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "isPoolMessage",
+          "qualified": "isPoolMessage",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 50,
+          "signature": [
+            "data"
+          ],
+          "documented": true,
+          "summary": "Whether a message is the pool's, not a job for the worker.",
+          "description": "Whether a message is the pool's, not a job for the worker.",
+          "params": [
+            {
+              "name": "data",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "A message's data."
+            }
+          ],
+          "returns": {
+            "type": "boolean",
+            "desc": "True for pool traffic."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
             "invariant": [],
             "mutates": [],
             "sideEffect": [],
@@ -23912,10 +24895,100 @@
       ]
     },
     {
+      "file": "src/engine/spiceWorker.js",
+      "module": {
+        "summary": "An engine worker in the simulation thread pool (see `pool.js`): one ngspice instance on its own thread, running whatever netlists the pool hands it and sending back the vectors.",
+        "description": "An engine worker in the simulation thread pool (see `pool.js`): one\nngspice instance on its own thread, running whatever netlists the pool\nhands it and sending back the vectors."
+      },
+      "constants": [],
+      "methods": [
+        {
+          "name": "buffers",
+          "qualified": "buffers",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 16,
+          "signature": [
+            "vectors"
+          ],
+          "documented": true,
+          "summary": "Every buffer in a result, so the reply can move them rather than copy them.",
+          "description": "Every buffer in a result, so the reply can move them rather than copy them.",
+          "params": [
+            {
+              "name": "vectors",
+              "type": "Map<string, object>",
+              "optional": false,
+              "default": null,
+              "desc": "The run's vectors."
+            }
+          ],
+          "returns": {
+            "type": "ArrayBuffer[]",
+            "desc": "Their buffers."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "self.onmessage",
+          "qualified": "self.onmessage",
+          "kind": "function",
+          "exported": false,
+          "async": true,
+          "generator": false,
+          "line": 32,
+          "signature": [
+            "e"
+          ],
+          "documented": true,
+          "summary": "Run one netlist, or load the engine, and reply.",
+          "description": "Run one netlist, or load the engine, and reply.",
+          "params": [
+            {
+              "name": "e",
+              "type": "MessageEvent",
+              "optional": false,
+              "default": null,
+              "desc": "`{warm: true}`, or `{tid, netlist, kind}`."
+            }
+          ],
+          "returns": {
+            "type": "Promise<void>",
+            "desc": "Settles once the reply is posted."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Runs the engine and posts `{warm: true}`, or `{tid, ok, scale, vectors}` / `{tid, ok: false, error, spiceErrors}`."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        }
+      ]
+    },
+    {
       "file": "src/engine/tdWorker.js",
       "module": {
         "summary": "Time-domain worker: runs the long analyses — transient runs, distortion sweeps — away from both the UI thread and the live sweep's worker, so the frequency response keeps updating while a distortion sweep runs.",
-        "description": "Time-domain worker: runs the long analyses — transient runs, distortion\nsweeps — away from both the UI thread and the live sweep's worker, so the\nfrequency response keeps updating while a distortion sweep runs.\n\nCancelling a job terminates this worker; the store spawns a fresh one for\nthe next job. That is the only way to stop ngspice mid-run."
+        "description": "Time-domain worker: runs the long analyses — transient runs, distortion\nsweeps — away from both the UI thread and the live sweep's worker, so the\nfrequency response keeps updating while a distortion sweep runs.\n\nCancelling a job terminates this worker; the store spawns a fresh one for\nthe next job. That is the only way to stop ngspice mid-run.\n\nThe analyses run no SPICE here: every netlist goes to the page's thread\npool (see `pool.js`), and the analyses start as many at once as the pool\nhas threads, which each job message carries."
       },
       "constants": [],
       "methods": [
@@ -23926,7 +24999,7 @@
           "exported": false,
           "async": true,
           "generator": false,
-          "line": 17,
+          "line": 25,
           "signature": [
             "e"
           ],
@@ -23939,7 +25012,7 @@
               "type": "MessageEvent",
               "optional": false,
               "default": null,
-              "desc": "The request: `{id, kind, project, opts, mode}` — `kind` is `linear`, `transient` or `distortion`; `mode` the distortion analysis."
+              "desc": "The request: `{id, kind, project, opts, mode, threads}` — `kind` is `linear`, `transient` or `distortion`; `mode` the distortion analysis; `threads` the pool's size. The pool's own messages are left to its listener."
             }
           ],
           "returns": {
@@ -23967,7 +25040,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 27,
+          "line": 37,
           "signature": [
             "fraction",
             "message"
@@ -24015,7 +25088,7 @@
       "file": "src/engine/worker.js",
       "module": {
         "summary": "Simulation worker: the engine's host in the browser.",
-        "description": "Simulation worker: the engine's host in the browser.\n\nEverything that turns a project into results lives in `pipeline.js`, which\nthe MCP server shares; this module only makes it reachable from the UI\nthread without freezing the canvas during a long sweep.\n\nA sweep is fast enough that cancellation is not worth the cost of tearing\ndown and respawning a worker: the store tags every request with an id and\nignores replies it no longer wants."
+        "description": "Simulation worker: the engine's host in the browser.\n\nEverything that turns a project into results lives in `pipeline.js`, which\nthe MCP server shares; this module only makes it reachable from the UI\nthread without freezing the canvas during a long sweep.\n\nA sweep is fast enough that cancellation is not worth the cost of tearing\ndown and respawning a worker: the store tags every request with an id and\nignores replies it no longer wants.\n\nSPICE runs go to the page's thread pool (see `pool.js`), which splits the\nsweep across whichever engine workers are free."
       },
       "constants": [],
       "methods": [
@@ -24026,7 +25099,7 @@
           "exported": false,
           "async": true,
           "generator": false,
-          "line": 22,
+          "line": 28,
           "signature": [
             "e"
           ],
@@ -24039,7 +25112,7 @@
               "type": "MessageEvent",
               "optional": false,
               "default": null,
-              "desc": "The request, `{id, project, engine}`."
+              "desc": "The request, `{id, project, engine}`; the pool's own messages are left to its listener."
             }
           ],
           "returns": {
@@ -30153,13 +31226,76 @@
           "other": []
         },
         {
+          "name": "decadeStep",
+          "qualified": "decadeStep",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 46,
+          "signature": [
+            "fstart",
+            "ppd",
+            "i",
+            "top"
+          ],
+          "documented": true,
+          "summary": "A point of a decade sweep, written exactly for an `.ac` line.",
+          "description": "A point of a decade sweep, written exactly for an `.ac` line.",
+          "params": [
+            {
+              "name": "fstart",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "The sweep's first frequency, Hz."
+            },
+            {
+              "name": "ppd",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Points per decade."
+            },
+            {
+              "name": "i",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Steps from the start."
+            },
+            {
+              "name": "top",
+              "type": "boolean",
+              "optional": true,
+              "default": null,
+              "desc": "Written as a sweep's top: a hair past the point."
+            }
+          ],
+          "returns": {
+            "type": "string",
+            "desc": "The frequency, fifteen significant figures."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
           "name": "transientOutputs",
           "qualified": "transientOutputs",
           "kind": "function",
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 45,
+          "line": 67,
           "signature": [
             "ctx"
           ],
@@ -30200,7 +31336,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 72,
+          "line": 94,
           "signature": [
             "proj",
             "analysis",
@@ -30604,7 +31740,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 165,
+          "line": 168,
           "signature": [
             "seed"
           ],
@@ -30643,7 +31779,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 187,
+          "line": 190,
           "signature": [
             "sig",
             "fs"
@@ -30690,7 +31826,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 224,
+          "line": 227,
           "signature": [
             "n"
           ],
@@ -30729,7 +31865,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 239,
+          "line": 242,
           "signature": [
             "re",
             "im",
@@ -30786,7 +31922,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 281,
+          "line": 284,
           "signature": [
             "re",
             "im"
@@ -30833,7 +31969,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 301,
+          "line": 304,
           "signature": [
             "x",
             "n"
@@ -30880,7 +32016,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 324,
+          "line": 327,
           "signature": [
             "x",
             "fs",
@@ -30951,7 +32087,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 348,
+          "line": 351,
           "signature": [
             "h"
           ],
@@ -30990,7 +32126,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 365,
+          "line": 368,
           "signature": [
             "t",
             "ys",
@@ -35046,10 +36182,123 @@
       "file": "src/spice/run.js",
       "module": {
         "summary": "Run netlists through ngspice (WebAssembly), the same way in a browser worker and in Node.",
-        "description": "Run netlists through ngspice (WebAssembly), the same way in a browser\nworker and in Node.\n\nThe engine is loaded on first use — it is several megabytes — and kept for\nthe life of the process. ngspice holds one circuit at a time, so runs are\nqueued rather than interleaved."
+        "description": "Run netlists through ngspice (WebAssembly), the same way in a browser\nworker and in Node.\n\nThe engine is loaded on first use — it is several megabytes — and kept for\nthe life of the process. ngspice holds one circuit at a time, so runs are\nqueued rather than interleaved.\n\nWhere several engines are available — a pool of browser workers, one per\nprocessor thread — a worker coordinating a job swaps in a runner that\nsends each netlist to the pool (see `setRunner`), and says how many runs\nmay go at once (`setThreads`). The analyses start independent runs\ntogether and the pool spreads them; here, in one process, they queue."
       },
       "constants": [],
       "methods": [
+        {
+          "name": "setRunner",
+          "qualified": "setRunner",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 26,
+          "signature": [
+            "fn"
+          ],
+          "documented": true,
+          "summary": "Send every run through another runner, or back to this process's engine.",
+          "description": "Send every run through another runner, or back to this process's engine.",
+          "params": [
+            {
+              "name": "fn",
+              "type": "Function|null",
+              "optional": false,
+              "default": null,
+              "desc": "`(netlist, kind) → Promise<{scale, vectors}>`, as `runLocal`; `null` for the local engine."
+            }
+          ],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [
+              "the module's runner."
+            ],
+            "sideEffect": [],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "setThreads",
+          "qualified": "setThreads",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 37,
+          "signature": [
+            "n"
+          ],
+          "documented": true,
+          "summary": "Say how many runs can proceed at once.",
+          "description": "Say how many runs can proceed at once.",
+          "params": [
+            {
+              "name": "n",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Engines available; at least 1."
+            }
+          ],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [
+              "the module's thread count."
+            ],
+            "sideEffect": [],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "threadCount",
+          "qualified": "threadCount",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 47,
+          "signature": [],
+          "documented": true,
+          "summary": "How many runs can proceed at once — the analyses size their batches by it.",
+          "description": "How many runs can proceed at once — the analyses size their batches by it.",
+          "params": [],
+          "returns": {
+            "type": "number",
+            "desc": "At least 1."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [
+              "the module's thread count."
+            ],
+            "pure": false
+          },
+          "other": []
+        },
         {
           "name": "engine",
           "qualified": "engine",
@@ -35057,7 +36306,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 17,
+          "line": 57,
           "signature": [],
           "documented": true,
           "summary": "The shared ngspice instance, started on first call.",
@@ -35088,7 +36337,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 39,
+          "line": 79,
           "signature": [
             "line"
           ],
@@ -35121,20 +36370,20 @@
           "other": []
         },
         {
-          "name": "runRaw",
-          "qualified": "runRaw",
+          "name": "runLocal",
+          "qualified": "runLocal",
           "kind": "function",
-          "exported": false,
+          "exported": true,
           "async": false,
           "generator": false,
-          "line": 52,
+          "line": 92,
           "signature": [
             "netlist",
             "kind"
           ],
           "documented": true,
-          "summary": "Run one netlist and collect its vectors, queued behind any run in progress.",
-          "description": "Run one netlist and collect its vectors, queued behind any run in progress.",
+          "summary": "Run one netlist in this process's engine and collect its vectors, queued behind any run in progress.",
+          "description": "Run one netlist in this process's engine and collect its vectors, queued behind any run in progress.",
           "params": [
             {
               "name": "netlist",
@@ -35175,13 +36424,67 @@
           "other": []
         },
         {
+          "name": "runRaw",
+          "qualified": "runRaw",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 136,
+          "signature": [
+            "netlist",
+            "kind"
+          ],
+          "documented": true,
+          "summary": "Run one netlist through the current runner.",
+          "description": "Run one netlist through the current runner.",
+          "params": [
+            {
+              "name": "netlist",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "A complete netlist ending in `.end`."
+            },
+            {
+              "name": "kind",
+              "type": "'complex'|'real'",
+              "optional": false,
+              "default": null,
+              "desc": "The result type the analysis must produce."
+            }
+          ],
+          "returns": {
+            "type": "Promise<{scale: number[], vectors: Map<string, object>}>",
+            "desc": "As `runLocal`."
+          },
+          "throws": [
+            {
+              "type": "Error",
+              "desc": "As `runLocal`."
+            }
+          ],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Runs an engine, here or in the pool."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
           "name": "lookup",
           "qualified": "lookup",
           "kind": "function",
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 94,
+          "line": 147,
           "signature": [
             "vectors"
           ],
@@ -35220,7 +36523,7 @@
           "exported": true,
           "async": true,
           "generator": false,
-          "line": 118,
+          "line": 171,
           "signature": [
             "netlist"
           ],
@@ -35266,13 +36569,13 @@
           "exported": true,
           "async": true,
           "generator": false,
-          "line": 134,
+          "line": 189,
           "signature": [
             "netlist"
           ],
           "documented": true,
           "summary": "Run one transient netlist and return its real vectors.",
-          "description": "Run one transient netlist and return its real vectors.\n\nThe netlist should set `.options interp` so the samples fall on the\n`.tran` step exactly; the time axis returned is whatever ngspice produced.",
+          "description": "Run one transient netlist and return its real vectors.\n\nThe netlist should set `.options interp` so the samples fall on the\n`.tran` step exactly. A run started from rest (`.tran … uic`) gets its\nzero sample at t = 0 put back; otherwise the time axis is whatever ngspice\nproduced.",
           "params": [
             {
               "name": "netlist",
@@ -35308,15 +36611,278 @@
       ]
     },
     {
+      "file": "src/spice/split.js",
+      "module": {
+        "summary": "Splitting one frequency sweep into several, to run side by side.",
+        "description": "Splitting one frequency sweep into several, to run side by side.\n\nEvery frequency of an AC analysis is solved on its own, so a sweep of N\npoints can run as k sweeps of about N/k points on k engines and be joined\nback in order. Each piece repeats the circuit's setup (parsing, the\noperating point) — about as long as a few dozen points — so a piece is\nnever made smaller than `MIN_POINTS`."
+      },
+      "constants": [
+        {
+          "name": "MIN_POINTS",
+          "line": 12,
+          "shape": {
+            "kind": "literal",
+            "value": 16
+          },
+          "summary": "Fewest points one piece of a split sweep carries.",
+          "description": "Fewest points one piece of a split sweep carries."
+        }
+      ],
+      "methods": [
+        {
+          "name": "num",
+          "qualified": "num",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 21,
+          "signature": [
+            "v"
+          ],
+          "documented": true,
+          "summary": "A number written for an `.ac` line, exactly.",
+          "description": "A number written for an `.ac` line, exactly.",
+          "params": [
+            {
+              "name": "v",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "The value."
+            }
+          ],
+          "returns": {
+            "type": "string",
+            "desc": "Fifteen significant figures."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "acLine",
+          "qualified": "acLine",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 30,
+          "signature": [
+            "netlist"
+          ],
+          "documented": true,
+          "summary": "The AC analysis line of a netlist, parsed.",
+          "description": "The AC analysis line of a netlist, parsed.",
+          "params": [
+            {
+              "name": "netlist",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "A netlist."
+            }
+          ],
+          "returns": {
+            "type": "{line: string, scale: 'lin'|'dec', n: number, fstart: number, fstop: number}|null",
+            "desc": "The line and its fields — `n` is the point count for `lin`, points per decade for `dec` — or `null` when the netlist has no `.ac lin` or `.ac dec` line."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "acCount",
+          "qualified": "acCount",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 46,
+          "signature": [
+            "ac"
+          ],
+          "documented": true,
+          "summary": "How many points an AC line makes.",
+          "description": "How many points an AC line makes.",
+          "params": [
+            {
+              "name": "ac",
+              "type": "{scale: string, n: number, fstart: number, fstop: number}",
+              "optional": false,
+              "default": null,
+              "desc": "From `acLine`."
+            }
+          ],
+          "returns": {
+            "type": "number",
+            "desc": "The count; for `dec`, exact when the top is on the grid of steps, as `compileProject` writes it."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "splitAc",
+          "qualified": "splitAc",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 66,
+          "signature": [
+            "netlist",
+            "parts"
+          ],
+          "documented": true,
+          "summary": "A netlist's sweep split into pieces, each a netlist of its own.",
+          "description": "A netlist's sweep split into pieces, each a netlist of its own.\n\nThe pieces cover consecutive points of the original sweep, the same\nfrequencies in the same order. A logarithmic piece starts and stops on the\nsweep's grid of steps, which is exact when the whole sweep's top is on\nthat grid too, as `compileProject` makes it; the last piece keeps the\noriginal stop, so it ends where the whole sweep would.",
+          "params": [
+            {
+              "name": "netlist",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "A netlist with an `.ac lin` or `.ac dec` line."
+            },
+            {
+              "name": "parts",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Pieces wanted."
+            }
+          ],
+          "returns": {
+            "type": "string[]",
+            "desc": "The pieces — the netlist itself, alone, when it has no AC line or too few points to split."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "mergeAc",
+          "qualified": "mergeAc",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 97,
+          "signature": [
+            "parts"
+          ],
+          "documented": true,
+          "summary": "Pieces of a split sweep joined back into one result.",
+          "description": "Pieces of a split sweep joined back into one result.",
+          "params": [
+            {
+              "name": "parts",
+              "type": "Array<{scale: number[], vectors: Map<string, object>}>",
+              "optional": false,
+              "default": null,
+              "desc": "The pieces' results, in sweep order."
+            }
+          ],
+          "returns": {
+            "type": "{scale: number[], vectors: Map<string, object>}",
+            "desc": "One result, as a single run returns it."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "join",
+          "qualified": "mergeAc > join",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 110,
+          "signature": [
+            "pick"
+          ],
+          "documented": true,
+          "summary": "One vector's pieces joined end to end.",
+          "description": "One vector's pieces joined end to end.",
+          "params": [
+            {
+              "name": "pick",
+              "type": "Function",
+              "optional": false,
+              "default": null,
+              "desc": "Piece value → the array to join."
+            }
+          ],
+          "returns": {
+            "type": "Float64Array",
+            "desc": "The joined array."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        }
+      ]
+    },
+    {
       "file": "src/spice/timedomain.js",
       "module": {
         "summary": "Time-domain analyses, on the same circuit the frequency sweep solves.",
-        "description": "Time-domain analyses, on the same circuit the frequency sweep solves.\n\n- Linear responses — impulse, step, tone burst, cumulative spectral decay —\n  by inverse FFT of a fine linear frequency sweep. Exact for the linear\n  model, and quick.\n- Transient runs — any test signal through the circuit in time, with the\n  nonlinear elements (driver curves, port exit loss) switched on or off.\n- Distortion — harmonics of a steady tone, THD across frequency,\n  compression across level, and a CEA-2010-style burst maximum SPL — each\n  a series of transient runs, measured.\n\nEvery analysis takes a resolved, validated project (see `prepareProject`)\nand reports progress through an optional callback, so a worker can show it\nand the caller can abandon the run."
+        "description": "Time-domain analyses, on the same circuit the frequency sweep solves.\n\n- Linear responses — impulse, step, tone burst, cumulative spectral decay —\n  by inverse FFT of a fine linear frequency sweep. Exact for the linear\n  model, and quick.\n- Transient runs — any test signal through the circuit in time, with the\n  nonlinear elements (driver curves, port exit loss) switched on or off.\n- Distortion — harmonics of a steady tone, THD across frequency,\n  compression across level, and a CEA-2010-style burst maximum SPL — each\n  a series of transient runs, measured.\n\nEvery analysis takes a resolved, validated project (see `prepareProject`)\nand reports progress through an optional callback, so a worker can show it\nand the caller can abandon the run.\n\nRuns that do not depend on each other are started together: where the\nengine sits behind a thread pool (see `run.js`), they go side by side, one\nper thread; in a single process they simply queue."
       },
       "constants": [
         {
           "name": "LINEAR_DEFAULTS",
-          "line": 101,
+          "line": 105,
           "shape": {
             "kind": "object",
             "keys": [
@@ -35333,7 +36899,7 @@
         },
         {
           "name": "TRANSIENT_DEFAULTS",
-          "line": 255,
+          "line": 259,
           "shape": {
             "kind": "object",
             "keys": [
@@ -35357,7 +36923,7 @@
         },
         {
           "name": "CEA2010_LIMITS",
-          "line": 406,
+          "line": 425,
           "shape": {
             "kind": "object",
             "keys": [
@@ -35377,7 +36943,7 @@
         },
         {
           "name": "DISTORTION_DEFAULTS",
-          "line": 409,
+          "line": 428,
           "shape": {
             "kind": "object",
             "keys": [
@@ -35406,7 +36972,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 30,
+          "line": 34,
           "signature": [
             "p"
           ],
@@ -35445,7 +37011,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 39,
+          "line": 43,
           "signature": [
             "project"
           ],
@@ -35484,7 +37050,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 54,
+          "line": 58,
           "signature": [
             "raw",
             "map"
@@ -35531,7 +37097,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 62,
+          "line": 66,
           "signature": [],
           "documented": true,
           "summary": "A zeroed complex array.",
@@ -35560,7 +37126,7 @@
           "exported": true,
           "async": true,
           "generator": false,
-          "line": 119,
+          "line": 123,
           "signature": [
             "project",
             "opts",
@@ -35622,7 +37188,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 140,
+          "line": 144,
           "signature": [
             "k"
           ],
@@ -35661,7 +37227,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 152,
+          "line": 156,
           "signature": [
             "H",
             "dcFromLowest"
@@ -35708,7 +37274,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 170,
+          "line": 174,
           "signature": [
             "S"
           ],
@@ -35747,7 +37313,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 178,
+          "line": 182,
           "signature": [
             "h"
           ],
@@ -35786,7 +37352,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 187,
+          "line": 191,
           "signature": [
             "S",
             "B"
@@ -35833,7 +37399,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 220,
+          "line": 224,
           "signature": [
             "a"
           ],
@@ -35872,7 +37438,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 270,
+          "line": 274,
           "signature": [
             "project",
             "bandwidth"
@@ -35919,7 +37485,7 @@
           "exported": true,
           "async": true,
           "generator": false,
-          "line": 283,
+          "line": 287,
           "signature": [
             "project",
             "run"
@@ -35973,7 +37539,7 @@
           "exported": false,
           "async": true,
           "generator": false,
-          "line": 292,
+          "line": 296,
           "signature": [
             "robust"
           ],
@@ -36014,7 +37580,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 320,
+          "line": 324,
           "signature": [],
           "documented": true,
           "summary": "A silent series, one sample per time step.",
@@ -36043,7 +37609,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 361,
+          "line": 365,
           "signature": [
             "x"
           ],
@@ -36082,7 +37648,7 @@
           "exported": true,
           "async": true,
           "generator": false,
-          "line": 378,
+          "line": 382,
           "signature": [
             "project",
             "opts",
@@ -36144,7 +37710,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 401,
+          "line": 406,
           "signature": [
             "project"
           ],
@@ -36177,13 +37743,60 @@
           "other": []
         },
         {
+          "name": "hasCurves",
+          "qualified": "hasCurves",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 418,
+          "signature": [
+            "project",
+            "bandwidth"
+          ],
+          "documented": true,
+          "summary": "Whether any driver in the project carries a large-signal curve.",
+          "description": "Whether any driver in the project carries a large-signal curve.",
+          "params": [
+            {
+              "name": "project",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "A resolved project."
+            },
+            {
+              "name": "bandwidth",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "The model bandwidth, Hz, as the run compiles it."
+            }
+          ],
+          "returns": {
+            "type": "boolean",
+            "desc": "True when some driver compiles as nonlinear."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
           "name": "measureTone",
           "qualified": "measureTone",
           "kind": "function",
           "exported": true,
           "async": true,
           "generator": false,
-          "line": 432,
+          "line": 451,
           "signature": [
             "project",
             "hz",
@@ -36253,7 +37866,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 451,
+          "line": 470,
           "signature": [
             "x"
           ],
@@ -36292,7 +37905,7 @@
           "exported": true,
           "async": true,
           "generator": false,
-          "line": 475,
+          "line": 494,
           "signature": [
             "project",
             "hz",
@@ -36354,7 +37967,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 490,
+          "line": 509,
           "signature": [
             "f1",
             "f2",
@@ -36409,7 +38022,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 503,
+          "line": 522,
           "signature": [
             "m",
             "xLimitMm"
@@ -36456,7 +38069,7 @@
           "exported": true,
           "async": true,
           "generator": false,
-          "line": 530,
+          "line": 549,
           "signature": [
             "project",
             "hz",
@@ -36526,7 +38139,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 544,
+          "line": 563,
           "signature": [
             "f"
           ],
@@ -36559,13 +38172,127 @@
           "other": []
         },
         {
+          "name": "maxLevel",
+          "qualified": "maxLevel",
+          "kind": "function",
+          "exported": true,
+          "async": true,
+          "generator": false,
+          "line": 604,
+          "signature": [
+            "s"
+          ],
+          "documented": true,
+          "summary": "The highest level that breaks no limit, searched with several levels tested at once.",
+          "description": "The highest level that breaks no limit, searched with several levels tested at once.\n\nLevels are assumed to break limits from some threshold up. Until a level\nthat passes and one that breaks are both known, the search steps 3 dB\nat a time from `start` — upward from a pass, downward from a failure,\n`width()` steps per round; then it tests `width()` evenly spaced levels\ninside the bracket each round, narrowing it by that many plus one, until\nit is 0.25 dB wide. With a width of 1 this is a plain step-then-halve search.",
+          "params": [
+            {
+              "name": "s",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "The search."
+            },
+            {
+              "name": "s.start",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "First level, dB."
+            },
+            {
+              "name": "s.top",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Highest level to try, dB."
+            },
+            {
+              "name": "s.bottom",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Lowest level to try, dB."
+            },
+            {
+              "name": "s.test",
+              "type": "Function",
+              "optional": false,
+              "default": null,
+              "desc": "`(L) → Promise<{broke: string|null, …}>`."
+            },
+            {
+              "name": "s.width",
+              "type": "Function",
+              "optional": false,
+              "default": null,
+              "desc": "`() → number`: levels to test per round, now."
+            },
+            {
+              "name": "s.onRound",
+              "type": "Function",
+              "optional": true,
+              "default": null,
+              "desc": "Called with the search's progress, 0–1, after each round."
+            }
+          ],
+          "returns": {
+            "type": "Promise<{lo: object|null, hi: object|null, tried: number}>",
+            "desc": "The highest passing level below the lowest breaking one — each `{L, …test's result}` — and the number of levels tested."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Calls `test`, several at a time."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "bracket",
+          "qualified": "maxLevel > bracket",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 612,
+          "signature": [],
+          "documented": true,
+          "summary": "The current bracket: the lowest breaking level, and the highest passing one below it.",
+          "description": "The current bracket: the lowest breaking level, and the highest passing one below it.",
+          "params": [],
+          "returns": {
+            "type": "{lo: object|null, hi: object|null}",
+            "desc": "Either may be missing."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [
+              "the levels tried."
+            ],
+            "pure": false
+          },
+          "other": []
+        },
+        {
           "name": "distortionAnalysis",
           "qualified": "distortionAnalysis",
           "kind": "function",
           "exported": true,
           "async": true,
           "generator": false,
-          "line": 587,
+          "line": 673,
           "signature": [
             "project",
             "mode",
@@ -36574,7 +38301,7 @@
           ],
           "documented": true,
           "summary": "Distortion analyses.",
-          "description": "Distortion analyses.\n\n- `harmonics`: one tone at `hz`, `levelDb` — its harmonic levels, THD and\n  the last periods of its waveform.\n- `thd`: tones at `points` log-spaced frequencies from `f1` to `f2` — THD,\n  H2 and H3 against frequency.\n- `compression`: tones at the same frequencies at each of `levels` (dB\n  over the channels' level) — the fundamental's level against the linear\n  model's, as compression in dB.\n- `maxspl`: for each band frequency, the highest burst level that breaks\n  neither the CEA-2010 distortion limits nor `xLimit` × Xmax of excursion,\n  found by stepping up 3 dB then halving to 0.25 dB.",
+          "description": "Distortion analyses.\n\n- `harmonics`: one tone at `hz`, `levelDb` — its harmonic levels, THD and\n  the last periods of its waveform.\n- `thd`: tones at `points` log-spaced frequencies from `f1` to `f2` — THD,\n  H2 and H3 against frequency.\n- `compression`: tones at the same frequencies at each of `levels` (dB\n  over the channels' level) — the fundamental's level against the linear\n  model's, as compression in dB.\n- `maxspl`: for each band frequency, the highest burst level that breaks\n  neither the CEA-2010 distortion limits nor `xLimit` × Xmax of excursion,\n  found by stepping 3 dB then narrowing to 0.25 dB (see `maxLevel`),\n  every band at once.",
           "params": [
             {
               "name": "project",
@@ -36622,6 +38349,160 @@
             "mutates": [],
             "sideEffect": [
               "Runs the engine, many times."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "report",
+          "qualified": "distortionAnalysis > report",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 733,
+          "signature": [
+            "message"
+          ],
+          "documented": true,
+          "summary": "Report the search's progress: bands finished, and how far along the rest are.",
+          "description": "Report the search's progress: bands finished, and how far along the rest are.",
+          "params": [
+            {
+              "name": "message",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "What is running."
+            }
+          ],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Calls `onProgress`."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "test",
+          "qualified": "distortionAnalysis > test",
+          "kind": "method",
+          "exported": false,
+          "async": true,
+          "generator": false,
+          "line": 746,
+          "signature": [
+            "L"
+          ],
+          "documented": true,
+          "summary": "Test one level at this band.",
+          "description": "Test one level at this band.",
+          "params": [
+            {
+              "name": "L",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Level offset, dB."
+            }
+          ],
+          "returns": {
+            "type": "Promise<{m: object, broke: string|null}>",
+            "desc": "The measurement and the limit it breaks."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Runs the engine."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "width",
+          "qualified": "distortionAnalysis > width",
+          "kind": "method",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 756,
+          "signature": [],
+          "documented": true,
+          "summary": "How many levels this band may test at once: its share of the threads.",
+          "description": "How many levels this band may test at once: its share of the threads.",
+          "params": [],
+          "returns": {
+            "type": "number",
+            "desc": "At least 1."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [
+              "the thread count and the bands still searching."
+            ],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "onRound",
+          "qualified": "distortionAnalysis > onRound",
+          "kind": "method",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 764,
+          "signature": [
+            "fraction"
+          ],
+          "documented": true,
+          "summary": "Note a round's end.",
+          "description": "Note a round's end.",
+          "params": [
+            {
+              "name": "fraction",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "How far this band's search has come, 0–1."
+            }
+          ],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Reports progress."
             ],
             "reads": [],
             "pure": false
@@ -36825,7 +38706,7 @@
       "constants": [
         {
           "name": "TD_DEFAULTS",
-          "line": 135,
+          "line": 142,
           "shape": {
             "kind": "object",
             "keys": [
@@ -36872,7 +38753,7 @@
         },
         {
           "name": "SNAPSHOT_LIMIT",
-          "line": 202,
+          "line": 209,
           "shape": {
             "kind": "literal",
             "value": 3
@@ -36882,7 +38763,7 @@
         },
         {
           "name": "SNAPSHOT_COLORS",
-          "line": 207,
+          "line": 214,
           "shape": {
             "kind": "array",
             "length": 3,
@@ -36897,14 +38778,14 @@
         },
         {
           "name": "useStore",
-          "line": 492,
+          "line": 499,
           "shape": null,
           "summary": null,
           "description": null
         },
         {
           "name": "__internals",
-          "line": 3069,
+          "line": 3081,
           "shape": {
             "kind": "object",
             "keys": [
@@ -36927,7 +38808,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 67,
+          "line": 68,
           "signature": [
             "project",
             "engine"
@@ -36976,7 +38857,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 80,
+          "line": 81,
           "signature": [
             "e"
           ],
@@ -37003,7 +38884,7 @@
             "invariant": [],
             "mutates": [],
             "sideEffect": [
-              "Removes the request from `simPending` and resolves its promise."
+              "Serves the worker's SPICE runs from the thread pool; removes the request from `simPending` and resolves its promise."
             ],
             "reads": [],
             "pure": false
@@ -37017,7 +38898,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 108,
+          "line": 110,
           "signature": [
             "msg",
             "onMessage"
@@ -37060,19 +38941,19 @@
           "other": []
         },
         {
-          "name": "tdWorker.onmessage",
-          "qualified": "startTdJob > tdWorker.onmessage",
+          "name": "w.onmessage",
+          "qualified": "startTdJob > w.onmessage",
           "kind": "function",
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 118,
+          "line": 121,
           "signature": [
             "e"
           ],
           "documented": true,
-          "summary": "Pass this job's messages on; ignore any from a job since abandoned.",
-          "description": "Pass this job's messages on; ignore any from a job since abandoned.",
+          "summary": "Serve the job's SPICE runs from the thread pool, and pass its other messages on; ignore any from a job since abandoned.",
+          "description": "Serve the job's SPICE runs from the thread pool, and pass its other messages on; ignore any from a job since abandoned.",
           "params": [
             {
               "name": "e",
@@ -37093,7 +38974,7 @@
             "invariant": [],
             "mutates": [],
             "sideEffect": [
-              "Calls `onMessage`."
+              "Runs netlists in the pool; calls `onMessage`."
             ],
             "reads": [],
             "pure": false
@@ -37107,7 +38988,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 129,
+          "line": 135,
           "signature": [],
           "documented": true,
           "summary": "Stop whatever the time-domain worker is doing.",
@@ -37124,7 +39005,7 @@
             "invariant": [],
             "mutates": [],
             "sideEffect": [
-              "Terminates the worker; the next job spawns a fresh one."
+              "Terminates the worker and the pool's time-domain runs; the next job spawns a fresh one."
             ],
             "reads": [],
             "pure": false
@@ -37138,7 +39019,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 158,
+          "line": 165,
           "signature": [
             "extras"
           ],
@@ -37177,7 +39058,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 183,
+          "line": 190,
           "signature": [
             "ids",
             "active"
@@ -37226,7 +39107,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 218,
+          "line": 225,
           "signature": [],
           "documented": true,
           "summary": "Whether the user has already been asked where their workspace lives.",
@@ -37257,7 +39138,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 251,
+          "line": 258,
           "signature": [],
           "documented": true,
           "summary": "Load the persisted workspace, or build a first-run one.",
@@ -37288,7 +39169,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 289,
+          "line": 296,
           "signature": [],
           "documented": true,
           "summary": "Load the persisted dock layout, falling back to the default.",
@@ -37319,7 +39200,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 307,
+          "line": 314,
           "signature": [],
           "documented": true,
           "summary": "Load the user's saved layout arrangements.",
@@ -37350,7 +39231,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 327,
+          "line": 334,
           "signature": [],
           "documented": true,
           "summary": "Load the quick-bar arrangement.",
@@ -37381,7 +39262,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 376,
+          "line": 383,
           "signature": [],
           "documented": true,
           "summary": "Queue a folder write.",
@@ -37414,7 +39295,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 396,
+          "line": 403,
           "signature": [
             "type"
           ],
@@ -37455,7 +39336,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 411,
+          "line": 418,
           "signature": [],
           "documented": true,
           "summary": "The simulation engine this browser last chose.",
@@ -37486,7 +39367,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 425,
+          "line": 432,
           "signature": [],
           "documented": true,
           "summary": "The editor sections of an empty project, for the initial state.",
@@ -37515,7 +39396,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 443,
+          "line": 450,
           "signature": [
             "spot",
             "nodes",
@@ -37580,7 +39461,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 451,
+          "line": 458,
           "signature": [
             "x",
             "y"
@@ -37629,7 +39510,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 472,
+          "line": 479,
           "signature": [
             "nodes",
             "edges",
@@ -37700,7 +39581,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 512,
+          "line": 519,
           "signature": [
             "partial",
             "replace"
@@ -37751,7 +39632,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 610,
+          "line": 617,
           "signature": [
             "x",
             "y",
@@ -37808,7 +39689,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 621,
+          "line": 628,
           "signature": [],
           "documented": true,
           "summary": "Dismiss the context menu.",
@@ -37839,7 +39720,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 630,
+          "line": 637,
           "signature": [
             "id"
           ],
@@ -37880,7 +39761,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 641,
+          "line": 648,
           "signature": [
             "id"
           ],
@@ -37921,7 +39802,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 649,
+          "line": 656,
           "signature": [
             "id"
           ],
@@ -37962,7 +39843,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 658,
+          "line": 665,
           "signature": [
             "v",
             "section"
@@ -38011,7 +39892,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 666,
+          "line": 673,
           "signature": [
             "id"
           ],
@@ -38052,7 +39933,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 678,
+          "line": 685,
           "signature": [
             "id",
             "combos"
@@ -38101,7 +39982,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 695,
+          "line": 702,
           "signature": [
             "id",
             "combo"
@@ -38150,7 +40031,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 713,
+          "line": 720,
           "signature": [
             "id",
             "combo"
@@ -38199,7 +40080,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 720,
+          "line": 727,
           "signature": [],
           "documented": true,
           "summary": "Restore every command to its default combos.",
@@ -38230,7 +40111,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 737,
+          "line": 744,
           "signature": [
             "tree"
           ],
@@ -38271,7 +40152,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 754,
+          "line": 761,
           "signature": [
             "stackId",
             "panelId"
@@ -38320,7 +40201,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 764,
+          "line": 771,
           "signature": [
             "panelId",
             "stackId",
@@ -38377,7 +40258,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 773,
+          "line": 780,
           "signature": [
             "panelId",
             "edge"
@@ -38426,7 +40307,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 784,
+          "line": 791,
           "signature": [
             "splitId",
             "index",
@@ -38491,7 +40372,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 798,
+          "line": 805,
           "signature": [
             "panelId",
             "stackId",
@@ -38548,7 +40429,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 819,
+          "line": 826,
           "signature": [
             "panelId"
           ],
@@ -38589,7 +40470,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 836,
+          "line": 843,
           "signature": [
             "panelId"
           ],
@@ -38630,7 +40511,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 848,
+          "line": 855,
           "signature": [
             "panelId"
           ],
@@ -38671,7 +40552,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 859,
+          "line": 866,
           "signature": [],
           "documented": true,
           "summary": "Restore the default workspace arrangement.",
@@ -38702,7 +40583,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 869,
+          "line": 876,
           "signature": [
             "name"
           ],
@@ -38743,7 +40624,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 888,
+          "line": 895,
           "signature": [
             "name"
           ],
@@ -38784,7 +40665,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 912,
+          "line": 919,
           "signature": [
             "ids"
           ],
@@ -38825,7 +40706,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 928,
+          "line": 935,
           "signature": [
             "id"
           ],
@@ -38866,7 +40747,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 940,
+          "line": 947,
           "signature": [
             "id",
             "delta"
@@ -38915,7 +40796,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 954,
+          "line": 961,
           "signature": [],
           "documented": true,
           "summary": "Restore the default quick-bar arrangement.",
@@ -38946,7 +40827,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 963,
+          "line": 970,
           "signature": [
             "name"
           ],
@@ -38987,7 +40868,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 981,
+          "line": 988,
           "signature": [
             "id",
             "range"
@@ -39036,7 +40917,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 997,
+          "line": 1004,
           "signature": [],
           "documented": true,
           "summary": "Record the current graph as an undo point.",
@@ -39067,7 +40948,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1010,
+          "line": 1017,
           "signature": [],
           "documented": true,
           "summary": "Step back one entry in the history.",
@@ -39098,7 +40979,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1028,
+          "line": 1035,
           "signature": [],
           "documented": true,
           "summary": "Step forward one entry in the history.",
@@ -39129,7 +41010,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1054,
+          "line": 1061,
           "signature": [
             "changes"
           ],
@@ -39170,7 +41051,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1068,
+          "line": 1075,
           "signature": [
             "changes"
           ],
@@ -39211,7 +41092,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1080,
+          "line": 1087,
           "signature": [
             "conn"
           ],
@@ -39252,7 +41133,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1098,
+          "line": 1105,
           "signature": [
             "id"
           ],
@@ -39293,7 +41174,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1111,
+          "line": 1118,
           "signature": [
             "type",
             "position"
@@ -39342,7 +41223,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1141,
+          "line": 1148,
           "signature": [
             "id",
             "params"
@@ -39391,7 +41272,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1168,
+          "line": 1175,
           "signature": [
             "id"
           ],
@@ -39432,7 +41313,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1189,
+          "line": 1196,
           "signature": [
             "id",
             "name"
@@ -39481,7 +41362,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1219,
+          "line": 1226,
           "signature": [
             "id",
             "field",
@@ -39538,7 +41419,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1242,
+          "line": 1249,
           "signature": [
             "id"
           ],
@@ -39579,7 +41460,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1270,
+          "line": 1277,
           "signature": [
             "id",
             "field",
@@ -39636,7 +41517,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1294,
+          "line": 1301,
           "signature": [
             "id",
             "patch"
@@ -39685,7 +41566,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1318,
+          "line": 1325,
           "signature": [],
           "documented": true,
           "summary": "Delete the selected nodes and edges.",
@@ -39716,7 +41597,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1345,
+          "line": 1352,
           "signature": [],
           "documented": true,
           "summary": "Copy the selected nodes in place, offset down-right.",
@@ -39747,7 +41628,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1370,
+          "line": 1377,
           "signature": [],
           "documented": true,
           "summary": "Select every node on the canvas.",
@@ -39778,7 +41659,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1385,
+          "line": 1392,
           "signature": [
             "ids",
             "additive"
@@ -39827,7 +41708,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1418,
+          "line": 1425,
           "signature": [],
           "documented": true,
           "summary": "Copy the selected nodes and their internal edges to the in-app clipboard.",
@@ -39858,7 +41739,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1444,
+          "line": 1451,
           "signature": [],
           "documented": true,
           "summary": "Copy the selection, then delete it.",
@@ -39889,7 +41770,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1465,
+          "line": 1472,
           "signature": [
             "at"
           ],
@@ -39930,7 +41811,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1513,
+          "line": 1520,
           "signature": [
             "type"
           ],
@@ -39971,7 +41852,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1529,
+          "line": 1536,
           "signature": [
             "delta"
           ],
@@ -40012,7 +41893,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1542,
+          "line": 1549,
           "signature": [],
           "documented": true,
           "summary": "Force a resimulation even though nothing has changed.",
@@ -40043,7 +41924,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1555,
+          "line": 1562,
           "signature": [
             "patch"
           ],
@@ -40084,7 +41965,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1578,
+          "line": 1585,
           "signature": [
             "field",
             "value"
@@ -40133,7 +42014,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1601,
+          "line": 1608,
           "signature": [
             "extras"
           ],
@@ -40174,7 +42055,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1622,
+          "line": 1629,
           "signature": [
             "key",
             "value",
@@ -40231,7 +42112,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1635,
+          "line": 1642,
           "signature": [
             "id",
             "taps"
@@ -40280,7 +42161,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1646,
+          "line": 1653,
           "signature": [
             "node",
             "handle"
@@ -40329,7 +42210,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1666,
+          "line": 1673,
           "signature": [
             "driverId",
             "face"
@@ -40378,7 +42259,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1701,
+          "line": 1708,
           "signature": [
             "probe"
           ],
@@ -40419,7 +42300,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1731,
+          "line": 1738,
           "signature": [],
           "documented": true,
           "summary": "Freeze the current result as a labelled reference overlay.",
@@ -40450,7 +42331,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1767,
+          "line": 1774,
           "signature": [
             "id"
           ],
@@ -40491,7 +42372,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1779,
+          "line": 1786,
           "signature": [
             "id",
             "label"
@@ -40540,7 +42421,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1792,
+          "line": 1799,
           "signature": [
             "id"
           ],
@@ -40581,7 +42462,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1800,
+          "line": 1807,
           "signature": [
             "v"
           ],
@@ -40622,7 +42503,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1808,
+          "line": 1815,
           "signature": [
             "v"
           ],
@@ -40663,7 +42544,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1816,
+          "line": 1823,
           "signature": [
             "id"
           ],
@@ -40704,7 +42585,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1824,
+          "line": 1831,
           "signature": [
             "engine"
           ],
@@ -40745,7 +42626,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1839,
+          "line": 1846,
           "signature": [
             "tab"
           ],
@@ -40772,7 +42653,7 @@
             "invariant": [],
             "mutates": [],
             "sideEffect": [
-              "Writes store state."
+              "Starts and warms the simulation thread pool; writes store state."
             ],
             "reads": [],
             "pure": false
@@ -40786,7 +42667,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1846,
+          "line": 1857,
           "signature": [],
           "documented": true,
           "summary": "Return to the editor. A running job carries on.",
@@ -40817,7 +42698,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1854,
+          "line": 1865,
           "signature": [
             "tab"
           ],
@@ -40858,7 +42739,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1863,
+          "line": 1874,
           "signature": [
             "section",
             "patch"
@@ -40907,7 +42788,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1878,
+          "line": 1889,
           "signature": [],
           "documented": true,
           "summary": "The signature of what a time-domain result depends on — the graph, the extras and the engine.",
@@ -40938,7 +42819,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1893,
+          "line": 1904,
           "signature": [
             "kind",
             "mode"
@@ -40987,7 +42868,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1928,
+          "line": 1940,
           "signature": [],
           "documented": true,
           "summary": "Stop the running time-domain job.",
@@ -41018,7 +42899,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1962,
+          "line": 1974,
           "signature": [],
           "documented": true,
           "summary": "Schedule a debounced simulation run.",
@@ -41049,7 +42930,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2002,
+          "line": 2014,
           "signature": [],
           "documented": true,
           "summary": "Capture the project as a plain, saveable object.",
@@ -41080,7 +42961,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2025,
+          "line": 2037,
           "signature": [
             "proj"
           ],
@@ -41121,7 +43002,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2052,
+          "line": 2064,
           "signature": [],
           "documented": true,
           "summary": "Download the open project as a standalone JSON file.",
@@ -41152,7 +43033,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2069,
+          "line": 2081,
           "signature": [
             "proj",
             "filename"
@@ -41201,7 +43082,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2102,
+          "line": 2114,
           "signature": [
             "ws"
           ],
@@ -41242,7 +43123,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2117,
+          "line": 2129,
           "signature": [
             "name"
           ],
@@ -41283,7 +43164,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2131,
+          "line": 2143,
           "signature": [],
           "documented": true,
           "summary": "Write the editor's current project back into its file.",
@@ -41314,7 +43195,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2149,
+          "line": 2161,
           "signature": [
             "path"
           ],
@@ -41355,7 +43236,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2165,
+          "line": 2177,
           "signature": [
             "folder"
           ],
@@ -41396,7 +43277,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2186,
+          "line": 2198,
           "signature": [
             "parent"
           ],
@@ -41437,7 +43318,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2209,
+          "line": 2221,
           "signature": [
             "from",
             "to"
@@ -41486,7 +43367,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2246,
+          "line": 2258,
           "signature": [
             "path"
           ],
@@ -41527,7 +43408,7 @@
           "exported": false,
           "async": true,
           "generator": false,
-          "line": 2278,
+          "line": 2290,
           "signature": [],
           "documented": true,
           "summary": "Download the whole workspace, and record that it happened.",
@@ -41558,7 +43439,7 @@
           "exported": false,
           "async": true,
           "generator": false,
-          "line": 2307,
+          "line": 2319,
           "signature": [
             "file"
           ],
@@ -41599,7 +43480,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2331,
+          "line": 2343,
           "signature": [
             "ws"
           ],
@@ -41640,7 +43521,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2365,
+          "line": 2377,
           "signature": [
             "paths"
           ],
@@ -41681,7 +43562,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2375,
+          "line": 2387,
           "signature": [
             "path",
             "open"
@@ -41730,7 +43611,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2389,
+          "line": 2401,
           "signature": [],
           "documented": true,
           "summary": "Collapse every folder in the explorer.",
@@ -41761,7 +43642,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2404,
+          "line": 2416,
           "signature": [
             "mode",
             "path"
@@ -41810,7 +43691,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2415,
+          "line": 2427,
           "signature": [],
           "documented": true,
           "summary": "Dismiss the explorer's inline editor.",
@@ -41841,7 +43722,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2430,
+          "line": 2442,
           "signature": [
             "paths",
             "cut"
@@ -41890,7 +43771,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2443,
+          "line": 2455,
           "signature": [
             "folder"
           ],
@@ -41931,7 +43812,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2470,
+          "line": 2482,
           "signature": [
             "path"
           ],
@@ -41972,7 +43853,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2486,
+          "line": 2498,
           "signature": [
             "from",
             "folder"
@@ -42021,7 +43902,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2508,
+          "line": 2520,
           "signature": [
             "mode",
             "parent",
@@ -42078,7 +43959,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2542,
+          "line": 2554,
           "signature": [
             "kind"
           ],
@@ -42119,7 +44000,7 @@
           "exported": false,
           "async": true,
           "generator": false,
-          "line": 2573,
+          "line": 2585,
           "signature": [
             "confirmAdopt"
           ],
@@ -42160,7 +44041,7 @@
           "exported": false,
           "async": true,
           "generator": false,
-          "line": 2606,
+          "line": 2618,
           "signature": [],
           "documented": true,
           "summary": "Renew permission on a remembered folder and open it again.",
@@ -42191,7 +44072,7 @@
           "exported": false,
           "async": true,
           "generator": false,
-          "line": 2629,
+          "line": 2641,
           "signature": [],
           "documented": true,
           "summary": "Stop keeping the workspace in a folder.",
@@ -42224,7 +44105,7 @@
           "exported": false,
           "async": true,
           "generator": false,
-          "line": 2654,
+          "line": 2666,
           "signature": [
             "handle",
             "read",
@@ -42283,7 +44164,7 @@
           "exported": false,
           "async": true,
           "generator": false,
-          "line": 2695,
+          "line": 2707,
           "signature": [
             "prune"
           ],
@@ -42326,7 +44207,7 @@
           "exported": false,
           "async": true,
           "generator": false,
-          "line": 2737,
+          "line": 2749,
           "signature": [
             "since"
           ],
@@ -42369,7 +44250,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2770,
+          "line": 2782,
           "signature": [
             "drivers"
           ],
@@ -42410,7 +44291,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2792,
+          "line": 2804,
           "signature": [
             "id"
           ],
@@ -42451,7 +44332,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2808,
+          "line": 2820,
           "signature": [
             "id"
           ],
@@ -42492,7 +44373,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2831,
+          "line": 2843,
           "signature": [
             "id"
           ],
@@ -42533,7 +44414,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2858,
+          "line": 2870,
           "signature": [
             "id"
           ],
@@ -42574,7 +44455,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2874,
+          "line": 2886,
           "signature": [
             "stackId"
           ],
@@ -42615,7 +44496,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2898,
+          "line": 2910,
           "signature": [
             "panelId",
             "stackId"
@@ -42664,7 +44545,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2918,
+          "line": 2930,
           "signature": [
             "id"
           ],
@@ -42705,7 +44586,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2929,
+          "line": 2941,
           "signature": [
             "id"
           ],
@@ -42746,7 +44627,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2948,
+          "line": 2960,
           "signature": [
             "patch"
           ],
@@ -42789,7 +44670,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2958,
+          "line": 2970,
           "signature": [],
           "documented": true,
           "summary": "The full shared slice, sent to a popped-out tab when it announces itself.",
@@ -42820,7 +44701,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 3022,
+          "line": 3034,
           "signature": [
             "arg0"
           ],

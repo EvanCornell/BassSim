@@ -1701,7 +1701,7 @@ Open the time-domain workspace, optionally at a tab.
 
 **Side effects**
 
-- Writes store state.
+- Starts and warms the simulation thread pool; writes store state.
 
 ### `closeTimeDomain()`
 
@@ -2871,7 +2871,7 @@ the request was superseded and its entry already removed.
 
 **Side effects**
 
-- Removes the request from `simPending` and resolves its promise.
+- Serves the worker's SPICE runs from the thread pool; removes the request from `simPending` and resolves its promise.
 
 ### `startTdJob(msg, onMessage)`
 
@@ -2893,12 +2893,12 @@ Start a time-domain job in its worker.
 
 - Spawns the worker when there is none, and posts to it.
 
-### `startTdJob > tdWorker.onmessage(e)`
+### `startTdJob > w.onmessage(e)`
 
 - **Reachability:** UNREACHABLE
 - **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
 
-Pass this job's messages on; ignore any from a job since abandoned.
+Serve the job's SPICE runs from the thread pool, and pass its other messages on; ignore any from a job since abandoned.
 
 **Parameters**
 
@@ -2910,7 +2910,7 @@ Pass this job's messages on; ignore any from a job since abandoned.
 
 **Side effects**
 
-- Calls `onMessage`.
+- Runs netlists in the pool; calls `onMessage`.
 
 ### `stopTdWorker()`
 
@@ -2925,7 +2925,7 @@ Stop whatever the time-domain worker is doing.
 
 **Side effects**
 
-- Terminates the worker; the next job spawns a fresh one.
+- Terminates the worker and the pool's time-domain runs; the next job spawns a fresh one.
 
 ### `syncPopoutUrl(ids, active)`
 

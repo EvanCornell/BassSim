@@ -73,14 +73,59 @@ How it is built:
   `pwl()`, pinned flat beyond ±max(4·Xmax, 20 mm).
 - Duct exit loss: series B source K·ρ/(2S²)·U|U| at radiating ends and at
   ends meeting a larger area; only in nonlinear transient runs. Default K 0.5.
-- Jobs run in a second worker (`src/engine/tdWorker.js`) with progress;
-  cancel terminates it. Settings are stored in the project's `analyses` as
+- Jobs run in a second worker (`src/engine/tdWorker.js`) with progress,
+  their SPICE runs spread over the thread pool (below); cancel terminates
+  it and its runs. Settings are stored in the project's `analyses` as
   one `{type: 'timedomain'}` entry; results are not saved.
 - The legacy quasi-linear "Experimental features" mode is retired from the
   UI (the legacy engine still reads `nlEnabled` from old files).
 - Checks (contract suite): linear transient = IFFT; tone fundamental = AC
   level; flat curve THD < 1e-4; symmetric curves → odd harmonics, asymmetric
   Bl and Le(x) → H2; exit loss → odd harmonics and growing compression.
+
+### Speed: threads and the solver, as built
+
+Every simulation now uses as many processor threads as the machine has:
+
+- **Thread pool** (`src/engine/pool.js`, `poolHost.js`, `spiceWorker.js`):
+  one ngspice worker per logical processor (`navigator.hardwareConcurrency`,
+  no fixed cap), started and warmed when first needed or when the Time
+  Domain window opens. The workers that coordinate a job — the live sweep's
+  (`worker.js`) and the time-domain analyses' (`tdWorker.js`) — compile and
+  measure, but send every netlist to the main thread, which hands it to the
+  pool (`setRunner` in `run.js`, `remote.js`). Results move as transferred
+  buffers.
+- **Frequency sweeps are split** across the free workers
+  (`src/spice/split.js`): every frequency is solved on its own, so the
+  pieces are joined back point for point. A decade sweep's top is written
+  on its grid of steps plus a millionth of a step (`decadeStep`), because
+  ngspice stretches the steps of a sweep over a decade long to land on the
+  top and can drop a last point that lands exactly on it; on the grid, the
+  whole sweep and its pieces agree to 1e-8.
+- **Independent runs go side by side**: THD's tones, compression's tones
+  (with one small AC run per frequency serving every level), the transient
+  run and its linear comparison. **Max SPL** searches every band at once,
+  and each band tests `ceil(threads / bands still searching)` levels per
+  round (`maxLevel`: 3 dB steps to a bracket, then evenly spaced levels
+  inside it), so a band's bracket shrinks by that many plus one per round.
+- **Lanes**: the live sweep goes ahead of time-domain work and has one
+  worker beyond the thread count, so a long distortion run does not hold up
+  the frequency response; it splits only across warm, free workers. Cancel
+  drops a lane's queued runs and terminates the workers running them.
+- **KLU in transient runs**: ngspice's KLU sparse solver steps these
+  circuits 2–2.5× faster with identical answers (five-port noise, 0.3 s:
+  31 s → 12.6 s). It will not factor nodes held at DC only by `rshunt`, so
+  transient runs skip the operating point (`.tran … uic`) and start from
+  rest — every signal is silent at t = 0 (noise's first point is pinned to
+  zero) — and `runTransient` puts back the t = 0 sample ngspice omits.
+  Sweeps keep the default solver: KLU fails their DC operating point, and
+  with `noopac` fails the complex factorisation.
+- Measured in Chromium on 4 threads, old → new: five-port linear responses
+  9.7 → 3.5 s; five-port nonlinear transient with linear comparison
+  26.3 → 6.9 s; port box THD sweep 6.0 → 2.8 s, max SPL 20.9 → 11.3 s,
+  compression 24.2 → 12.0 s; five-port live sweep ~350 → ~230 ms. The
+  independent-run analyses scale with the thread count. Stall matrix
+  (4 projects × 4 signals × lin/NL × 8/48 kHz) 64/64 with KLU.
 
 ### Milestone 4, as built
 

@@ -50,8 +50,12 @@ no implementation. This is the sole input to the blind contract test suite.
 | [`src/engine/metrics.js`](src_engine_metrics_js.spec.md) | 4 | 2 | 2 |
 | [`src/engine/nonlinear.js`](src_engine_nonlinear_js.spec.md) | 13 | 13 | 0 |
 | [`src/engine/pipeline.js`](src_engine_pipeline_js.spec.md) | 5 | 2 | 3 |
+| [`src/engine/pool.js`](src_engine_pool_js.spec.md) | 16 | 2 | 14 |
+| [`src/engine/poolHost.js`](src_engine_poolHost_js.spec.md) | 5 | 3 | 2 |
 | [`src/engine/project.js`](src_engine_project_js.spec.md) | 2 | 2 | 0 |
+| [`src/engine/remote.js`](src_engine_remote_js.spec.md) | 2 | 2 | 0 |
 | [`src/engine/solver.js`](src_engine_solver_js.spec.md) | 14 | 6 | 8 |
+| [`src/engine/spiceWorker.js`](src_engine_spiceWorker_js.spec.md) | 2 | 0 | 2 |
 | [`src/engine/tdWorker.js`](src_engine_tdWorker_js.spec.md) | 2 | 0 | 2 |
 | [`src/engine/worker.js`](src_engine_worker_js.spec.md) | 1 | 0 | 1 |
 | [`src/keymap.js`](src_keymap_js.spec.md) | 29 | 29 | 0 |
@@ -67,7 +71,7 @@ no implementation. This is the sole input to the blind contract test suite.
 | [`src/schema/validate.js`](src_schema_validate_js.spec.md) | 7 | 4 | 3 |
 | [`src/selection.js`](src_selection_js.spec.md) | 5 | 5 | 0 |
 | [`src/spice/adapt.js`](src_spice_adapt_js.spec.md) | 4 | 2 | 2 |
-| [`src/spice/compile.js`](src_spice_compile_js.spec.md) | 3 | 2 | 1 |
+| [`src/spice/compile.js`](src_spice_compile_js.spec.md) | 4 | 3 | 1 |
 | [`src/spice/dsp.js`](src_spice_dsp_js.spec.md) | 16 | 14 | 2 |
 | [`src/spice/elements.js`](src_spice_elements_js.spec.md) | 18 | 6 | 12 |
 | [`src/spice/filters.js`](src_spice_filters_js.spec.md) | 4 | 4 | 0 |
@@ -78,8 +82,9 @@ no implementation. This is the sole input to the blind contract test suite.
 | [`src/spice/networks.js`](src_spice_networks_js.spec.md) | 8 | 8 | 0 |
 | [`src/spice/nonlinear.js`](src_spice_nonlinear_js.spec.md) | 6 | 5 | 1 |
 | [`src/spice/physics.js`](src_spice_physics_js.spec.md) | 5 | 5 | 0 |
-| [`src/spice/run.js`](src_spice_run_js.spec.md) | 6 | 3 | 3 |
-| [`src/spice/timedomain.js`](src_spice_timedomain_js.spec.md) | 26 | 12 | 14 |
+| [`src/spice/run.js`](src_spice_run_js.spec.md) | 10 | 7 | 3 |
+| [`src/spice/split.js`](src_spice_split_js.spec.md) | 6 | 4 | 2 |
+| [`src/spice/timedomain.js`](src_spice_timedomain_js.spec.md) | 33 | 13 | 20 |
 | [`src/spice/wiring.js`](src_spice_wiring_js.spec.md) | 3 | 1 | 2 |
 | [`src/store.js`](src_store_js.spec.md) | 142 | 127 | 15 |
 | [`src/toolbarItems.js`](src_toolbarItems_js.spec.md) | 6 | 4 | 2 |
@@ -93,4 +98,4 @@ no implementation. This is the sole input to the blind contract test suite.
 | [`test/contracts.mjs`](test_contracts_mjs.spec.md) | 2 | 0 | 2 |
 | [`test/drivers.mjs`](test_drivers_mjs.spec.md) | 2 | 0 | 2 |
 | [`test/support/loader.mjs`](test_support_loader_mjs.spec.md) | 2 | 2 | 0 |
-| **Total** | **975** | **524** | **451** |
+| **Total** | **1018** | **541** | **477** |

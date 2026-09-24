@@ -31,6 +31,7 @@ import { migrateProject } from './schema/migrate'
 import { toEditor, fromEditor } from './schema/editor'
 import { pruneExtras, driveOf, masterForVoltage, freshId } from './schema/extras'
 import { ENGINES, DEFAULT_ENGINE } from './engine/pipeline'
+import { getPool, relay, cancelLane } from './engine/poolHost'
 import * as L from './layout'
 import * as D from './driverParams'
 import { PANEL_META, PANEL_IDS } from './panelMeta'
@@ -75,9 +76,10 @@ function simulateInWorker(project, engine) {
      *
      * @param {MessageEvent} e - The reply, carrying the `id` of its request.
      * @returns {void}
-     * @sideEffect Removes the request from `simPending` and resolves its promise.
+     * @sideEffect Serves the worker's SPICE runs from the thread pool; removes the request from `simPending` and resolves its promise.
      */
     simWorker.onmessage = (e) => {
+      if (relay(simWorker, e.data, 'live')) return
       const resolve = simPending.get(e.data.id)
       if (!resolve) return // superseded and already discarded
       simPending.delete(e.data.id)
@@ -107,16 +109,20 @@ let tdReqId = 0
  */
 function startTdJob(msg, onMessage) {
   if (!tdWorker) tdWorker = new Worker(new URL('./engine/tdWorker.js', import.meta.url), { type: 'module' })
+  const w = tdWorker
   const id = ++tdReqId
   /**
-   * Pass this job's messages on; ignore any from a job since abandoned.
+   * Serve the job's SPICE runs from the thread pool, and pass its other messages on; ignore any from a job since abandoned.
    *
    * @param {MessageEvent} e - A message from the worker.
    * @returns {void}
-   * @sideEffect Calls `onMessage`.
+   * @sideEffect Runs netlists in the pool; calls `onMessage`.
    */
-  tdWorker.onmessage = (e) => { if (e.data.id === id) onMessage(e.data) }
-  tdWorker.postMessage({ id, ...msg })
+  w.onmessage = (e) => {
+    if (relay(w, e.data, 'td')) return
+    if (e.data.id === id) onMessage(e.data)
+  }
+  w.postMessage({ id, threads: getPool().size, ...msg })
   return id
 }
 
@@ -124,11 +130,12 @@ function startTdJob(msg, onMessage) {
  * Stop whatever the time-domain worker is doing.
  *
  * @returns {void}
- * @sideEffect Terminates the worker; the next job spawns a fresh one.
+ * @sideEffect Terminates the worker and the pool's time-domain runs; the next job spawns a fresh one.
  */
 function stopTdWorker() {
   if (tdWorker) tdWorker.terminate()
   tdWorker = null
+  cancelLane('td')
 }
 
 /** The time-domain settings a new project starts with, per section. */
@@ -1834,9 +1841,13 @@ export const useStore = create((rawSet, get) => {
    *
    * @param {string} [tab] - `linear`, `transient`, `distortion` or `nonlinear`.
    * @returns {void}
-   * @sideEffect Writes store state.
+   * @sideEffect Starts and warms the simulation thread pool; writes store state.
    */
-  openTimeDomain: (tab) => set({ tdOpen: true, ...(tab ? { tdTab: tab } : {}) }),
+  openTimeDomain: (tab) => {
+    // Load an engine on every thread now, so the first run need not wait.
+    if (typeof Worker !== 'undefined') getPool().warm()
+    set({ tdOpen: true, ...(tab ? { tdTab: tab } : {}) })
+  },
   /**
    * Return to the editor. A running job carries on.
    *
@@ -1899,10 +1910,11 @@ export const useStore = create((rawSet, get) => {
     const project = fromEditor({ name: st.projectName, nodes: st.nodes, edges: st.edges, settings: st.settings, extras: st.projectExtras })
     const sig = st.tdSignature()
     const opts = cfg[kind]
-    set({ tdJob: { kind, mode: m, fraction: 0, message: 'Starting' }, tdError: null })
+    const threads = typeof Worker !== 'undefined' ? getPool().size : 1
+    set({ tdJob: { kind, mode: m, fraction: 0, message: 'Starting', threads }, tdError: null })
     startTdJob({ kind, project, opts, mode: m }, (msg) => {
       if (msg.type === 'progress') {
-        set({ tdJob: { kind, mode: m, fraction: msg.fraction, message: msg.message } })
+        set({ tdJob: { kind, mode: m, fraction: msg.fraction, message: msg.message, threads } })
         return
       }
       if (msg.type === 'error') {

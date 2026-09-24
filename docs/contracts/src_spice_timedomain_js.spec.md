@@ -20,6 +20,10 @@ Every analysis takes a resolved, validated project (see `prepareProject`)
 and reports progress through an optional callback, so a worker can show it
 and the caller can abandon the run.
 
+Runs that do not depend on each other are started together: where the
+engine sits behind a thread pool (see `run.js`), they go side by side, one
+per thread; in a single process they simply queue.
+
 ## Exported constants
 
 Names this module publishes that are not methods. The method contracts
@@ -56,7 +60,7 @@ Defaults for the distortion analyses.
 
 Keys: `hz`, `levelDb`, `harmonics`, `bandwidth`, `f1`, `f2`, `points`, `levels`, `bands`, `xLimit`, `maxBoostDb`
 
-## EXPORTED (12)
+## EXPORTED (13)
 
 ### `splOf(p)`
 
@@ -322,6 +326,39 @@ is the peak pressure of the response as an RMS-equivalent (peak/√2).
 
 - Runs the engine.
 
+### `maxLevel(s)`
+
+- **Reachability:** EXPORTED
+- **Obtain via:** import { maxLevel } from '../../src/spice/timedomain.js'
+- **Async:** returns a Promise
+
+The highest level that breaks no limit, searched with several levels tested at once.
+
+Levels are assumed to break limits from some threshold up. Until a level
+that passes and one that breaks are both known, the search steps 3 dB
+at a time from `start` — upward from a pass, downward from a failure,
+`width()` steps per round; then it tests `width()` evenly spaced levels
+inside the bracket each round, narrowing it by that many plus one, until
+it is 0.25 dB wide. With a width of 1 this is a plain step-then-halve search.
+
+**Parameters**
+
+- `s` — `object` — The search.
+- `s.start` — `number` — First level, dB.
+- `s.top` — `number` — Highest level to try, dB.
+- `s.bottom` — `number` — Lowest level to try, dB.
+- `s.test` — `Function` — `(L) → Promise<{broke: string|null, …}>`.
+- `s.width` — `Function` — `() → number`: levels to test per round, now.
+- `s.onRound` — `Function` _(optional)_ — Called with the search's progress, 0–1, after each round.
+
+**Returns**
+
+- `Promise<{lo: object|null, hi: object|null, tried: number}>` — The highest passing level below the lowest breaking one — each `{L, …test's result}` — and the number of levels tested.
+
+**Side effects**
+
+- Calls `test`, several at a time.
+
 ### `distortionAnalysis(project, mode, opts, onProgress)`
 
 - **Reachability:** EXPORTED
@@ -339,7 +376,8 @@ Distortion analyses.
   model's, as compression in dB.
 - `maxspl`: for each band frequency, the highest burst level that breaks
   neither the CEA-2010 distortion limits nor `xLimit` × Xmax of excursion,
-  found by stepping up 3 dB then halving to 0.25 dB.
+  found by stepping 3 dB then narrowing to 0.25 dB (see `maxLevel`),
+  every band at once.
 
 **Parameters**
 
@@ -360,7 +398,7 @@ Distortion analyses.
 
 - Runs the engine, many times.
 
-## UNREACHABLE (14)
+## UNREACHABLE (20)
 
 ### `sweepOf(project)`
 
@@ -567,6 +605,24 @@ Whether any waveguide end carries a flow loss.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
+### `hasCurves(project, bandwidth)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+Whether any driver in the project carries a large-signal curve.
+
+**Parameters**
+
+- `project` — `object` — A resolved project.
+- `bandwidth` — `number` — The model bandwidth, Hz, as the run compiles it.
+
+**Returns**
+
+- `boolean` — True when some driver compiles as nonlinear.
+
+**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
+
 ### `measureTone > peakOf(x)`
 
 - **Reachability:** UNREACHABLE
@@ -600,3 +656,91 @@ The response's spectral magnitude at one frequency (a direct Fourier sum).
 - `number` — |P(f)|.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
+
+### `maxLevel > bracket()`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+The current bracket: the lowest breaking level, and the highest passing one below it.
+
+**Returns**
+
+- `{lo: object|null, hi: object|null}` — Either may be missing.
+
+**Reads external mutable state**
+
+- the levels tried.
+
+### `distortionAnalysis > report(message)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+Report the search's progress: bands finished, and how far along the rest are.
+
+**Parameters**
+
+- `message` — `string` — What is running.
+
+**Returns**
+
+- `void`
+
+**Side effects**
+
+- Calls `onProgress`.
+
+### `distortionAnalysis > test(L)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+- **Async:** returns a Promise
+
+Test one level at this band.
+
+**Parameters**
+
+- `L` — `number` — Level offset, dB.
+
+**Returns**
+
+- `Promise<{m: object, broke: string|null}>` — The measurement and the limit it breaks.
+
+**Side effects**
+
+- Runs the engine.
+
+### `distortionAnalysis > width()`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+How many levels this band may test at once: its share of the threads.
+
+**Returns**
+
+- `number` — At least 1.
+
+**Reads external mutable state**
+
+- the thread count and the bands still searching.
+
+### `distortionAnalysis > onRound(fraction)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+Note a round's end.
+
+**Parameters**
+
+- `fraction` — `number` — How far this band's search has come, 0–1.
+
+**Returns**
+
+- `void`
+
+**Side effects**
+
+- Reports progress.
