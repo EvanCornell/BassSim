@@ -8,7 +8,7 @@
 import { areaProfile } from '../engine/geometry.js'
 import { driverSI } from '../engine/solver.js'
 import { RHO, C_AIR, SOLID_ANGLE, perimeter, viscousCoeff, flowResistivity, stuffedSoundSpeed } from './physics.js'
-import { fmt, resistor, sense, DC_TIE } from './netlist.js'
+import { fmt, resistor, sense } from './netlist.js'
 import { radiationLoad, fractionalSeries } from './networks.js'
 import { compileLine } from './line.js'
 import { endCorrection, faceArea } from './nets.js'
@@ -52,34 +52,82 @@ function endMass(ctx, from, to, dl, S, viscous, note) {
 }
 
 /**
- * Probe positions requested on a node, m from its start.
+ * Probes placed at a distance along a node.
  *
- * @param {object} ctx - Compile context, carrying the project's probes.
+ * @param {object} ctx - Compile context, carrying the project's positioned probes.
  * @param {object} node - A chamber or waveguide.
- * @returns {Array<{probe: object, x: number}>} Pressure probes placed along it.
+ * @returns {Array<{probe: object, x: number, flow: boolean}>} Its probes, their distance in m from the start, and whether they read flow rather than pressure.
  * @pure
  */
 function probesOn(ctx, node) {
   return (ctx.probes || [])
     .filter((p) => p.at?.node === node.id && p.at.position != null)
-    .map((p) => ({ probe: p, x: Number(p.at.position) * 1e-2 }))
+    .map((p) => ({ probe: p, x: Number(p.at.position) * 1e-2, flow: p.kind === 'flow' || p.kind === 'velocity' }))
 }
 
 /**
- * Record where a pressure probe landed.
+ * The distances along a node where its line must have a node or a cut.
  *
- * A probe that migrated from a chamber's own probe is reported under the
- * chamber's id, where the editor looks for it; any other under its own id.
+ * @param {object} node - A chamber or waveguide.
+ * @param {Array<object>} probes - From `probesOn`.
+ * @returns {{points: number[], flowPoints: number[]}} Tap and pressure-probe distances, and flow-probe distances, m.
+ * @pure
+ */
+function linePoints(node, probes) {
+  return {
+    points: [...(node.params.taps || []).map((t) => Number(t.position) * 1e-2), ...probes.filter((q) => !q.flow).map((q) => q.x)],
+    flowPoints: probes.filter((q) => q.flow).map((q) => q.x),
+  }
+}
+
+/**
+ * Record where each probe on a line landed.
+ *
+ * A pressure probe reads the node at its distance. A flow or velocity probe
+ * reads the sense source cut into the line there; one at either end reads
+ * that end's flow instead, which the compiler resolves once every element is
+ * built. A probe that migrated from a chamber's own probe is reported under
+ * the chamber's id, where the editor looks for it; any other under its own id.
  *
  * @param {object} ctx - Compile context.
- * @param {object} probe - The probe.
- * @param {string} node - The netlist node its pressure is read from.
+ * @param {object} node - The chamber or waveguide.
+ * @param {object} line - The compiled line.
+ * @param {Array<object>} probes - From `probesOn`.
+ * @param {Function} areaAt - Cross-section at a distance, m → m².
+ * @param {string[]} ends - The node's start and end handle names.
  * @returns {void}
- * @mutates ctx.map.probes.
+ * @mutates ctx.map.probes, ctx.map.flowProbes and ctx.endFlowProbes.
  */
-function recordProbe(ctx, probe, node) {
-  const key = probe.id === `probe_${probe.at.node}` ? probe.at.node : probe.id
-  ctx.map.probes.push({ key, node })
+function placeProbes(ctx, node, line, probes, areaAt, ends) {
+  const L = Number(node.params.length) * 1e-2
+  for (const q of probes) {
+    const p = q.probe
+    if (!q.flow) {
+      const key = p.id === `probe_${p.at.node}` ? p.at.node : p.id
+      ctx.map.probes.push({ key, node: line.at(q.x) })
+      continue
+    }
+    const name = line.flowAt(q.x)
+    if (name) ctx.map.flowProbes.push({ key: p.id, kind: p.kind, sense: name, scale: 1, S: areaAt(q.x) })
+    else if (q.x <= 0 || q.x >= L) ctx.endFlowProbes.push({ ...p, at: { node: node.id, handle: q.x <= 0 ? ends[0] : ends[1] } })
+    else ctx.map.flowProbes.push({ key: p.id, kind: p.kind, sense: null })
+  }
+}
+
+/**
+ * Record which sense source carries the flow through a handle.
+ *
+ * @param {object} ctx - Compile context.
+ * @param {string} id - Node id.
+ * @param {string} handle - Handle name.
+ * @param {string} name - The sense source (or cone velocity source).
+ * @param {number} scale - Factor from the source's current to volume flow — Sd for a cone, 1 otherwise.
+ * @param {number} S - Area for velocity, m².
+ * @returns {void}
+ * @mutates ctx.map.handleFlows.
+ */
+function recordFlow(ctx, id, handle, name, scale, S) {
+  ctx.map.handleFlows[`${id}:${handle}`] = { sense: name, scale, S }
 }
 
 /**
@@ -88,13 +136,17 @@ function recordProbe(ctx, probe, node) {
  * @param {object} ctx - Compile context.
  * @param {object} node - A chamber or waveguide.
  * @param {object} line - The compiled line.
+ * @param {Function} areaAt - Cross-section at a distance, m → m².
  * @returns {void}
- * @mutates ctx.nl.
+ * @mutates ctx.nl and ctx.map.handleFlows.
  */
-function connectTaps(ctx, node, line) {
+function connectTaps(ctx, node, line, areaAt) {
   for (const t of node.params.taps || []) {
-    const net = ctx.nets.netOf(node.id, `tap:${t.id}`)
-    if (ctx.nets.connected(node.id, `tap:${t.id}`)) resistor(ctx.nl, net, line.at(Number(t.position) * 1e-2), DC_TIE, `${noteOf(node)} tap ${t.id}`)
+    const h = `tap:${t.id}`
+    if (!ctx.nets.connected(node.id, h)) continue
+    const x = Number(t.position) * 1e-2
+    const s = sense(ctx.nl, ctx.nets.netOf(node.id, h), `${noteOf(node)} tap ${t.id}`, line.at(x))
+    recordFlow(ctx, node.id, h, s.name, 1, areaAt(x))
   }
 }
 
@@ -119,14 +171,15 @@ export function compileWaveguide(ctx, node) {
   const L = Math.max(p.length * 1e-2, 1e-4)
   const loss = Math.max(Number(p.loss) || 0, 0)
   const probes = probesOn(ctx, node)
+  const area = areaProfile(p.flare || 'conical', S1, S2, L)
   const line = compileLine(ctx, {
-    note, L, area: areaProfile(p.flare || 'conical', S1, S2, L), c: C_AIR, shape: 'round',
+    note, L, area, c: C_AIR, shape: 'round',
     viscous: loss, thermal: 0, flowResistance: 0,
     stepped: Math.abs(S1 - S2) > 1e-12, lumped: false, volume: 0,
-    points: [...(p.taps || []).map((t) => Number(t.position) * 1e-2), ...probes.map((q) => q.x)],
+    ...linePoints(node, probes),
   })
-  connectTaps(ctx, node, line)
-  for (const q of probes) recordProbe(ctx, q.probe, line.at(q.x))
+  connectTaps(ctx, node, line, area)
+  placeProbes(ctx, node, line, probes, area, ['throat', 'mouth'])
   const k = p.ecFactor ?? 1
   const ends = {}
   for (const [h, endNode, S, space] of [['throat', line.start, S1, p.throatSpace], ['mouth', line.end, S2, p.mouthSpace]]) {
@@ -135,6 +188,7 @@ export function compileWaveguide(ctx, node) {
       const s = sense(ctx.nl, ctx.nets.netOf(node.id, h), `${note} ${h} flow`, dl > 0 ? undefined : endNode)
       if (dl > 0) endMass(ctx, s.out, endNode, dl, S, loss, `${note} ${h}`)
       ends[h] = { sense: s.name, S }
+      recordFlow(ctx, node.id, h, s.name, 1, S)
     } else if ((space || 'half') !== 'rigid') {
       const s = sense(ctx.nl, endNode, `${note} ${h} radiates`)
       const n = (2 * Math.PI) / (SOLID_ANGLE[space] ?? SOLID_ANGLE.half)
@@ -146,6 +200,7 @@ export function compileWaveguide(ctx, node) {
       }
       const omega = radiationLoad(ctx.nl, radIn, S, space || 'half', `${note} ${h} radiation`)
       ends[h] = { sense: s.name, S }
+      recordFlow(ctx, node.id, h, s.name, 1, S)
       ctx.map.radiators.push({ key: h === 'mouth' ? node.id : `${node.id}:throat`, sense: s.name, node: radIn, omega, counts: true, driver: false })
     }
   }
@@ -184,10 +239,10 @@ export function compileChamber(ctx, node) {
     note, L, area, c, shape,
     viscous: 1, thermal: 1, flowResistance: flowResistivity(p.stuffing),
     stepped: false, lumped: ctx.masking, volume: V,
-    points: [...(p.taps || []).map((t) => Number(t.position) * 1e-2), ...probes.map((q) => q.x)],
+    ...linePoints(node, probes),
   })
-  connectTaps(ctx, node, line)
-  for (const q of probes) recordProbe(ctx, q.probe, line.at(q.x))
+  connectTaps(ctx, node, line, area)
+  placeProbes(ctx, node, line, probes, area, ['in', 'out'])
   if (Number(p.leakQL) > 0) {
     const Cbox = V / (RHO * c * c)
     const R = Number(p.leakQL) / (2 * Math.PI * Math.max(Number(p.leakHz) || 30, 0.1) * Cbox)
@@ -197,9 +252,9 @@ export function compileChamber(ctx, node) {
   for (const [h, endNode] of [['in', line.start], ['out', line.end]]) {
     if (!ctx.nets.connected(node.id, h)) continue
     const dl = endCorrection(ctx.nets, node, h)
-    const tie = dl > 0 ? ctx.nl.node() : endNode
-    resistor(ctx.nl, ctx.nets.netOf(node.id, h), tie, DC_TIE)
-    if (dl > 0) endMass(ctx, tie, endNode, dl, S, 0, `${note} ${h}`)
+    const s = sense(ctx.nl, ctx.nets.netOf(node.id, h), `${note} ${h} flow`, dl > 0 ? undefined : endNode)
+    recordFlow(ctx, node.id, h, s.name, 1, S)
+    if (dl > 0) endMass(ctx, s.out, endNode, dl, S, 0, `${note} ${h}`)
   }
 }
 
@@ -289,6 +344,7 @@ export function compileDriver(ctx, node, terms) {
   nl.lines.push(`${vm} ${m5} 0 DC 0 ; ${note} cone velocity`)
   nl.add('F', [rear, front, vm], fmt(d.Sd), `${note} cone flow`)
   ctx.map.drivers.push({ id: node.id, velocity: vm, Xmax: d.Xmax })
+  for (const face of ['front', 'rear']) recordFlow(ctx, node.id, face, vm, d.Sd, d.Sd)
   exposedFaces(ctx, node, d.Sd, true)
 }
 
@@ -321,6 +377,7 @@ export function compilePR(ctx, node) {
   nl.add('E', [m4, m5, front, rear], fmt(Sd), `${note} acoustic reaction`)
   nl.lines.push(`${vm} ${m5} 0 DC 0 ; ${note} velocity`)
   nl.add('F', [rear, front, vm], fmt(Sd), `${note} flow`)
+  for (const face of ['front', 'rear']) recordFlow(ctx, node.id, face, vm, Sd, Sd)
   exposedFaces(ctx, node, Sd, false)
 }
 
@@ -344,6 +401,7 @@ export function compileRadiation(ctx, node) {
   if (!S) for (const o of ctx.nets.neighbours(node.id, 'in')) S += faceArea(o.node, o.handle) || 0
   if (!S) S = 1e-2
   const s = sense(ctx.nl, ctx.nets.netOf(node.id, 'in'), `${note} radiates`)
+  recordFlow(ctx, node.id, 'in', s.name, 1, S)
   const omega = radiationLoad(ctx.nl, s.out, S, p.space || 'half', `${note} radiation`)
   // A radiation node fed only by driver faces is those faces radiating: its
   // output is driver output, not a port's.

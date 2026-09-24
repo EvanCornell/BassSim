@@ -34,6 +34,24 @@ export const PANEL_META = {
     closable: true,
     dock: { edge: 'right' },
   },
+  wiring: {
+    title: 'Wiring',
+    group: 'main',
+    closable: true,
+    dock: { nextTo: 'params', zone: 'center', edge: 'right' },
+  },
+  vars: {
+    title: 'Project Parameters',
+    group: 'main',
+    closable: true,
+    dock: { nextTo: 'params', zone: 'center', edge: 'right' },
+  },
+  probes: {
+    title: 'Probes',
+    group: 'main',
+    closable: true,
+    dock: { nextTo: 'params', zone: 'center', edge: 'right' },
+  },
   nllab: {
     title: 'Nonlinear Lab',
     group: 'main',
@@ -49,6 +67,7 @@ export const PANEL_META = {
   exc: { title: 'Cone Excursion', group: 'charts' },
   vel: { title: 'Port Velocity', group: 'charts' },
   int: { title: 'Interior SPL', group: 'charts' },
+  pfl: { title: 'Probe Flow & Velocity', group: 'charts' },
   pow: { title: 'Acoustic Power', group: 'charts' },
   eff: { title: 'Efficiency', group: 'charts' },
   pe: { title: 'Electrical Power', group: 'charts' },

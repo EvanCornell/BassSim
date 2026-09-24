@@ -7,13 +7,13 @@
 
 The bridge between a v3 project file and the editor's working state.
 
-The editor still keeps a flat `settings` object for the controls it has
-today — sweep range, drive level, display options — and keeps a chamber's
-probe on the chamber node, where its form shows it. The file keeps those in
-`analyses`, `wiring`, `display` and `probes`. These two functions convert
-in each direction; everything the editor has no control for yet (named
-params, further channels, other probes, components) rides along untouched
-in `extras`, so a project round-trips through the editor without loss.
+The editor keeps a flat `settings` object for the controls that predate the
+v3 sections — sweep range, the toolbar's drive level, display options — and
+keeps a chamber's own probe on the chamber node, where its form shows it.
+The file keeps those in `analyses`, `wiring`, `display` and `probes`. These
+two functions convert in each direction; the rest of those sections — named
+params, every channel, the other probes, components — travel in `extras`,
+which the Wiring, Project Parameters and Probes panels edit directly.
 
 ## EXPORTED (2)
 
@@ -25,8 +25,9 @@ in `extras`, so a project round-trips through the editor without loss.
 Split a v3 project into the editor's working state.
 
 `settings.voltage` is the first channel's output at the current master
-level — the drive the user actually sees. A chamber's first pressure probe
-becomes its `probe`/`probePos` params; any other probe stays in `extras`.
+level — the drive the user actually sees. A chamber's own probe — the one
+with id `probe_<chamber id>`, which is what its checkbox writes — becomes its
+`probe`/`probePos` params; every other probe stays in `extras`.
 
 **Parameters**
 
@@ -51,7 +52,8 @@ Assemble a v3 project from the editor's working state.
 
 The inverse of `toEditor`: the flat settings land back in the first
 analysis, the first channel and the display section, and a probed chamber's
-probe becomes an entry in `probes`.
+probe becomes an entry in `probes`. A first-channel voltage or output
+resistance written as an expression is kept, not overwritten by its value.
 
 **Parameters**
 

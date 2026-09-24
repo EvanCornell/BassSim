@@ -49,8 +49,11 @@ export function phaseAndDelay(phase, freqs) {
 /**
  * Turn a SPICE run into the results object.
  *
- * - Impedance is the load the first driving channel sees, excluding its
- *   output resistance; electrical power sums over every channel.
+ * - Impedance is the load each channel sees, excluding its output
+ *   resistance; `zinMag` is the first channel's. Electrical power sums over
+ *   every channel.
+ * - Flow probes are volume flow, m³/s peak; velocity probes are that flow
+ *   over the local area, m/s peak.
  * - Each radiator's far-field pressure at 1 m is jωρU/(Ω·r), and every
  *   radiator is 1 m from the listening point, so the combined output is their
  *   coherent sum. Only radiators that count toward output are summed.
@@ -76,10 +79,12 @@ export function adaptResults(raw, map) {
     splCombined: arr(), splDriver: new Array(n).fill(null), splPorts: {}, splInterior: {},
     zinMag: arr(), zinPhase: arr(), excursion: arr(), excursionByDriver: {}, excursionRatio: arr(),
     xmaxByDriver: {}, velocity: {}, power: arr(), peReal: arr(), peApparent: arr(),
+    zinByChannel: {}, probeFlow: {},
     phase: arr(), phaseUnwrapped: null, groupDelay: null,
     nl: { active: false, iterations: 1 },
   }
   const ch = map.channels.map((c) => ({ ...c, I: raw.vec(`i(${c.sense})`), V: raw.vec(`v(${c.load})`) }))
+  for (const c of ch) res.zinByChannel[c.id] = { label: c.label, mag: arr(), phase: arr() }
   const drv = map.drivers.map((d) => ({ ...d, u: raw.vec(`i(${d.velocity})`) }))
   for (const d of drv) { res.excursionByDriver[d.id] = arr(); res.xmaxByDriver[d.id] = d.Xmax * 1000 }
   const wgs = map.waveguides.map((w) => ({ id: w.id, ends: Object.values(w.ends).map((e) => ({ S: e.S, U: raw.vec(`i(${e.sense})`) })) }))
@@ -88,6 +93,8 @@ export function adaptResults(raw, map) {
   for (const r of rads) if (r.counts && !r.driver) res.splPorts[r.key] = new Array(n).fill(null)
   const probes = map.probes.map((p) => ({ ...p, P: raw.vec(`v(${p.node})`) }))
   for (const p of probes) res.splInterior[p.key] = arr()
+  const flows = (map.flowProbes || []).map((p) => ({ ...p, U: p.sense ? raw.vec(`i(${p.sense})`) : null }))
+  for (const p of flows) res.probeFlow[p.key] = { kind: p.kind, values: arr() }
   let anyDriverFace = false
 
   for (let i = 0; i < n; i++) {
@@ -97,12 +104,15 @@ export function adaptResults(raw, map) {
       const Vr = c.V.re[i], Vi = c.V.im[i], Ir = c.I.re[i], Ii = c.I.im[i]
       res.peReal[i] += Vr * Ir + Vi * Ii
       res.peApparent[i] += Math.hypot(Vr, Vi) * Math.hypot(Ir, Ii)
+      const d = Ir * Ir + Ii * Ii
+      const zr = (Vr * Ir + Vi * Ii) / d
+      const zi = (Vi * Ir - Vr * Ii) / d
+      const z = res.zinByChannel[c.id]
+      z.mag[i] = Math.hypot(zr, zi)
+      z.phase[i] = (Math.atan2(zi, zr) * 180) / Math.PI
       if (k === 0) {
-        const d = Ir * Ir + Ii * Ii
-        const zr = (Vr * Ir + Vi * Ii) / d
-        const zi = (Vi * Ir - Vr * Ii) / d
-        res.zinMag[i] = Math.hypot(zr, zi)
-        res.zinPhase[i] = (Math.atan2(zi, zr) * 180) / Math.PI
+        res.zinMag[i] = z.mag[i]
+        res.zinPhase[i] = z.phase[i]
       }
     })
     // drivers
@@ -136,6 +146,12 @@ export function adaptResults(raw, map) {
     res.power[i] = power
     res.phase[i] = (Math.atan2(pi, pr) * 180) / Math.PI
     for (const p of probes) res.splInterior[p.key][i] = spl(Math.hypot(p.P.re[i], p.P.im[i]))
+    // flow and velocity probes, as peaks like the duct velocities
+    for (const p of flows) {
+      if (!p.U) continue
+      const U = Math.hypot(p.U.re[i], p.U.im[i]) * p.scale * Math.SQRT2
+      res.probeFlow[p.key].values[i] = p.kind === 'velocity' ? U / p.S : U
+    }
   }
   const { unwrapped, groupDelay } = phaseAndDelay(res.phase, freqs)
   res.phaseUnwrapped = unwrapped

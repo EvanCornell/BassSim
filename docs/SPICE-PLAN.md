@@ -11,12 +11,55 @@ is ngspice's, and is trusted.
 
 ## Status
 
-Milestones 1–3 are built (`src/schema/`, `src/spice/`, `src/engine/pipeline.js`).
-SPICE is the default engine in the app and the MCP server; the legacy solver
-is a Settings toggle (`ACOUSIM_ENGINE=legacy` for the server) and refuses what
-it cannot represent. Milestones 4–5 remain: the graph features in the editor
-(loose connections, taps UI, wiring manager, probes, params editor) and
+Milestones 1–4 are built (`src/schema/`, `src/spice/`, `src/engine/pipeline.js`,
+and the editor panels). SPICE is the default engine in the app and the MCP
+server; the legacy solver is a Settings toggle (`ACOUSIM_ENGINE=legacy` for
+the server) and refuses what it cannot represent. Milestone 5 remains:
 deleting the legacy solver.
+
+### Milestone 4, as built
+
+- **Loose connections.** The canvas runs React Flow in loose mode; every
+  handle is a `source`, so throat-to-throat, mouth-to-mouth and anything else
+  joins. A join already made the other way round is refused as a duplicate;
+  a node may not join itself.
+- **Taps** are edited in the chamber and waveguide forms (position in cm,
+  expressions allowed) and drawn as pink handles down the node's right side
+  at their share of the length. Removing a tap removes its joins.
+- **Named parameters** — the Project Parameters panel. Every numeric field
+  in the node forms, the wiring manager and the probes panel takes a number
+  or an expression; half-typed text is held in the box and never written.
+  Canvas readouts and derived figures read resolved values. The driver's
+  coupled T/S fields stay numeric (the padlock form derives five of them).
+- **Wiring manager** — the Wiring panel: master level, and per channel its
+  volts at master 0 dB, output resistance, polarity, delay, filters and load
+  tree (default catch-all, or customised series/parallel groups). Each
+  channel shows its voltage now, the nominal load its wiring presents, the
+  watts that makes, and the minimum |Z| from the last run. The toolbar
+  voltage is the first channel at the master; editing it moves the master,
+  so every channel keeps its relative level.
+- **Dual voice coil** is a select on the driver form; the node shows its
+  nominal impedance (coil Re rounded to a standard rating, then the DVC
+  option and the node's array wiring).
+- **DSP filters from ordinary parts** (`src/spice/filters.js`): Butterworth
+  and Linkwitz-Riley high/low-pass of any order, parametric EQ, low and high
+  shelves, each a cascade of series R-L-C sections read out through
+  controlled sources. Matches the analytic response to 3e-8 dB in the sweep
+  and is valid for a transient run unchanged. Filters can be bypassed.
+- **Probes** — the Probes panel: pressure, volume flow or velocity, at any
+  handle (ends, faces, taps, a radiation node) or at a distance along a
+  chamber or waveguide. Flow along a line cuts it with a sense source; the
+  re-slicing changes the result by under 1e-5 dB. Pressure probes plot on
+  Interior SPL, flow and velocity on the new Probe Flow & Velocity chart.
+- **Per-channel impedance** (`zinByChannel`); the impedance chart shows a
+  trace per channel when there are several.
+- **Throat chamber**: the driver warning offers "Insert a throat chamber",
+  which puts an ordinary chamber between the face and what it met; the
+  chamber form has the calculator (cone area × (depth × shape factor +
+  excursion + clearance)) with a button to apply the volume.
+- Deleting nodes drops their wiring leaves and probes; wiring, params and
+  probe edits are part of undo (structural edits; typed values, like node
+  parameters, are not separate undo steps).
 
 ### What was measured
 

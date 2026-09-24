@@ -12,6 +12,9 @@ import FlowCanvas from '../FlowCanvas'
 import NodePalette from '../NodePalette'
 import ParamPanel from '../ParamPanel'
 import NLLab from '../NLLab'
+import WiringPanel from '../WiringPanel'
+import VariablesPanel from '../VariablesPanel'
+import ProbesPanel from '../ProbesPanel'
 import VelocityPopup from '../VelocityPopup'
 import { chartPanelComponent } from '../OutputPanel'
 
@@ -64,6 +67,9 @@ const COMPONENTS = {
   canvas: CanvasPanel,
   params: ParamPanel,
   nllab: NLLab,
+  wiring: WiringPanel,
+  vars: VariablesPanel,
+  probes: ProbesPanel,
   ...Object.fromEntries(CHART_IDS.map((id) => [id, chartPanelComponent(id)])),
 }
 

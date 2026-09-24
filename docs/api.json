@@ -24,9 +24,9 @@
     "pure": "flag"
   },
   "stats": {
-    "modules": 81,
-    "methods": 817,
-    "documented": 817
+    "modules": 89,
+    "methods": 875,
+    "documented": 875
   },
   "modules": [
     {
@@ -6302,6 +6302,230 @@
       ]
     },
     {
+      "file": "src/components/ExprInput.jsx",
+      "module": null,
+      "constants": [],
+      "methods": [
+        {
+          "name": "shortNum",
+          "qualified": "shortNum",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 15,
+          "signature": [
+            "v"
+          ],
+          "documented": true,
+          "summary": "Round a value for display without trailing noise.",
+          "description": "Round a value for display without trailing noise.",
+          "params": [
+            {
+              "name": "v",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "The value."
+            }
+          ],
+          "returns": {
+            "type": "string",
+            "desc": "Up to six significant figures."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "readTyped",
+          "qualified": "readTyped",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 25,
+          "signature": [
+            "text",
+            "values"
+          ],
+          "documented": true,
+          "summary": "Read typed text as a field value: a number, an expression, or neither.",
+          "description": "Read typed text as a field value: a number, an expression, or neither.",
+          "params": [
+            {
+              "name": "text",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "What was typed."
+            },
+            {
+              "name": "values",
+              "type": "Object<string, number>",
+              "optional": false,
+              "default": null,
+              "desc": "Resolved named params."
+            }
+          ],
+          "returns": {
+            "type": "{ok: boolean, value?: number|string, error?: string}",
+            "desc": "The value to store, or why the text cannot be stored yet."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "ExprInput",
+          "qualified": "ExprInput",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 54,
+          "signature": [
+            "arg0"
+          ],
+          "documented": true,
+          "summary": "A numeric input that also takes an expression over the named params.",
+          "description": "A numeric input that also takes an expression over the named params.\n\nTyping a number stores a number; typing anything else stores it as an\nexpression once it resolves, and shows what it resolves to. Text that does\nnot resolve yet — half an expression, a misspelt name — is held in the box,\noutlined, and never written, so a half-typed edit cannot break the run.\nArrow keys step a plain number.",
+          "params": [
+            {
+              "name": "props",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "Component props."
+            },
+            {
+              "name": "props.value",
+              "type": "number|string|null|undefined",
+              "optional": false,
+              "default": null,
+              "desc": "The stored value."
+            },
+            {
+              "name": "props.onCommit",
+              "type": "Function",
+              "optional": false,
+              "default": null,
+              "desc": "Called with a number or an expression string."
+            },
+            {
+              "name": "props.step",
+              "type": "number",
+              "optional": true,
+              "default": null,
+              "desc": "Arrow-key step for a plain number."
+            },
+            {
+              "name": "props.min",
+              "type": "number",
+              "optional": true,
+              "default": null,
+              "desc": "Smallest number accepted."
+            },
+            {
+              "name": "props.placeholder",
+              "type": "string",
+              "optional": true,
+              "default": null,
+              "desc": "Shown when empty."
+            },
+            {
+              "name": "props.disabled",
+              "type": "boolean",
+              "optional": true,
+              "default": null,
+              "desc": "Disable the input."
+            },
+            {
+              "name": "props.title",
+              "type": "string",
+              "optional": true,
+              "default": null,
+              "desc": "Tooltip."
+            }
+          ],
+          "returns": {
+            "type": "React.ReactElement",
+            "desc": "The input, with the resolved value beside an expression."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Subscribes to the store for the named params."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "commit",
+          "qualified": "ExprInput > commit",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 68,
+          "signature": [
+            "t"
+          ],
+          "documented": true,
+          "summary": "Store what was typed if it can be stored.",
+          "description": "Store what was typed if it can be stored.",
+          "params": [
+            {
+              "name": "t",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "The text."
+            }
+          ],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Calls `onCommit` when the text is a usable value."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        }
+      ]
+    },
+    {
       "file": "src/components/FileBrowser.jsx",
       "module": {
         "summary": "The workspace explorer, modelled on the VS Code and Eclipse file navigators.",
@@ -7137,7 +7361,7 @@
       "constants": [
         {
           "name": "__internals",
-          "line": 325,
+          "line": 327,
           "shape": {
             "kind": "object",
             "keys": [
@@ -7156,13 +7380,13 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 20,
+          "line": 21,
           "signature": [
             "conn"
           ],
           "documented": true,
           "summary": "Whether a proposed edge is allowed.",
-          "description": "Whether a proposed edge is allowed.\n\nReact Flow already enforces source-to-target, which is what keeps the\npressure-out to pressure-in pairing correct. The only extra rule is that\na node may not connect to itself.",
+          "description": "Whether a proposed edge is allowed.\n\nConnections have no direction — the canvas runs in loose mode, so any\nhandle may join any other. The one rule is that a node may not join\nitself: a loop from one end of a line to its own tap or other end is not a\nbox anyone builds.",
           "params": [
             {
               "name": "conn",
@@ -7195,7 +7419,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 41,
+          "line": 42,
           "signature": [],
           "documented": true,
           "summary": "Discard the one `contextmenu` event that trails a completed right-drag.",
@@ -7226,7 +7450,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 49,
+          "line": 50,
           "signature": [
             "e"
           ],
@@ -7267,7 +7491,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 72,
+          "line": 73,
           "signature": [],
           "documented": true,
           "summary": "The node editor canvas.",
@@ -7298,7 +7522,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 101,
+          "line": 102,
           "signature": [],
           "documented": true,
           "summary": "Where a keyboard-added node should land, in canvas coordinates.",
@@ -7329,7 +7553,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 143,
+          "line": 144,
           "signature": [
             "e"
           ],
@@ -7370,7 +7594,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 161,
+          "line": 162,
           "signature": [
             "ev"
           ],
@@ -7413,7 +7637,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 180,
+          "line": 181,
           "signature": [
             "ev"
           ],
@@ -7456,7 +7680,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 225,
+          "line": 226,
           "signature": [
             "e",
             "target"
@@ -7507,7 +7731,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 314,
+          "line": 316,
           "signature": [],
           "documented": true,
           "summary": "The Node Editor panel, wrapping the canvas in its React Flow provider.",
@@ -9984,7 +10208,7 @@
       "constants": [
         {
           "name": "CHART_PANELS",
-          "line": 936,
+          "line": 1033,
           "shape": {
             "kind": "object",
             "keys": [
@@ -9993,6 +10217,7 @@
               "exc",
               "vel",
               "int",
+              "pfl",
               "pow",
               "eff",
               "pe",
@@ -10004,7 +10229,7 @@
         },
         {
           "name": "__internals",
-          "line": 977,
+          "line": 1075,
           "shape": {
             "kind": "object",
             "keys": [
@@ -10013,7 +10238,8 @@
               "fitDb",
               "fitLinear",
               "nearestIdx",
-              "snapLines"
+              "snapLines",
+              "yTick"
             ]
           },
           "summary": null,
@@ -10882,13 +11108,52 @@
           "other": []
         },
         {
+          "name": "yTick",
+          "qualified": "yTick",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 545,
+          "signature": [
+            "v"
+          ],
+          "documented": true,
+          "summary": "Format a Y-axis tick.",
+          "description": "Format a Y-axis tick.\n\nA fitted domain ends on an unrounded value, which recharts draws as a tick;\nthree significant figures keep it inside the axis.",
+          "params": [
+            {
+              "name": "v",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Tick value."
+            }
+          ],
+          "returns": {
+            "type": "number",
+            "desc": "The value, rounded for display."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
           "name": "nearestIdx",
           "qualified": "nearestIdx",
           "kind": "function",
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 539,
+          "line": 562,
           "signature": [
             "arr",
             "f"
@@ -10937,7 +11202,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 559,
+          "line": 582,
           "signature": [
             "snapshots",
             "key"
@@ -10984,7 +11249,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 571,
+          "line": 594,
           "signature": [],
           "documented": true,
           "summary": "Sound pressure level, with a trace per radiator beside the combined response.",
@@ -11015,7 +11280,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 608,
+          "line": 631,
           "signature": [],
           "documented": true,
           "summary": "Electrical input impedance magnitude, with phase on a second axis.",
@@ -11046,7 +11311,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 646,
+          "line": 678,
           "signature": [],
           "documented": true,
           "summary": "Cone excursion against Xmax, one trace per driver.",
@@ -11077,7 +11342,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 661,
+          "line": 693,
           "signature": [
             "id"
           ],
@@ -11118,7 +11383,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 676,
+          "line": 708,
           "signature": [
             "id"
           ],
@@ -11159,7 +11424,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 699,
+          "line": 731,
           "signature": [
             "xm"
           ],
@@ -11200,7 +11465,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 747,
+          "line": 779,
           "signature": [],
           "documented": true,
           "summary": "Air velocity in each waveguide, against the turbulence threshold.",
@@ -11231,11 +11496,97 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 786,
+          "line": 818,
           "signature": [],
           "documented": true,
           "summary": "Interior SPL at each probed chamber's virtual microphone.",
           "description": "Interior SPL at each probed chamber's virtual microphone.\n\nThe right measure for in-cabin listening levels, where cabin gain rises\nbelow the cabin's first mode. Point pressure, so there is no 1 m\nconvention here.",
+          "params": [],
+          "returns": {
+            "type": "React.ReactElement",
+            "desc": "The chart."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Subscribes to the store."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "probeName",
+          "qualified": "probeName",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 864,
+          "signature": [
+            "key",
+            "probes",
+            "nodes"
+          ],
+          "documented": true,
+          "summary": "The display name of a probe's trace.",
+          "description": "The display name of a probe's trace.\n\nA chamber's own probe is keyed by the chamber id and takes its label; any\nother probe by its own id, and takes its label or a description of where\nit sits.",
+          "params": [
+            {
+              "name": "key",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "The result key."
+            },
+            {
+              "name": "probes",
+              "type": "Array<object>",
+              "optional": false,
+              "default": null,
+              "desc": "The project's probes."
+            },
+            {
+              "name": "nodes",
+              "type": "Array<object>",
+              "optional": false,
+              "default": null,
+              "desc": "Graph nodes."
+            }
+          ],
+          "returns": {
+            "type": "string",
+            "desc": "The name."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "ProbeFlowTab",
+          "qualified": "ProbeFlowTab",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 883,
+          "signature": [],
+          "documented": true,
+          "summary": "Flow and velocity at each flow or velocity probe.",
+          "description": "Flow and velocity at each flow or velocity probe.\n\nVelocity (m/s) on the left axis, volume flow (L/s) on the right, both\npeak, like the port velocity chart.",
           "params": [],
           "returns": {
             "type": "React.ReactElement",
@@ -11262,7 +11613,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 826,
+          "line": 923,
           "signature": [],
           "documented": true,
           "summary": "Radiated acoustic power.",
@@ -11293,7 +11644,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 846,
+          "line": 943,
           "signature": [],
           "documented": true,
           "summary": "Acoustic efficiency as a percentage of electrical input power.",
@@ -11324,7 +11675,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 865,
+          "line": 962,
           "signature": [],
           "documented": true,
           "summary": "Electrical input power, real and apparent.",
@@ -11355,7 +11706,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 887,
+          "line": 984,
           "signature": [],
           "documented": true,
           "summary": "Phase and group delay on separate axes.",
@@ -11386,7 +11737,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 922,
+          "line": 1019,
           "signature": [
             "arg0"
           ],
@@ -11432,7 +11783,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 960,
+          "line": 1058,
           "signature": [
             "id"
           ],
@@ -11473,7 +11824,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 969,
+          "line": 1067,
           "signature": [],
           "documented": true,
           "summary": "The chart wrapped in its panel shell.",
@@ -11503,7 +11854,7 @@
       "constants": [
         {
           "name": "__internals",
-          "line": 611,
+          "line": 805,
           "shape": {
             "kind": "object",
             "keys": [
@@ -11522,13 +11873,13 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 67,
+          "line": 71,
           "signature": [
             "arg0"
           ],
           "documented": true,
           "summary": "A labelled numeric parameter input bound to one node field.",
-          "description": "A labelled numeric parameter input bound to one node field.\n\nEmpty and unparseable input is ignored rather than written, so clearing\nthe box to retype a value does not momentarily push `NaN` into the graph\nand trigger a failed solve.",
+          "description": "A labelled numeric parameter input bound to one node field.\n\nTakes a number or an expression over the project parameters. Empty and\nunresolvable input is held in the box rather than written, so clearing it\nto retype a value does not momentarily push `NaN` into the graph and\ntrigger a failed solve.",
           "params": [
             {
               "name": "props",
@@ -11619,7 +11970,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 101,
+          "line": 99,
           "signature": [
             "arg0"
           ],
@@ -11695,7 +12046,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 127,
+          "line": 125,
           "signature": [
             "arg0"
           ],
@@ -11750,7 +12101,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 164,
+          "line": 162,
           "signature": [
             "arg0"
           ],
@@ -11805,7 +12156,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 184,
+          "line": 182,
           "signature": [],
           "documented": true,
           "summary": "The amplifier section: voltage, impedance and power, linked by P = V²/Z.",
@@ -11836,7 +12187,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 200,
+          "line": 198,
           "signature": [
             "field",
             "label",
@@ -11893,7 +12244,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 240,
+          "line": 241,
           "signature": [
             "v"
           ],
@@ -11932,7 +12283,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 259,
+          "line": 260,
           "signature": [
             "arg0"
           ],
@@ -12015,7 +12366,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 305,
+          "line": 306,
           "signature": [
             "arg0"
           ],
@@ -12063,7 +12414,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 324,
+          "line": 325,
           "signature": [
             "field",
             "unit",
@@ -12114,13 +12465,289 @@
           "other": []
         },
         {
+          "name": "DvcField",
+          "qualified": "DvcField",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 396,
+          "signature": [
+            "arg0"
+          ],
+          "documented": true,
+          "summary": "A driver's dual voice coil option.",
+          "description": "A driver's dual voice coil option.\n\nPurely electrical, and available on any driver: the catalogue never says\nwhether a driver has two coils, and its figures are always taken as both\ncoils in series. The other choices rescale Re, Bl and Le from there.",
+          "params": [
+            {
+              "name": "props",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "Component props."
+            },
+            {
+              "name": "props.id",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Node id."
+            },
+            {
+              "name": "props.p",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "The node's params."
+            }
+          ],
+          "returns": {
+            "type": "React.ReactElement",
+            "desc": "The select row."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Subscribes to the store."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "NodeWarnings",
+          "qualified": "NodeWarnings",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 423,
+          "signature": [
+            "arg0"
+          ],
+          "documented": true,
+          "summary": "The node's validation warnings, with the fixes the editor can offer.",
+          "description": "The node's validation warnings, with the fixes the editor can offer.\n\nA driver face meeting an opening smaller than its cone gets a button that\nputs a chamber between them.",
+          "params": [
+            {
+              "name": "props",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "Component props."
+            },
+            {
+              "name": "props.node",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "The selected node."
+            }
+          ],
+          "returns": {
+            "type": "React.ReactElement|null",
+            "desc": "The warnings, or nothing when there are none."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Subscribes to the store."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "TapsSection",
+          "qualified": "TapsSection",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 455,
+          "signature": [
+            "arg0"
+          ],
+          "documented": true,
+          "summary": "The taps along a chamber or waveguide: where things may join it from the side.",
+          "description": "The taps along a chamber or waveguide: where things may join it from the side.\n\nPositions are in cm from the `in` / throat end and may be expressions.\nRemoving a tap removes the joins made to it.",
+          "params": [
+            {
+              "name": "props",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "Component props."
+            },
+            {
+              "name": "props.id",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Node id."
+            },
+            {
+              "name": "props.p",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "The node's params."
+            },
+            {
+              "name": "props.from",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Name of the end positions are measured from."
+            }
+          ],
+          "returns": {
+            "type": "React.ReactElement",
+            "desc": "The taps section."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Subscribes to the store."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "ThroatCalc",
+          "qualified": "ThroatCalc",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 497,
+          "signature": [
+            "arg0"
+          ],
+          "documented": true,
+          "summary": "Throat chamber calculator: the air a cone traps in front of a small opening.",
+          "description": "Throat chamber calculator: the air a cone traps in front of a small opening.\n\nOutput only — it proposes a volume for this chamber and, on request, writes\nit. The chamber stays an ordinary chamber node. Volume = Sd × (cone depth ×\nshape factor + one-way excursion + clearance), minus nothing for the\nmotor, since this is the front side.",
+          "params": [
+            {
+              "name": "props",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "Component props."
+            },
+            {
+              "name": "props.id",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Node id."
+            }
+          ],
+          "returns": {
+            "type": "React.ReactElement",
+            "desc": "The calculator."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Subscribes to the store."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "row",
+          "qualified": "ThroatCalc > row",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 525,
+          "signature": [
+            "label",
+            "v",
+            "set",
+            "unit"
+          ],
+          "documented": true,
+          "summary": "One number input of the calculator.",
+          "description": "One number input of the calculator.",
+          "params": [
+            {
+              "name": "label",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Row label."
+            },
+            {
+              "name": "v",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Current value."
+            },
+            {
+              "name": "set",
+              "type": "Function",
+              "optional": false,
+              "default": null,
+              "desc": "Setter."
+            },
+            {
+              "name": "unit",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Unit."
+            }
+          ],
+          "returns": {
+            "type": "React.ReactElement",
+            "desc": "The row."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
           "name": "ChamberForm",
           "qualified": "ChamberForm",
           "kind": "function",
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 385,
+          "line": 571,
           "signature": [
             "arg0"
           ],
@@ -12168,7 +12795,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 422,
+          "line": 612,
           "signature": [
             "arg0"
           ],
@@ -12223,7 +12850,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 473,
+          "line": 663,
           "signature": [
             "arg0"
           ],
@@ -12271,7 +12898,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 511,
+          "line": 703,
           "signature": [
             "arg0"
           ],
@@ -12319,7 +12946,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 560,
+          "line": 753,
           "signature": [
             "arg0"
           ],
@@ -12367,7 +12994,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 591,
+          "line": 784,
           "signature": [],
           "documented": true,
           "summary": "The Parameters panel: the amplifier section plus the selected node's form.",
@@ -12467,6 +13094,101 @@
             "mutates": [],
             "sideEffect": [
               "Opens the context menu."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        }
+      ]
+    },
+    {
+      "file": "src/components/ProbesPanel.jsx",
+      "module": null,
+      "constants": [],
+      "methods": [
+        {
+          "name": "ProbesPanel",
+          "qualified": "ProbesPanel",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 25,
+          "signature": [],
+          "documented": true,
+          "summary": "The probes: extra measurements anywhere in the box.",
+          "description": "The probes: extra measurements anywhere in the box.\n\nA probe reads pressure, volume flow or air velocity at a handle — an end,\na face, a tap — or at a distance along a chamber or waveguide. Probes only\nobserve: adding one never changes the simulation. Pressure probes plot on\nthe Interior SPL chart; flow and velocity on the Probe Flow chart.",
+          "params": [],
+          "returns": {
+            "type": "React.ReactElement",
+            "desc": "The panel."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Subscribes to the store."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "edit",
+          "qualified": "ProbesPanel > edit",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 40,
+          "signature": [
+            "i",
+            "change",
+            "live"
+          ],
+          "documented": true,
+          "summary": "Replace one probe.",
+          "description": "Replace one probe.",
+          "params": [
+            {
+              "name": "i",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Its index."
+            },
+            {
+              "name": "change",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "Fields to merge."
+            },
+            {
+              "name": "live",
+              "type": "boolean",
+              "optional": true,
+              "default": null,
+              "desc": "A typed value: no undo step."
+            }
+          ],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Writes the project's probes."
             ],
             "reads": [],
             "pure": false
@@ -14584,6 +15306,101 @@
       ]
     },
     {
+      "file": "src/components/VariablesPanel.jsx",
+      "module": null,
+      "constants": [],
+      "methods": [
+        {
+          "name": "VariablesPanel",
+          "qualified": "VariablesPanel",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 20,
+          "signature": [],
+          "documented": true,
+          "summary": "The project's named parameters: values defined once and used by name.",
+          "description": "The project's named parameters: values defined once and used by name.\n\nAny numeric field — a node parameter, a tap position, a channel's volts, a\nfilter frequency — may hold an expression over these, e.g. `Vb / 2`.\nA parameter may itself be an expression over others. Renaming a parameter\ndoes not rewrite the expressions that use it; they report the missing name\nuntil they are updated.",
+          "params": [],
+          "returns": {
+            "type": "React.ReactElement",
+            "desc": "The panel."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Subscribes to the store."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "edit",
+          "qualified": "VariablesPanel > edit",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 33,
+          "signature": [
+            "i",
+            "change",
+            "live"
+          ],
+          "documented": true,
+          "summary": "Replace one parameter.",
+          "description": "Replace one parameter.",
+          "params": [
+            {
+              "name": "i",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Its index."
+            },
+            {
+              "name": "change",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "Fields to merge."
+            },
+            {
+              "name": "live",
+              "type": "boolean",
+              "optional": true,
+              "default": null,
+              "desc": "A typed value: no undo step."
+            }
+          ],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Writes the project's params."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        }
+      ]
+    },
+    {
       "file": "src/components/VelocityPopup.jsx",
       "module": null,
       "constants": [],
@@ -14613,6 +15430,465 @@
             "mutates": [],
             "sideEffect": [
               "Subscribes to the store."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        }
+      ]
+    },
+    {
+      "file": "src/components/WiringPanel.jsx",
+      "module": null,
+      "constants": [],
+      "methods": [
+        {
+          "name": "editAt",
+          "qualified": "editAt",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 35,
+          "signature": [
+            "tree",
+            "path",
+            "fn"
+          ],
+          "documented": true,
+          "summary": "Replace the subtree at a path in a load tree.",
+          "description": "Replace the subtree at a path in a load tree.",
+          "params": [
+            {
+              "name": "tree",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "The tree."
+            },
+            {
+              "name": "path",
+              "type": "number[]",
+              "optional": false,
+              "default": null,
+              "desc": "Child indices from the root."
+            },
+            {
+              "name": "fn",
+              "type": "Function",
+              "optional": false,
+              "default": null,
+              "desc": "Receives the subtree, returns its replacement, or `null` to remove it."
+            }
+          ],
+          "returns": {
+            "type": "object|null",
+            "desc": "The new tree."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "ohms",
+          "qualified": "ohms",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 52,
+          "signature": [
+            "z"
+          ],
+          "documented": true,
+          "summary": "Format ohms for a label.",
+          "description": "Format ohms for a label.",
+          "params": [
+            {
+              "name": "z",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Impedance, Ω."
+            }
+          ],
+          "returns": {
+            "type": "string",
+            "desc": "The figure, or `open` for no load."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "LoadGroup",
+          "qualified": "LoadGroup",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 67,
+          "signature": [
+            "arg0"
+          ],
+          "documented": true,
+          "summary": "One group in a channel's load: drivers and sub-groups in series or in parallel.",
+          "description": "One group in a channel's load: drivers and sub-groups in series or in parallel.",
+          "params": [
+            {
+              "name": "props",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "Component props."
+            },
+            {
+              "name": "props.tree",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "The group."
+            },
+            {
+              "name": "props.path",
+              "type": "number[]",
+              "optional": false,
+              "default": null,
+              "desc": "Its path from the channel's root."
+            },
+            {
+              "name": "props.onEdit",
+              "type": "Function",
+              "optional": false,
+              "default": null,
+              "desc": "`(path, fn)` applies an edit at a path."
+            },
+            {
+              "name": "props.drivers",
+              "type": "Map<string, object>",
+              "optional": false,
+              "default": null,
+              "desc": "Driver id → its node."
+            },
+            {
+              "name": "props.free",
+              "type": "string[]",
+              "optional": false,
+              "default": null,
+              "desc": "Driver ids no channel has claimed."
+            },
+            {
+              "name": "props.resolved",
+              "type": "Map<string, object>",
+              "optional": false,
+              "default": null,
+              "desc": "Driver id → resolved params, for nominal impedance."
+            }
+          ],
+          "returns": {
+            "type": "React.ReactElement",
+            "desc": "The group."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "FilterRow",
+          "qualified": "FilterRow",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 115,
+          "signature": [
+            "arg0"
+          ],
+          "documented": true,
+          "summary": "One DSP filter's controls.",
+          "description": "One DSP filter's controls.",
+          "params": [
+            {
+              "name": "props",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "Component props."
+            },
+            {
+              "name": "props.f",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "The filter."
+            },
+            {
+              "name": "props.onChange",
+              "type": "Function",
+              "optional": false,
+              "default": null,
+              "desc": "Called with the edited filter, or `null` to remove it."
+            }
+          ],
+          "returns": {
+            "type": "React.ReactElement",
+            "desc": "The row."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "ChannelCard",
+          "qualified": "ChannelCard",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 175,
+          "signature": [
+            "arg0"
+          ],
+          "documented": true,
+          "summary": "One amplifier channel: its level, DSP and load.",
+          "description": "One amplifier channel: its level, DSP and load.",
+          "params": [
+            {
+              "name": "props",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "Component props."
+            },
+            {
+              "name": "props.ch",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "The channel."
+            },
+            {
+              "name": "props.index",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Its position in the list."
+            },
+            {
+              "name": "props.ctx",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "Shared lookups: wiring, drivers, resolved params, param values, master gain, the free driver list and the edit functions."
+            }
+          ],
+          "returns": {
+            "type": "React.ReactElement",
+            "desc": "The channel card."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Subscribes to the store for the simulated impedance."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "patch",
+          "qualified": "ChannelCard > patch",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 195,
+          "signature": [
+            "change",
+            "live"
+          ],
+          "documented": true,
+          "summary": "Apply a change to this channel.",
+          "description": "Apply a change to this channel.",
+          "params": [
+            {
+              "name": "change",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "Fields to merge."
+            },
+            {
+              "name": "live",
+              "type": "boolean",
+              "optional": true,
+              "default": null,
+              "desc": "A typed value: no undo step."
+            }
+          ],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Writes the project's wiring."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "WiringPanel",
+          "qualified": "WiringPanel",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 298,
+          "signature": [],
+          "documented": true,
+          "summary": "The wiring manager: the master level and every amplifier channel.",
+          "description": "The wiring manager: the master level and every amplifier channel.\n\nSignal chain per channel: the program → its DSP → its amplifier (volts at\nmaster 0 dB, then the master) → its output resistance → its load, a\nseries/parallel tree of driver nodes. Each channel shows the watts its\nvoltage puts into the nominal load its wiring presents; rewiring keeps the\nvoltage and changes the watts, as on a real amplifier.",
+          "params": [],
+          "returns": {
+            "type": "React.ReactElement",
+            "desc": "The panel."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Subscribes to the store."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "update",
+          "qualified": "WiringPanel > update",
+          "kind": "method",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 325,
+          "signature": [
+            "w"
+          ],
+          "documented": true,
+          "summary": "Replace the wiring as one undoable edit.",
+          "description": "Replace the wiring as one undoable edit.",
+          "params": [
+            {
+              "name": "w",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "The new wiring."
+            }
+          ],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Writes the project's wiring and records history."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "updateLive",
+          "qualified": "WiringPanel > updateLive",
+          "kind": "method",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 333,
+          "signature": [
+            "w"
+          ],
+          "documented": true,
+          "summary": "Replace the wiring for a typed value, without an undo step.",
+          "description": "Replace the wiring for a typed value, without an undo step.",
+          "params": [
+            {
+              "name": "w",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "The new wiring."
+            }
+          ],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Writes the project's wiring."
             ],
             "reads": [],
             "pure": false
@@ -15375,7 +16651,7 @@
       "constants": [
         {
           "name": "PANELS",
-          "line": 77,
+          "line": 83,
           "shape": null,
           "summary": "The panel registry: each panel's metadata paired with its component.",
           "description": "The panel registry: each panel's metadata paired with its component.\n\nAdding a panel means one entry in `PANEL_META` plus one line in\n`COMPONENTS` — the dock, the View menu and the saved-layout sanitizer all\nread from these, so nothing else needs to learn about it."
@@ -15389,7 +16665,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 33,
+          "line": 36,
           "signature": [],
           "documented": true,
           "summary": "The Node Editor panel: the canvas with the palette and popup layered over it.",
@@ -15470,7 +16746,7 @@
       "constants": [
         {
           "name": "nodeTypes",
-          "line": 224,
+          "line": 282,
           "shape": {
             "kind": "object",
             "keys": [
@@ -15493,7 +16769,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 24,
+          "line": 26,
           "signature": [
             "id"
           ],
@@ -15534,7 +16810,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 38,
+          "line": 40,
           "signature": [
             "arg0"
           ],
@@ -15588,13 +16864,140 @@
           "other": []
         },
         {
+          "name": "Port",
+          "qualified": "Port",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 65,
+          "signature": [
+            "arg0"
+          ],
+          "documented": true,
+          "summary": "A handle, drawn with its label.",
+          "description": "A handle, drawn with its label.\n\nEvery handle is a `source`: the canvas runs in loose connection mode, so\nany handle joins any other and the join has no direction.",
+          "params": [
+            {
+              "name": "props",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "Component props."
+            },
+            {
+              "name": "props.id",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Handle id."
+            },
+            {
+              "name": "props.side",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "`top`, `bottom`, `left` or `right`."
+            },
+            {
+              "name": "props.at",
+              "type": "string",
+              "optional": true,
+              "default": null,
+              "desc": "Offset along that side, as CSS (e.g. `35%`)."
+            },
+            {
+              "name": "props.label",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Text drawn beside it."
+            },
+            {
+              "name": "props.title",
+              "type": "string",
+              "optional": true,
+              "default": null,
+              "desc": "Tooltip."
+            }
+          ],
+          "returns": {
+            "type": "React.ReactElement",
+            "desc": "The handle and its label."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "TapPorts",
+          "qualified": "TapPorts",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 95,
+          "signature": [
+            "arg0"
+          ],
+          "documented": true,
+          "summary": "Handles for a chamber's or waveguide's taps, along its right-hand side.",
+          "description": "Handles for a chamber's or waveguide's taps, along its right-hand side.\n\nEach sits at its position's share of the length, so the node reads as a\nmap of the line; a tap outside the length is pinned to the nearer end and\nflagged by the node's warning.",
+          "params": [
+            {
+              "name": "props",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "Component props."
+            },
+            {
+              "name": "props.taps",
+              "type": "Array<{id: string, position: number}>",
+              "optional": false,
+              "default": null,
+              "desc": "Resolved taps."
+            },
+            {
+              "name": "props.length",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Resolved length, cm."
+            }
+          ],
+          "returns": {
+            "type": "React.ReactElement",
+            "desc": "The handles."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
           "name": "DriverNode",
           "qualified": "DriverNode",
           "kind": "function",
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 58,
+          "line": 117,
           "signature": [
             "arg0"
           ],
@@ -15656,7 +17059,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 87,
+          "line": 149,
           "signature": [
             "arg0"
           ],
@@ -15718,7 +17121,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 119,
+          "line": 180,
           "signature": [
             "arg0"
           ],
@@ -15780,7 +17183,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 176,
+          "line": 236,
           "signature": [
             "arg0"
           ],
@@ -15842,7 +17245,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 212,
+          "line": 270,
           "signature": [
             "arg0"
           ],
@@ -23654,12 +25057,16 @@
               "files",
               "canvas",
               "params",
+              "wiring",
+              "vars",
+              "probes",
               "nllab",
               "spl",
               "zin",
               "exc",
               "vel",
               "int",
+              "pfl",
               "pow",
               "eff",
               "pe",
@@ -23679,6 +25086,24 @@
                 "dock"
               ],
               "params": [
+                "title",
+                "group",
+                "closable",
+                "dock"
+              ],
+              "wiring": [
+                "title",
+                "group",
+                "closable",
+                "dock"
+              ],
+              "vars": [
+                "title",
+                "group",
+                "closable",
+                "dock"
+              ],
+              "probes": [
                 "title",
                 "group",
                 "closable",
@@ -23711,6 +25136,10 @@
                 "title",
                 "group"
               ],
+              "pfl": [
+                "title",
+                "group"
+              ],
               "pow": [
                 "title",
                 "group"
@@ -23734,21 +25163,21 @@
         },
         {
           "name": "PANEL_IDS",
-          "line": 59,
+          "line": 78,
           "shape": null,
           "summary": "Every known panel id. The allow-list `layout.sanitize` filters a saved layout against.",
           "description": "Every known panel id. The allow-list `layout.sanitize` filters a saved layout against."
         },
         {
           "name": "CHART_IDS",
-          "line": 62,
+          "line": 81,
           "shape": null,
           "summary": "Panel ids for the plots, listed under View ▸ Charts.",
           "description": "Panel ids for the plots, listed under View ▸ Charts."
         },
         {
           "name": "MAIN_IDS",
-          "line": 64,
+          "line": 83,
           "shape": null,
           "summary": "Panel ids for the non-chart panels, listed directly under View.",
           "description": "Panel ids for the non-chart panels, listed directly under View."
@@ -23762,7 +25191,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 80,
+          "line": 99,
           "signature": [
             "id"
           ],
@@ -24057,7 +25486,7 @@
       "file": "src/schema/editor.js",
       "module": {
         "summary": "The bridge between a v3 project file and the editor's working state.",
-        "description": "The bridge between a v3 project file and the editor's working state.\n\nThe editor still keeps a flat `settings` object for the controls it has\ntoday — sweep range, drive level, display options — and keeps a chamber's\nprobe on the chamber node, where its form shows it. The file keeps those in\n`analyses`, `wiring`, `display` and `probes`. These two functions convert\nin each direction; everything the editor has no control for yet (named\nparams, further channels, other probes, components) rides along untouched\nin `extras`, so a project round-trips through the editor without loss."
+        "description": "The bridge between a v3 project file and the editor's working state.\n\nThe editor keeps a flat `settings` object for the controls that predate the\nv3 sections — sweep range, the toolbar's drive level, display options — and\nkeeps a chamber's own probe on the chamber node, where its form shows it.\nThe file keeps those in `analyses`, `wiring`, `display` and `probes`. These\ntwo functions convert in each direction; the rest of those sections — named\nparams, every channel, the other probes, components — travel in `extras`,\nwhich the Wiring, Project Parameters and Probes panels edit directly."
       },
       "constants": [],
       "methods": [
@@ -24146,13 +25575,13 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 43,
+          "line": 44,
           "signature": [
             "proj"
           ],
           "documented": true,
           "summary": "Split a v3 project into the editor's working state.",
-          "description": "Split a v3 project into the editor's working state.\n\n`settings.voltage` is the first channel's output at the current master\nlevel — the drive the user actually sees. A chamber's first pressure probe\nbecomes its `probe`/`probePos` params; any other probe stays in `extras`.",
+          "description": "Split a v3 project into the editor's working state.\n\n`settings.voltage` is the first channel's output at the current master\nlevel — the drive the user actually sees. A chamber's own probe — the one\nwith id `probe_<chamber id>`, which is what its checkbox writes — becomes its\n`probe`/`probePos` params; every other probe stays in `extras`.",
           "params": [
             {
               "name": "proj",
@@ -24187,13 +25616,13 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 111,
+          "line": 113,
           "signature": [
             "arg0"
           ],
           "documented": true,
           "summary": "Assemble a v3 project from the editor's working state.",
-          "description": "Assemble a v3 project from the editor's working state.\n\nThe inverse of `toEditor`: the flat settings land back in the first\nanalysis, the first channel and the display section, and a probed chamber's\nprobe becomes an entry in `probes`.",
+          "description": "Assemble a v3 project from the editor's working state.\n\nThe inverse of `toEditor`: the flat settings land back in the first\nanalysis, the first channel and the display section, and a probed chamber's\nprobe becomes an entry in `probes`. A first-channel voltage or output\nresistance written as an expression is kept, not overwritten by its value.",
           "params": [
             {
               "name": "state",
@@ -24248,6 +25677,345 @@
             "post": [
               "state is not modified"
             ],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        }
+      ]
+    },
+    {
+      "file": "src/schema/extras.js",
+      "module": {
+        "summary": "Editing helpers for the project sections outside the node graph — wiring, probes, named params — kept pure so the store and the tests share them.",
+        "description": "Editing helpers for the project sections outside the node graph — wiring,\nprobes, named params — kept pure so the store and the tests share them."
+      },
+      "constants": [],
+      "methods": [
+        {
+          "name": "pruneLoad",
+          "qualified": "pruneLoad",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 17,
+          "signature": [
+            "tree",
+            "ids"
+          ],
+          "documented": true,
+          "summary": "Remove every leaf naming a driver that is not in a set, and any group left empty.",
+          "description": "Remove every leaf naming a driver that is not in a set, and any group left empty.",
+          "params": [
+            {
+              "name": "tree",
+              "type": "object|null",
+              "optional": false,
+              "default": null,
+              "desc": "A load tree."
+            },
+            {
+              "name": "ids",
+              "type": "Set<string>",
+              "optional": false,
+              "default": null,
+              "desc": "Driver ids that still exist."
+            }
+          ],
+          "returns": {
+            "type": "object|null",
+            "desc": "The pruned tree; an empty explicit tree stays an empty `{parallel: []}` rather than turning into the catch-all `null`."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "walk",
+          "qualified": "pruneLoad > walk",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 26,
+          "signature": [
+            "t"
+          ],
+          "documented": true,
+          "summary": "Prune one subtree.",
+          "description": "Prune one subtree.",
+          "params": [
+            {
+              "name": "t",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "A subtree."
+            }
+          ],
+          "returns": {
+            "type": "object|null",
+            "desc": "The subtree, or `null` when nothing is left of it."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "pruneExtras",
+          "qualified": "pruneExtras",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 46,
+          "signature": [
+            "extras",
+            "nodeIds"
+          ],
+          "documented": true,
+          "summary": "Drop what referred to nodes that no longer exist.",
+          "description": "Drop what referred to nodes that no longer exist.\n\nWiring leaves for deleted drivers go, as do probes on deleted nodes. A\ncatch-all channel needs nothing: it only ever names drivers that exist.",
+          "params": [
+            {
+              "name": "extras",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "The editor's extra project sections."
+            },
+            {
+              "name": "nodeIds",
+              "type": "string[]",
+              "optional": false,
+              "default": null,
+              "desc": "Ids of the nodes that remain."
+            }
+          ],
+          "returns": {
+            "type": "object",
+            "desc": "New extras."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "valueOf",
+          "qualified": "valueOf",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 67,
+          "signature": [
+            "v",
+            "values"
+          ],
+          "documented": true,
+          "summary": "The value of a field that may hold an expression.",
+          "description": "The value of a field that may hold an expression.",
+          "params": [
+            {
+              "name": "v",
+              "type": "number|string",
+              "optional": false,
+              "default": null,
+              "desc": "A number, or an expression over the named params."
+            },
+            {
+              "name": "values",
+              "type": "Object<string, number>",
+              "optional": false,
+              "default": null,
+              "desc": "Resolved named params."
+            }
+          ],
+          "returns": {
+            "type": "number",
+            "desc": "The number; `NaN` when the expression does not resolve."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "driveOf",
+          "qualified": "driveOf",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 80,
+          "signature": [
+            "wiring",
+            "params"
+          ],
+          "documented": true,
+          "summary": "The drive the editor shows: the first channel's output at the master level, and its output resistance.",
+          "description": "The drive the editor shows: the first channel's output at the master level, and its output resistance.",
+          "params": [
+            {
+              "name": "wiring",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "The project's wiring."
+            },
+            {
+              "name": "params",
+              "type": "Array<object>",
+              "optional": false,
+              "default": null,
+              "desc": "The project's named params."
+            }
+          ],
+          "returns": {
+            "type": "{voltage: number, rg: number}",
+            "desc": "Volts RMS and ohms; `NaN` for anything that does not resolve."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "masterForVoltage",
+          "qualified": "masterForVoltage",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 103,
+          "signature": [
+            "wiring",
+            "params",
+            "volts"
+          ],
+          "documented": true,
+          "summary": "The master level that brings the first channel to a voltage.",
+          "description": "The master level that brings the first channel to a voltage.\n\nThe master moves every channel together, so asking for a drive level in\nvolts keeps every channel's relative level. Zero volts is the mute floor,\n−120 dB, since a file cannot hold minus infinity.",
+          "params": [
+            {
+              "name": "wiring",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "The project's wiring."
+            },
+            {
+              "name": "params",
+              "type": "Array<object>",
+              "optional": false,
+              "default": null,
+              "desc": "The project's named params."
+            },
+            {
+              "name": "volts",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "The first channel's wanted output, V RMS."
+            }
+          ],
+          "returns": {
+            "type": "object",
+            "desc": "New wiring with `masterDb` set; the same wiring when the first channel's own level is zero or unresolved, or the voltage is negative."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "freshId",
+          "qualified": "freshId",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 119,
+          "signature": [
+            "prefix",
+            "used"
+          ],
+          "documented": true,
+          "summary": "A fresh id not already used in a list.",
+          "description": "A fresh id not already used in a list.",
+          "params": [
+            {
+              "name": "prefix",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Id prefix, e.g. `ch`, `t`, `probe`."
+            },
+            {
+              "name": "used",
+              "type": "string[]",
+              "optional": false,
+              "default": null,
+              "desc": "Ids already taken."
+            }
+          ],
+          "returns": {
+            "type": "string",
+            "desc": "`prefix` followed by the lowest free number from 1."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
             "invariant": [],
             "mutates": [],
             "sideEffect": [],
@@ -24615,6 +26383,227 @@
       ]
     },
     {
+      "file": "src/schema/nominal.js",
+      "module": {
+        "summary": "Nominal impedances, for showing watts beside volts.",
+        "description": "Nominal impedances, for showing watts beside volts.\n\nA channel stores volts, never watts. The watts it shows are its voltage\nsquared over the nominal load its wiring presents — the figure an amplifier\nis rated against. Nominal is a label, not a measurement: it comes from each\ndriver's voice-coil resistance, rounded to the standard ratings, then\ncombined through the node's own array and the channel's series/parallel\ntree. The minimum impedance the simulation finds is shown separately."
+      },
+      "constants": [],
+      "methods": [
+        {
+          "name": "ratingOf",
+          "qualified": "ratingOf",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 25,
+          "signature": [
+            "re"
+          ],
+          "documented": true,
+          "summary": "The nominal rating a voice-coil resistance belongs to.",
+          "description": "The nominal rating a voice-coil resistance belongs to.\n\nRe is typically 70–90% of nominal, so the rating is the standard value\nnearest Re / 0.85 on a logarithmic scale.",
+          "params": [
+            {
+              "name": "re",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "DC resistance, Ω."
+            }
+          ],
+          "returns": {
+            "type": "number",
+            "desc": "The nominal rating, Ω; 0 for a non-positive resistance."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "coilRe",
+          "qualified": "coilRe",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 43,
+          "signature": [
+            "p"
+          ],
+          "documented": true,
+          "summary": "Re of one driver in a node after its dual voice coil option.",
+          "description": "Re of one driver in a node after its dual voice coil option.\n\nCatalogue figures are both coils in series; parallel quarters Re, one coil\nalone halves it.",
+          "params": [
+            {
+              "name": "p",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "Driver params, resolved."
+            }
+          ],
+          "returns": {
+            "type": "number",
+            "desc": "Re, Ω."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "driverNominal",
+          "qualified": "driverNominal",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 61,
+          "signature": [
+            "p"
+          ],
+          "documented": true,
+          "summary": "The nominal impedance of one driver node as its terminals present it.",
+          "description": "The nominal impedance of one driver node as its terminals present it.\n\nEach driver is rated from its coil resistance first, then the node's array\nwiring combines those ratings, so four 4 Ω drivers in parallel read 1 Ω.",
+          "params": [
+            {
+              "name": "p",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "Driver params, resolved."
+            }
+          ],
+          "returns": {
+            "type": "number",
+            "desc": "Nominal Ω."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "treeNominal",
+          "qualified": "treeNominal",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 81,
+          "signature": [
+            "tree",
+            "drivers"
+          ],
+          "documented": true,
+          "summary": "The nominal impedance of a load tree.",
+          "description": "The nominal impedance of a load tree.",
+          "params": [
+            {
+              "name": "tree",
+              "type": "object|null",
+              "optional": false,
+              "default": null,
+              "desc": "`{driver}`, `{series: [...]}` or `{parallel: [...]}`."
+            },
+            {
+              "name": "drivers",
+              "type": "Map<string, object>",
+              "optional": false,
+              "default": null,
+              "desc": "Driver node id → resolved params."
+            }
+          ],
+          "returns": {
+            "type": "number",
+            "desc": "Nominal Ω; `Infinity` for an empty tree (nothing connected)."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "effectiveLoad",
+          "qualified": "effectiveLoad",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 109,
+          "signature": [
+            "channel",
+            "proj"
+          ],
+          "documented": true,
+          "summary": "The load tree a channel actually drives.",
+          "description": "The load tree a channel actually drives.\n\nAn explicit tree is used as it stands. The catch-all channel (`load: null`)\ndrives every driver no explicit tree claims, in parallel.",
+          "params": [
+            {
+              "name": "channel",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "A wiring channel."
+            },
+            {
+              "name": "proj",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "The project, for its driver nodes and other channels."
+            }
+          ],
+          "returns": {
+            "type": "object",
+            "desc": "A load tree."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        }
+      ]
+    },
+    {
       "file": "src/schema/params.js",
       "module": {
         "summary": "Named parameters and expressions.",
@@ -24623,7 +26612,7 @@
       "constants": [
         {
           "name": "__internals",
-          "line": 280,
+          "line": 306,
           "shape": {
             "kind": "object",
             "keys": [
@@ -24937,13 +26926,119 @@
           "other": []
         },
         {
+          "name": "resolveNodeParams",
+          "qualified": "resolveNodeParams",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 210,
+          "signature": [
+            "node",
+            "values",
+            "errors"
+          ],
+          "documented": true,
+          "summary": "Replace the expressions in one node's params with their values.",
+          "description": "Replace the expressions in one node's params with their values.",
+          "params": [
+            {
+              "name": "node",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "A v3 node: `{id, type, params}`."
+            },
+            {
+              "name": "values",
+              "type": "Object<string, number>",
+              "optional": false,
+              "default": null,
+              "desc": "Resolved named params."
+            },
+            {
+              "name": "errors",
+              "type": "string[]",
+              "optional": true,
+              "default": null,
+              "desc": "Collects a message for each expression that does not resolve."
+            }
+          ],
+          "returns": {
+            "type": "object",
+            "desc": "A copy of the params holding numbers in every numeric field and tap position; `NaN` where an expression failed."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [
+              "errors, when given."
+            ],
+            "sideEffect": [],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "num",
+          "qualified": "resolveNodeParams > num",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 220,
+          "signature": [
+            "v",
+            "where"
+          ],
+          "documented": true,
+          "summary": "Resolve one value if it is an expression.",
+          "description": "Resolve one value if it is an expression.",
+          "params": [
+            {
+              "name": "v",
+              "type": "*",
+              "optional": false,
+              "default": null,
+              "desc": "The stored value."
+            },
+            {
+              "name": "where",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Location used in any error message."
+            }
+          ],
+          "returns": {
+            "type": "*",
+            "desc": "The number for an expression; anything else unchanged."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [
+              "the enclosing `errors`."
+            ],
+            "sideEffect": [],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
           "name": "resolveProject",
           "qualified": "resolveProject",
           "kind": "function",
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 215,
+          "line": 250,
           "signature": [
             "proj"
           ],
@@ -24984,7 +27079,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 225,
+          "line": 260,
           "signature": [
             "v",
             "where"
@@ -25344,7 +27439,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 19,
+          "line": 20,
           "signature": [
             "node"
           ],
@@ -25383,7 +27478,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 33,
+          "line": 34,
           "signature": [
             "tree",
             "out"
@@ -25430,7 +27525,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 54,
+          "line": 55,
           "signature": [
             "proj"
           ],
@@ -25469,7 +27564,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 83,
+          "line": 84,
           "signature": [
             "node",
             "handle"
@@ -25516,7 +27611,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 103,
+          "line": 104,
           "signature": [
             "proj"
           ],
@@ -25557,7 +27652,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 114,
+          "line": 115,
           "signature": [
             "id",
             "msg"
@@ -25606,7 +27701,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 157,
+          "line": 158,
           "signature": [
             "id",
             "h"
@@ -25669,7 +27764,7 @@
         },
         {
           "name": "DEFAULT_PARAMS",
-          "line": 39,
+          "line": 41,
           "shape": {
             "kind": "object",
             "keys": [
@@ -25697,6 +27792,7 @@
                 "Rms",
                 "count",
                 "wiring",
+                "dvc",
                 "label"
               ],
               "chamber": [
@@ -25737,11 +27833,11 @@
             }
           },
           "summary": "Default params for each node type, in display units.",
-          "description": "Default params for each node type, in display units.\n\nDoubles as the node-type registry: a type absent from this map is unknown,\nand every saved node is merged over its entry so a file written by an older\nbuild gains any parameter added since. A field whose default is a number is\nnumeric, which is what decides where an expression may stand in for a value.\n\n`leakQL: null` is a sealed chamber. `loss` scales a waveguide's derived wall\nloss — 1 is the physical estimate, 0 is lossless."
+          "description": "Default params for each node type, in display units.\n\nDoubles as the node-type registry: a type absent from this map is unknown,\nand every saved node is merged over its entry so a file written by an older\nbuild gains any parameter added since. A field whose default is a number is\nnumeric, which is what decides where an expression may stand in for a value.\n\n`leakQL: null` is a sealed chamber. `dvc: null` is a single voice coil;\n`dvc: {coils: 'series'|'parallel'|'one'}` a dual one, whose catalogue\nfigures are always taken as both coils in series. `loss` scales a waveguide's derived wall\nloss — 1 is the physical estimate, 0 is lossless."
         },
         {
           "name": "NODE_HANDLES",
-          "line": 64,
+          "line": 66,
           "shape": {
             "kind": "object",
             "keys": [
@@ -25757,7 +27853,7 @@
         },
         {
           "name": "DEFAULT_ANALYSIS",
-          "line": 79,
+          "line": 81,
           "shape": {
             "kind": "object",
             "keys": [
@@ -25775,7 +27871,7 @@
         },
         {
           "name": "DEFAULT_CHANNEL",
-          "line": 90,
+          "line": 92,
           "shape": {
             "kind": "object",
             "keys": [
@@ -25799,7 +27895,7 @@
         },
         {
           "name": "DEFAULT_WIRING",
-          "line": 99,
+          "line": 101,
           "shape": {
             "kind": "object",
             "keys": [
@@ -25812,7 +27908,7 @@
         },
         {
           "name": "DEFAULT_DISPLAY",
-          "line": 107,
+          "line": 109,
           "shape": {
             "kind": "object",
             "keys": [
@@ -25826,8 +27922,23 @@
           "description": "Default display preferences — nothing here changes a simulation.\n\n`nominalOhms` is the impedance the drive-level control uses to show watts\nalongside volts, until each channel derives its load from its wiring."
         },
         {
+          "name": "PROBE_KINDS",
+          "line": 117,
+          "shape": {
+            "kind": "array",
+            "length": 3,
+            "values": [
+              "pressure",
+              "flow",
+              "velocity"
+            ]
+          },
+          "summary": "What a probe can measure: pressure (shown as SPL), volume flow, or particle velocity (flow over the local area).",
+          "description": "What a probe can measure: pressure (shown as SPL), volume flow, or particle\nvelocity (flow over the local area)."
+        },
+        {
           "name": "DEFAULT_AIR",
-          "line": 114,
+          "line": 122,
           "shape": {
             "kind": "object",
             "keys": [
@@ -26190,14 +28301,14 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 64,
+          "line": 67,
           "signature": [
             "raw",
             "map"
           ],
           "documented": true,
           "summary": "Turn a SPICE run into the results object.",
-          "description": "Turn a SPICE run into the results object.\n\n- Impedance is the load the first driving channel sees, excluding its\n  output resistance; electrical power sums over every channel.\n- Each radiator's far-field pressure at 1 m is jωρU/(Ω·r), and every\n  radiator is 1 m from the listening point, so the combined output is their\n  coherent sum. Only radiators that count toward output are summed.\n- Radiated power is Re(p·U*) at each counted radiator.",
+          "description": "Turn a SPICE run into the results object.\n\n- Impedance is the load each channel sees, excluding its output\n  resistance; `zinMag` is the first channel's. Electrical power sums over\n  every channel.\n- Flow probes are volume flow, m³/s peak; velocity probes are that flow\n  over the local area, m/s peak.\n- Each radiator's far-field pressure at 1 m is jωρU/(Ω·r), and every\n  radiator is 1 m from the listening point, so the combined output is their\n  coherent sum. Only radiators that count toward output are summed.\n- Radiated power is Re(p·U*) at each counted radiator.",
           "params": [
             {
               "name": "raw",
@@ -26237,7 +28348,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 73,
+          "line": 76,
           "signature": [],
           "documented": true,
           "summary": "A zero-filled array, one entry per frequency.",
@@ -26276,7 +28387,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 21,
+          "line": 22,
           "signature": [
             "fmin",
             "fmax",
@@ -26331,7 +28442,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 35,
+          "line": 36,
           "signature": [
             "proj",
             "analysis"
@@ -26527,15 +28638,15 @@
             "node"
           ],
           "documented": true,
-          "summary": "Probe positions requested on a node, m from its start.",
-          "description": "Probe positions requested on a node, m from its start.",
+          "summary": "Probes placed at a distance along a node.",
+          "description": "Probes placed at a distance along a node.",
           "params": [
             {
               "name": "ctx",
               "type": "object",
               "optional": false,
               "default": null,
-              "desc": "Compile context, carrying the project's probes."
+              "desc": "Compile context, carrying the project's positioned probes."
             },
             {
               "name": "node",
@@ -26546,8 +28657,8 @@
             }
           ],
           "returns": {
-            "type": "Array<{probe: object, x: number}>",
-            "desc": "Pressure probes placed along it."
+            "type": "Array<{probe: object, x: number, flow: boolean}>",
+            "desc": "Its probes, their distance in m from the start, and whether they read flow rather than pressure."
           },
           "throws": [],
           "contract": {
@@ -26562,21 +28673,71 @@
           "other": []
         },
         {
-          "name": "recordProbe",
-          "qualified": "recordProbe",
+          "name": "linePoints",
+          "qualified": "linePoints",
           "kind": "function",
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 80,
+          "line": 76,
           "signature": [
-            "ctx",
-            "probe",
-            "node"
+            "node",
+            "probes"
           ],
           "documented": true,
-          "summary": "Record where a pressure probe landed.",
-          "description": "Record where a pressure probe landed.\n\nA probe that migrated from a chamber's own probe is reported under the\nchamber's id, where the editor looks for it; any other under its own id.",
+          "summary": "The distances along a node where its line must have a node or a cut.",
+          "description": "The distances along a node where its line must have a node or a cut.",
+          "params": [
+            {
+              "name": "node",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "A chamber or waveguide."
+            },
+            {
+              "name": "probes",
+              "type": "Array<object>",
+              "optional": false,
+              "default": null,
+              "desc": "From `probesOn`."
+            }
+          ],
+          "returns": {
+            "type": "{points: number[], flowPoints: number[]}",
+            "desc": "Tap and pressure-probe distances, and flow-probe distances, m."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "placeProbes",
+          "qualified": "placeProbes",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 101,
+          "signature": [
+            "ctx",
+            "node",
+            "line",
+            "probes",
+            "areaAt",
+            "ends"
+          ],
+          "documented": true,
+          "summary": "Record where each probe on a line landed.",
+          "description": "Record where each probe on a line landed.\n\nA pressure probe reads the node at its distance. A flow or velocity probe\nreads the sense source cut into the line there; one at either end reads\nthat end's flow instead, which the compiler resolves once every element is\nbuilt. A probe that migrated from a chamber's own probe is reported under\nthe chamber's id, where the editor looks for it; any other under its own id.",
           "params": [
             {
               "name": "ctx",
@@ -26586,18 +28747,39 @@
               "desc": "Compile context."
             },
             {
-              "name": "probe",
+              "name": "node",
               "type": "object",
               "optional": false,
               "default": null,
-              "desc": "The probe."
+              "desc": "The chamber or waveguide."
             },
             {
-              "name": "node",
-              "type": "string",
+              "name": "line",
+              "type": "object",
               "optional": false,
               "default": null,
-              "desc": "The netlist node its pressure is read from."
+              "desc": "The compiled line."
+            },
+            {
+              "name": "probes",
+              "type": "Array<object>",
+              "optional": false,
+              "default": null,
+              "desc": "From `probesOn`."
+            },
+            {
+              "name": "areaAt",
+              "type": "Function",
+              "optional": false,
+              "default": null,
+              "desc": "Cross-section at a distance, m → m²."
+            },
+            {
+              "name": "ends",
+              "type": "string[]",
+              "optional": false,
+              "default": null,
+              "desc": "The node's start and end handle names."
             }
           ],
           "returns": {
@@ -26610,7 +28792,88 @@
             "post": [],
             "invariant": [],
             "mutates": [
-              "ctx.map.probes."
+              "ctx.map.probes, ctx.map.flowProbes and ctx.endFlowProbes."
+            ],
+            "sideEffect": [],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "recordFlow",
+          "qualified": "recordFlow",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 129,
+          "signature": [
+            "ctx",
+            "id",
+            "handle",
+            "name",
+            "scale",
+            "S"
+          ],
+          "documented": true,
+          "summary": "Record which sense source carries the flow through a handle.",
+          "description": "Record which sense source carries the flow through a handle.",
+          "params": [
+            {
+              "name": "ctx",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "Compile context."
+            },
+            {
+              "name": "id",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Node id."
+            },
+            {
+              "name": "handle",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Handle name."
+            },
+            {
+              "name": "name",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "The sense source (or cone velocity source)."
+            },
+            {
+              "name": "scale",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Factor from the source's current to volume flow — Sd for a cone, 1 otherwise."
+            },
+            {
+              "name": "S",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Area for velocity, m²."
+            }
+          ],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [
+              "ctx.map.handleFlows."
             ],
             "sideEffect": [],
             "reads": [],
@@ -26625,11 +28888,12 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 94,
+          "line": 143,
           "signature": [
             "ctx",
             "node",
-            "line"
+            "line",
+            "areaAt"
           ],
           "documented": true,
           "summary": "Connect a node's taps to the nets joined to them.",
@@ -26655,6 +28919,13 @@
               "optional": false,
               "default": null,
               "desc": "The compiled line."
+            },
+            {
+              "name": "areaAt",
+              "type": "Function",
+              "optional": false,
+              "default": null,
+              "desc": "Cross-section at a distance, m → m²."
             }
           ],
           "returns": {
@@ -26667,7 +28938,7 @@
             "post": [],
             "invariant": [],
             "mutates": [
-              "ctx.nl."
+              "ctx.nl and ctx.map.handleFlows."
             ],
             "sideEffect": [],
             "reads": [],
@@ -26682,7 +28953,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 114,
+          "line": 166,
           "signature": [
             "ctx",
             "node"
@@ -26731,7 +29002,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 167,
+          "line": 222,
           "signature": [
             "ctx",
             "node"
@@ -26780,7 +29051,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 182,
+          "line": 237,
           "signature": [],
           "documented": true,
           "summary": "The chamber's cross-section, the same all along it.",
@@ -26811,7 +29082,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 217,
+          "line": 272,
           "signature": [
             "p"
           ],
@@ -26850,7 +29121,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 238,
+          "line": 293,
           "signature": [
             "ctx",
             "node",
@@ -26915,7 +29186,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 267,
+          "line": 322,
           "signature": [
             "ctx",
             "node",
@@ -26972,7 +29243,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 303,
+          "line": 359,
           "signature": [
             "ctx",
             "node"
@@ -27021,7 +29292,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 339,
+          "line": 396,
           "signature": [
             "ctx",
             "node"
@@ -27056,6 +29327,243 @@
             "invariant": [],
             "mutates": [
               "ctx.nl and ctx.map."
+            ],
+            "sideEffect": [],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        }
+      ]
+    },
+    {
+      "file": "src/spice/filters.js",
+      "module": {
+        "summary": "DSP filters as ordinary circuit parts.",
+        "description": "DSP filters as ordinary circuit parts.\n\nThe ngspice build has no transfer-function block, so every filter is a\ncascade of first- and second-order sections, each one a real R-L-C network\nread out through controlled sources. That keeps the filter an ordinary\ncircuit, valid in the frequency sweep and in a later transient run alike.\n\nA second-order section H(s) = (b2·s² + b1·s + b0) / (s² + a1·s + a0) is a\nseries L-R-C driven by the section's input: the voltage across L is\ns²/D(s), across R a1·s/D(s) and across C a0/D(s), so any numerator is a sum\nof those three voltages with fixed gains. A first-order section\n(b1·s + b0) / (s + a0) is the same with an R-C divider."
+      },
+      "constants": [
+        {
+          "name": "FILTER_TYPES",
+          "line": 17,
+          "shape": {
+            "kind": "array",
+            "length": 5,
+            "values": [
+              "highpass",
+              "lowpass",
+              "peq",
+              "lowshelf",
+              "highshelf"
+            ]
+          },
+          "summary": "Filter types a channel's DSP may hold.",
+          "description": "Filter types a channel's DSP may hold."
+        },
+        {
+          "name": "FILTER_SHAPES",
+          "line": 20,
+          "shape": {
+            "kind": "array",
+            "length": 2,
+            "values": [
+              "butterworth",
+              "linkwitz-riley"
+            ]
+          },
+          "summary": "Alignments for high- and low-pass filters.",
+          "description": "Alignments for high- and low-pass filters."
+        }
+      ],
+      "methods": [
+        {
+          "name": "butterworthStages",
+          "qualified": "butterworthStages",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 29,
+          "signature": [
+            "order"
+          ],
+          "documented": true,
+          "summary": "The Q of each second-order stage of a Butterworth filter, and whether it has a first-order stage.",
+          "description": "The Q of each second-order stage of a Butterworth filter, and whether it has a first-order stage.",
+          "params": [
+            {
+              "name": "order",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Filter order, 1 or more."
+            }
+          ],
+          "returns": {
+            "type": "{qs: number[], first: boolean}",
+            "desc": "Stage Qs, and whether a first-order stage completes an odd order."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "filterSections",
+          "qualified": "filterSections",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 51,
+          "signature": [
+            "f"
+          ],
+          "documented": true,
+          "summary": "Break one filter into first- and second-order sections.",
+          "description": "Break one filter into first- and second-order sections.\n\nCoefficients are for H(s) with s in rad/s; each section is normalised so\nits denominator is monic. Linkwitz-Riley of order 2n is two Butterworth\nfilters of order n in cascade, so an odd Linkwitz-Riley order is rounded up\nto the next even one. Gains for the parametric and shelving filters are in\ndB and follow the analogue prototypes behind the common audio \"cookbook\"\nbiquads.",
+          "params": [
+            {
+              "name": "f",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "A filter: `{type, shape, order, hz}` for high/low pass; `{type, hz, q, db}` for `peq`, `lowshelf`, `highshelf`."
+            }
+          ],
+          "returns": {
+            "type": "Array<{order: 1|2, b: number[], a: number[]}>",
+            "desc": "Sections in cascade. Second order: `b = [b2, b1, b0]`, `a = [a1, a0]`. First order: `b = [b1, b0]`, `a = [a0]`."
+          },
+          "throws": [
+            {
+              "type": "Error",
+              "desc": "When the filter type is unknown or a value is out of range."
+            }
+          ],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "sectionsResponse",
+          "qualified": "sectionsResponse",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 99,
+          "signature": [
+            "sections",
+            "hz"
+          ],
+          "documented": true,
+          "summary": "Evaluate a cascade of sections at one frequency.",
+          "description": "Evaluate a cascade of sections at one frequency.",
+          "params": [
+            {
+              "name": "sections",
+              "type": "Array<object>",
+              "optional": false,
+              "default": null,
+              "desc": "From `filterSections`."
+            },
+            {
+              "name": "hz",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Frequency, Hz."
+            }
+          ],
+          "returns": {
+            "type": "{re: number, im: number}",
+            "desc": "The complex response."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "compileSections",
+          "qualified": "compileSections",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 137,
+          "signature": [
+            "nl",
+            "input",
+            "sections",
+            "note"
+          ],
+          "documented": true,
+          "summary": "Add a cascade of sections to a netlist, from a driven node to a new one.",
+          "description": "Add a cascade of sections to a netlist, from a driven node to a new one.\n\nEach section reads its input as a node voltage and drives its output from\nan ideal controlled source, so sections never load one another. Element\nvalues are scaled to the section's natural frequency to stay near unity.",
+          "params": [
+            {
+              "name": "nl",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "The netlist builder."
+            },
+            {
+              "name": "input",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "A node driven by an ideal source."
+            },
+            {
+              "name": "sections",
+              "type": "Array<object>",
+              "optional": false,
+              "default": null,
+              "desc": "From `filterSections`."
+            },
+            {
+              "name": "note",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Comment naming the channel."
+            }
+          ],
+          "returns": {
+            "type": "string",
+            "desc": "The node carrying the filtered signal."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [
+              "nl."
             ],
             "sideEffect": [],
             "reads": [],
@@ -27478,7 +29986,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 38,
+          "line": 39,
           "signature": [
             "ctx",
             "spec"
@@ -27584,11 +30092,18 @@
               "optional": false,
               "default": null,
               "desc": "Distances, m, where nodes are needed (taps and probes)."
+            },
+            {
+              "name": "spec.flowPoints",
+              "type": "number[]",
+              "optional": true,
+              "default": null,
+              "desc": "Distances, m, strictly inside the line, where the flow along it is to be read."
             }
           ],
           "returns": {
-            "type": "{start: string, end: string, at: Function}",
-            "desc": "The end nodes, and `at(x)` → the node at one of `points`."
+            "type": "{start: string, end: string, at: Function, flowAt: Function}",
+            "desc": "The end nodes; `at(x)` → the node at one of `points`; `flowAt(x)` → the sense source carrying the flow past one of `flowPoints`, toward the end, or `null` where there is none."
           },
           "throws": [],
           "contract": {
@@ -27611,7 +30126,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 54,
+          "line": 55,
           "signature": [],
           "documented": true,
           "summary": "The one node of a lumped chamber, wherever along it is asked for.",
@@ -27636,13 +30151,81 @@
           "other": []
         },
         {
+          "name": "flowAt",
+          "qualified": "compileLine > flowAt",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 62,
+          "signature": [],
+          "documented": true,
+          "summary": "A lumped chamber has no flow along it.",
+          "description": "A lumped chamber has no flow along it.",
+          "params": [],
+          "returns": {
+            "type": "null",
+            "desc": "Always."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "clamp",
+          "qualified": "compileLine > clamp",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 73,
+          "signature": [
+            "x"
+          ],
+          "documented": true,
+          "summary": "Clamp a distance onto the line.",
+          "description": "Clamp a distance onto the line.",
+          "params": [
+            {
+              "name": "x",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Distance, m."
+            }
+          ],
+          "returns": {
+            "type": "number",
+            "desc": "The distance within [0, L]."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
           "name": "addShunt",
           "qualified": "compileLine > addShunt",
           "kind": "function",
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 76,
+          "line": 102,
           "signature": [
             "node",
             "len",
@@ -27699,7 +30282,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 129,
+          "line": 155,
           "signature": [
             "x"
           ],
@@ -27728,6 +30311,47 @@
             "sideEffect": [],
             "reads": [
               "the breakpoint map."
+            ],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "flowAt",
+          "qualified": "compileLine > flowAt",
+          "kind": "method",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 163,
+          "signature": [
+            "x"
+          ],
+          "documented": true,
+          "summary": "The sense source carrying the flow past a point, toward the end.",
+          "description": "The sense source carrying the flow past a point, toward the end.",
+          "params": [
+            {
+              "name": "x",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Distance from the start, m — one of `spec.flowPoints`."
+            }
+          ],
+          "returns": {
+            "type": "string|null",
+            "desc": "The source name, or `null` for a point that was not cut."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [
+              "the flow-sense map."
             ],
             "pure": false
           },
@@ -29522,7 +32146,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 25,
+          "line": 26,
           "signature": [
             "ctx",
             "proj"
@@ -29553,7 +32177,7 @@
           "throws": [
             {
               "type": "Error",
-              "desc": "When a channel uses a DSP filter, which this compiler cannot yet build."
+              "desc": "When a channel's DSP filter is malformed."
             }
           ],
           "contract": {
@@ -29576,7 +32200,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 41,
+          "line": 42,
           "signature": [
             "tree",
             "a",
@@ -29637,7 +32261,7 @@
       "constants": [
         {
           "name": "SNAPSHOT_LIMIT",
-          "line": 128,
+          "line": 129,
           "shape": {
             "kind": "literal",
             "value": 3
@@ -29647,7 +32271,7 @@
         },
         {
           "name": "SNAPSHOT_COLORS",
-          "line": 133,
+          "line": 134,
           "shape": {
             "kind": "array",
             "length": 3,
@@ -29662,14 +32286,14 @@
         },
         {
           "name": "useStore",
-          "line": 418,
+          "line": 419,
           "shape": null,
           "summary": null,
           "description": null
         },
         {
           "name": "__internals",
-          "line": 2743,
+          "line": 2883,
           "shape": {
             "kind": "object",
             "keys": [
@@ -29692,7 +32316,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 66,
+          "line": 67,
           "signature": [
             "project",
             "engine"
@@ -29741,7 +32365,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 79,
+          "line": 80,
           "signature": [
             "e"
           ],
@@ -29782,7 +32406,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 109,
+          "line": 110,
           "signature": [
             "ids",
             "active"
@@ -29831,7 +32455,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 144,
+          "line": 145,
           "signature": [],
           "documented": true,
           "summary": "Whether the user has already been asked where their workspace lives.",
@@ -29862,7 +32486,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 177,
+          "line": 178,
           "signature": [],
           "documented": true,
           "summary": "Load the persisted workspace, or build a first-run one.",
@@ -29893,7 +32517,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 215,
+          "line": 216,
           "signature": [],
           "documented": true,
           "summary": "Load the persisted dock layout, falling back to the default.",
@@ -29924,7 +32548,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 233,
+          "line": 234,
           "signature": [],
           "documented": true,
           "summary": "Load the user's saved layout arrangements.",
@@ -29955,7 +32579,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 253,
+          "line": 254,
           "signature": [],
           "documented": true,
           "summary": "Load the quick-bar arrangement.",
@@ -29986,7 +32610,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 302,
+          "line": 303,
           "signature": [],
           "documented": true,
           "summary": "Queue a folder write.",
@@ -30019,7 +32643,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 322,
+          "line": 323,
           "signature": [
             "type"
           ],
@@ -30060,7 +32684,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 337,
+          "line": 338,
           "signature": [],
           "documented": true,
           "summary": "The simulation engine this browser last chose.",
@@ -30091,7 +32715,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 351,
+          "line": 352,
           "signature": [],
           "documented": true,
           "summary": "The editor sections of an empty project, for the initial state.",
@@ -30120,7 +32744,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 369,
+          "line": 370,
           "signature": [
             "spot",
             "nodes",
@@ -30185,7 +32809,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 377,
+          "line": 378,
           "signature": [
             "x",
             "y"
@@ -30234,7 +32858,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 398,
+          "line": 399,
           "signature": [
             "nodes",
             "edges",
@@ -30305,7 +32929,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 438,
+          "line": 439,
           "signature": [
             "partial",
             "replace"
@@ -30356,7 +32980,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 527,
+          "line": 528,
           "signature": [
             "x",
             "y",
@@ -30413,7 +33037,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 538,
+          "line": 539,
           "signature": [],
           "documented": true,
           "summary": "Dismiss the context menu.",
@@ -30444,7 +33068,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 547,
+          "line": 548,
           "signature": [
             "id"
           ],
@@ -30485,7 +33109,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 558,
+          "line": 559,
           "signature": [
             "id"
           ],
@@ -30526,7 +33150,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 566,
+          "line": 567,
           "signature": [
             "id"
           ],
@@ -30567,7 +33191,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 575,
+          "line": 576,
           "signature": [
             "v",
             "section"
@@ -30616,7 +33240,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 583,
+          "line": 584,
           "signature": [
             "id"
           ],
@@ -30657,7 +33281,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 595,
+          "line": 596,
           "signature": [
             "id",
             "combos"
@@ -30706,7 +33330,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 612,
+          "line": 613,
           "signature": [
             "id",
             "combo"
@@ -30755,7 +33379,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 630,
+          "line": 631,
           "signature": [
             "id",
             "combo"
@@ -30804,7 +33428,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 637,
+          "line": 638,
           "signature": [],
           "documented": true,
           "summary": "Restore every command to its default combos.",
@@ -30835,7 +33459,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 654,
+          "line": 655,
           "signature": [
             "tree"
           ],
@@ -30876,7 +33500,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 671,
+          "line": 672,
           "signature": [
             "stackId",
             "panelId"
@@ -30925,7 +33549,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 681,
+          "line": 682,
           "signature": [
             "panelId",
             "stackId",
@@ -30982,7 +33606,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 690,
+          "line": 691,
           "signature": [
             "panelId",
             "edge"
@@ -31031,7 +33655,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 701,
+          "line": 702,
           "signature": [
             "splitId",
             "index",
@@ -31096,7 +33720,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 715,
+          "line": 716,
           "signature": [
             "panelId",
             "stackId",
@@ -31153,7 +33777,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 736,
+          "line": 737,
           "signature": [
             "panelId"
           ],
@@ -31194,7 +33818,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 753,
+          "line": 754,
           "signature": [
             "panelId"
           ],
@@ -31235,7 +33859,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 765,
+          "line": 766,
           "signature": [
             "panelId"
           ],
@@ -31276,7 +33900,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 776,
+          "line": 777,
           "signature": [],
           "documented": true,
           "summary": "Restore the default workspace arrangement.",
@@ -31307,7 +33931,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 786,
+          "line": 787,
           "signature": [
             "name"
           ],
@@ -31348,7 +33972,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 805,
+          "line": 806,
           "signature": [
             "name"
           ],
@@ -31389,7 +34013,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 829,
+          "line": 830,
           "signature": [
             "ids"
           ],
@@ -31430,7 +34054,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 845,
+          "line": 846,
           "signature": [
             "id"
           ],
@@ -31471,7 +34095,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 857,
+          "line": 858,
           "signature": [
             "id",
             "delta"
@@ -31520,7 +34144,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 871,
+          "line": 872,
           "signature": [],
           "documented": true,
           "summary": "Restore the default quick-bar arrangement.",
@@ -31551,7 +34175,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 880,
+          "line": 881,
           "signature": [
             "name"
           ],
@@ -31592,7 +34216,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 898,
+          "line": 899,
           "signature": [
             "id",
             "range"
@@ -31641,7 +34265,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 914,
+          "line": 915,
           "signature": [],
           "documented": true,
           "summary": "Record the current graph as an undo point.",
@@ -31672,7 +34296,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 927,
+          "line": 928,
           "signature": [],
           "documented": true,
           "summary": "Step back one entry in the history.",
@@ -31703,7 +34327,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 944,
+          "line": 946,
           "signature": [],
           "documented": true,
           "summary": "Step forward one entry in the history.",
@@ -31734,7 +34358,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 969,
+          "line": 972,
           "signature": [
             "changes"
           ],
@@ -31775,7 +34399,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 983,
+          "line": 986,
           "signature": [
             "changes"
           ],
@@ -31816,7 +34440,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 995,
+          "line": 998,
           "signature": [
             "conn"
           ],
@@ -31843,7 +34467,7 @@
             "invariant": [],
             "mutates": [],
             "sideEffect": [
-              "Records history, writes store state and schedules a resimulation."
+              "Records history, writes store state and schedules a resimulation. Does nothing when the same two handles are already joined, in either order."
             ],
             "reads": [],
             "pure": false
@@ -31857,7 +34481,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1007,
+          "line": 1016,
           "signature": [
             "id"
           ],
@@ -31898,7 +34522,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1020,
+          "line": 1029,
           "signature": [
             "type",
             "position"
@@ -31947,7 +34571,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1050,
+          "line": 1059,
           "signature": [
             "id",
             "params"
@@ -31996,7 +34620,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1077,
+          "line": 1086,
           "signature": [
             "id"
           ],
@@ -32037,7 +34661,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1098,
+          "line": 1107,
           "signature": [
             "id",
             "name"
@@ -32086,7 +34710,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1128,
+          "line": 1137,
           "signature": [
             "id",
             "field",
@@ -32143,7 +34767,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1151,
+          "line": 1160,
           "signature": [
             "id"
           ],
@@ -32184,7 +34808,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1179,
+          "line": 1188,
           "signature": [
             "id",
             "field",
@@ -32241,7 +34865,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1203,
+          "line": 1212,
           "signature": [
             "id",
             "patch"
@@ -32290,11 +34914,11 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1225,
+          "line": 1236,
           "signature": [],
           "documented": true,
           "summary": "Delete the selected nodes and edges.",
-          "description": "Delete the selected nodes and edges.\n\nEdges attached to a deleted node go with it, whether or not they were\nthemselves selected — leaving a dangling edge would corrupt the graph.",
+          "description": "Delete the selected nodes and edges.\n\nEdges attached to a deleted node go with it, whether or not they were\nthemselves selected — leaving a dangling edge would corrupt the graph.\nSo do the deleted drivers' places in the wiring and any probes on the\ndeleted nodes.",
           "params": [],
           "returns": {
             "type": "void",
@@ -32321,7 +34945,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1250,
+          "line": 1263,
           "signature": [],
           "documented": true,
           "summary": "Copy the selected nodes in place, offset down-right.",
@@ -32352,7 +34976,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1275,
+          "line": 1288,
           "signature": [],
           "documented": true,
           "summary": "Select every node on the canvas.",
@@ -32383,7 +35007,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1290,
+          "line": 1303,
           "signature": [
             "ids",
             "additive"
@@ -32432,7 +35056,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1323,
+          "line": 1336,
           "signature": [],
           "documented": true,
           "summary": "Copy the selected nodes and their internal edges to the in-app clipboard.",
@@ -32463,7 +35087,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1349,
+          "line": 1362,
           "signature": [],
           "documented": true,
           "summary": "Copy the selection, then delete it.",
@@ -32494,7 +35118,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1370,
+          "line": 1383,
           "signature": [
             "at"
           ],
@@ -32535,7 +35159,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1418,
+          "line": 1431,
           "signature": [
             "type"
           ],
@@ -32576,7 +35200,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1434,
+          "line": 1447,
           "signature": [
             "delta"
           ],
@@ -32617,7 +35241,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1447,
+          "line": 1460,
           "signature": [],
           "documented": true,
           "summary": "Force a resimulation even though nothing has changed.",
@@ -32648,7 +35272,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1460,
+          "line": 1473,
           "signature": [
             "patch"
           ],
@@ -32689,7 +35313,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1476,
+          "line": 1496,
           "signature": [
             "field",
             "value"
@@ -32732,13 +35356,299 @@
           "other": []
         },
         {
+          "name": "_setExtras",
+          "qualified": "_setExtras",
+          "kind": "method",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 1519,
+          "signature": [
+            "extras"
+          ],
+          "documented": true,
+          "summary": "Install new extra project sections, keeping the flat drive settings in step.",
+          "description": "Install new extra project sections, keeping the flat drive settings in step.\n\nThe toolbar and keyboard show the first channel's output at the master\nlevel; whenever the wiring changes, that figure is re-derived from it.",
+          "params": [
+            {
+              "name": "extras",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "The new extras."
+            }
+          ],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Writes store state. Does not resimulate; callers do."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "setExtra",
+          "qualified": "setExtra",
+          "kind": "method",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 1540,
+          "signature": [
+            "key",
+            "value",
+            "undoable"
+          ],
+          "documented": true,
+          "summary": "Replace one extra project section — `wiring`, `params`, `probes`.",
+          "description": "Replace one extra project section — `wiring`, `params`, `probes`.\n\nStructural edits are undoable. Value edits typed a keystroke at a time\npass `undoable: false`, as node parameter edits do, so one typed number\nis not twenty undo steps.",
+          "params": [
+            {
+              "name": "key",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "The section."
+            },
+            {
+              "name": "value",
+              "type": "*",
+              "optional": false,
+              "default": null,
+              "desc": "Its new content."
+            },
+            {
+              "name": "undoable",
+              "type": "boolean",
+              "optional": true,
+              "default": "true",
+              "desc": "Record a history entry first."
+            }
+          ],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Records history when undoable, writes store state and schedules a resimulation."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "setTaps",
+          "qualified": "setTaps",
+          "kind": "method",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 1553,
+          "signature": [
+            "id",
+            "taps"
+          ],
+          "documented": true,
+          "summary": "Replace a chamber's or waveguide's taps, removing edges to taps that are gone.",
+          "description": "Replace a chamber's or waveguide's taps, removing edges to taps that are gone.",
+          "params": [
+            {
+              "name": "id",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Node id."
+            },
+            {
+              "name": "taps",
+              "type": "Array<{id: string, position: number|string}>",
+              "optional": false,
+              "default": null,
+              "desc": "The new list."
+            }
+          ],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Records history, writes store state and schedules a resimulation."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "gone",
+          "qualified": "setTaps > gone",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 1564,
+          "signature": [
+            "node",
+            "handle"
+          ],
+          "documented": true,
+          "summary": "Whether an edge end is a tap on this node that no longer exists.",
+          "description": "Whether an edge end is a tap on this node that no longer exists.",
+          "params": [
+            {
+              "name": "node",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Node id at that end."
+            },
+            {
+              "name": "handle",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Handle at that end."
+            }
+          ],
+          "returns": {
+            "type": "boolean",
+            "desc": "True when the end has lost its tap."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [
+              "the enclosing node id and live tap set."
+            ],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "insertThroatChamber",
+          "qualified": "insertThroatChamber",
+          "kind": "method",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 1584,
+          "signature": [
+            "driverId",
+            "face"
+          ],
+          "documented": true,
+          "summary": "Put a chamber between a driver face and the smaller opening it meets.",
+          "description": "Put a chamber between a driver face and the smaller opening it meets.\n\nWhat the throat-chamber warning offers: the new chamber takes over the\nface's joins, sized by default to the cone area times 3 cm of depth,\nplaced between the two clear of other nodes, and left selected to be\nrefined — by hand or with the calculator.",
+          "params": [
+            {
+              "name": "driverId",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "The driver node."
+            },
+            {
+              "name": "face",
+              "type": "'front'|'rear'",
+              "optional": false,
+              "default": null,
+              "desc": "The face that meets the small opening."
+            }
+          ],
+          "returns": {
+            "type": "string|null",
+            "desc": "The new chamber's id, or `null` when the face has nothing joined to it."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Records history, writes store state and schedules a resimulation."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "addProbe",
+          "qualified": "addProbe",
+          "kind": "method",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 1619,
+          "signature": [
+            "probe"
+          ],
+          "documented": true,
+          "summary": "Add a probe, with a fresh id.",
+          "description": "Add a probe, with a fresh id.",
+          "params": [
+            {
+              "name": "probe",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "`{kind, at, label?}`."
+            }
+          ],
+          "returns": {
+            "type": "string",
+            "desc": "The new probe's id."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Records history, writes store state and schedules a resimulation."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
           "name": "takeSnapshot",
           "qualified": "takeSnapshot",
           "kind": "method",
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1509,
+          "line": 1649,
           "signature": [],
           "documented": true,
           "summary": "Freeze the current result as a labelled reference overlay.",
@@ -32769,7 +35679,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1545,
+          "line": 1685,
           "signature": [
             "id"
           ],
@@ -32810,7 +35720,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1557,
+          "line": 1697,
           "signature": [
             "id",
             "label"
@@ -32859,7 +35769,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1570,
+          "line": 1710,
           "signature": [
             "id"
           ],
@@ -32900,7 +35810,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1578,
+          "line": 1718,
           "signature": [
             "v"
           ],
@@ -32941,7 +35851,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1586,
+          "line": 1726,
           "signature": [
             "v"
           ],
@@ -32982,7 +35892,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1594,
+          "line": 1734,
           "signature": [
             "id"
           ],
@@ -33023,7 +35933,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1602,
+          "line": 1742,
           "signature": [
             "engine"
           ],
@@ -33064,7 +35974,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1638,
+          "line": 1778,
           "signature": [],
           "documented": true,
           "summary": "Schedule a debounced simulation run.",
@@ -33095,7 +36005,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1678,
+          "line": 1818,
           "signature": [],
           "documented": true,
           "summary": "Capture the project as a plain, saveable object.",
@@ -33126,7 +36036,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1701,
+          "line": 1841,
           "signature": [
             "proj"
           ],
@@ -33167,7 +36077,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1726,
+          "line": 1866,
           "signature": [],
           "documented": true,
           "summary": "Download the open project as a standalone JSON file.",
@@ -33198,7 +36108,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1743,
+          "line": 1883,
           "signature": [
             "proj",
             "filename"
@@ -33247,7 +36157,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1776,
+          "line": 1916,
           "signature": [
             "ws"
           ],
@@ -33288,7 +36198,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1791,
+          "line": 1931,
           "signature": [
             "name"
           ],
@@ -33329,7 +36239,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1805,
+          "line": 1945,
           "signature": [],
           "documented": true,
           "summary": "Write the editor's current project back into its file.",
@@ -33360,7 +36270,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1823,
+          "line": 1963,
           "signature": [
             "path"
           ],
@@ -33401,7 +36311,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1839,
+          "line": 1979,
           "signature": [
             "folder"
           ],
@@ -33442,7 +36352,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1860,
+          "line": 2000,
           "signature": [
             "parent"
           ],
@@ -33483,7 +36393,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1883,
+          "line": 2023,
           "signature": [
             "from",
             "to"
@@ -33532,7 +36442,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1920,
+          "line": 2060,
           "signature": [
             "path"
           ],
@@ -33573,7 +36483,7 @@
           "exported": false,
           "async": true,
           "generator": false,
-          "line": 1952,
+          "line": 2092,
           "signature": [],
           "documented": true,
           "summary": "Download the whole workspace, and record that it happened.",
@@ -33604,7 +36514,7 @@
           "exported": false,
           "async": true,
           "generator": false,
-          "line": 1981,
+          "line": 2121,
           "signature": [
             "file"
           ],
@@ -33645,7 +36555,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2005,
+          "line": 2145,
           "signature": [
             "ws"
           ],
@@ -33686,7 +36596,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2039,
+          "line": 2179,
           "signature": [
             "paths"
           ],
@@ -33727,7 +36637,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2049,
+          "line": 2189,
           "signature": [
             "path",
             "open"
@@ -33776,7 +36686,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2063,
+          "line": 2203,
           "signature": [],
           "documented": true,
           "summary": "Collapse every folder in the explorer.",
@@ -33807,7 +36717,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2078,
+          "line": 2218,
           "signature": [
             "mode",
             "path"
@@ -33856,7 +36766,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2089,
+          "line": 2229,
           "signature": [],
           "documented": true,
           "summary": "Dismiss the explorer's inline editor.",
@@ -33887,7 +36797,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2104,
+          "line": 2244,
           "signature": [
             "paths",
             "cut"
@@ -33936,7 +36846,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2117,
+          "line": 2257,
           "signature": [
             "folder"
           ],
@@ -33977,7 +36887,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2144,
+          "line": 2284,
           "signature": [
             "path"
           ],
@@ -34018,7 +36928,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2160,
+          "line": 2300,
           "signature": [
             "from",
             "folder"
@@ -34067,7 +36977,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2182,
+          "line": 2322,
           "signature": [
             "mode",
             "parent",
@@ -34124,7 +37034,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2216,
+          "line": 2356,
           "signature": [
             "kind"
           ],
@@ -34165,7 +37075,7 @@
           "exported": false,
           "async": true,
           "generator": false,
-          "line": 2247,
+          "line": 2387,
           "signature": [
             "confirmAdopt"
           ],
@@ -34206,7 +37116,7 @@
           "exported": false,
           "async": true,
           "generator": false,
-          "line": 2280,
+          "line": 2420,
           "signature": [],
           "documented": true,
           "summary": "Renew permission on a remembered folder and open it again.",
@@ -34237,7 +37147,7 @@
           "exported": false,
           "async": true,
           "generator": false,
-          "line": 2303,
+          "line": 2443,
           "signature": [],
           "documented": true,
           "summary": "Stop keeping the workspace in a folder.",
@@ -34270,7 +37180,7 @@
           "exported": false,
           "async": true,
           "generator": false,
-          "line": 2328,
+          "line": 2468,
           "signature": [
             "handle",
             "read",
@@ -34329,7 +37239,7 @@
           "exported": false,
           "async": true,
           "generator": false,
-          "line": 2369,
+          "line": 2509,
           "signature": [
             "prune"
           ],
@@ -34372,7 +37282,7 @@
           "exported": false,
           "async": true,
           "generator": false,
-          "line": 2411,
+          "line": 2551,
           "signature": [
             "since"
           ],
@@ -34415,7 +37325,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2444,
+          "line": 2584,
           "signature": [
             "drivers"
           ],
@@ -34456,7 +37366,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2466,
+          "line": 2606,
           "signature": [
             "id"
           ],
@@ -34497,7 +37407,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2482,
+          "line": 2622,
           "signature": [
             "id"
           ],
@@ -34538,7 +37448,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2505,
+          "line": 2645,
           "signature": [
             "id"
           ],
@@ -34579,7 +37489,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2532,
+          "line": 2672,
           "signature": [
             "id"
           ],
@@ -34620,7 +37530,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2548,
+          "line": 2688,
           "signature": [
             "stackId"
           ],
@@ -34661,7 +37571,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2572,
+          "line": 2712,
           "signature": [
             "panelId",
             "stackId"
@@ -34710,7 +37620,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2592,
+          "line": 2732,
           "signature": [
             "id"
           ],
@@ -34751,7 +37661,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2603,
+          "line": 2743,
           "signature": [
             "id"
           ],
@@ -34792,7 +37702,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2622,
+          "line": 2762,
           "signature": [
             "patch"
           ],
@@ -34835,7 +37745,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2632,
+          "line": 2772,
           "signature": [],
           "documented": true,
           "summary": "The full shared slice, sent to a popped-out tab when it announces itself.",
@@ -34866,7 +37776,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2696,
+          "line": 2836,
           "signature": [
             "arg0"
           ],
@@ -35348,6 +38258,104 @@
             "sideEffect": [],
             "reads": [],
             "pure": true
+          },
+          "other": []
+        }
+      ]
+    },
+    {
+      "file": "src/useResolved.js",
+      "module": {
+        "summary": "Hooks that give components numbers for fields that may hold expressions.",
+        "description": "Hooks that give components numbers for fields that may hold expressions.\n\nA numeric node field can hold an expression over the project's named\nparams — `\"Vb / 2\"` — so anything that computes with a field, a canvas\nreadout or a derived figure in a form, reads it through here."
+      },
+      "constants": [],
+      "methods": [
+        {
+          "name": "useParamValues",
+          "qualified": "useParamValues",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 17,
+          "signature": [],
+          "documented": true,
+          "summary": "The project's named params, resolved.",
+          "description": "The project's named params, resolved.",
+          "params": [],
+          "returns": {
+            "type": "{values: Object<string, number>, errors: string[]}",
+            "desc": "Values by name, and any problems."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Subscribes to the store."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "useResolvedParams",
+          "qualified": "useResolvedParams",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 31,
+          "signature": [
+            "id",
+            "type",
+            "params"
+          ],
+          "documented": true,
+          "summary": "One node's params with every expression replaced by its value.",
+          "description": "One node's params with every expression replaced by its value.",
+          "params": [
+            {
+              "name": "id",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Node id."
+            },
+            {
+              "name": "type",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Node type."
+            },
+            {
+              "name": "params",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "The node's stored params."
+            }
+          ],
+          "returns": {
+            "type": "object",
+            "desc": "The params, numbers throughout; `NaN` where an expression does not resolve."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Subscribes to the store."
+            ],
+            "reads": [],
+            "pure": false
           },
           "other": []
         }

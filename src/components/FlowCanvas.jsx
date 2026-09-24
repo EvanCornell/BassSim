@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
-import ReactFlow, { Background, Controls, MiniMap, useReactFlow, ReactFlowProvider } from 'reactflow'
+import ReactFlow, { Background, Controls, MiniMap, useReactFlow, ReactFlowProvider, ConnectionMode } from 'reactflow'
 import { useStore } from '../store'
 import { nodeTypes } from './nodes'
 import { useStackId } from './dock/stackContext'
@@ -9,9 +9,10 @@ import { NODE_DRAG_TYPE } from '../nodeKinds'
 /**
  * Whether a proposed edge is allowed.
  *
- * React Flow already enforces source-to-target, which is what keeps the
- * pressure-out to pressure-in pairing correct. The only extra rule is that
- * a node may not connect to itself.
+ * Connections have no direction — the canvas runs in loose mode, so any
+ * handle may join any other. The one rule is that a node may not join
+ * itself: a loop from one end of a line to its own tap or other end is not a
+ * box anyone builds.
  *
  * @param {{source: string, target: string}} conn - The proposed connection.
  * @returns {boolean} True when the edge may be created.
@@ -255,6 +256,7 @@ function CanvasInner() {
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         isValidConnection={isValidConnection}
+        connectionMode={ConnectionMode.Loose}
         onDrop={onDrop}
         onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move' }}
         onNodeClick={(_, n) => setSelected(n.id)}

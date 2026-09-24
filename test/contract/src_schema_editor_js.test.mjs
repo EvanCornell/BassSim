@@ -71,3 +71,24 @@ test('fromEditor: editor edits land in the right sections', () => {
   assert.deepEqual(p.probes.map((x) => x.id), ['v'])
   assert.equal('probe' in p.nodes.find((n) => n.id === 'c').params, false, 'probe params never reach the file')
 })
+
+// CONTRACT: "A first-channel voltage or output resistance written as an
+// expression is kept, not overwritten by its value."
+test('fromEditor: an expression on the first channel survives', () => {
+  const p = rich()
+  p.wiring.channels[0].volts = 'Vb / 3'
+  p.wiring.channels[0].outputOhms = 'Vb / 600'
+  const back = fromEditor(toEditor(p))
+  assert.equal(back.wiring.channels[0].volts, 'Vb / 3')
+  assert.equal(back.wiring.channels[0].outputOhms, 'Vb / 600')
+})
+
+// CONTRACT: "A chamber's own probe — the one with id `probe_<chamber id>` —
+// becomes its `probe`/`probePos` params; every other probe stays in `extras`."
+test('toEditor: only the chamber\'s own probe moves onto it', () => {
+  const p = rich()
+  p.probes = [{ id: 'mine', kind: 'pressure', at: { node: 'c', position: 10 } }]
+  const ed = toEditor(p)
+  assert.equal(ed.nodes.find((n) => n.id === 'c').data.params.probe, false)
+  assert.deepEqual(ed.extras.probes.map((x) => x.id), ['mine'])
+})

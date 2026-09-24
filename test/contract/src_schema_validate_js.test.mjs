@@ -108,3 +108,29 @@ test('validateProject: an impossible sweep is an error', () => {
   assert.match(text, /highest frequency must be above the lowest/)
   assert.match(text, /at least two frequency points/)
 })
+
+// CONTRACT: probes that point nowhere are warnings keyed `probe:<id>`; an
+// unknown kind cannot be simulated and is an error.
+test('validateProject: probes are checked', () => {
+  const { errors, warnings } = validateProject(base({
+    probes: [
+      { id: 'a', kind: 'pressure', at: { node: 'nope', handle: 'in' } },
+      { id: 'b', kind: 'flow', at: { node: 'w', handle: 'side' } },
+      { id: 'c', kind: 'velocity', at: { node: 'w', position: 999 } },
+      { id: 'd', kind: 'pressure', at: { node: 'd', position: 1 } },
+      { id: 'e', kind: 'loudness', at: { node: 'w', handle: 'mouth' } },
+      { id: 'f', kind: 'flow', at: { node: 'w', handle: 'mouth' } },
+    ],
+  }))
+  assert.deepEqual(errors, ['Probe e: unknown kind "loudness"'])
+  assert.deepEqual(Object.keys(warnings).filter((k) => k.startsWith('probe:')).sort(), ['probe:a', 'probe:b', 'probe:c', 'probe:d'])
+})
+
+// CONTRACT: a DSP filter that cannot be built is an error naming its channel.
+test('validateProject: a malformed filter is an error', () => {
+  const { errors } = validateProject(base({
+    wiring: { channels: [{ id: 'c1', label: 'Amp', volts: 2.83, load: null, dsp: { filters: [{ type: 'highpass', hz: -5 }] } }] },
+  }))
+  assert.equal(errors.length, 1)
+  assert.match(errors[0], /^Amp › filter 1: /)
+})

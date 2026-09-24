@@ -55,7 +55,7 @@ makes the boxes unreadable as you type.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
-## UNREACHABLE (14)
+## UNREACHABLE (19)
 
 ### `NumField(props)`
 
@@ -64,9 +64,10 @@ makes the boxes unreadable as you type.
 
 A labelled numeric parameter input bound to one node field.
 
-Empty and unparseable input is ignored rather than written, so clearing
-the box to retype a value does not momentarily push `NaN` into the graph
-and trigger a failed solve.
+Takes a number or an expression over the project parameters. Empty and
+unresolvable input is held in the box rather than written, so clearing it
+to retype a value does not momentarily push `NaN` into the graph and
+trigger a failed solve.
 
 **Parameters**
 
@@ -274,6 +275,124 @@ One coupled T/S row, wired to this node and its current basis.
 **Reads external mutable state**
 
 - the enclosing form's node and basis.
+
+### `DvcField(props)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+A driver's dual voice coil option.
+
+Purely electrical, and available on any driver: the catalogue never says
+whether a driver has two coils, and its figures are always taken as both
+coils in series. The other choices rescale Re, Bl and Le from there.
+
+**Parameters**
+
+- `props` — `object` — Component props.
+- `props.id` — `string` — Node id.
+- `props.p` — `object` — The node's params.
+
+**Returns**
+
+- `React.ReactElement` — The select row.
+
+**Side effects**
+
+- Subscribes to the store.
+
+### `NodeWarnings(props)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+The node's validation warnings, with the fixes the editor can offer.
+
+A driver face meeting an opening smaller than its cone gets a button that
+puts a chamber between them.
+
+**Parameters**
+
+- `props` — `object` — Component props.
+- `props.node` — `object` — The selected node.
+
+**Returns**
+
+- `React.ReactElement|null` — The warnings, or nothing when there are none.
+
+**Side effects**
+
+- Subscribes to the store.
+
+### `TapsSection(props)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+The taps along a chamber or waveguide: where things may join it from the side.
+
+Positions are in cm from the `in` / throat end and may be expressions.
+Removing a tap removes the joins made to it.
+
+**Parameters**
+
+- `props` — `object` — Component props.
+- `props.id` — `string` — Node id.
+- `props.p` — `object` — The node's params.
+- `props.from` — `string` — Name of the end positions are measured from.
+
+**Returns**
+
+- `React.ReactElement` — The taps section.
+
+**Side effects**
+
+- Subscribes to the store.
+
+### `ThroatCalc(props)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+Throat chamber calculator: the air a cone traps in front of a small opening.
+
+Output only — it proposes a volume for this chamber and, on request, writes
+it. The chamber stays an ordinary chamber node. Volume = Sd × (cone depth ×
+shape factor + one-way excursion + clearance), minus nothing for the
+motor, since this is the front side.
+
+**Parameters**
+
+- `props` — `object` — Component props.
+- `props.id` — `string` — Node id.
+
+**Returns**
+
+- `React.ReactElement` — The calculator.
+
+**Side effects**
+
+- Subscribes to the store.
+
+### `ThroatCalc > row(label, v, set, unit)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+One number input of the calculator.
+
+**Parameters**
+
+- `label` — `string` — Row label.
+- `v` — `number` — Current value.
+- `set` — `Function` — Setter.
+- `unit` — `string` — Unit.
+
+**Returns**
+
+- `React.ReactElement` — The row.
+
+**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
 ### `ChamberForm(props)`
 

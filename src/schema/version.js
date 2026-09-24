@@ -33,14 +33,16 @@ export const SCHEMA_VERSION = 3
  * build gains any parameter added since. A field whose default is a number is
  * numeric, which is what decides where an expression may stand in for a value.
  *
- * `leakQL: null` is a sealed chamber. `loss` scales a waveguide's derived wall
+ * `leakQL: null` is a sealed chamber. `dvc: null` is a single voice coil;
+ * `dvc: {coils: 'series'|'parallel'|'one'}` a dual one, whose catalogue
+ * figures are always taken as both coils in series. `loss` scales a waveguide's derived wall
  * loss — 1 is the physical estimate, 0 is lossless.
  */
 export const DEFAULT_PARAMS = {
   driver: {
     Fs: 30, Qts: 0.45, Qes: 0.5, Qms: 5, Vas: 60, Re: 3.6, Bl: 15, Mms: 150,
     Cms: 0.19, Sd: 480, Le: 1.5, LeExp: 1, Xmax: 15, Rms: 4,
-    count: 1, wiring: 'single', label: 'Driver',
+    count: 1, wiring: 'single', dvc: null, label: 'Driver',
   },
   chamber: {
     volume: 30, length: 40, shape: 'rectangular', stuffing: 0,
@@ -107,6 +109,12 @@ export const DEFAULT_WIRING = { masterDb: 0, channels: [DEFAULT_CHANNEL] }
 export const DEFAULT_DISPLAY = {
   vThreshold: 17, unwrapPhase: true, delayOffset: 0, nominalOhms: 4,
 }
+
+/**
+ * What a probe can measure: pressure (shown as SPL), volume flow, or particle
+ * velocity (flow over the local area).
+ */
+export const PROBE_KINDS = ['pressure', 'flow', 'velocity']
 
 /**
  * Default air: 20 °C at sea level. Reserved — not yet read by any engine.

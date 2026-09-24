@@ -2,7 +2,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import {
-  isExpression, isValidParamName, evaluateParams, evaluateExpression, isNumericField, resolveProject,
+  isExpression, isValidParamName, evaluateParams, evaluateExpression, isNumericField, resolveProject, resolveNodeParams,
 } from '../../src/schema/params.js'
 import { migrateProject } from '../../src/schema/migrate.js'
 
@@ -113,4 +113,20 @@ test('resolveProject: the input is not modified', () => {
   const before = JSON.stringify(proj)
   resolveProject(proj)
   assert.equal(JSON.stringify(proj), before)
+})
+
+// CONTRACT (resolveNodeParams): numbers in every numeric field and tap
+// position, `NaN` and a message where an expression fails, text untouched.
+test('resolveNodeParams: one node at a time', () => {
+  const errors = []
+  const p = resolveNodeParams({
+    id: 'c', type: 'chamber',
+    params: { volume: 'Vb / 2', length: 'nope', shape: 'rectangular', label: 'Box', taps: [{ id: 't1', position: 'Vb / 3' }] },
+  }, { Vb: 60 }, errors)
+  assert.equal(p.volume, 30)
+  assert.ok(Number.isNaN(p.length))
+  assert.equal(p.shape, 'rectangular')
+  assert.equal(p.taps[0].position, 20)
+  assert.equal(errors.length, 1)
+  assert.match(errors[0], /^Box › length/)
 })

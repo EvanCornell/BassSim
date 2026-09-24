@@ -37,7 +37,7 @@ that connect to nothing — an open coil.
 
 **Throws**
 
-- `Error` — When a channel uses a DSP filter, which this compiler cannot yet build.
+- `Error` — When a channel's DSP filter is malformed.
 
 **Mutates**
 

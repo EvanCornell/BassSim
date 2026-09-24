@@ -7,21 +7,6 @@ done looks like, and where the code is.
 
 ---
 
-## Driver output only where the cone is actually exposed
-
-**Today.** "Driver output" sums every radiator reached through the driver's
-front handle (`viaFront` in `runSimulation > propagateInto`), so in a
-4th-order bandpass it is really the port. An unconnected rear loads the cone
-but never radiates.
-
-**Decided** for the SPICE engine (`docs/SPICE-PLAN.md`, Graph semantics):
-unconnected faces radiate as if in an infinite baffle; one exposed face is
-summed with every other radiator; with both exposed only the front counts;
-"driver output" is exposed faces only. Built with the new engine, not
-patched into the old solver.
-
----
-
 ## Per-source radiation for power and efficiency, Hornresp-style
 
 **Today — a real bug.** Acoustic power is the incoherent sum of each source's
@@ -43,7 +28,8 @@ they under-read (1.8% shown against a true 9.8% at 50 Hz on a series-tuned
 
 **Where.** `emit.powers` in `src/engine/solver.js`, the `pow`/`eff` rows in
 `src/components/OutputPanel.jsx`, `src/utils/export.js`, `mcp/acousim.js`.
-Depends on the per-source identity work in the entry above.
+The SPICE engine already knows each source (`map.radiators` in
+`src/spice/adapt.js`); power there is Re(p·U*) per counted radiator.
 
 ---
 
@@ -65,7 +51,21 @@ are silently blocked. Fixed by construction in the SPICE engine
   ~2,700 elements, mostly √f loss ladders every λ/4 at the top of the sweep.
   Coarser lumping where the loss is small, or one ladder per duct for short
   ducts, would cut solve time several-fold.
-- **Legacy solver removal** (milestone 5) once the editor features land.
+- **Legacy solver removal** (milestone 5). The editor features have landed;
+  the legacy engine refuses projects that use them.
+
+## Editor follow-ups from milestone 4
+
+- **Channel `rated` watts** — in the schema, not in the Wiring panel yet;
+  it would drive a warning when a channel's nominal watts exceed its rating.
+- **Filter response preview** per channel, and more alignments (Bessel,
+  all-pass, first-order shelves) if they are wanted.
+- **Expressions in the coupled T/S fields.** The padlock form derives five
+  of the eleven from the other six; letting an expression drive a held one
+  needs the derivation to run on resolved values.
+- **Node palette overlaps the canvas** at top left, hiding nodes placed
+  there (seen with imported projects).
+- **Listener positions** (reserved probe kind) for per-source distances.
 
 ## Modelling questions
 

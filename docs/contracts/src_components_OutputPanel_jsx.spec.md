@@ -16,11 +16,11 @@ Chart id to component.
 Keyed the same as the per-chart zoom state in the store, so a chart keeps
 its zoom when it is re-docked or tabbed away.
 
-Keys: `spl`, `zin`, `exc`, `vel`, `int`, `pow`, `eff`, `pe`, `ph`
+Keys: `spl`, `zin`, `exc`, `vel`, `int`, `pfl`, `pow`, `eff`, `pe`, `ph`
 
 ### `__internals`
 
-Keys: `fmt`, `round5`, `fitDb`, `fitLinear`, `nearestIdx`, `snapLines`
+Keys: `fmt`, `round5`, `fitDb`, `fitLinear`, `nearestIdx`, `snapLines`, `yTick`
 
 ## EXPORTED (1)
 
@@ -48,7 +48,7 @@ render, or React will unmount and remount the panel.
 
 - None, but not `@pure`: the returned component is a new object each call, so results are never equal by identity.
 
-## INTERNAL (6)
+## INTERNAL (7)
 
 ### `fmt(v, d)`
 
@@ -134,6 +134,26 @@ A useful Y range for a linear curve: from a floor to a padded maximum.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
+### `yTick(v)`
+
+- **Reachability:** INTERNAL
+- **Obtain via:** import { __internals } from '../../src/components/OutputPanel.jsx'  →  __internals.yTick
+
+Format a Y-axis tick.
+
+A fitted domain ends on an unrounded value, which recharts draws as a tick;
+three significant figures keep it inside the axis.
+
+**Parameters**
+
+- `v` — `number` — Tick value.
+
+**Returns**
+
+- `number` — The value, rounded for display.
+
+**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
+
 ### `nearestIdx(arr, f)`
 
 - **Reachability:** INTERNAL
@@ -180,7 +200,7 @@ as the current result.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
-## UNREACHABLE (28)
+## UNREACHABLE (30)
 
 ### `BaseChart(props)`
 
@@ -643,6 +663,47 @@ Interior SPL at each probed chamber's virtual microphone.
 The right measure for in-cabin listening levels, where cabin gain rises
 below the cabin's first mode. Point pressure, so there is no 1 m
 convention here.
+
+**Returns**
+
+- `React.ReactElement` — The chart.
+
+**Side effects**
+
+- Subscribes to the store.
+
+### `probeName(key, probes, nodes)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+The display name of a probe's trace.
+
+A chamber's own probe is keyed by the chamber id and takes its label; any
+other probe by its own id, and takes its label or a description of where
+it sits.
+
+**Parameters**
+
+- `key` — `string` — The result key.
+- `probes` — `Array<object>` — The project's probes.
+- `nodes` — `Array<object>` — Graph nodes.
+
+**Returns**
+
+- `string` — The name.
+
+**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
+
+### `ProbeFlowTab()`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+Flow and velocity at each flow or velocity probe.
+
+Velocity (m/s) on the left axis, volume flow (L/s) on the right, both
+peak, like the port velocity chart.
 
 **Returns**
 

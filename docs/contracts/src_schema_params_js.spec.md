@@ -28,7 +28,7 @@ so this is the vocabulary they assume.
 
 Keys: `parseExpression`
 
-## EXPORTED (6)
+## EXPORTED (7)
 
 ### `isExpression(v)`
 
@@ -129,6 +129,27 @@ Whether a node field is numeric, and so may hold an expression.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
+### `resolveNodeParams(node, values, errors)`
+
+- **Reachability:** EXPORTED
+- **Obtain via:** import { resolveNodeParams } from '../../src/schema/params.js'
+
+Replace the expressions in one node's params with their values.
+
+**Parameters**
+
+- `node` — `object` — A v3 node: `{id, type, params}`.
+- `values` — `Object<string, number>` — Resolved named params.
+- `errors` — `string[]` _(optional)_ — Collects a message for each expression that does not resolve.
+
+**Returns**
+
+- `object` — A copy of the params holding numbers in every numeric field and tap position; `NaN` where an expression failed.
+
+**Mutates**
+
+- errors, when given.
+
 ### `resolveProject(proj)`
 
 - **Reachability:** EXPORTED
@@ -175,7 +196,7 @@ Parse an expression and check it uses only the permitted language.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
-## UNREACHABLE (2)
+## UNREACHABLE (3)
 
 ### `evaluateParams > resolve(name, stack)`
 
@@ -196,6 +217,26 @@ Resolve one parameter, resolving its references first.
 **Mutates**
 
 - the enclosing `values`, `state` and `errors`.
+
+### `resolveNodeParams > num(v, where)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+Resolve one value if it is an expression.
+
+**Parameters**
+
+- `v` — `*` — The stored value.
+- `where` — `string` — Location used in any error message.
+
+**Returns**
+
+- `*` — The number for an expression; anything else unchanged.
+
+**Mutates**
+
+- the enclosing `errors`.
 
 ### `resolveProject > num(v, where)`
 

@@ -1,12 +1,12 @@
 // The bridge between a v3 project file and the editor's working state.
 //
-// The editor still keeps a flat `settings` object for the controls it has
-// today — sweep range, drive level, display options — and keeps a chamber's
-// probe on the chamber node, where its form shows it. The file keeps those in
-// `analyses`, `wiring`, `display` and `probes`. These two functions convert
-// in each direction; everything the editor has no control for yet (named
-// params, further channels, other probes, components) rides along untouched
-// in `extras`, so a project round-trips through the editor without loss.
+// The editor keeps a flat `settings` object for the controls that predate the
+// v3 sections — sweep range, the toolbar's drive level, display options — and
+// keeps a chamber's own probe on the chamber node, where its form shows it.
+// The file keeps those in `analyses`, `wiring`, `display` and `probes`. These
+// two functions convert in each direction; the rest of those sections — named
+// params, every channel, the other probes, components — travel in `extras`,
+// which the Wiring, Project Parameters and Probes panels edit directly.
 
 import { DEFAULT_ANALYSIS, DEFAULT_CHANNEL, DEFAULT_DISPLAY, SCHEMA_VERSION } from './version.js'
 
@@ -32,8 +32,9 @@ const gain = (db) => Math.pow(10, (Number(db) || 0) / 20)
  * Split a v3 project into the editor's working state.
  *
  * `settings.voltage` is the first channel's output at the current master
- * level — the drive the user actually sees. A chamber's first pressure probe
- * becomes its `probe`/`probePos` params; any other probe stays in `extras`.
+ * level — the drive the user actually sees. A chamber's own probe — the one
+ * with id `probe_<chamber id>`, which is what its checkbox writes — becomes its
+ * `probe`/`probePos` params; every other probe stays in `extras`.
  *
  * @param {object} proj - A complete v3 project (see `migrateProject`).
  * @returns {{name: string, nodes: object[], edges: object[], settings: object, extras: object}} Nodes in React Flow's shape (`{id, type, position, data: {params}}`), edges, the flat settings, and everything else.
@@ -49,7 +50,7 @@ export function toEditor(proj) {
   const otherProbes = []
   for (const p of proj.probes || []) {
     const id = p.at?.node
-    if (p.kind === 'pressure' && lengths.has(id) && p.at.position != null && !chamberProbe.has(id) && !p.label) {
+    if (p.id === `probe_${id}` && p.kind === 'pressure' && lengths.has(id) && p.at.position != null && !chamberProbe.has(id)) {
       chamberProbe.set(id, p.at.position)
     } else {
       otherProbes.push(clone(p))
@@ -96,7 +97,8 @@ export function toEditor(proj) {
  *
  * The inverse of `toEditor`: the flat settings land back in the first
  * analysis, the first channel and the display section, and a probed chamber's
- * probe becomes an entry in `probes`.
+ * probe becomes an entry in `probes`. A first-channel voltage or output
+ * resistance written as an expression is kept, not overwritten by its value.
  *
  * @param {object} state - The editor state.
  * @param {string} state.name - Project name.
@@ -131,10 +133,15 @@ export function fromEditor({ name, nodes, edges, settings, extras = {} }) {
   }
   const wiring = clone(extras.wiring || { masterDb: 0, channels: [DEFAULT_CHANNEL] })
   if (!wiring.channels?.length) wiring.channels = [clone(DEFAULT_CHANNEL)]
+  // An expression the user wrote on the first channel stays an expression;
+  // the flat settings only ever hold numbers.
+  const ch0 = wiring.channels[0]
   wiring.channels[0] = {
-    ...wiring.channels[0],
-    volts: Number(s.voltage ?? wiring.channels[0].volts) / gain(wiring.masterDb),
-    outputOhms: Number(s.rg) || 0,
+    ...ch0,
+    volts: typeof ch0.volts === 'string' || !Number.isFinite(Number(s.voltage))
+      ? ch0.volts
+      : Number(s.voltage) / gain(wiring.masterDb),
+    outputOhms: typeof ch0.outputOhms === 'string' ? ch0.outputOhms : Number(s.rg) || 0,
   }
   const display = {
     ...clone(extras.display || {}),

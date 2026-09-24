@@ -128,7 +128,7 @@ Canvas node for a radiation termination: the space it radiates into.
 
 - Subscribes to the store.
 
-## UNREACHABLE (2)
+## UNREACHABLE (4)
 
 ### `useWarnings(id)`
 
@@ -166,5 +166,53 @@ A node's title bar: colour dot, label, and a warning marker when it has warnings
 **Returns**
 
 - `React.ReactElement` — The node header.
+
+**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
+
+### `Port(props)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+A handle, drawn with its label.
+
+Every handle is a `source`: the canvas runs in loose connection mode, so
+any handle joins any other and the join has no direction.
+
+**Parameters**
+
+- `props` — `object` — Component props.
+- `props.id` — `string` — Handle id.
+- `props.side` — `string` — `top`, `bottom`, `left` or `right`.
+- `props.at` — `string` _(optional)_ — Offset along that side, as CSS (e.g. `35%`).
+- `props.label` — `string` — Text drawn beside it.
+- `props.title` — `string` _(optional)_ — Tooltip.
+
+**Returns**
+
+- `React.ReactElement` — The handle and its label.
+
+**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
+
+### `TapPorts(props)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+Handles for a chamber's or waveguide's taps, along its right-hand side.
+
+Each sits at its position's share of the length, so the node reads as a
+map of the line; a tap outside the length is pinned to the nearer end and
+flagged by the node's warning.
+
+**Parameters**
+
+- `props` — `object` — Component props.
+- `props.taps` — `Array<{id: string, position: number}>` — Resolved taps.
+- `props.length` — `number` — Resolved length, cm.
+
+**Returns**
+
+- `React.ReactElement` — The handles.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.

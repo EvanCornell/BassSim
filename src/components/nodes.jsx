@@ -2,6 +2,8 @@ import React from 'react'
 import { Handle, Position } from 'reactflow'
 import { useStore } from '../store'
 import { C_AIR, flareCutoff, endCorrectionLength, waveguideVolume } from '../engine/geometry'
+import { useResolvedParams } from '../useResolved'
+import { driverNominal } from '../schema/nominal'
 
 /**
  * Accent colour per node type, shared by the canvas nodes and the minimap.
@@ -46,6 +48,63 @@ function Head({ type, label, warn }) {
 }
 
 /**
+ * A handle, drawn with its label.
+ *
+ * Every handle is a `source`: the canvas runs in loose connection mode, so
+ * any handle joins any other and the join has no direction.
+ *
+ * @param {object} props - Component props.
+ * @param {string} props.id - Handle id.
+ * @param {string} props.side - `top`, `bottom`, `left` or `right`.
+ * @param {string} [props.at] - Offset along that side, as CSS (e.g. `35%`).
+ * @param {string} props.label - Text drawn beside it.
+ * @param {string} [props.title] - Tooltip.
+ * @returns {React.ReactElement} The handle and its label.
+ * @pure
+ */
+function Port({ id, side, at, label, title }) {
+  const position = { top: Position.Top, bottom: Position.Bottom, left: Position.Left, right: Position.Right }[side]
+  const along = side === 'top' || side === 'bottom' ? { left: at || '50%' } : { top: at || '50%' }
+  const labelPos = {
+    top: { top: 1, left: `calc(${at || '50%'} + 6px)` },
+    bottom: { bottom: 1, left: `calc(${at || '50%'} + 6px)` },
+    left: { left: 4, top: `calc(${at || '50%'} - 17px)` },
+    right: { right: 4, top: `calc(${at || '50%'} - 17px)` },
+  }[side]
+  return (
+    <>
+      <Handle type="source" position={position} id={id} style={along} title={title || label} />
+      <span className="handle-label" style={labelPos}>{label}</span>
+    </>
+  )
+}
+
+/**
+ * Handles for a chamber's or waveguide's taps, along its right-hand side.
+ *
+ * Each sits at its position's share of the length, so the node reads as a
+ * map of the line; a tap outside the length is pinned to the nearer end and
+ * flagged by the node's warning.
+ *
+ * @param {object} props - Component props.
+ * @param {Array<{id: string, position: number}>} props.taps - Resolved taps.
+ * @param {number} props.length - Resolved length, cm.
+ * @returns {React.ReactElement} The handles.
+ * @pure
+ */
+function TapPorts({ taps, length }) {
+  return (
+    <>
+      {(taps || []).map((t) => {
+        const f = Math.min(Math.max(Number(t.position) / Number(length), 0), 1)
+        const at = `${(12 + f * 76).toFixed(1)}%`
+        return <Port key={t.id} id={`tap:${t.id}`} side="right" at={at} label={t.id} title={`Tap ${t.id} at ${t.position} cm`} />
+      })}
+    </>
+  )
+}
+
+/**
  * Canvas node for a driver: T/S summary, array count, and front/rear ports.
  *
  * @param {object} props - React Flow node props.
@@ -57,19 +116,22 @@ function Head({ type, label, warn }) {
  */
 export function DriverNode({ id, data, selected }) {
   const warn = useWarnings(id)
-  const p = data.params
+  const p = useResolvedParams(id, 'driver', data.params)
+  const nominal = driverNominal(p)
   return (
     <div className={`acou-node ${selected ? 'selected' : ''}`}>
       <Head type="driver" label={p.label || 'Driver'} warn={warn} />
       <div className="node-body">
         Fs <span className="node-readout">{p.Fs} Hz</span> · Qts <span className="node-readout">{p.Qts}</span><br />
         Sd <span className="node-readout">{p.Sd} cm²</span>
-        {p.count > 1 && <> · <span className="node-readout">{p.count}× {p.wiring}</span></>}
+        {p.count > 1 && <> · <span className="node-readout">{p.count}× {p.wiring}</span></>}<br />
+        <span title="Nominal impedance at the node's terminals, from its coil resistance, dual voice coil option and array wiring">
+          <span className="node-readout">{nominal >= 1 ? nominal.toFixed(0) : nominal.toFixed(2)} Ω</span> nominal
+        </span>
+        {p.dvc?.coils && <> · DVC {p.dvc.coils}</>}
       </div>
-      <Handle type="source" position={Position.Right} id="front" style={{ top: '35%' }} title="Front acoustic output" />
-      <Handle type="source" position={Position.Left} id="rear" style={{ top: '35%' }} title="Rear acoustic output" />
-      <span className="handle-label" style={{ right: 4, top: 'calc(35% - 17px)' }}>front</span>
-      <span className="handle-label" style={{ left: 4, top: 'calc(35% - 17px)' }}>rear</span>
+      <Port id="front" side="right" at="35%" label="front" title="Front face — unconnected, it radiates as if in an infinite baffle" />
+      <Port id="rear" side="left" at="35%" label="rear" title="Rear face — unconnected, it radiates behind the baffle" />
     </div>
   )
 }
@@ -86,7 +148,7 @@ export function DriverNode({ id, data, selected }) {
  */
 export function ChamberNode({ id, data, selected }) {
   const warn = useWarnings(id)
-  const p = data.params
+  const p = useResolvedParams(id, 'chamber', data.params)
   const fRes = C_AIR / (2 * (p.length / 100)) // first λ/2 standing wave
   return (
     <div className={`acou-node ${selected ? 'selected' : ''}`}>
@@ -95,10 +157,9 @@ export function ChamberNode({ id, data, selected }) {
         <span className="node-readout">{p.volume} L</span> · L {p.length} cm<br />
         1st mode <span className="node-readout">{fRes.toFixed(0)} Hz</span> · {Number(p.leakQL) > 0 ? `QL ${p.leakQL}` : 'sealed'}
       </div>
-      <Handle type="target" position={Position.Top} id="in" title="Inlet (toward driver)" />
-      <Handle type="source" position={Position.Bottom} id="out" title="Outlet (toward load) — leave open for sealed" />
-      <span className="handle-label" style={{ top: 1, left: '54%' }}>in</span>
-      <span className="handle-label" style={{ bottom: 1, left: '54%' }}>out</span>
+      <Port id="in" side="top" label="in" title="One end — anything may join it; unconnected, it is a closed wall" />
+      <Port id="out" side="bottom" label="out" title="The other end — anything may join it; unconnected, it is a closed wall" />
+      <TapPorts taps={p.taps} length={p.length} />
     </div>
   )
 }
@@ -124,7 +185,7 @@ export function WaveguideNode({ id, data, selected }) {
     const v = s.results?.velocity?.[id]
     return v && v.length ? Math.max(...v) : null
   })
-  const p = data.params
+  const p = useResolvedParams(id, 'waveguide', data.params)
   const L = p.length / 100
   const S2 = p.S2 * 1e-4
   const isStraight = Math.abs(p.S1 - p.S2) < 0.001 * Math.max(p.S1, p.S2, 1)
@@ -155,10 +216,9 @@ export function WaveguideNode({ id, data, selected }) {
           ⇥ {vmax != null ? vmax.toFixed(1) : '—'} m/s
         </span>
       </div>
-      <Handle type="target" position={Position.Top} id="throat" title="Throat (S1)" />
-      <Handle type="source" position={Position.Bottom} id="mouth" title="Mouth (S2) — unconnected = OPEN end (radiates). For a closed end, connect a Radiation node set to Rigid wall." />
-      <span className="handle-label" style={{ top: 1, left: '54%' }}>throat</span>
-      <span className="handle-label" style={{ bottom: 1, left: '54%' }}>mouth</span>
+      <Port id="throat" side="top" label="throat" title={`Throat (S1) — unconnected, it ${p.throatSpace === 'rigid' ? 'is plugged' : 'radiates'}`} />
+      <Port id="mouth" side="bottom" label="mouth" title={`Mouth (S2) — unconnected, it ${p.mouthSpace === 'rigid' ? 'is plugged' : 'radiates'}`} />
+      <TapPorts taps={p.taps} length={p.length} />
     </div>
   )
 }
@@ -175,7 +235,7 @@ export function WaveguideNode({ id, data, selected }) {
  */
 export function PRNode({ id, data, selected }) {
   const warn = useWarnings(id)
-  const p = data.params
+  const p = useResolvedParams(id, 'pr', data.params)
   const m = (p.Mmd + (p.addedMass || 0)) / 1000
   const c = p.Cms / 1000
   const fs = 1 / (2 * Math.PI * Math.sqrt(Math.max(m * c, 1e-12)))
@@ -186,10 +246,8 @@ export function PRNode({ id, data, selected }) {
         Sd {p.Sd} cm² · M {p.Mmd}{p.addedMass ? `+${p.addedMass}` : ''} g<br />
         Fs <span className="node-readout">{fs.toFixed(1)} Hz</span>{p.count > 1 && <> · <span className="node-readout">{p.count}×</span></>}
       </div>
-      <Handle type="target" position={Position.Top} id="rear" title="Rear face — mounts to a chamber" />
-      <Handle type="source" position={Position.Bottom} id="front" title="Front face — unconnected, it radiates as if in an infinite baffle" />
-      <span className="handle-label" style={{ top: 1, left: '54%' }}>rear</span>
-      <span className="handle-label" style={{ bottom: 1, left: '54%' }}>front</span>
+      <Port id="rear" side="top" label="rear" title="Rear face — unconnected, it radiates behind the baffle" />
+      <Port id="front" side="bottom" label="front" title="Front face — unconnected, it radiates as if in an infinite baffle" />
     </div>
   )
 }
@@ -216,7 +274,7 @@ export function RadiationNode({ id, data, selected }) {
     <div className={`acou-node ${selected ? 'selected' : ''}`}>
       <Head type="radiation" label={p.label || 'Radiation'} warn={warn} />
       <div className="node-body">{SPACE_LABELS[p.space] || p.space}</div>
-      <Handle type="target" position={Position.Top} id="in" title="Acoustic input" />
+      <Handle type="source" position={Position.Top} id="in" title="One shared opening — everything joined here radiates together" />
     </div>
   )
 }

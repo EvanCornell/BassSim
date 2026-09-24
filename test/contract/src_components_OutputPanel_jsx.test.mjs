@@ -14,8 +14,8 @@ import { chartPanelComponent, CHART_PANELS, __internals } from '../../src/compon
 // ---------------------------------------------------------------------------
 
 // CONTRACT (Exported constants): "`CHART_PANELS` — Chart id to component."
-// "Keys: `spl`, `zin`, `exc`, `vel`, `int`, `pow`, `eff`, `pe`, `ph`"
-const CHART_IDS = ['spl', 'zin', 'exc', 'vel', 'int', 'pow', 'eff', 'pe', 'ph']
+// "Keys: `spl`, `zin`, `exc`, `vel`, `int`, `pfl`, `pow`, `eff`, `pe`, `ph`"
+const CHART_IDS = ['spl', 'zin', 'exc', 'vel', 'int', 'pfl', 'pow', 'eff', 'pe', 'ph']
 
 test('chartPanelComponent: CHART_PANELS publishes exactly the documented chart ids', () => {
   assert.deepStrictEqual(Object.keys(CHART_PANELS).sort(), [...CHART_IDS].sort())
@@ -358,4 +358,13 @@ test('snapLines: @pure — twice-equal results and unmodified arguments', () => 
   const b = __internals.snapLines(structuredClone(before), 'splCombined')
   assert.deepStrictEqual(a, b)
   assert.deepStrictEqual(snaps, before)
+})
+
+// CONTRACT (yTick): "three significant figures keep it inside the axis".
+test('yTick: rounds a fitted domain end for display', () => {
+  const { yTick } = __internals
+  assert.equal(yTick(12.219445), 12.2)
+  assert.equal(yTick(41.077856), 41.1)
+  assert.equal(yTick(123.7), 124)
+  assert.equal(yTick(0), 0)
 })

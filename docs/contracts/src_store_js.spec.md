@@ -192,7 +192,7 @@ around the canvas does not re-run the sweep.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
-## STORE ACTION (108)
+## STORE ACTION (113)
 
 ### `openContextMenu(x, y, target)`
 
@@ -900,7 +900,7 @@ Add an edge from a completed port-to-port drag.
 
 **Side effects**
 
-- Records history, writes store state and schedules a resimulation.
+- Records history, writes store state and schedules a resimulation. Does nothing when the same two handles are already joined, in either order.
 
 ### `setSelected(id)`
 
@@ -1135,6 +1135,8 @@ Delete the selected nodes and edges.
 
 Edges attached to a deleted node go with it, whether or not they were
 themselves selected — leaving a dangling edge would corrupt the graph.
+So do the deleted drivers' places in the wiring and any probes on the
+deleted nodes.
 
 **Returns**
 
@@ -1383,6 +1385,117 @@ derived: it is the field the user typed in that stays exactly as typed.
 **Side effects**
 
 - Writes store state and schedules a resimulation.
+
+### `_setExtras(extras)`
+
+- **Reachability:** STORE ACTION
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState()._setExtras(…)
+
+Install new extra project sections, keeping the flat drive settings in step.
+
+The toolbar and keyboard show the first channel's output at the master
+level; whenever the wiring changes, that figure is re-derived from it.
+
+**Parameters**
+
+- `extras` — `object` — The new extras.
+
+**Returns**
+
+- `void`
+
+**Side effects**
+
+- Writes store state. Does not resimulate; callers do.
+
+### `setExtra(key, value, undoable)`
+
+- **Reachability:** STORE ACTION
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().setExtra(…)
+
+Replace one extra project section — `wiring`, `params`, `probes`.
+
+Structural edits are undoable. Value edits typed a keystroke at a time
+pass `undoable: false`, as node parameter edits do, so one typed number
+is not twenty undo steps.
+
+**Parameters**
+
+- `key` — `string` — The section.
+- `value` — `*` — Its new content.
+- `undoable` — `boolean` _(optional, default `true`)_ — Record a history entry first.
+
+**Returns**
+
+- `void`
+
+**Side effects**
+
+- Records history when undoable, writes store state and schedules a resimulation.
+
+### `setTaps(id, taps)`
+
+- **Reachability:** STORE ACTION
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().setTaps(…)
+
+Replace a chamber's or waveguide's taps, removing edges to taps that are gone.
+
+**Parameters**
+
+- `id` — `string` — Node id.
+- `taps` — `Array<{id: string, position: number|string}>` — The new list.
+
+**Returns**
+
+- `void`
+
+**Side effects**
+
+- Records history, writes store state and schedules a resimulation.
+
+### `insertThroatChamber(driverId, face)`
+
+- **Reachability:** STORE ACTION
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().insertThroatChamber(…)
+
+Put a chamber between a driver face and the smaller opening it meets.
+
+What the throat-chamber warning offers: the new chamber takes over the
+face's joins, sized by default to the cone area times 3 cm of depth,
+placed between the two clear of other nodes, and left selected to be
+refined — by hand or with the calculator.
+
+**Parameters**
+
+- `driverId` — `string` — The driver node.
+- `face` — `'front'|'rear'` — The face that meets the small opening.
+
+**Returns**
+
+- `string|null` — The new chamber's id, or `null` when the face has nothing joined to it.
+
+**Side effects**
+
+- Records history, writes store state and schedules a resimulation.
+
+### `addProbe(probe)`
+
+- **Reachability:** STORE ACTION
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().addProbe(…)
+
+Add a probe, with a fresh id.
+
+**Parameters**
+
+- `probe` — `object` — `{kind, at, label?}`.
+
+**Returns**
+
+- `string` — The new probe's id.
+
+**Side effects**
+
+- Records history, writes store state and schedules a resimulation.
 
 ### `takeSnapshot()`
 
@@ -2557,7 +2670,7 @@ The full shared slice, sent to a popped-out tab when it announces itself.
 
 - Current store state.
 
-## UNREACHABLE (11)
+## UNREACHABLE (12)
 
 ### `simulateInWorker(project, engine)`
 
@@ -2782,6 +2895,26 @@ is showing.
 **Reads external mutable state**
 
 - The module-level `applyingRemote` and `muted` flags.
+
+### `setTaps > gone(node, handle)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+Whether an edge end is a tap on this node that no longer exists.
+
+**Parameters**
+
+- `node` — `string` — Node id at that end.
+- `handle` — `string` — Handle at that end.
+
+**Returns**
+
+- `boolean` — True when the end has lost its tap.
+
+**Reads external mutable state**
+
+- the enclosing node id and live tap set.
 
 ### `channel.onmessage(event)`
 

@@ -40,16 +40,17 @@ Compile one line into the netlist.
 - `spec.lumped` — `boolean` — Collapse the whole line to one node and a compliance.
 - `spec.volume` — `number` — Air volume, m³, for the lumped form.
 - `spec.points` — `number[]` — Distances, m, where nodes are needed (taps and probes).
+- `spec.flowPoints` — `number[]` _(optional)_ — Distances, m, strictly inside the line, where the flow along it is to be read.
 
 **Returns**
 
-- `{start: string, end: string, at: Function}` — The end nodes, and `at(x)` → the node at one of `points`.
+- `{start: string, end: string, at: Function, flowAt: Function}` — The end nodes; `at(x)` → the node at one of `points`; `flowAt(x)` → the sense source carrying the flow past one of `flowPoints`, toward the end, or `null` where there is none.
 
 **Mutates**
 
 - ctx.nl.
 
-## UNREACHABLE (3)
+## UNREACHABLE (6)
 
 ### `compileLine > at()`
 
@@ -65,6 +66,36 @@ The one node of a lumped chamber, wherever along it is asked for.
 **Reads external mutable state**
 
 - the enclosing node.
+
+### `compileLine > flowAt()`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+A lumped chamber has no flow along it.
+
+**Returns**
+
+- `null` — Always.
+
+**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
+
+### `compileLine > clamp(x)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+Clamp a distance onto the line.
+
+**Parameters**
+
+- `x` — `number` — Distance, m.
+
+**Returns**
+
+- `number` — The distance within [0, L].
+
+**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
 ### `compileLine > addShunt(node, len, S)`
 
@@ -105,3 +136,22 @@ The node at one of the requested points.
 **Reads external mutable state**
 
 - the breakpoint map.
+
+### `compileLine > flowAt(x)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+The sense source carrying the flow past a point, toward the end.
+
+**Parameters**
+
+- `x` — `number` — Distance from the start, m — one of `spec.flowPoints`.
+
+**Returns**
+
+- `string|null` — The source name, or `null` for a point that was not cut.
+
+**Reads external mutable state**
+
+- the flow-sense map.

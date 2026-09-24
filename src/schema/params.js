@@ -199,6 +199,41 @@ export function isNumericField(type, field) {
 }
 
 /**
+ * Replace the expressions in one node's params with their values.
+ *
+ * @param {object} node - A v3 node: `{id, type, params}`.
+ * @param {Object<string, number>} values - Resolved named params.
+ * @param {string[]} [errors] - Collects a message for each expression that does not resolve.
+ * @returns {object} A copy of the params holding numbers in every numeric field and tap position; `NaN` where an expression failed.
+ * @mutates errors, when given.
+ */
+export function resolveNodeParams(node, values, errors = []) {
+  const name = node.params?.label || node.id
+  /**
+   * Resolve one value if it is an expression.
+   *
+   * @param {*} v - The stored value.
+   * @param {string} where - Location used in any error message.
+   * @returns {*} The number for an expression; anything else unchanged.
+   * @mutates the enclosing `errors`.
+   */
+  const num = (v, where) => {
+    if (!isExpression(v)) return v
+    const r = evaluateExpression(v, values)
+    if (r.error) errors.push(`${where}: ${r.error}`)
+    return r.value
+  }
+  const params = { ...node.params }
+  for (const [k, v] of Object.entries(params)) {
+    if (isNumericField(node.type, k)) params[k] = num(v, `${name} › ${k}`)
+  }
+  if (Array.isArray(params.taps)) {
+    params.taps = params.taps.map((t) => ({ ...t, position: num(t.position, `${name} › tap ${t.id}`) }))
+  }
+  return params
+}
+
+/**
  * Replace every expression in a project with its value.
  *
  * Covers node params, tap positions, the master level, channel volts and
@@ -228,16 +263,7 @@ export function resolveProject(proj) {
     if (r.error) errors.push(`${where}: ${r.error}`)
     return r.value
   }
-  const nodes = (proj.nodes || []).map((n) => {
-    const params = { ...n.params }
-    for (const [k, v] of Object.entries(params)) {
-      if (isNumericField(n.type, k)) params[k] = num(v, `${n.params?.label || n.id} › ${k}`)
-    }
-    if (Array.isArray(params.taps)) {
-      params.taps = params.taps.map((t) => ({ ...t, position: num(t.position, `${n.params?.label || n.id} › tap ${t.id}`) }))
-    }
-    return { ...n, params }
-  })
+  const nodes = (proj.nodes || []).map((n) => ({ ...n, params: resolveNodeParams(n, values, errors) }))
   const w = proj.wiring || { masterDb: 0, channels: [] }
   const wiring = {
     ...w,

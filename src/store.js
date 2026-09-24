@@ -29,6 +29,7 @@ import { applyNodeChanges, applyEdgeChanges, addEdge } from 'reactflow'
 import { SCHEMA_VERSION, DEFAULT_PARAMS } from './schema/version'
 import { migrateProject } from './schema/migrate'
 import { toEditor, fromEditor } from './schema/editor'
+import { pruneExtras, driveOf, masterForVoltage, freshId } from './schema/extras'
 import { ENGINES, DEFAULT_ENGINE } from './engine/pipeline'
 import * as L from './layout'
 import * as D from './driverParams'
@@ -491,9 +492,9 @@ export const useStore = create((rawSet, get) => {
     vThreshold: 17, masking: false, unwrapPhase: true, delayOffset: 0,
     nlEnabled: false,
   },
-  // The v3 sections the editor has no controls for yet — named params, the
-  // full wiring, analyses beyond the first, probes, components, air. Carried
-  // so a project round-trips intact; see src/schema/editor.js.
+  // The v3 sections outside the node graph — named params, the wiring,
+  // analyses, probes, components, air. Edited through `setExtra`; see
+  // src/schema/editor.js for how they meet the flat `settings`.
   projectExtras: defaultExtras(),
   // Which engine simulates: a preference of this browser, not of the project.
   engine: loadEngine(),
@@ -912,8 +913,8 @@ export const useStore = create((rawSet, get) => {
    * @sideEffect Writes store state. The history is capped at 80 entries, oldest discarded.
    */
   pushHistory: () => {
-    const { nodes, edges, history } = get()
-    const snap = { nodes: JSON.parse(JSON.stringify(nodes)), edges: JSON.parse(JSON.stringify(edges)) }
+    const { nodes, edges, history, projectExtras } = get()
+    const snap = JSON.parse(JSON.stringify({ nodes, edges, projectExtras }))
     // slice to one *below* the limit: the new entry is about to take the last
     // slot, so trimming to the limit first would leave 81.
     set({ history: [...history.slice(-(HISTORY_LIMIT - 1)), snap], future: [] })
@@ -925,14 +926,15 @@ export const useStore = create((rawSet, get) => {
    * @sideEffect Writes store state and schedules a resimulation. Does nothing when the history is empty.
    */
   undo: () => {
-    const { history, future, nodes, edges } = get()
+    const { history, future, nodes, edges, projectExtras } = get()
     if (!history.length) return
     const prev = history[history.length - 1]
     set({
       nodes: prev.nodes, edges: prev.edges,
       history: history.slice(0, -1),
-      future: [...future, { nodes, edges }],
+      future: [...future, { nodes, edges, projectExtras }],
     })
+    if (prev.projectExtras) get()._setExtras(prev.projectExtras)
     get().scheduleCompute()
   },
   /**
@@ -942,14 +944,15 @@ export const useStore = create((rawSet, get) => {
    * @sideEffect Writes store state and schedules a resimulation. Does nothing when the redo stack is empty.
    */
   redo: () => {
-    const { history, future, nodes, edges } = get()
+    const { history, future, nodes, edges, projectExtras } = get()
     if (!future.length) return
     const next = future[future.length - 1]
     set({
       nodes: next.nodes, edges: next.edges,
       future: future.slice(0, -1),
-      history: [...history, { nodes, edges }],
+      history: [...history, { nodes, edges, projectExtras }],
     })
+    if (next.projectExtras) get()._setExtras(next.projectExtras)
     get().scheduleCompute()
   },
 
@@ -990,9 +993,15 @@ export const useStore = create((rawSet, get) => {
    *
    * @param {object} conn - React Flow connection: source, sourceHandle, target, targetHandle.
    * @returns {void}
-   * @sideEffect Records history, writes store state and schedules a resimulation.
+   * @sideEffect Records history, writes store state and schedules a resimulation. Does nothing when the same two handles are already joined, in either order.
    */
   onConnect: (conn) => {
+    // Connections have no direction, so a join already made the other way
+    // round is the same join.
+    const same = get().edges.some((e) =>
+      (e.source === conn.source && e.sourceHandle === conn.sourceHandle && e.target === conn.target && e.targetHandle === conn.targetHandle)
+      || (e.source === conn.target && e.sourceHandle === conn.targetHandle && e.target === conn.source && e.targetHandle === conn.sourceHandle))
+    if (same) return
     get().pushHistory()
     set({ edges: addEdge({ ...conn, type: 'default' }, get().edges) })
     get().scheduleCompute()
@@ -1218,6 +1227,8 @@ export const useStore = create((rawSet, get) => {
    *
    * Edges attached to a deleted node go with it, whether or not they were
    * themselves selected — leaving a dangling edge would corrupt the graph.
+   * So do the deleted drivers' places in the wiring and any probes on the
+   * deleted nodes.
    *
    * @returns {void}
    * @sideEffect Records history, writes store state and schedules a resimulation. Does nothing when the selection is empty.
@@ -1228,11 +1239,13 @@ export const useStore = create((rawSet, get) => {
     const selEdges = edges.filter((e) => e.selected).map((e) => e.id)
     if (!selNodes.length && !selEdges.length) return
     get().pushHistory()
+    const kept = nodes.filter((n) => !n.selected)
     set({
-      nodes: nodes.filter((n) => !n.selected),
+      nodes: kept,
       edges: edges.filter((e) => !e.selected && !selNodes.includes(e.source) && !selNodes.includes(e.target)),
       selectedNodeId: null,
     })
+    if (selNodes.length) get()._setExtras(pruneExtras(get().projectExtras, kept.map((n) => n.id)))
     get().scheduleCompute()
   },
 
@@ -1459,6 +1472,13 @@ export const useStore = create((rawSet, get) => {
    */
   updateSettings: (patch) => {
     set({ settings: { ...get().settings, ...patch } })
+    if ('rg' in patch) {
+      const w = get().projectExtras.wiring
+      const ch = w?.channels?.[0]
+      if (ch && typeof ch.outputOhms !== 'string') {
+        get()._setExtras({ ...get().projectExtras, wiring: { ...w, channels: [{ ...ch, outputOhms: Number(patch.rg) || 0 }, ...w.channels.slice(1)] } })
+      }
+    }
     get().scheduleCompute()
   },
   /**
@@ -1479,8 +1499,128 @@ export const useStore = create((rawSet, get) => {
     if (field === 'voltage') s.power = (value * value) / s.impedance
     else if (field === 'impedance') s.power = (s.voltage * s.voltage) / value
     else if (field === 'power') s.voltage = Math.sqrt(value * s.impedance)
-    set({ settings: s })
+    // The typed figure stays exactly as typed; the master moves to match it.
+    const ex = get().projectExtras
+    set(field === 'impedance' ? { settings: s } : { settings: s, projectExtras: { ...ex, wiring: masterForVoltage(ex.wiring, ex.params, s.voltage) } })
     get().scheduleCompute()
+  },
+
+  // ---- project sections beyond the graph ----
+  /**
+   * Install new extra project sections, keeping the flat drive settings in step.
+   *
+   * The toolbar and keyboard show the first channel's output at the master
+   * level; whenever the wiring changes, that figure is re-derived from it.
+   *
+   * @param {object} extras - The new extras.
+   * @returns {void}
+   * @sideEffect Writes store state. Does not resimulate; callers do.
+   */
+  _setExtras: (extras) => {
+    const { voltage, rg } = driveOf(extras.wiring, extras.params)
+    const s = get().settings
+    const settings = Number.isFinite(voltage)
+      ? { ...s, voltage, rg, power: (voltage * voltage) / (s.impedance || 4) }
+      : s
+    set({ projectExtras: extras, settings })
+  },
+  /**
+   * Replace one extra project section — `wiring`, `params`, `probes`.
+   *
+   * Structural edits are undoable. Value edits typed a keystroke at a time
+   * pass `undoable: false`, as node parameter edits do, so one typed number
+   * is not twenty undo steps.
+   *
+   * @param {string} key - The section.
+   * @param {*} value - Its new content.
+   * @param {boolean} [undoable=true] - Record a history entry first.
+   * @returns {void}
+   * @sideEffect Records history when undoable, writes store state and schedules a resimulation.
+   */
+  setExtra: (key, value, undoable = true) => {
+    if (undoable) get().pushHistory()
+    get()._setExtras({ ...get().projectExtras, [key]: value })
+    get().scheduleCompute()
+  },
+  /**
+   * Replace a chamber's or waveguide's taps, removing edges to taps that are gone.
+   *
+   * @param {string} id - Node id.
+   * @param {Array<{id: string, position: number|string}>} taps - The new list.
+   * @returns {void}
+   * @sideEffect Records history, writes store state and schedules a resimulation.
+   */
+  setTaps: (id, taps) => {
+    get().pushHistory()
+    const live = new Set(taps.map((t) => `tap:${t.id}`))
+    /**
+     * Whether an edge end is a tap on this node that no longer exists.
+     *
+     * @param {string} node - Node id at that end.
+     * @param {string} handle - Handle at that end.
+     * @returns {boolean} True when the end has lost its tap.
+     * @reads the enclosing node id and live tap set.
+     */
+    const gone = (node, handle) => node === id && handle?.startsWith('tap:') && !live.has(handle)
+    set({
+      nodes: get().nodes.map((n) => (n.id === id ? { ...n, data: { ...n.data, params: { ...n.data.params, taps } } } : n)),
+      edges: get().edges.filter((e) => !gone(e.source, e.sourceHandle) && !gone(e.target, e.targetHandle)),
+    })
+    get().scheduleCompute()
+  },
+  /**
+   * Put a chamber between a driver face and the smaller opening it meets.
+   *
+   * What the throat-chamber warning offers: the new chamber takes over the
+   * face's joins, sized by default to the cone area times 3 cm of depth,
+   * placed between the two clear of other nodes, and left selected to be
+   * refined — by hand or with the calculator.
+   *
+   * @param {string} driverId - The driver node.
+   * @param {'front'|'rear'} face - The face that meets the small opening.
+   * @returns {string|null} The new chamber's id, or `null` when the face has nothing joined to it.
+   * @sideEffect Records history, writes store state and schedules a resimulation.
+   */
+  insertThroatChamber: (driverId, face) => {
+    const { nodes, edges } = get()
+    const drv = nodes.find((n) => n.id === driverId)
+    const joined = edges.filter((e) => (e.source === driverId && e.sourceHandle === face) || (e.target === driverId && e.targetHandle === face))
+    if (!drv || !joined.length) return null
+    get().pushHistory()
+    const id = nextId('chamber')
+    const p = drv.data.params
+    const sd = (Number(p.Sd) || 500) * Math.max(1, Number(p.count) || 1)
+    const params = { ...JSON.parse(JSON.stringify(DEFAULT_PARAMS.chamber)), label: 'Throat chamber', volume: Math.round(sd * 3) / 1000, length: 5 }
+    // Halfway to what the face met, nudged clear of anything already there.
+    const far = nodes.find((n) => n.id === (joined[0].source === driverId ? joined[0].target : joined[0].source))
+    const mid = far ? { x: (drv.position.x + far.position.x) / 2, y: (drv.position.y + far.position.y) / 2 + 120 } : { x: drv.position.x + 220, y: drv.position.y + 120 }
+    const position = freeSpotNear(mid, nodes, 120)
+    const rewired = edges.map((e) => {
+      if (!joined.includes(e)) return e
+      return e.source === driverId
+        ? { ...e, id: `e_${id}_${e.target}`, source: id, sourceHandle: 'out' }
+        : { ...e, id: `e_${e.source}_${id}`, target: id, targetHandle: 'out' }
+    })
+    set({
+      nodes: [...nodes.map((n) => ({ ...n, selected: false })), { id, type: 'chamber', position, data: { params }, selected: true }],
+      edges: [...rewired, { id: `e_${driverId}_${id}`, source: driverId, sourceHandle: face, target: id, targetHandle: 'in' }],
+      selectedNodeId: id,
+    })
+    get().scheduleCompute()
+    return id
+  },
+  /**
+   * Add a probe, with a fresh id.
+   *
+   * @param {object} probe - `{kind, at, label?}`.
+   * @returns {string} The new probe's id.
+   * @sideEffect Records history, writes store state and schedules a resimulation.
+   */
+  addProbe: (probe) => {
+    const probes = get().projectExtras.probes || []
+    const id = freshId('probe', probes.map((p) => p.id))
+    get().setExtra('probes', [...probes, { id, ...probe }])
+    return id
   },
 
   // ---- snapshots (compare mode) ----

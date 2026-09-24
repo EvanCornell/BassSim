@@ -1,6 +1,7 @@
 // A resolved v3 project → a SPICE netlist, plus a map of what its outputs mean.
 
 import { createNetlist } from './netlist.js'
+import { PROBE_KINDS } from '../schema/version.js'
 import { buildNets } from './nets.js'
 import { fitBand } from './networks.js'
 import { compileWiring } from './wiring.js'
@@ -42,12 +43,17 @@ export function compileProject(proj, analysis) {
     fmax: analysis.fmax,
     masking: !!analysis.masking,
     probes: [],
-    map: { channels: [], drivers: [], waveguides: [], radiators: [], probes: [] },
+    endFlowProbes: [],
+    map: { channels: [], drivers: [], waveguides: [], radiators: [], probes: [], flowProbes: [], handleFlows: {} },
   }
+  const handleProbes = []
   for (const p of proj.probes || []) {
-    if (p.kind !== 'pressure') throw new Error(`Probe ${p.label || p.id}: only pressure probes are supported by the SPICE engine so far`)
+    if (!PROBE_KINDS.includes(p.kind)) throw new Error(`Probe ${p.label || p.id}: unknown kind "${p.kind}"`)
     if (p.at?.position != null) ctx.probes.push(p)
-    else if (p.at?.handle) ctx.map.probes.push({ key: p.id, node: nets.netOf(p.at.node, p.at.handle) })
+    else if (p.at?.handle && nets.netOf(p.at.node, p.at.handle)) {
+      if (p.kind === 'pressure') ctx.map.probes.push({ key: p.id, node: nets.netOf(p.at.node, p.at.handle) })
+      else handleProbes.push(p)
+    }
   }
   nl.lines.push('.options rshunt=1e12')
   const terms = compileWiring(ctx, proj)
@@ -58,6 +64,13 @@ export function compileProject(proj, analysis) {
     else if (node.type === 'pr') compilePR(ctx, node)
     else if (node.type === 'radiation') compileRadiation(ctx, node)
   }
+  // Flow through a handle is known only once every element has placed its
+  // sense sources. A handle with nothing through it — a closed end, an
+  // unconnected tap — has no flow, and reads as silence.
+  for (const p of [...handleProbes, ...ctx.endFlowProbes]) {
+    const f = ctx.map.handleFlows[`${p.at.node}:${p.at.handle}`]
+    ctx.map.flowProbes.push(f ? { key: p.id, kind: p.kind, ...f } : { key: p.id, kind: p.kind, sense: null })
+  }
   const m = ctx.map
   const saves = [
     ...m.channels.flatMap((c) => [`i(${c.sense})`, `v(${c.load})`]),
@@ -65,6 +78,7 @@ export function compileProject(proj, analysis) {
     ...m.waveguides.flatMap((w) => Object.values(w.ends).map((e) => `i(${e.sense})`)),
     ...m.radiators.flatMap((r) => [`i(${r.sense})`, `v(${r.node})`]),
     ...m.probes.map((p) => `v(${p.node})`),
+    ...m.flowProbes.filter((p) => p.sense).map((p) => `i(${p.sense})`),
   ].map((s) => s.toLowerCase())
   const unique = [...new Set(saves)]
   nl.lines.push(`.save ${unique.join(' ')}`)

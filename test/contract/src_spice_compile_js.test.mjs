@@ -7,6 +7,7 @@ import assert from 'node:assert/strict'
 import { compileProject, pointsPerDecade } from '../../src/spice/compile.js'
 import { compileLine } from '../../src/spice/line.js'
 import { applyDvc } from '../../src/spice/elements.js'
+import { filterSections, sectionsResponse } from '../../src/spice/filters.js'
 import { createNetlist, DC_TIE } from '../../src/spice/netlist.js'
 import { fitBand } from '../../src/spice/networks.js'
 import { runNetlist } from '../../src/spice/run.js'
@@ -330,14 +331,117 @@ test('wiring: channel polarity inverts phase only', async () => {
   }
 })
 
-// CONTRACT (compileWiring): "@throws Error When a channel uses a DSP filter,
-// which this compiler cannot yet build."
-test('wiring: a DSP filter is refused rather than approximated', async () => {
+// CONTRACT (filters.js): every filter is "a cascade of first- and
+// second-order sections, each one a real R-L-C network". The compiled chain
+// must reproduce the analytic cascade: the SPL difference with and without
+// the filters is exactly the filters' own magnitude, and a bypassed filter is
+// not in the signal.
+test('wiring: DSP filters are the analytic cascade, in circuit', async () => {
+  const filters = [
+    { type: 'highpass', shape: 'linkwitz-riley', order: 4, hz: 25 },
+    { type: 'lowpass', shape: 'butterworth', order: 3, hz: 300 },
+    { type: 'peq', hz: 50, q: 3, db: 6 },
+    { type: 'lowshelf', hz: 40, q: 0.7, db: -4 },
+    { type: 'highshelf', hz: 200, q: 0.9, db: 3 },
+    { type: 'peq', hz: 80, q: 1, db: 12, bypass: true },
+  ]
+  const base = { nodes: [{ id: 'd', type: 'driver', params: DRV }], edges: [] }
+  const a = (await sim(base)).results
+  const b = (await sim({ ...base, wiring: { channels: [{ id: 'ch', volts: 2.83, dsp: { filters } }] } })).results
+  const secs = filters.filter((f) => !f.bypass).flatMap(filterSections)
+  for (let i = 0; i < a.freqs.length; i++) {
+    const h = sectionsResponse(secs, a.freqs[i])
+    const want = 20 * Math.log10(Math.hypot(h.re, h.im))
+    assert.ok(Math.abs(b.splCombined[i] - a.splCombined[i] - want) < 1e-6, `${a.freqs[i]} Hz`)
+  }
+})
+
+// CONTRACT (compileWiring): "@throws Error When a channel's DSP filter is
+// malformed" — and validation refuses it before it gets that far.
+test('wiring: a malformed filter is an error naming the channel', async () => {
   await assert.rejects(sim({
     nodes: [{ id: 'd', type: 'driver', params: DRV }],
     edges: [],
-    wiring: { channels: [{ id: 'ch', volts: 2.83, dsp: { filters: [{ type: 'highpass', hz: 20, order: 2 }] } }] },
-  }), /DSP filters are not supported/)
+    wiring: { channels: [{ id: 'ch', label: 'Sub amp', volts: 2.83, dsp: { filters: [{ type: 'bandstop', hz: 20 }] } }] },
+  }), /Sub amp › filter 1: unknown filter type/)
+})
+
+// CONTRACT (adaptResults): "Impedance is the load each channel sees"; the
+// first channel's is `zinMag`.
+test('wiring: each channel reports the impedance it sees', async () => {
+  const { results: r } = await sim({
+    nodes: [{ id: 'a', type: 'driver', params: DRV }, { id: 'b', type: 'driver', params: DRV }, { id: 'c', type: 'driver', params: DRV }],
+    edges: [],
+    wiring: { channels: [
+      { id: 'c1', label: 'One', volts: 2.83, load: { driver: 'a' } },
+      { id: 'c2', label: 'Two', volts: 2.83, outputOhms: 1, load: { series: [{ driver: 'b' }, { driver: 'c' }] } },
+    ] },
+  })
+  assert.deepEqual(Object.keys(r.zinByChannel), ['c1', 'c2'])
+  assert.equal(r.zinByChannel.c2.label, 'Two')
+  assert.deepEqual(r.zinByChannel.c1.mag, r.zinMag)
+  for (let i = 0; i < r.freqs.length; i++) {
+    // two identical drivers in series, in free air, each see the same motion:
+    // twice the impedance, and the output resistance is not part of the load
+    assert.ok(Math.abs(r.zinByChannel.c2.mag[i] / r.zinByChannel.c1.mag[i] - 2) < 1e-6, `${r.freqs[i]} Hz`)
+  }
+})
+
+// ---------- probes ----------
+
+/** A driver into a tapped chamber whose tap feeds a port. */
+const TAPPED = {
+  nodes: [
+    { id: 'd', type: 'driver', params: DRV },
+    { id: 'c', type: 'chamber', params: { volume: 60, length: 40, taps: [{ id: 't1', position: 20 }] } },
+    { id: 'w', type: 'waveguide', params: { S1: 80, S2: 80, length: 30 } },
+  ],
+  edges: [
+    { source: 'd', sourceHandle: 'rear', target: 'c', targetHandle: 'in' },
+    { source: 'w', sourceHandle: 'throat', target: 'c', targetHandle: 'tap:t1' },
+  ],
+}
+
+// CONTRACT (probes): "`kind`: `pressure`, `flow`, `velocity`"; "`at`: a
+// handle (an end or a tap), or a `position`". Flow through a handle is the
+// flow the element's own sense source carries; velocity is that over the
+// area. Probes observe and never change the result.
+test('probes: flow and velocity at handles and along a line', async () => {
+  const plain = (await sim(TAPPED)).results
+  const { results: r } = await sim({
+    ...TAPPED,
+    probes: [
+      { id: 'mouthV', kind: 'velocity', at: { node: 'w', handle: 'mouth' } },
+      { id: 'midV', kind: 'velocity', at: { node: 'w', position: 15 } },
+      { id: 'endV', kind: 'velocity', at: { node: 'w', position: 30 } },
+      { id: 'tapQ', kind: 'flow', at: { node: 'c', handle: 'tap:t1' } },
+      { id: 'throatQ', kind: 'flow', at: { node: 'w', handle: 'throat' } },
+      { id: 'coneQ', kind: 'flow', at: { node: 'd', handle: 'rear' } },
+      { id: 'wallQ', kind: 'flow', at: { node: 'c', handle: 'out' } },
+      { id: 'tapP', kind: 'pressure', at: { node: 'c', handle: 'tap:t1' } },
+      { id: 'posP', kind: 'pressure', at: { node: 'c', position: 20 } },
+    ],
+  })
+  for (let i = 0; i < r.freqs.length; i++) {
+    // A flow probe along a line cuts it, which re-slices the lossy line
+    // around the cut: a discretisation change far below anything audible.
+    assert.ok(Math.abs(r.splCombined[i] - plain.splCombined[i]) < 1e-4, 'probes never change the result')
+    // the duct's own velocity readout is the faster of its two ends
+    const ends = Math.max(r.probeFlow.mouthV.values[i], r.probeFlow.throatQ.values[i] / 80e-4)
+    assert.ok(Math.abs(ends - r.velocity.w[i]) <= 1e-9 * r.velocity.w[i] + 1e-15, `${r.freqs[i]} Hz`)
+    assert.equal(r.probeFlow.endV.values[i], r.probeFlow.mouthV.values[i], 'a position at the end is that end')
+    assert.ok(Math.abs(r.probeFlow.tapQ.values[i] - r.probeFlow.throatQ.values[i]) <= 1e-9 * Math.max(1, r.probeFlow.tapQ.values[i]) + 1e-12, 'what leaves the tap enters the port')
+    assert.equal(r.probeFlow.wallQ.values[i], 0, 'a closed end has no flow')
+    // apart from the DC tie's millionth of an ohm-equivalent in between
+    assert.ok(Math.abs(r.splInterior.tapP[i] - r.splInterior.posP[i]) < 1e-4, 'the tap handle is the point on the line')
+  }
+  // at low frequency the port moves at least as much air as the cone near tuning, and at 1 kHz much less
+  const u = (k, i) => r.probeFlow[k].values[i]
+  const hi = r.freqs.length - 1
+  assert.ok(u('coneQ', hi) > u('tapQ', hi))
+  assert.ok(r.probeFlow.midV.values.every((v) => v >= 0 && isFinite(v)))
+  assert.equal(r.probeFlow.mouthV.kind, 'velocity')
+  assert.equal(r.probeFlow.tapQ.kind, 'flow')
 })
 
 // CONTRACT (compilePR): "a driver without a motor", with `count` identical

@@ -37,9 +37,10 @@ The Node Editor panel, wrapping the canvas in its React Flow provider.
 
 Whether a proposed edge is allowed.
 
-React Flow already enforces source-to-target, which is what keeps the
-pressure-out to pressure-in pairing correct. The only extra rule is that
-a node may not connect to itself.
+Connections have no direction — the canvas runs in loose mode, so any
+handle may join any other. The one rule is that a node may not join
+itself: a loop from one end of a line to its own tap or other end is not a
+box anyone builds.
 
 **Parameters**
 

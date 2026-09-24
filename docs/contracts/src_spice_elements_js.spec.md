@@ -156,7 +156,7 @@ driver faces are joined to it, its output is driver output.
 
 - ctx.nl and ctx.map.
 
-## UNREACHABLE (7)
+## UNREACHABLE (9)
 
 ### `noteOf(node)`
 
@@ -214,34 +214,58 @@ its precision.
 - **Reachability:** UNREACHABLE
 - **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
 
-Probe positions requested on a node, m from its start.
+Probes placed at a distance along a node.
 
 **Parameters**
 
-- `ctx` — `object` — Compile context, carrying the project's probes.
+- `ctx` — `object` — Compile context, carrying the project's positioned probes.
 - `node` — `object` — A chamber or waveguide.
 
 **Returns**
 
-- `Array<{probe: object, x: number}>` — Pressure probes placed along it.
+- `Array<{probe: object, x: number, flow: boolean}>` — Its probes, their distance in m from the start, and whether they read flow rather than pressure.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
-### `recordProbe(ctx, probe, node)`
+### `linePoints(node, probes)`
 
 - **Reachability:** UNREACHABLE
 - **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
 
-Record where a pressure probe landed.
+The distances along a node where its line must have a node or a cut.
 
-A probe that migrated from a chamber's own probe is reported under the
-chamber's id, where the editor looks for it; any other under its own id.
+**Parameters**
+
+- `node` — `object` — A chamber or waveguide.
+- `probes` — `Array<object>` — From `probesOn`.
+
+**Returns**
+
+- `{points: number[], flowPoints: number[]}` — Tap and pressure-probe distances, and flow-probe distances, m.
+
+**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
+
+### `placeProbes(ctx, node, line, probes, areaAt, ends)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+Record where each probe on a line landed.
+
+A pressure probe reads the node at its distance. A flow or velocity probe
+reads the sense source cut into the line there; one at either end reads
+that end's flow instead, which the compiler resolves once every element is
+built. A probe that migrated from a chamber's own probe is reported under
+the chamber's id, where the editor looks for it; any other under its own id.
 
 **Parameters**
 
 - `ctx` — `object` — Compile context.
-- `probe` — `object` — The probe.
-- `node` — `string` — The netlist node its pressure is read from.
+- `node` — `object` — The chamber or waveguide.
+- `line` — `object` — The compiled line.
+- `probes` — `Array<object>` — From `probesOn`.
+- `areaAt` — `Function` — Cross-section at a distance, m → m².
+- `ends` — `string[]` — The node's start and end handle names.
 
 **Returns**
 
@@ -249,9 +273,33 @@ chamber's id, where the editor looks for it; any other under its own id.
 
 **Mutates**
 
-- ctx.map.probes.
+- ctx.map.probes, ctx.map.flowProbes and ctx.endFlowProbes.
 
-### `connectTaps(ctx, node, line)`
+### `recordFlow(ctx, id, handle, name, scale, S)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+Record which sense source carries the flow through a handle.
+
+**Parameters**
+
+- `ctx` — `object` — Compile context.
+- `id` — `string` — Node id.
+- `handle` — `string` — Handle name.
+- `name` — `string` — The sense source (or cone velocity source).
+- `scale` — `number` — Factor from the source's current to volume flow — Sd for a cone, 1 otherwise.
+- `S` — `number` — Area for velocity, m².
+
+**Returns**
+
+- `void`
+
+**Mutates**
+
+- ctx.map.handleFlows.
+
+### `connectTaps(ctx, node, line, areaAt)`
 
 - **Reachability:** UNREACHABLE
 - **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
@@ -263,6 +311,7 @@ Connect a node's taps to the nets joined to them.
 - `ctx` — `object` — Compile context.
 - `node` — `object` — A chamber or waveguide.
 - `line` — `object` — The compiled line.
+- `areaAt` — `Function` — Cross-section at a distance, m → m².
 
 **Returns**
 
@@ -270,7 +319,7 @@ Connect a node's taps to the nets joined to them.
 
 **Mutates**
 
-- ctx.nl.
+- ctx.nl and ctx.map.handleFlows.
 
 ### `compileChamber > area()`
 

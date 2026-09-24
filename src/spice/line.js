@@ -9,7 +9,7 @@
 // scales with length the way friction and heat exchange do.
 
 import { RHO, perimeter, viscousCoeff, thermalCoeff } from './physics.js'
-import { fmt, resistor } from './netlist.js'
+import { fmt, resistor, sense } from './netlist.js'
 import { fractionalSeries, fractionalShunt } from './networks.js'
 
 /** Most slices one line may be cut into, however long or lossy. */
@@ -32,7 +32,8 @@ const MAX_SLICES = 48
  * @param {boolean} spec.lumped - Collapse the whole line to one node and a compliance.
  * @param {number} spec.volume - Air volume, m³, for the lumped form.
  * @param {number[]} spec.points - Distances, m, where nodes are needed (taps and probes).
- * @returns {{start: string, end: string, at: Function}} The end nodes, and `at(x)` → the node at one of `points`.
+ * @param {number[]} [spec.flowPoints] - Distances, m, strictly inside the line, where the flow along it is to be read.
+ * @returns {{start: string, end: string, at: Function, flowAt: Function}} The end nodes; `at(x)` → the node at one of `points`; `flowAt(x)` → the sense source carrying the flow past one of `flowPoints`, toward the end, or `null` where there is none.
  * @mutates ctx.nl.
  */
 export function compileLine(ctx, spec) {
@@ -52,11 +53,36 @@ export function compileLine(ctx, spec) {
      * @reads the enclosing node.
      */
     const at = () => n
-    return { start: n, end: n, at }
+    /**
+     * A lumped chamber has no flow along it.
+     *
+     * @returns {null} Always.
+     * @pure
+     */
+    const flowAt = () => null
+    return { start: n, end: n, at, flowAt }
   }
 
-  const xs = [...new Set([0, L, ...spec.points.map((x) => Math.min(Math.max(x, 0), L))])].sort((a, b) => a - b)
+  /**
+   * Clamp a distance onto the line.
+   *
+   * @param {number} x - Distance, m.
+   * @returns {number} The distance within [0, L].
+   * @pure
+   */
+  const clamp = (x) => Math.min(Math.max(x, 0), L)
+  const flowXs = new Set((spec.flowPoints || []).map(clamp).filter((x) => x > 0 && x < L))
+  const xs = [...new Set([0, L, ...spec.points.map(clamp), ...flowXs])].sort((a, b) => a - b)
   const bp = new Map(xs.map((x) => [x, nl.node()]))
+  // Where flow is read, the line is cut and a sense source bridges the cut:
+  // `bp` is the near side, `onward` the far side the next piece starts from.
+  const onward = new Map()
+  const flowSense = new Map()
+  for (const x of flowXs) {
+    const s = sense(nl, bp.get(x), `${spec.note} flow at ${fmt(x * 100)} cm`)
+    onward.set(x, s.out)
+    flowSense.set(x, s.name)
+  }
   const series = spec.viscous > 0 || spec.flowResistance > 0
   const lossy = series || spec.thermal > 0
   let dxMax = Infinity
@@ -83,7 +109,7 @@ export function compileLine(ctx, spec) {
     const x1 = xs[i + 1]
     const n = Math.max(1, Math.ceil((x1 - x0) / dxMax - 1e-9))
     const dx = (x1 - x0) / n
-    let at = bp.get(x0)
+    let at = onward.get(x0) || bp.get(x0)
     for (let k = 0; k < n; k++) {
       const next = k === n - 1 ? bp.get(x1) : nl.node()
       const S = spec.area(x0 + (k + 0.5) * dx)
@@ -126,6 +152,14 @@ export function compileLine(ctx, spec) {
      * @returns {string} The node name.
      * @reads the breakpoint map.
      */
-    at: (x) => bp.get(Math.min(Math.max(x, 0), L)),
+    at: (x) => bp.get(clamp(x)),
+    /**
+     * The sense source carrying the flow past a point, toward the end.
+     *
+     * @param {number} x - Distance from the start, m — one of `spec.flowPoints`.
+     * @returns {string|null} The source name, or `null` for a point that was not cut.
+     * @reads the flow-sense map.
+     */
+    flowAt: (x) => flowSense.get(clamp(x)) || null,
   }
 }

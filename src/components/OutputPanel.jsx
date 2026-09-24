@@ -287,13 +287,13 @@ function BaseChart({ chartId, data, lines, yLabel, yDomain, y2Label, y2Domain, r
         />
         <YAxis
           yAxisId="left" domain={yDomain || ['auto', 'auto']} allowDataOverflow
-          tick={{ fill: '#9aa7b8', fontSize: 10 }} stroke={GRID} width={44}
+          tick={{ fill: '#9aa7b8', fontSize: 10 }} stroke={GRID} width={44} tickFormatter={yTick}
           label={yLabel ? { value: yLabel, angle: -90, position: 'insideLeft', fill: '#6b7687', fontSize: 10 } : undefined}
         />
         {hasY2 && (
           <YAxis
             yAxisId="right" orientation="right" domain={y2Domain || ['auto', 'auto']}
-            tick={{ fill: '#9aa7b8', fontSize: 10 }} stroke={GRID} width={44}
+            tick={{ fill: '#9aa7b8', fontSize: 10 }} stroke={GRID} width={44} tickFormatter={yTick}
             label={y2Label ? { value: y2Label, angle: 90, position: 'insideRight', fill: '#6b7687', fontSize: 10 } : undefined}
           />
         )}
@@ -472,7 +472,10 @@ function useChartData(keys) {
         row.driver = results.splDriver[i]
         portIds.forEach((pid, k) => { row[`port_${pid}`] = results.splPorts[pid][i] })
       }
-      if (keys.includes('zin')) { row.zmag = results.zinMag[i]; row.zphase = results.zinPhase[i] }
+      if (keys.includes('zin')) {
+        row.zmag = results.zinMag[i]; row.zphase = results.zinPhase[i]
+        for (const [cid, z] of Object.entries(results.zinByChannel || {})) row[`zch_${cid}`] = z.mag[i]
+      }
       if (keys.includes('exc')) {
         row.exc = results.excursion[i]
         for (const [did, arr] of Object.entries(results.excursionByDriver || {})) {
@@ -489,6 +492,11 @@ function useChartData(keys) {
       }
       if (keys.includes('int')) {
         for (const [cid, arr] of Object.entries(results.splInterior || {})) row[`int_${cid}`] = arr[i]
+      }
+      if (keys.includes('pfl')) {
+        for (const [pid, p] of Object.entries(results.probeFlow || {})) {
+          row[`pfl_${pid}`] = p.kind === 'flow' ? p.values[i] * 1000 : p.values[i]
+        }
       }
       if (keys.includes('pow')) row.pow = results.power[i] > 0 ? 10 * Math.log10(results.power[i]) : null
       if (keys.includes('pe')) { row.peW = results.peReal?.[i]; row.peVA = results.peApparent?.[i] }
@@ -522,6 +530,21 @@ function useChartData(keys) {
     })
     return { data: rows, portIds }
   }, [results, snapshots, keys.join()])
+}
+
+/**
+ * Format a Y-axis tick.
+ *
+ * A fitted domain ends on an unrounded value, which recharts draws as a tick;
+ * three significant figures keep it inside the axis.
+ *
+ * @param {number} v - Tick value.
+ * @returns {number} The value, rounded for display.
+ * @pure
+ */
+function yTick(v) {
+  if (!Number.isFinite(v) || v === 0) return v
+  return Math.abs(v) >= 100 ? Math.round(v) : Number(v.toPrecision(3))
 }
 
 /**
@@ -609,17 +632,26 @@ function ImpedanceTab() {
   const { data } = useChartData(['zin'])
   const snapshots = useStore((s) => readSnapshots(s.workspace))
   const metrics = useStore((s) => s.metrics)
-  const lines = [
-    { dataKey: 'zmag', name: '|Z| Ω', color: SERIES[0], width: 2.5 },
-    { dataKey: 'zphase', name: 'Phase °', color: SERIES[2], yAxisId: 'right' },
-    ...snapLines(snapshots, 'zin'),
-  ]
+  const channels = useStore((s) => s.results?.zinByChannel) || {}
+  const ids = Object.keys(channels)
+  // One channel: its magnitude and phase. Several: a magnitude per channel,
+  // since each amplifier sees its own load.
+  const lines = ids.length > 1
+    ? [
+        ...ids.map((cid, i) => ({ dataKey: `zch_${cid}`, name: `|Z| ${channels[cid].label || cid}`, color: SERIES[i % SERIES.length], width: i ? 1.5 : 2.5 })),
+        ...snapLines(snapshots, 'zin'),
+      ]
+    : [
+        { dataKey: 'zmag', name: '|Z| Ω', color: SERIES[0], width: 2.5 },
+        { dataKey: 'zphase', name: 'Phase °', color: SERIES[2], yAxisId: 'right' },
+        ...snapLines(snapshots, 'zin'),
+      ]
   const refLines = (metrics?.zPeaks || []).map((p, i) => (
     <ReferenceLine key={i} yAxisId="left" x={p.f} stroke="#6b7687" strokeDasharray="3 3"
       label={{ value: `F${i + 1} ${p.f.toFixed(1)}`, fill: '#9aa7b8', fontSize: 10, position: 'insideTopLeft' }} />
   ))
   const fitData = useFitData('zin', data)
-  const [yDomain, yControl] = useYScale('zin', fitLinear(fitData, ['zmag', ...snapshots.map((_, i) => `snap${i}_zin`)]))
+  const [yDomain, yControl] = useYScale('zin', fitLinear(fitData, [...(ids.length > 1 ? ids.map((c) => `zch_${c}`) : ['zmag']), ...snapshots.map((_, i) => `snap${i}_zin`)]))
   return (
     <>
       <div className="plot-controls">{yControl}</div>
@@ -787,20 +819,19 @@ function InteriorTab() {
   const { data } = useChartData(['int'])
   const nodes = useStore((s) => s.nodes)
   const results = useStore((s) => s.results)
+  const probes = useStore((s) => s.projectExtras.probes) || []
   const chambers = Object.keys(results?.splInterior || {})
-  const lines = chambers.map((cid, i) => {
-    const n = nodes.find((nn) => nn.id === cid)
-    return { dataKey: `int_${cid}`, name: n?.data.params.label || 'Chamber', color: SERIES[i % SERIES.length] }
-  })
+  const lines = chambers.map((cid, i) => ({ dataKey: `int_${cid}`, name: probeName(cid, probes, nodes), color: SERIES[i % SERIES.length] }))
   const fitData = useFitData('int', data)
   const [yDomain, yControl] = useYScale('int', fitDb(fitData, lines.map((l) => l.dataKey)))
   if (!chambers.length) {
     return (
       <div style={{ padding: '24px 16px', color: 'var(--text-3)', fontSize: 12.5, lineHeight: 1.6 }}>
-        No interior probes active. Select a Chamber node and enable
-        <b> “SPL probe (mic inside)”</b> to plot the sound pressure level inside
-        that volume — e.g. at the listening position in a car cabin. The probe
-        is a virtual microphone: it never changes the simulation itself.
+        No pressure probes. Select a Chamber node and enable
+        <b> “SPL probe (mic inside)”</b>, or add a pressure probe anywhere from
+        the Probes panel, to plot the sound pressure level there — e.g. at the
+        listening position in a car cabin. A probe is a virtual microphone: it
+        never changes the simulation itself.
       </div>
     )
   }
@@ -813,6 +844,72 @@ function InteriorTab() {
         {yControl}
       </div>
       <BaseChart chartId="int" data={data} lines={lines} yLabel="dB SPL (interior)" yDomain={yDomain} />
+    </>
+  )
+}
+
+/**
+ * The display name of a probe's trace.
+ *
+ * A chamber's own probe is keyed by the chamber id and takes its label; any
+ * other probe by its own id, and takes its label or a description of where
+ * it sits.
+ *
+ * @param {string} key - The result key.
+ * @param {Array<object>} probes - The project's probes.
+ * @param {Array<object>} nodes - Graph nodes.
+ * @returns {string} The name.
+ * @pure
+ */
+function probeName(key, probes, nodes) {
+  const n = nodes.find((nn) => nn.id === key)
+  if (n) return n.data.params.label || 'Chamber'
+  const p = probes.find((x) => x.id === key)
+  if (!p) return key
+  if (p.label) return p.label
+  const on = nodes.find((nn) => nn.id === p.at?.node)?.data.params.label || p.at?.node
+  return p.at?.position != null ? `${on} @ ${p.at.position} cm` : `${on} ${p.at?.handle}`
+}
+
+/**
+ * Flow and velocity at each flow or velocity probe.
+ *
+ * Velocity (m/s) on the left axis, volume flow (L/s) on the right, both
+ * peak, like the port velocity chart.
+ *
+ * @returns {React.ReactElement} The chart.
+ * @sideEffect Subscribes to the store.
+ */
+function ProbeFlowTab() {
+  const { data } = useChartData(['pfl'])
+  const nodes = useStore((s) => s.nodes)
+  const results = useStore((s) => s.results)
+  const probes = useStore((s) => s.projectExtras.probes) || []
+  const flows = Object.entries(results?.probeFlow || {})
+  const lines = flows.map(([pid, p], i) => ({
+    dataKey: `pfl_${pid}`,
+    name: `${probeName(pid, probes, nodes)} (${p.kind === 'flow' ? 'L/s' : 'm/s'})`,
+    color: SERIES[i % SERIES.length],
+    ...(p.kind === 'flow' ? { yAxisId: 'right' } : {}),
+  }))
+  const fitData = useFitData('pfl', data)
+  const [yDomain, yControl] = useYScale('pfl', fitLinear(fitData, lines.filter((l) => !l.yAxisId).map((l) => l.dataKey)))
+  if (!flows.length) {
+    return (
+      <div style={{ padding: '24px 16px', color: 'var(--text-3)', fontSize: 12.5, lineHeight: 1.6 }}>
+        No flow or velocity probes. Add one from the Probes panel to plot the
+        air moving through any handle, tap or point along a line.
+      </div>
+    )
+  }
+  const hasFlow = lines.some((l) => l.yAxisId)
+  return (
+    <>
+      <div className="plot-controls">
+        <span style={{ fontSize: 11, color: 'var(--text-3)' }}>peak values</span>
+        {yControl}
+      </div>
+      <BaseChart chartId="pfl" data={data} lines={lines} yLabel="m/s (peak)" yDomain={yDomain} {...(hasFlow ? { y2Label: 'L/s (peak)', y2Domain: ['auto', 'auto'] } : {})} />
     </>
   )
 }
@@ -939,6 +1036,7 @@ export const CHART_PANELS = {
   exc: ExcursionTab,
   vel: VelocityTab,
   int: InteriorTab,
+  pfl: ProbeFlowTab,
   pow: PowerTab,
   eff: EfficiencyTab,
   pe: ElecPowerTab,
@@ -974,4 +1072,4 @@ export function chartPanelComponent(id) {
 // Module-private functions, exposed for the contract test suite only
 // (test/contract/*). Not part of this module's public API — application code
 // must not import from here, and nothing outside the tests does.
-export const __internals = { fmt, round5, fitDb, fitLinear, nearestIdx, snapLines }
+export const __internals = { fmt, round5, fitDb, fitLinear, nearestIdx, snapLines, yTick }

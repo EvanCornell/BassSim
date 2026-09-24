@@ -7,7 +7,8 @@
 // user meant; it never blocks a run. Warnings are keyed by node id so the
 // editor can show each one on the node it concerns.
 
-import { DEFAULT_PARAMS, NODE_HANDLES } from './version.js'
+import { DEFAULT_PARAMS, NODE_HANDLES, PROBE_KINDS } from './version.js'
+import { filterSections } from '../spice/filters.js'
 
 /**
  * Every handle a node exposes, taps included.
@@ -179,6 +180,11 @@ export function validateProject(proj) {
       else claimed.set(id, c.label || c.id)
     }
   }
+  for (const c of channels) {
+    for (const [i, f] of (c.dsp?.filters || []).entries()) {
+      try { filterSections(f) } catch (err) { errors.push(`${c.label || c.id} › filter ${i + 1}: ${err.message}`) }
+    }
+  }
   const driven = driverChannels(proj)
   for (const d of drivers) {
     if (!driven.has(d.id)) warn(d.id, 'Not wired to any amplifier channel — undriven, with its coil open.')
@@ -192,6 +198,23 @@ export function validateProject(proj) {
       if (!(a.fmin > 0)) errors.push(`analysis ${a.id}: the lowest frequency must be greater than zero`)
       if (!(a.fmax > a.fmin)) errors.push(`analysis ${a.id}: the highest frequency must be above the lowest`)
       if (!(a.npts >= 2)) errors.push(`analysis ${a.id}: at least two frequency points are needed`)
+    }
+  }
+
+  // probes: one that points nowhere measures nothing, which is worth saying
+  // but never worth refusing to run over
+  for (const p of proj.probes || []) {
+    const key = `probe:${p.id}`
+    const name = p.label || p.id
+    if (!PROBE_KINDS.includes(p.kind)) { errors.push(`Probe ${name}: unknown kind "${p.kind}"`); continue }
+    const n = byId.get(p.at?.node)
+    if (!n) { warn(key, `Probe ${name} is on a node that does not exist.`); continue }
+    if (p.at.position != null) {
+      const len = Number(n.params?.length)
+      if (n.type !== 'chamber' && n.type !== 'waveguide') warn(key, `Probe ${name}: only chambers and waveguides have positions along them.`)
+      else if (!(Number(p.at.position) >= 0 && Number(p.at.position) <= len)) warn(key, `Probe ${name} at ${p.at.position} cm is not within the ${len} cm length.`)
+    } else if (!nodeHandles(n).includes(p.at.handle)) {
+      warn(key, `Probe ${name}: ${n.params?.label || n.id} has no handle "${p.at.handle}".`)
     }
   }
 

@@ -2,6 +2,9 @@ import React, { useState } from 'react'
 import { useStore } from '../store'
 import { waveguideVolume } from '../engine/geometry'
 import { basisOf, baselineOf, matchesBaseline, BASIS_SIZE } from '../driverParams'
+import ExprInput from './ExprInput'
+import { useResolvedParams } from '../useResolved'
+import { freshId } from '../schema/extras'
 
 /**
  * One-line physical explanation per parameter, shown as a label tooltip.
@@ -48,9 +51,10 @@ const TIPS = {
 /**
  * A labelled numeric parameter input bound to one node field.
  *
- * Empty and unparseable input is ignored rather than written, so clearing
- * the box to retype a value does not momentarily push `NaN` into the graph
- * and trigger a failed solve.
+ * Takes a number or an expression over the project parameters. Empty and
+ * unresolvable input is held in the box rather than written, so clearing it
+ * to retype a value does not momentarily push `NaN` into the graph and
+ * trigger a failed solve.
  *
  * @param {object} props - Component props.
  * @param {string} props.id - Node id.
@@ -69,17 +73,11 @@ function NumField({ id, field, value, unit, label, step, min, onCommit }) {
   return (
     <div className="param-row">
       <label title={TIPS[field] || ''}>{label || field}</label>
-      <input
-        type="number"
-        step={step || 'any'}
-        value={value ?? ''}
+      <ExprInput
+        value={value}
+        step={step}
         min={min}
-        onChange={(e) => {
-          const v = e.target.value === '' ? '' : parseFloat(e.target.value)
-          if (v === '' || Number.isNaN(v)) return
-          if (onCommit) onCommit(v)
-          else updateParams(id, { [field]: v })
-        }}
+        onCommit={(v) => (onCommit ? onCommit(v) : updateParams(id, { [field]: v }))}
       />
       <span className="unit">{unit || ''}</span>
     </div>
@@ -213,12 +211,15 @@ function AmpSolver() {
   )
   return (
     <div className="panel-section">
-      <h4>Amplifier · P = V²/Z</h4>
+      <h4 title="The first amplifier channel at the master level. Changing the voltage moves the master, so every channel keeps its relative level.">
+        Drive · P = V²/Z
+        <button className="h4-link" onClick={() => useStore.getState().layoutOps.open('wiring')}>Wiring…</button>
+      </h4>
       {f('voltage', 'Voltage', 'V')}
       {f('impedance', 'Impedance', 'Ω')}
       {f('power', 'Power', 'W')}
       <div className="param-row">
-        <label title="Amplifier output (source) impedance in series with the driver.">Rg</label>
+        <label title="The first channel's output resistance — amplifier output plus cable — in series with its load.">Rg</label>
         <input type="number" step="any" min="0" value={settings.rg}
           onChange={(e) => { const v = parseFloat(e.target.value); if (!Number.isNaN(v)) updateSettings({ rg: v }) }} />
         <span className="unit">Ω</span>
@@ -364,13 +365,198 @@ function DriverForm({ node }) {
         <NumField id={id} field="Xmax" value={p.Xmax} unit="mm" />
       </div>
       <div className="panel-section">
-        <h4>Array</h4>
+        <h4>Array &amp; voice coils</h4>
         <NumField id={id} field="count" value={p.count} label="Drivers" step="1" min="1" />
         <SelectField id={id} field="wiring" value={p.wiring} options={[
           ['single', 'Single'], ['series', 'Series'], ['parallel', 'Parallel'], ['series-parallel', 'Series-parallel'],
         ]} />
+        <DvcField id={id} p={p} />
+        <div className="ts-hint">
+          How this node's drivers connect to their amplifier channel is set in
+          the <a href="#" onClick={(e) => { e.preventDefault(); useStore.getState().layoutOps.open('wiring') }}>Wiring</a> panel.
+        </div>
       </div>
     </>
+  )
+}
+
+/**
+ * A driver's dual voice coil option.
+ *
+ * Purely electrical, and available on any driver: the catalogue never says
+ * whether a driver has two coils, and its figures are always taken as both
+ * coils in series. The other choices rescale Re, Bl and Le from there.
+ *
+ * @param {object} props - Component props.
+ * @param {string} props.id - Node id.
+ * @param {object} props.p - The node's params.
+ * @returns {React.ReactElement} The select row.
+ * @sideEffect Subscribes to the store.
+ */
+function DvcField({ id, p }) {
+  const updateParams = useStore((s) => s.updateParams)
+  return (
+    <div className="param-row">
+      <label title="Dual voice coil wiring. The driver's parameters are taken as both coils in series; parallel quarters Re (same Qes), one coil alone halves Re and Bl (double Qes).">Voice coils</label>
+      <select value={p.dvc?.coils || 'single'} onChange={(e) => updateParams(id, { dvc: e.target.value === 'single' ? null : { coils: e.target.value } })}>
+        <option value="single">Single coil</option>
+        <option value="series">Dual, in series</option>
+        <option value="parallel">Dual, in parallel</option>
+        <option value="one">Dual, one coil only</option>
+      </select>
+      <span className="unit" />
+    </div>
+  )
+}
+
+/**
+ * The node's validation warnings, with the fixes the editor can offer.
+ *
+ * A driver face meeting an opening smaller than its cone gets a button that
+ * puts a chamber between them.
+ *
+ * @param {object} props - Component props.
+ * @param {object} props.node - The selected node.
+ * @returns {React.ReactElement|null} The warnings, or nothing when there are none.
+ * @sideEffect Subscribes to the store.
+ */
+function NodeWarnings({ node }) {
+  const warns = useStore((s) => s.results?.validation?.warnings?.[node.id])
+  const insert = useStore((s) => s.insertThroatChamber)
+  if (!warns?.length) return null
+  return (
+    <div className="panel-section node-warnings">
+      {warns.map((w, i) => {
+        const face = node.type === 'driver' && /throat chamber/.test(w) ? (/^The front/.test(w) ? 'front' : 'rear') : null
+        return (
+          <div key={i} className="node-warning">
+            <span className="warn-dot" /> {w}
+            {face && <div><button onClick={() => insert(node.id, face)}>Insert a throat chamber</button></div>}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+/**
+ * The taps along a chamber or waveguide: where things may join it from the side.
+ *
+ * Positions are in cm from the `in` / throat end and may be expressions.
+ * Removing a tap removes the joins made to it.
+ *
+ * @param {object} props - Component props.
+ * @param {string} props.id - Node id.
+ * @param {object} props.p - The node's params.
+ * @param {string} props.from - Name of the end positions are measured from.
+ * @returns {React.ReactElement} The taps section.
+ * @sideEffect Subscribes to the store.
+ */
+function TapsSection({ id, p, from }) {
+  const setTaps = useStore((s) => s.setTaps)
+  const addProbe = useStore((s) => s.addProbe)
+  const taps = p.taps || []
+  return (
+    <div className="sub-section">
+      <div className="sub-head">
+        <span title="Points along the line where anything may join it — a driver, a port, another chamber. Each shows as a handle on the node's right side.">Taps</span>
+        <button onClick={() => {
+          const tid = freshId('t', taps.map((t) => t.id))
+          setTaps(id, [...taps, { id: tid, position: Math.round((Number(p.length) || 0) / 2) || 1 }])
+        }}>+ Tap</button>
+      </div>
+      {!taps.length && <div className="ts-hint">None. Add one to join something partway along.</div>}
+      {taps.map((t, i) => (
+        <div className="param-row tap-row" key={t.id}>
+          <label title={`Tap ${t.id}: its handle is tap:${t.id}`}>{t.id}</label>
+          <ExprInput value={t.position} min={0} onCommit={(v) => setTaps(id, taps.map((x, k) => (k === i ? { ...x, position: v } : x)))} title={`cm from the ${from} end`} />
+          <span className="unit">
+            cm
+            <button className="icon-btn" title="Add a pressure probe at this tap" onClick={() => addProbe({ kind: 'pressure', label: `${p.label || id} ${t.id}`, at: { node: id, handle: `tap:${t.id}` } })}>◎</button>
+            <button className="icon-btn" title="Remove this tap and anything joined to it" onClick={() => setTaps(id, taps.filter((x) => x.id !== t.id))}>✕</button>
+          </span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+/**
+ * Throat chamber calculator: the air a cone traps in front of a small opening.
+ *
+ * Output only — it proposes a volume for this chamber and, on request, writes
+ * it. The chamber stays an ordinary chamber node. Volume = Sd × (cone depth ×
+ * shape factor + one-way excursion + clearance), minus nothing for the
+ * motor, since this is the front side.
+ *
+ * @param {object} props - Component props.
+ * @param {string} props.id - Node id.
+ * @returns {React.ReactElement} The calculator.
+ * @sideEffect Subscribes to the store.
+ */
+function ThroatCalc({ id }) {
+  const updateParams = useStore((s) => s.updateParams)
+  const nodes = useStore((s) => s.nodes)
+  const edges = useStore((s) => s.edges)
+  // Default to the driver joined to this chamber, if there is one.
+  const joined = edges
+    .filter((e) => e.source === id || e.target === id)
+    .map((e) => nodes.find((n) => n.id === (e.source === id ? e.target : e.source)))
+    .find((n) => n?.type === 'driver')
+  const dp = joined?.data.params || {}
+  const [open, setOpen] = useState(false)
+  const [sd, setSd] = useState(Number(dp.Sd) * Math.max(1, Number(dp.count) || 1) || 500)
+  const [depth, setDepth] = useState(60)
+  const [shape, setShape] = useState('cone')
+  const [xmax, setXmax] = useState(Number(dp.Xmax) || 15)
+  const [gap, setGap] = useState(5)
+  const factor = { cone: 1 / 3, curved: 0.45, flat: 0 }[shape]
+  const litres = (sd * 1e-4) * ((depth * factor + xmax + gap) * 1e-3) * 1000
+  /**
+   * One number input of the calculator.
+   *
+   * @param {string} label - Row label.
+   * @param {number} v - Current value.
+   * @param {Function} set - Setter.
+   * @param {string} unit - Unit.
+   * @returns {React.ReactElement} The row.
+   * @pure
+   */
+  const row = (label, v, set, unit) => (
+    <div className="param-row">
+      <label>{label}</label>
+      <input type="number" value={v} min="0" onChange={(e) => set(parseFloat(e.target.value) || 0)} />
+      <span className="unit">{unit}</span>
+    </div>
+  )
+  return (
+    <div className="sub-section">
+      <div className="sub-head">
+        <span title="Work out the air trapped between a cone and a smaller opening in front of it">Throat chamber calculator</span>
+        <button onClick={() => setOpen(!open)}>{open ? 'Hide' : 'Show'}</button>
+      </div>
+      {open && (
+        <>
+          {row('Cone area', sd, setSd, 'cm²')}
+          {row('Cone depth', depth, setDepth, 'mm')}
+          <div className="param-row">
+            <label>Cone shape</label>
+            <select value={shape} onChange={(e) => setShape(e.target.value)}>
+              <option value="cone">Straight cone (⅓ of depth)</option>
+              <option value="curved">Curved cone (~0.45)</option>
+              <option value="flat">Flat piston</option>
+            </select>
+            <span className="unit" />
+          </div>
+          {row('Excursion', xmax, setXmax, 'mm')}
+          {row('Clearance', gap, setGap, 'mm')}
+          <div style={{ fontSize: 11, color: 'var(--text-2)', margin: '4px 0' }}>
+            Trapped air: <b>{litres.toFixed(2)} L</b>
+          </div>
+          <button onClick={() => updateParams(id, { volume: Number(litres.toFixed(3)) })}>Set this chamber's volume</button>
+        </>
+      )}
+    </div>
   )
 }
 
@@ -385,6 +571,7 @@ function DriverForm({ node }) {
 function ChamberForm({ node }) {
   const p = node.data.params
   const id = node.id
+  const r = useResolvedParams(id, node.type, p)
   return (
     <div className="panel-section">
       <h4>Chamber</h4>
@@ -394,10 +581,13 @@ function ChamberForm({ node }) {
       <SelectField id={id} field="shape" value={p.shape} options={[['rectangular', 'Rectangular'], ['cylindrical', 'Cylindrical']]} />
       <NumField id={id} field="stuffing" value={p.stuffing} label="Stuffing" unit="g/L" min="0" />
       <LeakSection id={id} p={p} />
+      <TapsSection id={id} p={p} from="in" />
       <ProbeSection id={id} p={p} />
+      <ThroatCalc id={id} />
       <div style={{ fontSize: 10.5, color: 'var(--text-3)', lineHeight: 1.4 }}>
         Typical QL: 5–10 for a leaky box or car door, 15+ for a well-sealed enclosure.
-        First standing wave at c/2L = {(344 / (2 * p.length / 100)).toFixed(0)} Hz.
+        First standing wave at c/2L = {(344 / (2 * r.length / 100)).toFixed(0)} Hz.
+        An end with nothing joined to it is a closed wall.
       </div>
     </div>
   )
@@ -473,6 +663,7 @@ const END_SPACES = [
 function WaveguideForm({ node }) {
   const p = node.data.params
   const id = node.id
+  const r = useResolvedParams(id, node.type, p)
   return (
     <div className="panel-section">
       <h4>Waveguide Segment</h4>
@@ -488,8 +679,9 @@ function WaveguideForm({ node }) {
       <SelectField id={id} field="mouthSpace" value={p.mouthSpace} label="Open mouth into" options={END_SPACES} />
       <NumField id={id} field="ecFactor" value={p.ecFactor} label="End corr. ×" step="0.05" min="0" />
       <NumField id={id} field="loss" value={p.loss} label="Wall loss ×" step="0.1" min="0" />
+      <TapsSection id={id} p={p} from="throat" />
       <div style={{ fontSize: 11, color: 'var(--text-2)', marginBottom: 4 }}>
-        Internal volume: <b>{(waveguideVolume(p.flare, p.S1 * 1e-4, p.S2 * 1e-4, p.length / 100) * 1000).toFixed(2)} L</b>
+        Internal volume: <b>{(waveguideVolume(r.flare, r.S1 * 1e-4, r.S2 * 1e-4, r.length / 100) * 1000).toFixed(2)} L</b>
       </div>
       <div style={{ fontSize: 10.5, color: 'var(--text-3)' }}>
         Set S1 = S2 for a straight port. End corrections come from what each end
@@ -514,8 +706,9 @@ function PRForm({ node }) {
   const updateParams = useStore((s) => s.updateParams)
   const [calcOpen, setCalcOpen] = useState(false)
   const [calcFs, setCalcFs] = useState(30)
-  const m = (p.Mmd + (p.addedMass || 0)) / 1000
-  const fs = 1 / (2 * Math.PI * Math.sqrt(Math.max(m * (p.Cms / 1000), 1e-12)))
+  const r = useResolvedParams(id, node.type, p)
+  const m = (r.Mmd + (r.addedMass || 0)) / 1000
+  const fs = 1 / (2 * Math.PI * Math.sqrt(Math.max(m * (r.Cms / 1000), 1e-12)))
   return (
     <div className="panel-section">
       <h4>Passive Radiator</h4>
@@ -533,7 +726,7 @@ function PRForm({ node }) {
           </div>
           <button onClick={() => {
             if (calcFs > 0) {
-              const cms = 1 / (Math.pow(2 * Math.PI * calcFs, 2) * (p.Mmd / 1000)) * 1000
+              const cms = 1 / (Math.pow(2 * Math.PI * calcFs, 2) * (r.Mmd / 1000)) * 1000
               updateParams(id, { Cms: Math.round(cms * 1000) / 1000 })
               setCalcOpen(false)
             }
@@ -595,6 +788,7 @@ export default function ParamPanel() {
   return (
     <div className="panel-scroll">
       <AmpSolver />
+      {node && <NodeWarnings node={node} key={`w_${node.id}`} />}
       {Form
         ? <Form node={node} key={node.id} />
         : <div style={{ color: 'var(--text-3)', fontSize: 12, padding: 8 }}>

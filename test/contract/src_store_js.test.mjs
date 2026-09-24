@@ -1760,3 +1760,108 @@ test('_sharedSnapshot: is exactly SHARED_KEYS with their current values', () => 
 //   scheduleCompute()  — the whole contract is the debounced POST to
 //     /api/simulate, which does not exist under test; it has no synchronous
 //     observable state change of its own that the contract names.
+
+// ------------------------------------------------ milestone 4 editing ---
+
+/** A v3 project: a driver's front on a small port, rear on a tapped chamber. */
+function m4() {
+  return {
+    schemaVersion: 3, name: 'm4',
+    nodes: [
+      { id: 'd', type: 'driver', position: { x: 0, y: 0 }, params: { Sd: 500 } },
+      { id: 'c', type: 'chamber', position: { x: 0, y: 200 }, params: { volume: 50, length: 40, taps: [{ id: 't1', position: 10 }, { id: 't2', position: 30 }] } },
+      { id: 'w', type: 'waveguide', position: { x: 300, y: 0 }, params: { S1: 50, S2: 50 } },
+      { id: 'x', type: 'driver', position: { x: 0, y: 400 }, params: {} },
+    ],
+    edges: [
+      { id: 'e1', source: 'd', sourceHandle: 'front', target: 'w', targetHandle: 'throat' },
+      { id: 'e2', source: 'd', sourceHandle: 'rear', target: 'c', targetHandle: 'tap:t1' },
+      { id: 'e3', source: 'x', sourceHandle: 'front', target: 'c', targetHandle: 'tap:t2' },
+    ],
+    wiring: { masterDb: 0, channels: [
+      { id: 'ch1', volts: 2, load: null },
+      { id: 'ch2', volts: 4, load: { series: [{ driver: 'x' }] } },
+    ] },
+    probes: [{ id: 'p', kind: 'pressure', at: { node: 'x', handle: 'front' } }],
+  }
+}
+
+// CONTRACT (setTaps): "Replace a chamber's or waveguide's taps, removing edges
+// to taps that are gone."
+test('setTaps: removing a tap removes its joins', () => {
+  st().loadSerialized(m4())
+  st().setTaps('c', [{ id: 't1', position: 12 }])
+  assert.deepEqual(edgesOf().map((e) => e.id).sort(), ['e1', 'e2'])
+  assert.deepEqual(nodeById('c').data.params.taps, [{ id: 't1', position: 12 }])
+  st().undo()
+  assert.equal(edgesOf().length, 3, 'undoable')
+})
+
+// CONTRACT (insertThroatChamber): "the new chamber takes over the face's
+// joins ... and is left selected".
+test('insertThroatChamber: a chamber between the face and the opening', () => {
+  st().loadSerialized(m4())
+  const id = st().insertThroatChamber('d', 'front')
+  const ch = nodeById(id)
+  assert.equal(ch.type, 'chamber')
+  assert.equal(st().selectedNodeId, id)
+  assert.ok(Math.abs(ch.data.params.volume - 1.5) < 1e-9, '500 cm² × 3 cm')
+  const joins = edgesOf().map((e) => [e.source, e.sourceHandle, e.target, e.targetHandle].join(':'))
+  assert.ok(joins.includes(`d:front:${id}:in`))
+  assert.ok(joins.includes(`${id}:out:w:throat`))
+  assert.ok(!joins.includes('d:front:w:throat'))
+  assert.equal(st().insertThroatChamber('x', 'rear'), null, 'nothing joined to that face')
+})
+
+// CONTRACT (deleteSelected): "So do the deleted drivers' places in the wiring
+// and any probes on the deleted nodes."
+test('deleteSelected: forgets the deleted driver in wiring and probes', () => {
+  st().loadSerialized(m4())
+  st().setSelection(['x'])
+  st().deleteSelected()
+  assert.deepEqual(st().projectExtras.wiring.channels[1].load, { parallel: [] })
+  assert.deepEqual(st().projectExtras.probes, [])
+  st().undo()
+  assert.deepEqual(st().projectExtras.wiring.channels[1].load, { series: [{ driver: 'x' }] }, 'undo brings them back')
+  assert.equal(st().projectExtras.probes.length, 1)
+})
+
+// CONTRACT (onConnect): "Does nothing when the same two handles are already
+// joined, in either order."
+test('onConnect: a join made the other way round is the same join', () => {
+  st().loadSerialized(m4())
+  st().onConnect({ source: 'w', sourceHandle: 'throat', target: 'd', targetHandle: 'front' })
+  assert.equal(edgesOf().length, 3)
+  st().onConnect({ source: 'w', sourceHandle: 'mouth', target: 'w', targetHandle: 'mouth' })
+  assert.equal(edgesOf().length, 4, 'the store does not second-guess other joins')
+})
+
+// CONTRACT (setAmp): "The typed figure stays exactly as typed; the master
+// moves to match it" — every channel keeps its own level.
+test('setAmp: the voltage moves the master, not the channels', () => {
+  st().loadSerialized(m4())
+  st().setAmp('voltage', 4)
+  const w = st().projectExtras.wiring
+  assert.ok(Math.abs(w.masterDb - 20 * Math.log10(2)) < 1e-12)
+  assert.deepEqual(w.channels.map((c) => c.volts), [2, 4])
+  assert.equal(st().settings.voltage, 4)
+})
+
+// CONTRACT (setExtra / _setExtras): "whenever the wiring changes, that figure
+// is re-derived from it."
+test('setExtra: rewiring re-derives the drive shown', () => {
+  st().loadSerialized(m4())
+  const w = st().projectExtras.wiring
+  st().setExtra('wiring', { ...w, masterDb: 6, channels: [{ ...w.channels[0], volts: 3, outputOhms: 0.25 }, w.channels[1]] })
+  assert.ok(Math.abs(st().settings.voltage - 3 * Math.pow(10, 6 / 20)) < 1e-12)
+  assert.equal(st().settings.rg, 0.25)
+  st().undo()
+  assert.equal(st().settings.voltage, 2)
+})
+
+// CONTRACT (addProbe): "Add a probe, with a fresh id."
+test('addProbe: fresh ids', () => {
+  st().loadSerialized(m4())
+  assert.equal(st().addProbe({ kind: 'flow', at: { node: 'w', handle: 'mouth' } }), 'probe1')
+  assert.deepEqual(st().projectExtras.probes.map((p) => p.id), ['p', 'probe1'])
+})

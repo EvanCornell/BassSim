@@ -8,6 +8,7 @@
 
 import { loadLeaves } from '../schema/validate.js'
 import { fmt, resistor } from './netlist.js'
+import { filterSections, compileSections } from './filters.js'
 
 /**
  * Compile every channel, and assign each driver its electrical terminals.
@@ -19,7 +20,7 @@ import { fmt, resistor } from './netlist.js'
  * @param {object} ctx - Compile context.
  * @param {object} proj - The resolved project.
  * @returns {Map<string, {ep: string, em: string}>} Driver id → its + and − terminal nodes.
- * @throws {Error} When a channel uses a DSP filter, which this compiler cannot yet build.
+ * @throws {Error} When a channel's DSP filter is malformed.
  * @mutates ctx.nl and ctx.map.channels.
  */
 export function compileWiring(ctx, proj) {
@@ -57,7 +58,6 @@ export function compileWiring(ctx, proj) {
     const tree = c.load ?? { parallel: drivers.filter((id) => !claimed.has(id)).map((id) => ({ driver: id })) }
     if (!loadLeaves(tree).length) continue
     const dsp = c.dsp || {}
-    if ((dsp.filters || []).length) throw new Error(`${c.label || c.id}: DSP filters are not supported by the SPICE engine yet`)
     const label = c.label || c.id
     nl.comment(`channel ${label}`)
     const src = nl.node()
@@ -73,6 +73,12 @@ export function compileWiring(ctx, proj) {
       nl.add('E', [out, '0', d, '0'], '1')
       drive = out
     }
+    const sections = []
+    for (const [i, f] of (dsp.filters || []).entries()) {
+      if (f.bypass) continue
+      try { sections.push(...filterSections(f)) } catch (err) { throw new Error(`${label} › filter ${i + 1}: ${err.message}`) }
+    }
+    if (sections.length) drive = compileSections(nl, drive, sections, label)
     if (Number(c.outputOhms) > 0) {
       const r = nl.node()
       resistor(nl, drive, r, Number(c.outputOhms), `${label} output resistance`)
@@ -81,7 +87,7 @@ export function compileWiring(ctx, proj) {
     const load = nl.node()
     const sense = nl.add('V', [drive, load], 'DC 0', `${label} current`)
     wire(tree, load, '0')
-    ctx.map.channels.push({ id: c.id, sense, load, volts: Number(c.volts) * master })
+    ctx.map.channels.push({ id: c.id, label, sense, load, volts: Number(c.volts) * master })
   }
   for (const id of drivers) if (!terms.has(id)) terms.set(id, { ep: nl.node(), em: nl.node() })
   return terms

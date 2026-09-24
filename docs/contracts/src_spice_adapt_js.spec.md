@@ -39,8 +39,11 @@ Unwrap a phase curve and derive group delay, as the legacy engine does.
 
 Turn a SPICE run into the results object.
 
-- Impedance is the load the first driving channel sees, excluding its
-  output resistance; electrical power sums over every channel.
+- Impedance is the load each channel sees, excluding its output
+  resistance; `zinMag` is the first channel's. Electrical power sums over
+  every channel.
+- Flow probes are volume flow, m³/s peak; velocity probes are that flow
+  over the local area, m/s peak.
 - Each radiator's far-field pressure at 1 m is jωρU/(Ω·r), and every
   radiator is 1 m from the listening point, so the combined output is their
   coherent sum. Only radiators that count toward output are summed.
