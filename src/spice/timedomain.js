@@ -282,10 +282,34 @@ function modelFor(project, bandwidth) {
  */
 export async function transientRun(project, run) {
   const signal = normalizeSignal(run.signal)
-  const { netlist, map } = compileProject(project, modelFor(project, run.bandwidth || 1000), {
-    tran: { signal, levelDb: run.levelDb || 0, fs: run.fs, tstop: run.tstop, nonlinear: !!run.nonlinear },
-  })
-  const raw = await runTransient(netlist)
+  /**
+   * Compile and run with the given solver robustness.
+   *
+   * @param {boolean} robust - Use the slower, more forgiving settings.
+   * @returns {Promise<{raw: object, map: object}>} The run and its map.
+   * @sideEffect Runs the engine.
+   */
+  const attempt = async (robust) => {
+    const { netlist, map } = compileProject(project, modelFor(project, run.bandwidth || 1000), {
+      tran: { signal, levelDb: run.levelDb || 0, fs: run.fs, tstop: run.tstop, nonlinear: !!run.nonlinear, robust },
+    })
+    return { raw: await runTransient(netlist), map }
+  }
+  let out
+  try {
+    out = await attempt(false)
+  } catch (err) {
+    // A run that stalls is retried once with robust settings before giving up.
+    if (!/timestep too small|aborted/i.test(err.message)) throw err
+    try {
+      out = await attempt(true)
+    } catch (again) {
+      const at = /time = ([\d.e+-]+)/.exec(again.message)
+      throw new Error(`The solver stalled${at ? ` at ${(Number(at[1]) * 1000).toFixed(1)} ms` : ''} even with its most forgiving settings. `
+        + 'This usually means the drive is beyond what the driver curves describe — try a lower level, or check the curves past Xmax.')
+    }
+  }
+  const { raw, map } = out
   const n = raw.time.length
   /**
    * A silent series, one sample per time step.

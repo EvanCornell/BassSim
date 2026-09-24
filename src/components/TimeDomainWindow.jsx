@@ -436,6 +436,7 @@ function TransientControls({ cfg, set }) {
         <h4>Run</h4>
         <Num label="Duration" value={cfg.duration} unit="s" min={0.01} onChange={(v) => set({ duration: v })} />
         <Pick label="Sample rate" value={cfg.fs} onChange={(v) => set({ fs: v })}
+          title="Samples per second in the result. The solver steps at least this finely, so higher rates cost proportionally more; 8 kHz covers a 1 kHz model band."
           options={[[4000, '4 kHz'], [8000, '8 kHz'], [16000, '16 kHz'], [24000, '24 kHz'], [48000, '48 kHz']]} />
         <Num label="Model band" value={cfg.bandwidth} unit="Hz" min={100} onChange={(v) => set({ bandwidth: v })}
           title="Highest frequency the model represents. Ducts are sliced for it; a lower band runs faster." />

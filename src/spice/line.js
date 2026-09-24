@@ -12,6 +12,54 @@ import { RHO, perimeter, viscousCoeff, thermalCoeff } from './physics.js'
 import { fmt, resistor, sense } from './netlist.js'
 import { fractionalSeries, fractionalShunt } from './networks.js'
 
+/**
+ * L-C sections per unit of delay × model bandwidth in a transient run.
+ *
+ * A ladder of n sections standing in for a delay τ behaves as the line up to
+ * about n/(πτ); 25·τ·fmax sections put that eight times above the model
+ * bandwidth, where the phase-velocity error is well under 1%.
+ */
+const LC_PER = 25
+
+/**
+ * One uniform piece of line, between two nodes.
+ *
+ * In the frequency sweep it is SPICE's exact lossless line. In a transient
+ * run it is a ladder of L-C sections instead: an ideal line re-launches
+ * every sharp edge in its input as reflections at its delay, and with many
+ * short lines those pile up until ngspice cannot find a step small enough
+ * ("timestep too small"). The ladder has no delays to schedule, so the step
+ * follows the signal, not the geometry.
+ *
+ * @param {object} ctx - Compile context: `{nl, tran, fmax}`.
+ * @param {string} a - One end.
+ * @param {string} b - The other end.
+ * @param {number} Z0 - Characteristic impedance, ρc/S.
+ * @param {number} td - Delay, s.
+ * @param {string} [note] - Comment.
+ * @returns {void}
+ * @mutates ctx.nl.
+ */
+function segment(ctx, a, b, Z0, td, note) {
+  const { nl } = ctx
+  if (!ctx.tran) {
+    nl.add('T', [a, '0', b, '0'], `Z0=${fmt(Z0)} TD=${fmt(td)}`, note)
+    return
+  }
+  // T-sections: L/2, then C and L alternating, then L/2 — adjacent halves merged.
+  const n = Math.max(1, Math.ceil(LC_PER * td * ctx.fmax))
+  const L = (Z0 * td) / n
+  const C = td / (Z0 * n)
+  let at = a
+  for (let k = 0; k < n; k++) {
+    const mid = nl.node()
+    nl.add('L', [at, mid], fmt(k === 0 ? L / 2 : L), k === 0 ? note : undefined)
+    nl.add('C', [mid, '0'], fmt(C))
+    at = mid
+  }
+  nl.add('L', [at, b], fmt(L / 2))
+}
+
 /** Most slices one line may be cut into, however long or lossy. */
 const MAX_SLICES = 48
 
@@ -113,11 +161,11 @@ export function compileLine(ctx, spec) {
     for (let k = 0; k < n; k++) {
       const next = k === n - 1 ? bp.get(x1) : nl.node()
       const S = spec.area(x0 + (k + 0.5) * dx)
-      const Z0 = fmt((RHO * spec.c) / S)
+      const Z0 = (RHO * spec.c) / S
       if (series) {
         const a = nl.node()
         const b = nl.node()
-        nl.add('T', [at, '0', a, '0'], `Z0=${Z0} TD=${fmt(dx / 2 / spec.c)}`, spec.note)
+        segment(ctx, at, a, Z0, dx / 2 / spec.c, spec.note)
         if (spec.viscous > 0) {
           let into = a
           if (spec.flowResistance > 0) {
@@ -128,9 +176,9 @@ export function compileLine(ctx, spec) {
         } else {
           resistor(nl, a, b, (spec.flowResistance / S) * dx, `${spec.note} stuffing`)
         }
-        nl.add('T', [b, '0', next, '0'], `Z0=${Z0} TD=${fmt(dx / 2 / spec.c)}`)
+        segment(ctx, b, next, Z0, dx / 2 / spec.c)
       } else {
-        nl.add('T', [at, '0', next, '0'], `Z0=${Z0} TD=${fmt(dx / spec.c)}`, spec.note)
+        segment(ctx, at, next, Z0, dx / spec.c, spec.note)
       }
       if (spec.thermal > 0) {
         addShunt(at, dx / 2, S)

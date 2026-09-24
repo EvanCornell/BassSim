@@ -360,7 +360,7 @@ Distortion analyses.
 
 - Runs the engine, many times.
 
-## UNREACHABLE (13)
+## UNREACHABLE (14)
 
 ### `sweepOf(project)`
 
@@ -516,6 +516,26 @@ the sample rate, so a higher sample rate does not multiply the circuit.
 - `object` — An `ac`-shaped analysis for `compileProject`.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
+
+### `transientRun > attempt(robust)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+- **Async:** returns a Promise
+
+Compile and run with the given solver robustness.
+
+**Parameters**
+
+- `robust` — `boolean` — Use the slower, more forgiving settings.
+
+**Returns**
+
+- `Promise<{raw: object, map: object}>` — The run and its map.
+
+**Side effects**
+
+- Runs the engine.
 
 ### `transientRun > zeros()`
 

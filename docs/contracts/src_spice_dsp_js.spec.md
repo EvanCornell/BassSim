@@ -26,7 +26,7 @@ Signal types a transient analysis may use.
 
 Values: `sine`, `burst`, `sweep`, `noise`
 
-## EXPORTED (13)
+## EXPORTED (14)
 
 ### `normalizeSignal(sig)`
 
@@ -38,7 +38,8 @@ Fill in a signal's defaults.
 - `sine`: `hz`, faded in over `fade` cycles (default 2) so the start does
   not ring the box.
 - `burst`: `hz`, `cycles` (default 6.5), Hann-windowed — the CEA-2010 shape.
-- `sweep`: exponential from `f1` to `f2` over `length` s.
+- `sweep`: exponential from `f1` to `f2` over `length` s, faded out over
+  its last few cycles (see `sweepFade`) so it does not stop on a step.
 - `noise`: pink, `f1`–`f2` band, `length` s, seeded so a run repeats.
 
 **Parameters**
@@ -52,6 +53,27 @@ Fill in a signal's defaults.
 **Throws**
 
 - `Error` — For an unknown type or a non-positive frequency.
+
+**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
+
+### `sweepFade(sig)`
+
+- **Reachability:** EXPORTED
+- **Obtain via:** import { sweepFade } from '../../src/spice/dsp.js'
+
+How long a sweep fades out over at its end, s.
+
+Three periods of the top frequency, or a tenth of the sweep if shorter —
+enough that the signal ends at zero without a step, which the circuit
+would otherwise ring at.
+
+**Parameters**
+
+- `sig` — `object` — A normalised sweep.
+
+**Returns**
+
+- `number` — The fade length, s.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 

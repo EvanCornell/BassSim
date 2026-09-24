@@ -50,7 +50,38 @@ Compile one line into the netlist.
 
 - ctx.nl.
 
-## UNREACHABLE (6)
+## UNREACHABLE (7)
+
+### `segment(ctx, a, b, Z0, td, note)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+One uniform piece of line, between two nodes.
+
+In the frequency sweep it is SPICE's exact lossless line. In a transient
+run it is a ladder of L-C sections instead: an ideal line re-launches
+every sharp edge in its input as reflections at its delay, and with many
+short lines those pile up until ngspice cannot find a step small enough
+("timestep too small"). The ladder has no delays to schedule, so the step
+follows the signal, not the geometry.
+
+**Parameters**
+
+- `ctx` — `object` — Compile context: `{nl, tran, fmax}`.
+- `a` — `string` — One end.
+- `b` — `string` — The other end.
+- `Z0` — `number` — Characteristic impedance, ρc/S.
+- `td` — `number` — Delay, s.
+- `note` — `string` _(optional)_ — Comment.
+
+**Returns**
+
+- `void`
+
+**Mutates**
+
+- ctx.nl.
 
 ### `compileLine > at()`
 

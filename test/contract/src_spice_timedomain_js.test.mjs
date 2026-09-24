@@ -110,17 +110,25 @@ test('duct exit loss: odd harmonics and compression, only when nonlinear', async
   assert.ok(!/exit loss/.test(netlist), 'never in the sweep')
 })
 
-// CONTRACT (compileProject, tran): output on the sample grid, the internal
-// step never past the shortest line delay.
-test('transient netlist: interpolated output and a step under the line delays', () => {
+// CONTRACT (compileProject, tran; line.js segment): output on the sample
+// grid; lines as L-C ladders, not ideal lines, so their delays never limit
+// or stall the step; the internal step at most an eighth of a period at the
+// model bandwidth.
+test('transient netlist: interpolated output, ladders for lines, a bounded step', () => {
   const { netlist } = compileProject(box(), { fmin: 10, fmax: 1000, npts: 50 }, {
     tran: { signal: normalizeSignal({ type: 'sine', hz: 40 }), levelDb: 0, fs: 1000, tstop: 0.1, nonlinear: false },
   })
-  assert.match(netlist, /\.options interp/)
+  assert.match(netlist, /\.options interp\n/)
   const m = /\.tran (\S+) (\S+) 0 (\S+)/.exec(netlist)
   assert.equal(Number(m[1]), 1e-3)
-  const tds = [...netlist.matchAll(/TD=(\S+)/g)].map((x) => Number(x[1]))
-  assert.ok(Number(m[3]) <= Math.min(...tds))
+  assert.ok(Number(m[3]) <= 1 / 8000 + 1e-15)
+  assert.ok(!/^T/m.test(netlist), 'no ideal lines')
+  const { netlist: ac } = compileProject(box(), { fmin: 10, fmax: 1000, npts: 50 })
+  assert.ok(/^T/m.test(ac), 'the sweep keeps the exact line')
+  const robust = compileProject(box(), { fmin: 10, fmax: 1000, npts: 50 }, {
+    tran: { signal: normalizeSignal({ type: 'sine', hz: 40 }), fs: 1000, tstop: 0.1, robust: true },
+  }).netlist
+  assert.match(robust, /method=gear/)
   assert.ok(!/^B/m.test(netlist.replace(/^B\d+ \S+ 0 V=.*source$/m, '')), 'no behavioural sources but the signal when linear')
 })
 
@@ -160,4 +168,22 @@ test('helpers: logFreqs, brokenLimit, levels, splOf', () => {
   assert.equal(brokenLimit({ harmonics: [h(1, 0), h(2, -12)], xPeak: { d: 9 } }, 10), null)
   assert.deepEqual(levels([3, -4, 0]), { peak: 4, rms: Math.sqrt(25 / 3) })
   assert.ok(Math.abs(splOf(1) - 93.979) < 1e-3)
+})
+
+// The cases that used to stall ("timestep too small"): sharp-edged signals —
+// pink noise, a sweep's end — through ducts, and a nonlinear driver pushed
+// past its curves' range.
+test('hard signals run without stalling', async () => {
+  const p = box({ Bl: { points: [{ x: 8, g: -0.5, w: 4 }], sym: true }, Kms: { points: [{ x: 8, g: 2, w: 4 }], sym: true } }, { throatK: 1, mouthK: 1 })
+  for (const signal of [
+    { type: 'noise', f1: 10, f2: 300, length: 0.3 },
+    { type: 'sweep', f1: 10, f2: 300, length: 0.3 },
+    { type: 'burst', hz: 30, cycles: 6.5 },
+  ]) {
+    for (const nonlinear of [false, true]) {
+      const r = await transientRun(p, { signal, levelDb: 12, fs: 8000, tstop: 0.35, bandwidth: 1000, nonlinear })
+      assert.equal(r.t.length, Math.round(0.35 * 8000) + 1, `${signal.type} ${nonlinear}`)
+      assert.ok(r.pressure.every(Number.isFinite))
+    }
+  }
 })

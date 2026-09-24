@@ -29,7 +29,10 @@ function transientSource(ctx, node, volts, label) {
   const { signal, levelDb = 0, fs } = ctx.tran
   const rms = volts * Math.pow(10, levelDb / 20)
   if (signal.type === 'noise') {
-    const pts = signalPoints(signal, rms, fs).map((v) => fmt(v))
+    // Every point of a PWL source is a breakpoint the solver must stop at, so
+    // the noise is sampled at eight times its top frequency, not at the
+    // output rate — it has nothing above that to carry.
+    const pts = signalPoints(signal, rms, Math.min(fs, Math.max(8 * signal.f2, 1000))).map((v) => fmt(v))
     const rows = []
     for (let i = 0; i < pts.length; i += 16) rows.push(`+ ${pts.slice(i, i + 16).join(' ')}`)
     ctx.nl.add('V', [node, '0'], `DC 0 PWL(\n${rows.join('\n')}\n+ )`, `${label} source`)

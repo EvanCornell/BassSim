@@ -64,7 +64,7 @@ function transientOutputs(ctx) {
  * @param {object} proj - A resolved, validated v3 project.
  * @param {object} analysis - The `ac` analysis whose band, model settings and points to use. `scale: 'lin'` makes a linear sweep of `npts` points from `fmin` to `fmax`, as the linear time responses need.
  * @param {object} [opts] - Options.
- * @param {object} [opts.tran] - Compile a transient run instead: `{signal, levelDb, fs, tstop, nonlinear}` — a normalised signal (see `dsp.js`), a level offset in dB, the sample rate, the run length in s, and whether to switch on the nonlinear elements.
+ * @param {object} [opts.tran] - Compile a transient run instead: `{signal, levelDb, fs, tstop, nonlinear, robust}` — a normalised signal (see `dsp.js`), a level offset in dB, the sample rate, the run length in s, whether to switch on the nonlinear elements, and whether to use the slower, more forgiving solver settings.
  * @returns {{netlist: string, map: object, saves: string[]}} The netlist text; the map of drivers, channels, waveguides, radiators and probes to the SPICE vectors that carry them; and the vectors to read back.
  * @throws {Error} When the project uses something this compiler cannot build yet.
  * @pure
@@ -125,15 +125,20 @@ export function compileProject(proj, analysis, opts = {}) {
   nl.lines.push(`.save ${unique.join(' ')}`)
   if (tran) {
     // Output on the sample grid exactly. The internal step never passes a
-    // sample, nor the shortest transmission-line delay: ngspice's lossless
-    // line cannot be stepped across its own delay, and gives up instead.
+    // sample, nor an eighth of a period at the model bandwidth — the
+    // trapezoidal rule's error grows with the square of the step — nor the
+    // delay of any line left in the circuit (a channel's DSP delay), which
+    // ngspice cannot step across.
     const step = 1 / tran.fs
-    let maxStep = step
+    let maxStep = Math.min(step, 1 / (8 * analysis.fmax))
     for (const l of nl.lines) {
       const m = /^T\S* .* TD=(\S+)/.exec(l)
       if (m) maxStep = Math.min(maxStep, 0.9 * Number(m[1]))
     }
-    nl.lines.push('.options interp')
+    // A retry after a failed run trades speed for robustness: Gear
+    // integration damps the stiff corners trapezoidal rings on, and more
+    // Newton iterations per point stop a hard step from being cut to nothing.
+    nl.lines.push(tran.robust ? '.options interp method=gear maxord=2 itl4=100 reltol=0.002' : '.options interp')
     nl.lines.push(`.tran ${fmt(step)} ${fmt(tran.tstop)} 0 ${fmt(maxStep)}`)
   } else if (analysis.scale === 'lin') {
     nl.lines.push(`.ac lin ${Math.round(analysis.npts)} ${analysis.fmin} ${analysis.fmax}`)

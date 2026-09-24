@@ -47,7 +47,7 @@ excursion nodes, and the nonlinear elements when they are switched on.
 - `proj` — `object` — A resolved, validated v3 project.
 - `analysis` — `object` — The `ac` analysis whose band, model settings and points to use. `scale: 'lin'` makes a linear sweep of `npts` points from `fmin` to `fmax`, as the linear time responses need.
 - `opts` — `object` _(optional)_ — Options.
-- `opts.tran` — `object` _(optional)_ — Compile a transient run instead: `{signal, levelDb, fs, tstop, nonlinear}` — a normalised signal (see `dsp.js`), a level offset in dB, the sample rate, the run length in s, and whether to switch on the nonlinear elements.
+- `opts.tran` — `object` _(optional)_ — Compile a transient run instead: `{signal, levelDb, fs, tstop, nonlinear, robust}` — a normalised signal (see `dsp.js`), a level offset in dB, the sample rate, the run length in s, whether to switch on the nonlinear elements, and whether to use the slower, more forgiving solver settings.
 
 **Returns**
 

@@ -2,7 +2,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import {
-  normalizeSignal, signalLength, signalFunction, signalPoints, pinkNoise, nextPow2, fft, irfft, rfft, harmonics, thd, decimate, SIGNAL_TYPES,
+  sweepFade, normalizeSignal, signalLength, signalFunction, signalPoints, pinkNoise, nextPow2, fft, irfft, rfft, harmonics, thd, decimate, SIGNAL_TYPES,
 } from '../../src/spice/dsp.js'
 
 // CONTRACT (fft): "In-place radix-2 FFT"; inverse "scaled by 1/n".
@@ -82,4 +82,16 @@ test('decimate: thins, keeping the peaks', () => {
   assert.equal(Math.max(...d.ys[0]), 50)
   assert.equal(Math.min(...d.ys[0]), -40)
   for (let i = 1; i < d.t.length; i++) assert.ok(d.t[i] > d.t[i - 1], 'strictly increasing time')
+})
+
+// CONTRACT (sweepFade): a sweep "faded out over its last few cycles … so it
+// does not stop on a step".
+test('a sweep ends at zero', () => {
+  const sig = normalizeSignal({ type: 'sweep', f1: 10, f2: 300, length: 0.4 })
+  const fn = signalFunction(sig)
+  assert.ok(Math.abs(sweepFade(sig) - 0.01) < 1e-12)
+  let worst = 0
+  for (let t = 0.3999; t < 0.4; t += 1e-6) worst = Math.max(worst, Math.abs(fn(t)))
+  assert.ok(worst < 1e-3, `${worst}`)
+  assert.ok(Math.abs(fn(0.1)) <= 1)
 })

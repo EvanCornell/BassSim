@@ -16,7 +16,8 @@ export const SIGNAL_TYPES = ['sine', 'burst', 'sweep', 'noise']
  * - `sine`: `hz`, faded in over `fade` cycles (default 2) so the start does
  *   not ring the box.
  * - `burst`: `hz`, `cycles` (default 6.5), Hann-windowed — the CEA-2010 shape.
- * - `sweep`: exponential from `f1` to `f2` over `length` s.
+ * - `sweep`: exponential from `f1` to `f2` over `length` s, faded out over
+ *   its last few cycles (see `sweepFade`) so it does not stop on a step.
  * - `noise`: pink, `f1`–`f2` band, `length` s, seeded so a run repeats.
  *
  * @param {object} sig - A signal, possibly sparse.
@@ -31,6 +32,21 @@ export function normalizeSignal(sig) {
   if (s.type === 'burst') return { cycles: 6.5, hz: 40, ...s }
   if (s.type === 'sweep') return { f1: 10, f2: 500, length: 1, ...s }
   return { f1: 10, f2: 500, length: 1, seed: 1, ...s }
+}
+
+/**
+ * How long a sweep fades out over at its end, s.
+ *
+ * Three periods of the top frequency, or a tenth of the sweep if shorter —
+ * enough that the signal ends at zero without a step, which the circuit
+ * would otherwise ring at.
+ *
+ * @param {object} sig - A normalised sweep.
+ * @returns {number} The fade length, s.
+ * @pure
+ */
+export function sweepFade(sig) {
+  return Math.min(3 / sig.f2, sig.length / 10)
 }
 
 /**
@@ -67,7 +83,10 @@ export function signalFunction(sig, fs = 48000) {
   if (sig.type === 'sweep') {
     const L = Math.log(sig.f2 / sig.f1)
     const k = (2 * Math.PI * sig.f1 * sig.length) / L
-    return (t) => (t < 0 || t >= sig.length ? 0 : Math.sin(k * (Math.exp((t * L) / sig.length) - 1)))
+    const tf = sweepFade(sig)
+    const t0 = sig.length - tf
+    return (t) => (t < 0 || t >= sig.length ? 0
+      : Math.sin(k * (Math.exp((t * L) / sig.length) - 1)) * (t > t0 ? 0.5 * (1 + Math.cos((Math.PI * (t - t0)) / tf)) : 1))
   }
   const samples = pinkNoise(sig, fs)
   return (t) => {
@@ -110,7 +129,10 @@ export function signalExpression(sig, amp) {
   }
   if (sig.type === 'sweep') {
     const L = Math.log(sig.f2 / sig.f1)
-    return `(time<${n(sig.length)}?${n(amp)}*sin(${n((2 * Math.PI * sig.f1 * sig.length) / L)}*(exp(time*${n(L / sig.length)})-1)):0)`
+    const tf = sweepFade(sig)
+    const t0 = sig.length - tf
+    return `(time<${n(sig.length)}?${n(amp)}*sin(${n((2 * Math.PI * sig.f1 * sig.length) / L)}*(exp(time*${n(L / sig.length)})-1))`
+      + `*(time>${n(t0)}?0.5*(1+cos(${n(Math.PI / tf)}*(time-${n(t0)}))):1):0)`
   }
   throw new Error('noise has no expression; use signalPoints')
 }

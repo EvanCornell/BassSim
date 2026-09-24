@@ -44,9 +44,24 @@ docking in it; the dock stays mounted underneath. Four tabs:
 
 How it is built:
 - `src/spice/run.js` `runTransient`; `.options interp` puts samples on the
-  grid; the max internal step is capped at 0.9× the shortest T-line delay
-  (ngspice's lossless line fails otherwise). "Timestep too small" and
-  "aborted" are now fatal.
+  grid. "Timestep too small" and "aborted" are fatal.
+- **Lines are L-C ladders in transient runs** (`segment` in `line.js`),
+  25·τ·fmax sections per piece, so the ladder behaves as the line to ~8×
+  the model bandwidth. Ideal `T` lines re-launch every sharp edge as
+  reflections at their delays; with many short lines those piled up until
+  ngspice stalled ("timestep too small" — reproduced on the user's port
+  boxes with noise and sweeps, and on the five-port box whenever nonlinear).
+  The sweep keeps the exact `T` lines; linear transient vs IFFT agree to 3e-4.
+- Internal step ≤ min(1/fs, 1/(8·bandwidth)); only a channel's DSP delay is
+  still a `T` line, and the step stays under its delay.
+- A stalled run is retried once with Gear integration, itl4=100 and
+  reltol 0.002, then reported with a plain message.
+- The sweep fades out over its last three periods of f2; noise is sampled
+  at 8·f2 for its PWL source (each point is a forced breakpoint).
+- Measured after the change: 80/80 runs pass across the uploaded port
+  boxes, the five-port box, a flared horn and a tapped stuffed chamber,
+  every signal, linear and nonlinear, 8 and 48 kHz (before: 12 failures).
+  The five-port box at 8 kHz went from 28–60 s to 8–17 s.
 - In a transient compile, far-field pressure is `v` across a ρ-henry
   inductor fed Σ U/Ω by F sources, and excursion is a 1 F capacitor fed the
   cone velocity — solved by the same integrator as the rest.

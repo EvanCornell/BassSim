@@ -25,8 +25,8 @@
   },
   "stats": {
     "modules": 94,
-    "methods": 972,
-    "documented": 972
+    "methods": 975,
+    "documented": 975
   },
   "modules": [
     {
@@ -16136,7 +16136,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 460,
+          "line": 461,
           "signature": [
             "arg0"
           ],
@@ -16191,7 +16191,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 487,
+          "line": 488,
           "signature": [
             "y"
           ],
@@ -16230,7 +16230,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 577,
+          "line": 578,
           "signature": [
             "text"
           ],
@@ -16269,7 +16269,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 588,
+          "line": 589,
           "signature": [
             "arg0"
           ],
@@ -16322,7 +16322,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 651,
+          "line": 652,
           "signature": [
             "db"
           ],
@@ -16361,7 +16361,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 663,
+          "line": 664,
           "signature": [
             "arg0"
           ],
@@ -16423,7 +16423,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 774,
+          "line": 775,
           "signature": [],
           "documented": true,
           "summary": "Duct exit losses, listed for every waveguide.",
@@ -16454,7 +16454,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 813,
+          "line": 814,
           "signature": [],
           "documented": true,
           "summary": "The running job's progress, with a cancel button.",
@@ -16485,7 +16485,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 837,
+          "line": 838,
           "signature": [],
           "documented": true,
           "summary": "The time-domain workspace: its own full-screen view under the menu and quick bar.",
@@ -30236,7 +30236,7 @@
               "type": "object",
               "optional": true,
               "default": null,
-              "desc": "Compile a transient run instead: `{signal, levelDb, fs, tstop, nonlinear}` — a normalised signal (see `dsp.js`), a level offset in dB, the sample rate, the run length in s, and whether to switch on the nonlinear elements."
+              "desc": "Compile a transient run instead: `{signal, levelDb, fs, tstop, nonlinear, robust}` — a normalised signal (see `dsp.js`), a level offset in dB, the sample rate, the run length in s, whether to switch on the nonlinear elements, and whether to use the slower, more forgiving solver settings."
             }
           ],
           "returns": {
@@ -30294,13 +30294,13 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 27,
+          "line": 28,
           "signature": [
             "sig"
           ],
           "documented": true,
           "summary": "Fill in a signal's defaults.",
-          "description": "Fill in a signal's defaults.\n\n- `sine`: `hz`, faded in over `fade` cycles (default 2) so the start does\n  not ring the box.\n- `burst`: `hz`, `cycles` (default 6.5), Hann-windowed — the CEA-2010 shape.\n- `sweep`: exponential from `f1` to `f2` over `length` s.\n- `noise`: pink, `f1`–`f2` band, `length` s, seeded so a run repeats.",
+          "description": "Fill in a signal's defaults.\n\n- `sine`: `hz`, faded in over `fade` cycles (default 2) so the start does\n  not ring the box.\n- `burst`: `hz`, `cycles` (default 6.5), Hann-windowed — the CEA-2010 shape.\n- `sweep`: exponential from `f1` to `f2` over `length` s, faded out over\n  its last few cycles (see `sweepFade`) so it does not stop on a step.\n- `noise`: pink, `f1`–`f2` band, `length` s, seeded so a run repeats.",
           "params": [
             {
               "name": "sig",
@@ -30332,13 +30332,52 @@
           "other": []
         },
         {
+          "name": "sweepFade",
+          "qualified": "sweepFade",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 48,
+          "signature": [
+            "sig"
+          ],
+          "documented": true,
+          "summary": "How long a sweep fades out over at its end, s.",
+          "description": "How long a sweep fades out over at its end, s.\n\nThree periods of the top frequency, or a tenth of the sweep if shorter —\nenough that the signal ends at zero without a step, which the circuit\nwould otherwise ring at.",
+          "params": [
+            {
+              "name": "sig",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "A normalised sweep."
+            }
+          ],
+          "returns": {
+            "type": "number",
+            "desc": "The fade length, s."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
           "name": "signalLength",
           "qualified": "signalLength",
           "kind": "function",
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 43,
+          "line": 59,
           "signature": [
             "sig"
           ],
@@ -30377,7 +30416,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 57,
+          "line": 73,
           "signature": [
             "sig",
             "fs"
@@ -30424,7 +30463,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 93,
+          "line": 112,
           "signature": [
             "sig",
             "amp"
@@ -30471,7 +30510,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 101,
+          "line": 120,
           "signature": [
             "v"
           ],
@@ -30510,7 +30549,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 127,
+          "line": 149,
           "signature": [
             "sig",
             "amp",
@@ -30565,7 +30604,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 143,
+          "line": 165,
           "signature": [
             "seed"
           ],
@@ -30604,7 +30643,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 165,
+          "line": 187,
           "signature": [
             "sig",
             "fs"
@@ -30651,7 +30690,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 202,
+          "line": 224,
           "signature": [
             "n"
           ],
@@ -30690,7 +30729,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 217,
+          "line": 239,
           "signature": [
             "re",
             "im",
@@ -30747,7 +30786,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 259,
+          "line": 281,
           "signature": [
             "re",
             "im"
@@ -30794,7 +30833,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 279,
+          "line": 301,
           "signature": [
             "x",
             "n"
@@ -30841,7 +30880,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 302,
+          "line": 324,
           "signature": [
             "x",
             "fs",
@@ -30912,7 +30951,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 326,
+          "line": 348,
           "signature": [
             "h"
           ],
@@ -30951,7 +30990,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 343,
+          "line": 365,
           "signature": [
             "t",
             "ys",
@@ -32667,13 +32706,94 @@
       "constants": [],
       "methods": [
         {
+          "name": "segment",
+          "qualified": "segment",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 43,
+          "signature": [
+            "ctx",
+            "a",
+            "b",
+            "Z0",
+            "td",
+            "note"
+          ],
+          "documented": true,
+          "summary": "One uniform piece of line, between two nodes.",
+          "description": "One uniform piece of line, between two nodes.\n\nIn the frequency sweep it is SPICE's exact lossless line. In a transient\nrun it is a ladder of L-C sections instead: an ideal line re-launches\nevery sharp edge in its input as reflections at its delay, and with many\nshort lines those pile up until ngspice cannot find a step small enough\n(\"timestep too small\"). The ladder has no delays to schedule, so the step\nfollows the signal, not the geometry.",
+          "params": [
+            {
+              "name": "ctx",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "Compile context: `{nl, tran, fmax}`."
+            },
+            {
+              "name": "a",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "One end."
+            },
+            {
+              "name": "b",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "The other end."
+            },
+            {
+              "name": "Z0",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Characteristic impedance, ρc/S."
+            },
+            {
+              "name": "td",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Delay, s."
+            },
+            {
+              "name": "note",
+              "type": "string",
+              "optional": true,
+              "default": null,
+              "desc": "Comment."
+            }
+          ],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [
+              "ctx.nl."
+            ],
+            "sideEffect": [],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
           "name": "compileLine",
           "qualified": "compileLine",
           "kind": "function",
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 39,
+          "line": 87,
           "signature": [
             "ctx",
             "spec"
@@ -32813,7 +32933,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 55,
+          "line": 103,
           "signature": [],
           "documented": true,
           "summary": "The one node of a lumped chamber, wherever along it is asked for.",
@@ -32844,7 +32964,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 62,
+          "line": 110,
           "signature": [],
           "documented": true,
           "summary": "A lumped chamber has no flow along it.",
@@ -32873,7 +32993,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 73,
+          "line": 121,
           "signature": [
             "x"
           ],
@@ -32912,7 +33032,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 102,
+          "line": 150,
           "signature": [
             "node",
             "len",
@@ -32969,7 +33089,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 155,
+          "line": 203,
           "signature": [
             "x"
           ],
@@ -33010,7 +33130,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 163,
+          "line": 211,
           "signature": [
             "x"
           ],
@@ -35237,7 +35357,7 @@
         },
         {
           "name": "CEA2010_LIMITS",
-          "line": 382,
+          "line": 406,
           "shape": {
             "kind": "object",
             "keys": [
@@ -35257,7 +35377,7 @@
         },
         {
           "name": "DISTORTION_DEFAULTS",
-          "line": 385,
+          "line": 409,
           "shape": {
             "kind": "object",
             "keys": [
@@ -35847,13 +35967,54 @@
           "other": []
         },
         {
+          "name": "attempt",
+          "qualified": "transientRun > attempt",
+          "kind": "function",
+          "exported": false,
+          "async": true,
+          "generator": false,
+          "line": 292,
+          "signature": [
+            "robust"
+          ],
+          "documented": true,
+          "summary": "Compile and run with the given solver robustness.",
+          "description": "Compile and run with the given solver robustness.",
+          "params": [
+            {
+              "name": "robust",
+              "type": "boolean",
+              "optional": false,
+              "default": null,
+              "desc": "Use the slower, more forgiving settings."
+            }
+          ],
+          "returns": {
+            "type": "Promise<{raw: object, map: object}>",
+            "desc": "The run and its map."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Runs the engine."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
           "name": "zeros",
           "qualified": "transientRun > zeros",
           "kind": "function",
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 296,
+          "line": 320,
           "signature": [],
           "documented": true,
           "summary": "A silent series, one sample per time step.",
@@ -35882,7 +36043,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 337,
+          "line": 361,
           "signature": [
             "x"
           ],
@@ -35921,7 +36082,7 @@
           "exported": true,
           "async": true,
           "generator": false,
-          "line": 354,
+          "line": 378,
           "signature": [
             "project",
             "opts",
@@ -35983,7 +36144,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 377,
+          "line": 401,
           "signature": [
             "project"
           ],
@@ -36022,7 +36183,7 @@
           "exported": true,
           "async": true,
           "generator": false,
-          "line": 408,
+          "line": 432,
           "signature": [
             "project",
             "hz",
@@ -36092,7 +36253,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 427,
+          "line": 451,
           "signature": [
             "x"
           ],
@@ -36131,7 +36292,7 @@
           "exported": true,
           "async": true,
           "generator": false,
-          "line": 451,
+          "line": 475,
           "signature": [
             "project",
             "hz",
@@ -36193,7 +36354,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 466,
+          "line": 490,
           "signature": [
             "f1",
             "f2",
@@ -36248,7 +36409,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 479,
+          "line": 503,
           "signature": [
             "m",
             "xLimitMm"
@@ -36295,7 +36456,7 @@
           "exported": true,
           "async": true,
           "generator": false,
-          "line": 506,
+          "line": 530,
           "signature": [
             "project",
             "hz",
@@ -36365,7 +36526,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 520,
+          "line": 544,
           "signature": [
             "f"
           ],
@@ -36404,7 +36565,7 @@
           "exported": true,
           "async": true,
           "generator": false,
-          "line": 563,
+          "line": 587,
           "signature": [
             "project",
             "mode",
@@ -36549,7 +36710,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 54,
+          "line": 57,
           "signature": [
             "ctx",
             "proj"
@@ -36603,7 +36764,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 70,
+          "line": 73,
           "signature": [
             "tree",
             "a",
