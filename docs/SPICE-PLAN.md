@@ -54,8 +54,14 @@ How it is built:
   The sweep keeps the exact `T` lines; linear transient vs IFFT agree to 3e-4.
 - Internal step ≤ min(1/fs, 1/(8·bandwidth)); only a channel's DSP delay is
   still a `T` line, and the step stays under its delay.
-- A stalled run is retried once with Gear integration, itl4=100 and
-  reltol 0.002, then reported with a plain message.
+- A run that fails for any reason is retried through `SOLVER_SETTINGS`:
+  KLU from rest, then ngspice's default solver from its operating point
+  (exactly the settings before KLU), then each with Gear integration,
+  itl4=100 and reltol 0.002. Only when all four fail does the run fail,
+  with ngspice's own first message. In THD, compression and max SPL, a
+  point that fails every setting is left out and listed (`failed`) rather
+  than failing the analysis; in max SPL it counts as past the limit
+  ("no solution"). A pool worker that dies has its run re-queued once.
 - The sweep fades out over its last three periods of f2; noise is sampled
   at 8·f2 for its PWL source (each point is a forced breakpoint).
 - Measured after the change: 80/80 runs pass across the uploaded port
@@ -119,7 +125,8 @@ Every simulation now uses as many processor threads as the machine has:
   rest — every signal is silent at t = 0 (noise's first point is pinned to
   zero) — and `runTransient` puts back the t = 0 sample ngspice omits.
   Sweeps keep the default solver: KLU fails their DC operating point, and
-  with `noopac` fails the complex factorisation.
+  with `noopac` fails the complex factorisation. Should KLU ever fail a
+  transient run, the fallback chain above reruns it on the old settings.
 - Measured in Chromium on 4 threads, old → new: five-port linear responses
   9.7 → 3.5 s; five-port nonlinear transient with linear comparison
   26.3 → 6.9 s; port box THD sweep 6.0 → 2.8 s, max SPL 20.9 → 11.3 s,

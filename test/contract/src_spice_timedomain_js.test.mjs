@@ -10,7 +10,7 @@ import {
   linearResponses, transientRun, transientAnalysis, measureTone, linearLevel, distortionAnalysis,
   logFreqs, brokenLimit, levels, splOf, CEA2010_LIMITS, maxLevel,
 } from '../../src/spice/timedomain.js'
-import { setThreads } from '../../src/spice/run.js'
+import { setThreads, setRunner, runLocal } from '../../src/spice/run.js'
 
 const DRV = { Fs: 30, Qts: 0.45, Qes: 0.5, Qms: 5, Vas: 60, Re: 3.6, Bl: 15, Mms: 150, Cms: 0.19, Sd: 480, Le: 1.5, LeExp: 0.7, Xmax: 10, Rms: 4 }
 
@@ -237,4 +237,47 @@ test('maxspl with several threads matches one thread', async () => {
       assert.ok(Math.abs(many.rows[i].levelDb - r.levelDb) <= 0.25, `${r.hz} Hz: ${r.levelDb} vs ${many.rows[i].levelDb}`)
     })
   } finally { setThreads(1) }
+})
+
+// CONTRACT (transientRun, SOLVER_SETTINGS): "A run that fails is tried
+// again with each of SOLVER_SETTINGS in turn; only when every one fails does
+// the run fail, with ngspice's own message from the first."
+test('transientRun falls back through the solver settings', async () => {
+  const seen = []
+  setRunner((netlist, kind) => {
+    const opts = /^\.options interp(.*)$/m.exec(netlist)[1].trim()
+    seen.push(opts)
+    if (/klu/.test(opts)) return Promise.reject(new Error('SPICE could not solve this circuit: Timestep too small; time = 0.01'))
+    return runLocal(netlist, kind)
+  })
+  try {
+    const r = await transientRun(box(), { signal: { type: 'sine', hz: 40 }, fs: 2000, tstop: 0.05, bandwidth: 400 })
+    assert.equal(seen.length, 2)
+    assert.equal(seen[1], '', 'then ngspice\'s default solver, as before KLU')
+    assert.equal(r.t[0], 0)
+    assert.ok(r.pressure.some((v) => Math.abs(v) > 0))
+    seen.length = 0
+    setRunner(() => Promise.reject(new Error('SPICE could not solve this circuit: singular matrix')))
+    await assert.rejects(transientRun(box(), { signal: { type: 'sine', hz: 40 }, fs: 2000, tstop: 0.05, bandwidth: 400 }), /singular matrix/)
+  } finally { setRunner(null) }
+})
+
+// CONTRACT (distortionAnalysis): a point no setting can solve is "left out
+// and listed in `failed`"; only when every point fails does the analysis fail.
+test('distortion: an unsolvable point is listed, the rest complete', async () => {
+  const w45 = String(2 * Math.PI * 45).slice(0, 8)
+  setRunner((netlist, kind) => (netlist.includes(`sin(${w45}`) ? Promise.reject(new Error('SPICE could not solve this circuit: stuck')) : runLocal(netlist, kind)))
+  try {
+    const r = await distortionAnalysis(box(), 'thd', { f1: 30, f2: 60, points: 3, harmonics: 4, bandwidth: 400 })
+    assert.deepEqual(r.rows.map((x) => x.hz), [30, 42.4, 60])
+    const bad = await distortionAnalysis(box(), 'thd', { f1: 45, f2: 45, points: 1, harmonics: 4, bandwidth: 400 }).catch((e) => e)
+    assert.match(bad.message, /No point could be solved\. 45 Hz: .*stuck/)
+    const some = await distortionAnalysis(box(), 'thd', { f1: 30, f2: 67.5, points: 3, harmonics: 4, bandwidth: 400 })
+    assert.deepEqual(some.rows.map((x) => x.hz), [30, 45, 67.5])
+    assert.equal(some.rows[1].thd, null)
+    assert.ok(some.rows[0].thd > 0 && some.rows[2].thd > 0)
+    assert.equal(some.failed.length, 1)
+    assert.match(some.failed[0].label, /^45 Hz$/)
+    assert.match(some.failed[0].error, /stuck/)
+  } finally { setRunner(null) }
 })

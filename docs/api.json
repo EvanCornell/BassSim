@@ -25,8 +25,8 @@
   },
   "stats": {
     "modules": 99,
-    "methods": 1018,
-    "documented": 1018
+    "methods": 1021,
+    "documented": 1021
   },
   "modules": [
     {
@@ -16417,13 +16417,59 @@
           "other": []
         },
         {
+          "name": "FailedPoints",
+          "qualified": "FailedPoints",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 778,
+          "signature": [
+            "arg0"
+          ],
+          "documented": true,
+          "summary": "Points of a distortion analysis that could not be solved, and why.",
+          "description": "Points of a distortion analysis that could not be solved, and why.",
+          "params": [
+            {
+              "name": "props",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "Props."
+            },
+            {
+              "name": "props.failed",
+              "type": "Array<{label: string, error: string}>",
+              "optional": true,
+              "default": null,
+              "desc": "The points."
+            }
+          ],
+          "returns": {
+            "type": "React.ReactElement|null",
+            "desc": "A notice, or nothing when every point solved."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
           "name": "ExitLosses",
           "qualified": "ExitLosses",
           "kind": "function",
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 775,
+          "line": 797,
           "signature": [],
           "documented": true,
           "summary": "Duct exit losses, listed for every waveguide.",
@@ -16454,7 +16500,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 814,
+          "line": 836,
           "signature": [],
           "documented": true,
           "summary": "The running job's progress, with a cancel button.",
@@ -16485,7 +16531,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 839,
+          "line": 860,
           "signature": [],
           "documented": true,
           "summary": "The time-domain workspace: its own full-screen view under the menu and quick bar.",
@@ -23102,8 +23148,8 @@
           "line": 111,
           "signature": [],
           "documented": true,
-          "summary": "The worker died: fail its run and drop it.",
-          "description": "The worker died: fail its run and drop it.",
+          "summary": "The worker died: drop it, and give its run to a fresh worker — once.",
+          "description": "The worker died: drop it, and give its run to a fresh worker — once.",
           "params": [],
           "returns": {
             "type": "void",
@@ -23116,7 +23162,7 @@
             "invariant": [],
             "mutates": [],
             "sideEffect": [
-              "Rejects the run and dispatches the queue to the remaining workers."
+              "Re-queues the run (or rejects it, the second time) and dispatches the queue."
             ],
             "reads": [],
             "pure": false
@@ -23130,7 +23176,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 132,
+          "line": 134,
           "signature": [
             "entry"
           ],
@@ -23173,7 +23219,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 144,
+          "line": 146,
           "signature": [],
           "documented": true,
           "summary": "An idle worker, warm ones first.",
@@ -23204,7 +23250,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 153,
+          "line": 155,
           "signature": [],
           "documented": true,
           "summary": "Hand queued runs to free workers, live sweep first, starting workers up to each lane's limit.",
@@ -23237,7 +23283,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 183,
+          "line": 185,
           "signature": [
             "netlist",
             "kind",
@@ -23294,7 +23340,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 195,
+          "line": 197,
           "signature": [
             "lane"
           ],
@@ -23335,7 +23381,7 @@
           "exported": false,
           "async": true,
           "generator": false,
-          "line": 211,
+          "line": 213,
           "signature": [
             "netlist",
             "kind",
@@ -23397,7 +23443,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 225,
+          "line": 227,
           "signature": [
             "n"
           ],
@@ -23438,7 +23484,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 237,
+          "line": 239,
           "signature": [
             "lane"
           ],
@@ -23481,7 +23527,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 256,
+          "line": 258,
           "signature": [],
           "documented": true,
           "summary": "The pool's state, for display.",
@@ -31372,7 +31418,7 @@
               "type": "object",
               "optional": true,
               "default": null,
-              "desc": "Compile a transient run instead: `{signal, levelDb, fs, tstop, nonlinear, robust}` — a normalised signal (see `dsp.js`), a level offset in dB, the sample rate, the run length in s, whether to switch on the nonlinear elements, and whether to use the slower, more forgiving solver settings."
+              "desc": "Compile a transient run instead: `{signal, levelDb, fs, tstop, nonlinear, solver, robust}` — a normalised signal (see `dsp.js`), a level offset in dB, the sample rate, the run length in s, whether to switch on the nonlinear elements, the matrix solver (`klu`, the default, or `sparse`), and whether to use the slower, more forgiving integration settings."
             }
           ],
           "returns": {
@@ -36922,8 +36968,18 @@
           "description": "Defaults for a transient run."
         },
         {
+          "name": "SOLVER_SETTINGS",
+          "line": 284,
+          "shape": {
+            "kind": "array",
+            "length": 4
+          },
+          "summary": "Solver settings a transient run tries in turn, until one finishes.",
+          "description": "Solver settings a transient run tries in turn, until one finishes.\n\nKLU from rest first, the fastest; then ngspice's default solver from its\noperating point; then each with Gear integration. See `compileProject`."
+        },
+        {
           "name": "CEA2010_LIMITS",
-          "line": 425,
+          "line": 432,
           "shape": {
             "kind": "object",
             "keys": [
@@ -36943,7 +36999,7 @@
         },
         {
           "name": "DISTORTION_DEFAULTS",
-          "line": 428,
+          "line": 435,
           "shape": {
             "kind": "object",
             "keys": [
@@ -37485,14 +37541,14 @@
           "exported": true,
           "async": true,
           "generator": false,
-          "line": 287,
+          "line": 304,
           "signature": [
             "project",
             "run"
           ],
           "documented": true,
           "summary": "Run one transient simulation and collect its waveforms.",
-          "description": "Run one transient simulation and collect its waveforms.",
+          "description": "Run one transient simulation and collect its waveforms.\n\nA run that fails is tried again with each of `SOLVER_SETTINGS` in turn;\nonly when every one fails does the run fail, with ngspice's own message\nfrom the first.",
           "params": [
             {
               "name": "project",
@@ -37516,7 +37572,7 @@
           "throws": [
             {
               "type": "Error",
-              "desc": "When SPICE cannot solve the circuit."
+              "desc": "When SPICE cannot solve the circuit with any of the settings, or the run is cancelled."
             }
           ],
           "contract": {
@@ -37525,48 +37581,7 @@
             "invariant": [],
             "mutates": [],
             "sideEffect": [
-              "Runs the engine."
-            ],
-            "reads": [],
-            "pure": false
-          },
-          "other": []
-        },
-        {
-          "name": "attempt",
-          "qualified": "transientRun > attempt",
-          "kind": "function",
-          "exported": false,
-          "async": true,
-          "generator": false,
-          "line": 296,
-          "signature": [
-            "robust"
-          ],
-          "documented": true,
-          "summary": "Compile and run with the given solver robustness.",
-          "description": "Compile and run with the given solver robustness.",
-          "params": [
-            {
-              "name": "robust",
-              "type": "boolean",
-              "optional": false,
-              "default": null,
-              "desc": "Use the slower, more forgiving settings."
-            }
-          ],
-          "returns": {
-            "type": "Promise<{raw: object, map: object}>",
-            "desc": "The run and its map."
-          },
-          "throws": [],
-          "contract": {
-            "pre": [],
-            "post": [],
-            "invariant": [],
-            "mutates": [],
-            "sideEffect": [
-              "Runs the engine."
+              "Runs the engine, up to once per setting."
             ],
             "reads": [],
             "pure": false
@@ -37580,7 +37595,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 324,
+          "line": 331,
           "signature": [],
           "documented": true,
           "summary": "A silent series, one sample per time step.",
@@ -37609,7 +37624,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 365,
+          "line": 372,
           "signature": [
             "x"
           ],
@@ -37648,7 +37663,7 @@
           "exported": true,
           "async": true,
           "generator": false,
-          "line": 382,
+          "line": 389,
           "signature": [
             "project",
             "opts",
@@ -37710,7 +37725,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 406,
+          "line": 413,
           "signature": [
             "project"
           ],
@@ -37749,7 +37764,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 418,
+          "line": 425,
           "signature": [
             "project",
             "bandwidth"
@@ -37796,7 +37811,7 @@
           "exported": true,
           "async": true,
           "generator": false,
-          "line": 451,
+          "line": 458,
           "signature": [
             "project",
             "hz",
@@ -37866,7 +37881,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 470,
+          "line": 477,
           "signature": [
             "x"
           ],
@@ -37905,7 +37920,7 @@
           "exported": true,
           "async": true,
           "generator": false,
-          "line": 494,
+          "line": 501,
           "signature": [
             "project",
             "hz",
@@ -37967,7 +37982,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 509,
+          "line": 516,
           "signature": [
             "f1",
             "f2",
@@ -38022,7 +38037,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 522,
+          "line": 529,
           "signature": [
             "m",
             "xLimitMm"
@@ -38069,7 +38084,7 @@
           "exported": true,
           "async": true,
           "generator": false,
-          "line": 549,
+          "line": 556,
           "signature": [
             "project",
             "hz",
@@ -38139,7 +38154,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 563,
+          "line": 570,
           "signature": [
             "f"
           ],
@@ -38178,7 +38193,7 @@
           "exported": true,
           "async": true,
           "generator": false,
-          "line": 604,
+          "line": 611,
           "signature": [
             "s"
           ],
@@ -38261,7 +38276,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 612,
+          "line": 619,
           "signature": [],
           "documented": true,
           "summary": "The current bracket: the lowest breaking level, and the highest passing one below it.",
@@ -38292,7 +38307,7 @@
           "exported": true,
           "async": true,
           "generator": false,
-          "line": 673,
+          "line": 680,
           "signature": [
             "project",
             "mode",
@@ -38334,12 +38349,12 @@
           ],
           "returns": {
             "type": "Promise<object>",
-            "desc": "The mode's results, with `mode` set."
+            "desc": "The mode's results, with `mode` set; for `thd`, `compression` and `maxspl`, `failed` lists the points no solver setting could solve — `{label, error}` — whose values are `null` (for max SPL, a level that cannot be solved counts as past the limit, `no solution`)."
           },
           "throws": [
             {
               "type": "Error",
-              "desc": "For an unknown mode, or when SPICE cannot solve the circuit."
+              "desc": "For an unknown mode, or when SPICE cannot solve the circuit at any point."
             }
           ],
           "contract": {
@@ -38356,13 +38371,152 @@
           "other": []
         },
         {
+          "name": "fail",
+          "qualified": "distortionAnalysis > fail",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 702,
+          "signature": [
+            "label",
+            "err"
+          ],
+          "documented": true,
+          "summary": "Note a point that could not be solved.",
+          "description": "Note a point that could not be solved.",
+          "params": [
+            {
+              "name": "label",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Which point, e.g. `40 Hz at +6 dB`."
+            },
+            {
+              "name": "err",
+              "type": "Error",
+              "optional": false,
+              "default": null,
+              "desc": "Why."
+            }
+          ],
+          "returns": {
+            "type": "null",
+            "desc": "Always, to stand in for the point's result."
+          },
+          "throws": [
+            {
+              "type": "Error",
+              "desc": "A cancellation, passed straight on."
+            }
+          ],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [
+              "the enclosing `failed` list."
+            ],
+            "sideEffect": [],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "allFailed",
+          "qualified": "distortionAnalysis > allFailed",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 715,
+          "signature": [
+            "total"
+          ],
+          "documented": true,
+          "summary": "Fail the analysis when no point could be solved.",
+          "description": "Fail the analysis when no point could be solved.",
+          "params": [
+            {
+              "name": "total",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Points attempted."
+            }
+          ],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [
+            {
+              "type": "Error",
+              "desc": "The first point's error, when all of them failed."
+            }
+          ],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [
+              "the enclosing `failed` list."
+            ],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "dB",
+          "qualified": "distortionAnalysis > dB",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 725,
+          "signature": [
+            "L"
+          ],
+          "documented": true,
+          "summary": "A level offset written for a label.",
+          "description": "A level offset written for a label.",
+          "params": [
+            {
+              "name": "L",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "dB."
+            }
+          ],
+          "returns": {
+            "type": "string",
+            "desc": "`+6 dB`, `-3 dB`."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
           "name": "report",
           "qualified": "distortionAnalysis > report",
           "kind": "function",
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 733,
+          "line": 780,
           "signature": [
             "message"
           ],
@@ -38403,7 +38557,7 @@
           "exported": false,
           "async": true,
           "generator": false,
-          "line": 746,
+          "line": 793,
           "signature": [
             "L"
           ],
@@ -38444,7 +38598,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 756,
+          "line": 809,
           "signature": [],
           "documented": true,
           "summary": "How many levels this band may test at once: its share of the threads.",
@@ -38475,7 +38629,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 764,
+          "line": 817,
           "signature": [
             "fraction"
           ],
@@ -38785,7 +38939,7 @@
         },
         {
           "name": "__internals",
-          "line": 3081,
+          "line": 3080,
           "shape": {
             "kind": "object",
             "keys": [
@@ -42868,7 +43022,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1940,
+          "line": 1939,
           "signature": [],
           "documented": true,
           "summary": "Stop the running time-domain job.",
@@ -42899,7 +43053,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1974,
+          "line": 1973,
           "signature": [],
           "documented": true,
           "summary": "Schedule a debounced simulation run.",
@@ -42930,7 +43084,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2014,
+          "line": 2013,
           "signature": [],
           "documented": true,
           "summary": "Capture the project as a plain, saveable object.",
@@ -42961,7 +43115,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2037,
+          "line": 2036,
           "signature": [
             "proj"
           ],
@@ -43002,7 +43156,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2064,
+          "line": 2063,
           "signature": [],
           "documented": true,
           "summary": "Download the open project as a standalone JSON file.",
@@ -43033,7 +43187,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2081,
+          "line": 2080,
           "signature": [
             "proj",
             "filename"
@@ -43082,7 +43236,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2114,
+          "line": 2113,
           "signature": [
             "ws"
           ],
@@ -43123,7 +43277,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2129,
+          "line": 2128,
           "signature": [
             "name"
           ],
@@ -43164,7 +43318,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2143,
+          "line": 2142,
           "signature": [],
           "documented": true,
           "summary": "Write the editor's current project back into its file.",
@@ -43195,7 +43349,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2161,
+          "line": 2160,
           "signature": [
             "path"
           ],
@@ -43236,7 +43390,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2177,
+          "line": 2176,
           "signature": [
             "folder"
           ],
@@ -43277,7 +43431,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2198,
+          "line": 2197,
           "signature": [
             "parent"
           ],
@@ -43318,7 +43472,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2221,
+          "line": 2220,
           "signature": [
             "from",
             "to"
@@ -43367,7 +43521,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2258,
+          "line": 2257,
           "signature": [
             "path"
           ],
@@ -43408,7 +43562,7 @@
           "exported": false,
           "async": true,
           "generator": false,
-          "line": 2290,
+          "line": 2289,
           "signature": [],
           "documented": true,
           "summary": "Download the whole workspace, and record that it happened.",
@@ -43439,7 +43593,7 @@
           "exported": false,
           "async": true,
           "generator": false,
-          "line": 2319,
+          "line": 2318,
           "signature": [
             "file"
           ],
@@ -43480,7 +43634,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2343,
+          "line": 2342,
           "signature": [
             "ws"
           ],
@@ -43521,7 +43675,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2377,
+          "line": 2376,
           "signature": [
             "paths"
           ],
@@ -43562,7 +43716,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2387,
+          "line": 2386,
           "signature": [
             "path",
             "open"
@@ -43611,7 +43765,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2401,
+          "line": 2400,
           "signature": [],
           "documented": true,
           "summary": "Collapse every folder in the explorer.",
@@ -43642,7 +43796,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2416,
+          "line": 2415,
           "signature": [
             "mode",
             "path"
@@ -43691,7 +43845,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2427,
+          "line": 2426,
           "signature": [],
           "documented": true,
           "summary": "Dismiss the explorer's inline editor.",
@@ -43722,7 +43876,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2442,
+          "line": 2441,
           "signature": [
             "paths",
             "cut"
@@ -43771,7 +43925,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2455,
+          "line": 2454,
           "signature": [
             "folder"
           ],
@@ -43812,7 +43966,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2482,
+          "line": 2481,
           "signature": [
             "path"
           ],
@@ -43853,7 +44007,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2498,
+          "line": 2497,
           "signature": [
             "from",
             "folder"
@@ -43902,7 +44056,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2520,
+          "line": 2519,
           "signature": [
             "mode",
             "parent",
@@ -43959,7 +44113,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2554,
+          "line": 2553,
           "signature": [
             "kind"
           ],
@@ -44000,7 +44154,7 @@
           "exported": false,
           "async": true,
           "generator": false,
-          "line": 2585,
+          "line": 2584,
           "signature": [
             "confirmAdopt"
           ],
@@ -44041,7 +44195,7 @@
           "exported": false,
           "async": true,
           "generator": false,
-          "line": 2618,
+          "line": 2617,
           "signature": [],
           "documented": true,
           "summary": "Renew permission on a remembered folder and open it again.",
@@ -44072,7 +44226,7 @@
           "exported": false,
           "async": true,
           "generator": false,
-          "line": 2641,
+          "line": 2640,
           "signature": [],
           "documented": true,
           "summary": "Stop keeping the workspace in a folder.",
@@ -44105,7 +44259,7 @@
           "exported": false,
           "async": true,
           "generator": false,
-          "line": 2666,
+          "line": 2665,
           "signature": [
             "handle",
             "read",
@@ -44164,7 +44318,7 @@
           "exported": false,
           "async": true,
           "generator": false,
-          "line": 2707,
+          "line": 2706,
           "signature": [
             "prune"
           ],
@@ -44207,7 +44361,7 @@
           "exported": false,
           "async": true,
           "generator": false,
-          "line": 2749,
+          "line": 2748,
           "signature": [
             "since"
           ],
@@ -44250,7 +44404,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2782,
+          "line": 2781,
           "signature": [
             "drivers"
           ],
@@ -44291,7 +44445,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2804,
+          "line": 2803,
           "signature": [
             "id"
           ],
@@ -44332,7 +44486,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2820,
+          "line": 2819,
           "signature": [
             "id"
           ],
@@ -44373,7 +44527,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2843,
+          "line": 2842,
           "signature": [
             "id"
           ],
@@ -44414,7 +44568,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2870,
+          "line": 2869,
           "signature": [
             "id"
           ],
@@ -44455,7 +44609,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2886,
+          "line": 2885,
           "signature": [
             "stackId"
           ],
@@ -44496,7 +44650,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2910,
+          "line": 2909,
           "signature": [
             "panelId",
             "stackId"
@@ -44545,7 +44699,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2930,
+          "line": 2929,
           "signature": [
             "id"
           ],
@@ -44586,7 +44740,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2941,
+          "line": 2940,
           "signature": [
             "id"
           ],
@@ -44627,7 +44781,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2960,
+          "line": 2959,
           "signature": [
             "patch"
           ],
@@ -44670,7 +44824,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2970,
+          "line": 2969,
           "signature": [],
           "documented": true,
           "summary": "The full shared slice, sent to a popped-out tab when it announces itself.",
@@ -44701,7 +44855,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 3034,
+          "line": 3033,
           "signature": [
             "arg0"
           ],

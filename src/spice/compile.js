@@ -86,7 +86,7 @@ function transientOutputs(ctx) {
  * @param {object} proj - A resolved, validated v3 project.
  * @param {object} analysis - The `ac` analysis whose band, model settings and points to use. `scale: 'lin'` makes a linear sweep of `npts` points from `fmin` to `fmax`, as the linear time responses need.
  * @param {object} [opts] - Options.
- * @param {object} [opts.tran] - Compile a transient run instead: `{signal, levelDb, fs, tstop, nonlinear, robust}` — a normalised signal (see `dsp.js`), a level offset in dB, the sample rate, the run length in s, whether to switch on the nonlinear elements, and whether to use the slower, more forgiving solver settings.
+ * @param {object} [opts.tran] - Compile a transient run instead: `{signal, levelDb, fs, tstop, nonlinear, solver, robust}` — a normalised signal (see `dsp.js`), a level offset in dB, the sample rate, the run length in s, whether to switch on the nonlinear elements, the matrix solver (`klu`, the default, or `sparse`), and whether to use the slower, more forgiving integration settings.
  * @returns {{netlist: string, map: object, saves: string[]}} The netlist text; the map of drivers, channels, waveguides, radiators and probes to the SPICE vectors that carry them; and the vectors to read back.
  * @throws {Error} When the project uses something this compiler cannot build yet.
  * @pure
@@ -157,20 +157,24 @@ export function compileProject(proj, analysis, opts = {}) {
       const m = /^T\S* .* TD=(\S+)/.exec(l)
       if (m) maxStep = Math.min(maxStep, 0.9 * Number(m[1]))
     }
-    // A retry after a failed run trades speed for robustness: Gear
-    // integration damps the stiff corners trapezoidal rings on, and more
-    // Newton iterations per point stop a hard step from being cut to nothing.
+    // Solver settings, tried in turn by `transientRun` until one finishes:
     //
-    // KLU, ngspice's other sparse solver, steps these circuits — long
-    // chains of two- and three-terminal parts — two to three times faster
-    // than its default, with the same answers. It will not factor a node
-    // that only the rshunt conductances tie down at DC (the cone's side of
-    // Cms, a chamber's air), so the run skips the DC operating point
-    // (`uic`) and starts from rest, as it would anyway: every source is
-    // silent at t = 0. ngspice then reports no sample at t = 0; `runTransient`
-    // adds it.
-    nl.lines.push(tran.robust ? '.options interp klu method=gear maxord=2 itl4=100 reltol=0.002' : '.options interp klu')
-    nl.lines.push(`.tran ${fmt(step)} ${fmt(tran.tstop)} 0 ${fmt(maxStep)} uic`)
+    // - `klu` (the default): KLU, ngspice's other sparse solver, steps these
+    //   circuits — long chains of two- and three-terminal parts — two to
+    //   three times faster than its default, with the same answers. It will
+    //   not factor a node that only the rshunt conductances tie down at DC
+    //   (the cone's side of Cms, a chamber's air), so the run skips the DC
+    //   operating point (`uic`) and starts from rest, as it would anyway:
+    //   every source is silent at t = 0. ngspice then reports no sample at
+    //   t = 0; `runTransient` adds it.
+    // - `sparse`: ngspice's default solver from its operating point.
+    // - `robust` with either: Gear integration damps the stiff corners
+    //   trapezoidal rings on, and more Newton iterations per point stop a
+    //   hard step from being cut to nothing.
+    const klu = tran.solver !== 'sparse'
+    const gear = tran.robust ? ' method=gear maxord=2 itl4=100 reltol=0.002' : ''
+    nl.lines.push(`.options interp${klu ? ' klu' : ''}${gear}`)
+    nl.lines.push(`.tran ${fmt(step)} ${fmt(tran.tstop)} 0 ${fmt(maxStep)}${klu ? ' uic' : ''}`)
   } else if (analysis.scale === 'lin') {
     nl.lines.push(`.ac lin ${Math.round(analysis.npts)} ${analysis.fmin} ${analysis.fmax}`)
   } else {

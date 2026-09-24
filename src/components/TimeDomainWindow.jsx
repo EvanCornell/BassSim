@@ -712,10 +712,11 @@ function DistortionView({ mode, res, onRun }) {
     )
   }
   if (mode === 'thd') {
-    const rows = res.rows.map((r) => ({ hz: r.hz, thd: r.thd * 100, h2: pct(r.h2), h3: pct(r.h3) }))
+    const rows = res.rows.map((r) => ({ hz: r.hz, thd: r.thd != null ? r.thd * 100 : null, h2: r.h2 != null ? pct(r.h2) : null, h3: r.h3 != null ? pct(r.h3) : null }))
     return (
       <>
         <StaleBanner stale={stale} onRun={onRun} />
+        <FailedPoints failed={res.failed} />
         <div className="td-grid one">
           <TdChart title={`Distortion at ${res.levelDb >= 0 ? '+' : ''}${res.levelDb} dB`} data={rows} xKey="hz" xLabel="Hz" logX yLabel="%" height={340}
             lines={[{ key: 'thd', name: 'THD', width: 2.5 }, { key: 'h2', name: 'H2' }, { key: 'h3', name: 'H3' }]} />
@@ -728,6 +729,7 @@ function DistortionView({ mode, res, onRun }) {
     return (
       <>
         <StaleBanner stale={stale} onRun={onRun} />
+        <FailedPoints failed={res.failed} />
         <div className="td-grid one">
           <TdChart title="Compression: nonlinear level minus linear level" data={res.rows} xKey="hz" xLabel="Hz" logX yLabel="dB" height={320}
             refs={[{ y: 0, color: '#6b7687' }]}
@@ -741,6 +743,7 @@ function DistortionView({ mode, res, onRun }) {
   return (
     <>
       <StaleBanner stale={stale} onRun={onRun} />
+      <FailedPoints failed={res.failed} />
       <div className="td-grid one">
         <TdChart title="Maximum SPL, burst peak as RMS-equivalent at 1 m" data={res.rows.filter((r) => r.spl != null)} xKey="hz" xLabel="Hz" logX yLabel="dB SPL" height={300}
           lines={[{ key: 'spl', name: 'Max SPL', width: 2.5 }]} />
@@ -761,6 +764,25 @@ function DistortionView({ mode, res, onRun }) {
         </table>
       </div>
     </>
+  )
+}
+
+/**
+ * Points of a distortion analysis that could not be solved, and why.
+ *
+ * @param {object} props - Props.
+ * @param {Array<{label: string, error: string}>} [props.failed] - The points.
+ * @returns {React.ReactElement|null} A notice, or nothing when every point solved.
+ * @pure
+ */
+function FailedPoints({ failed }) {
+  if (!failed?.length) return null
+  return (
+    <div className="td-failed">
+      <b>{failed.length === 1 ? 'One point' : `${failed.length} points`} could not be solved</b> and {failed.length === 1 ? 'is' : 'are'} left out:
+      <ul>{failed.slice(0, 6).map((x) => <li key={x.label}>{x.label} — {x.error}</li>)}</ul>
+      {failed.length > 6 && <div>…and {failed.length - 6} more.</div>}
+    </div>
   )
 }
 
@@ -819,7 +841,6 @@ function JobStatus() {
     <div className="td-job">
       <div className="td-bar"><div style={{ width: `${Math.round(job.fraction * 100)}%` }} /></div>
       <span>{job.message}</span>
-      {job.threads > 1 && <span className="td-threads" title="Independent runs, and the pieces of a frequency sweep, go to one engine per processor thread">{job.threads} threads</span>}
       <button onClick={cancel}>Cancel</button>
     </div>
   )

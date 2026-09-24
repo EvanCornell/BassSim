@@ -1910,11 +1910,10 @@ export const useStore = create((rawSet, get) => {
     const project = fromEditor({ name: st.projectName, nodes: st.nodes, edges: st.edges, settings: st.settings, extras: st.projectExtras })
     const sig = st.tdSignature()
     const opts = cfg[kind]
-    const threads = typeof Worker !== 'undefined' ? getPool().size : 1
-    set({ tdJob: { kind, mode: m, fraction: 0, message: 'Starting', threads }, tdError: null })
+    set({ tdJob: { kind, mode: m, fraction: 0, message: 'Starting' }, tdError: null })
     startTdJob({ kind, project, opts, mode: m }, (msg) => {
       if (msg.type === 'progress') {
-        set({ tdJob: { kind, mode: m, fraction: msg.fraction, message: msg.message, threads } })
+        set({ tdJob: { kind, mode: m, fraction: msg.fraction, message: msg.message } })
         return
       }
       if (msg.type === 'error') {

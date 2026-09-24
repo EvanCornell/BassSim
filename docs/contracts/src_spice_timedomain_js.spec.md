@@ -48,6 +48,15 @@ Keys: `signal`, `levelDb`, `fs`, `duration`, `bandwidth`, `nonlinear`
 
 - `signal` holds: `type`, `hz`, `cycles`
 
+### `SOLVER_SETTINGS`
+
+Solver settings a transient run tries in turn, until one finishes.
+
+KLU from rest first, the fastest; then ngspice's default solver from its
+operating point; then each with Gear integration. See `compileProject`.
+
+An array of 4 entries.
+
 ### `CEA2010_LIMITS`
 
 CEA-2010 distortion limits: harmonic → allowed level relative to the fundamental, dB.
@@ -140,6 +149,10 @@ every radiator 1 m from the listener; time zero is when the signal starts.
 
 Run one transient simulation and collect its waveforms.
 
+A run that fails is tried again with each of `SOLVER_SETTINGS` in turn;
+only when every one fails does the run fail, with ngspice's own message
+from the first.
+
 **Parameters**
 
 - `project` — `object` — A resolved, validated project.
@@ -151,11 +164,11 @@ Run one transient simulation and collect its waveforms.
 
 **Throws**
 
-- `Error` — When SPICE cannot solve the circuit.
+- `Error` — When SPICE cannot solve the circuit with any of the settings, or the run is cancelled.
 
 **Side effects**
 
-- Runs the engine.
+- Runs the engine, up to once per setting.
 
 ### `levels(x)`
 
@@ -388,17 +401,17 @@ Distortion analyses.
 
 **Returns**
 
-- `Promise<object>` — The mode's results, with `mode` set.
+- `Promise<object>` — The mode's results, with `mode` set; for `thd`, `compression` and `maxspl`, `failed` lists the points no solver setting could solve — `{label, error}` — whose values are `null` (for max SPL, a level that cannot be solved counts as past the limit, `no solution`).
 
 **Throws**
 
-- `Error` — For an unknown mode, or when SPICE cannot solve the circuit.
+- `Error` — For an unknown mode, or when SPICE cannot solve the circuit at any point.
 
 **Side effects**
 
 - Runs the engine, many times.
 
-## UNREACHABLE (20)
+## UNREACHABLE (22)
 
 ### `sweepOf(project)`
 
@@ -555,26 +568,6 @@ the sample rate, so a higher sample rate does not multiply the circuit.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
-### `transientRun > attempt(robust)`
-
-- **Reachability:** UNREACHABLE
-- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
-- **Async:** returns a Promise
-
-Compile and run with the given solver robustness.
-
-**Parameters**
-
-- `robust` — `boolean` — Use the slower, more forgiving settings.
-
-**Returns**
-
-- `Promise<{raw: object, map: object}>` — The run and its map.
-
-**Side effects**
-
-- Runs the engine.
-
 ### `transientRun > zeros()`
 
 - **Reachability:** UNREACHABLE
@@ -671,6 +664,70 @@ The current bracket: the lowest breaking level, and the highest passing one belo
 **Reads external mutable state**
 
 - the levels tried.
+
+### `distortionAnalysis > fail(label, err)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+Note a point that could not be solved.
+
+**Parameters**
+
+- `label` — `string` — Which point, e.g. `40 Hz at +6 dB`.
+- `err` — `Error` — Why.
+
+**Returns**
+
+- `null` — Always, to stand in for the point's result.
+
+**Throws**
+
+- `Error` — A cancellation, passed straight on.
+
+**Mutates**
+
+- the enclosing `failed` list.
+
+### `distortionAnalysis > allFailed(total)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+Fail the analysis when no point could be solved.
+
+**Parameters**
+
+- `total` — `number` — Points attempted.
+
+**Returns**
+
+- `void`
+
+**Throws**
+
+- `Error` — The first point's error, when all of them failed.
+
+**Reads external mutable state**
+
+- the enclosing `failed` list.
+
+### `distortionAnalysis > dB(L)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+A level offset written for a label.
+
+**Parameters**
+
+- `L` — `number` — dB.
+
+**Returns**
+
+- `string` — `+6 dB`, `-3 dB`.
+
+**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
 ### `distortionAnalysis > report(message)`
 

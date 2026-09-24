@@ -103,17 +103,19 @@ export function createPool({ spawn, size }) {
       dispatch()
     }
     /**
-     * The worker died: fail its run and drop it.
+     * The worker died: drop it, and give its run to a fresh worker — once.
      *
      * @returns {void}
-     * @sideEffect Rejects the run and dispatches the queue to the remaining workers.
+     * @sideEffect Re-queues the run (or rejects it, the second time) and dispatches the queue.
      */
     entry.w.onerror = () => {
       drop(entry)
-      if (entry.task) {
-        active[entry.task.lane]--
-        entry.task.reject(new Error('A simulation thread stopped unexpectedly'))
+      const t = entry.task
+      if (t) {
+        active[t.lane]--
         entry.task = null
+        if (t.retried) t.reject(new Error('A simulation thread stopped unexpectedly, twice, on the same run'))
+        else { t.retried = true; queue.unshift(t) }
       }
       dispatch()
     }

@@ -30,7 +30,7 @@ no implementation. This is the sole input to the blind contract test suite.
 | [`src/components/SaveDriverPrompt.jsx`](src_components_SaveDriverPrompt_jsx.spec.md) | 2 | 1 | 1 |
 | [`src/components/SettingsWindow.jsx`](src_components_SettingsWindow_jsx.spec.md) | 11 | 1 | 10 |
 | [`src/components/TSCalc.jsx`](src_components_TSCalc_jsx.spec.md) | 23 | 6 | 17 |
-| [`src/components/TimeDomainWindow.jsx`](src_components_TimeDomainWindow_jsx.spec.md) | 26 | 4 | 22 |
+| [`src/components/TimeDomainWindow.jsx`](src_components_TimeDomainWindow_jsx.spec.md) | 27 | 4 | 23 |
 | [`src/components/Toolbar.jsx`](src_components_Toolbar_jsx.spec.md) | 8 | 1 | 7 |
 | [`src/components/VariablesPanel.jsx`](src_components_VariablesPanel_jsx.spec.md) | 2 | 1 | 1 |
 | [`src/components/VelocityPopup.jsx`](src_components_VelocityPopup_jsx.spec.md) | 1 | 1 | 0 |
@@ -84,7 +84,7 @@ no implementation. This is the sole input to the blind contract test suite.
 | [`src/spice/physics.js`](src_spice_physics_js.spec.md) | 5 | 5 | 0 |
 | [`src/spice/run.js`](src_spice_run_js.spec.md) | 10 | 7 | 3 |
 | [`src/spice/split.js`](src_spice_split_js.spec.md) | 6 | 4 | 2 |
-| [`src/spice/timedomain.js`](src_spice_timedomain_js.spec.md) | 33 | 13 | 20 |
+| [`src/spice/timedomain.js`](src_spice_timedomain_js.spec.md) | 35 | 13 | 22 |
 | [`src/spice/wiring.js`](src_spice_wiring_js.spec.md) | 3 | 1 | 2 |
 | [`src/store.js`](src_store_js.spec.md) | 142 | 127 | 15 |
 | [`src/toolbarItems.js`](src_toolbarItems_js.spec.md) | 6 | 4 | 2 |
@@ -98,4 +98,4 @@ no implementation. This is the sole input to the blind contract test suite.
 | [`test/contracts.mjs`](test_contracts_mjs.spec.md) | 2 | 0 | 2 |
 | [`test/drivers.mjs`](test_drivers_mjs.spec.md) | 2 | 0 | 2 |
 | [`test/support/loader.mjs`](test_support_loader_mjs.spec.md) | 2 | 2 | 0 |
-| **Total** | **1018** | **541** | **477** |
+| **Total** | **1021** | **541** | **480** |

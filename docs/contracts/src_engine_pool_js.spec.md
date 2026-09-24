@@ -157,7 +157,7 @@ A reply from the worker: warmed, or a run finished.
 - **Reachability:** UNREACHABLE
 - **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
 
-The worker died: fail its run and drop it.
+The worker died: drop it, and give its run to a fresh worker — once.
 
 **Returns**
 
@@ -165,7 +165,7 @@ The worker died: fail its run and drop it.
 
 **Side effects**
 
-- Rejects the run and dispatches the queue to the remaining workers.
+- Re-queues the run (or rejects it, the second time) and dispatches the queue.
 
 ### `createPool > drop(entry)`
 

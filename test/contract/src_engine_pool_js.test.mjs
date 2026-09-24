@@ -162,7 +162,7 @@ test('cancel stops one lane and leaves the other', async () => {
 })
 
 // CONTRACT (createPool): a SPICE failure rejects with its message and lines;
-// a worker that dies fails its run and is replaced.
+// a worker that dies is replaced and its run tried once more, then failed.
 test('failures reject; a crashed worker is replaced', async () => {
   const { pool, workers } = fake(1)
   const bad = pool.run('x\n.tran 1 1\n.end', 'real', 'td')
@@ -173,10 +173,14 @@ test('failures reject; a crashed worker is replaced', async () => {
   const next = pool.run('z\n.tran 1 1\n.end', 'real', 'td')
   await tick()
   workers[0].onerror(new Event('error'))
-  await assert.rejects(dies, /stopped unexpectedly/)
   await tick()
+  // the run goes to a fresh worker, ahead of the queue
   assert.equal(workers.length, 2)
   assert.ok(workers[0].terminated)
-  workers[1].finish([5])
+  assert.match(workers[1].current.netlist, /^y/)
+  workers[1].onerror(new Event('error'))
+  await assert.rejects(dies, /stopped unexpectedly, twice/)
+  await tick()
+  workers[2].finish([5])
   assert.deepEqual((await next).scale, [5])
 })

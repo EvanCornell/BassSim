@@ -276,44 +276,51 @@ function modelFor(project, bandwidth) {
 }
 
 /**
+ * Solver settings a transient run tries in turn, until one finishes.
+ *
+ * KLU from rest first, the fastest; then ngspice's default solver from its
+ * operating point; then each with Gear integration. See `compileProject`.
+ */
+export const SOLVER_SETTINGS = [
+  { solver: 'klu', robust: false },
+  { solver: 'sparse', robust: false },
+  { solver: 'sparse', robust: true },
+  { solver: 'klu', robust: true },
+]
+
+/**
  * Run one transient simulation and collect its waveforms.
+ *
+ * A run that fails is tried again with each of `SOLVER_SETTINGS` in turn;
+ * only when every one fails does the run fail, with ngspice's own message
+ * from the first.
  *
  * @param {object} project - A resolved, validated project.
  * @param {object} run - `{signal, levelDb, fs, tstop, bandwidth, nonlinear}`.
  * @returns {Promise<object>} `{t, pressure, driverPressure, excursion: {id: mm[]}, current: {ch: A[]}, voltage: {ch: V[]}, velocity: {wg: m/s[]}, probes: {id: {kind, values}}}` — pressure in Pa at 1 m.
- * @throws {Error} When SPICE cannot solve the circuit.
- * @sideEffect Runs the engine.
+ * @throws {Error} When SPICE cannot solve the circuit with any of the settings, or the run is cancelled.
+ * @sideEffect Runs the engine, up to once per setting.
  */
 export async function transientRun(project, run) {
   const signal = normalizeSignal(run.signal)
-  /**
-   * Compile and run with the given solver robustness.
-   *
-   * @param {boolean} robust - Use the slower, more forgiving settings.
-   * @returns {Promise<{raw: object, map: object}>} The run and its map.
-   * @sideEffect Runs the engine.
-   */
-  const attempt = async (robust) => {
-    const { netlist, map } = compileProject(project, modelFor(project, run.bandwidth || 1000), {
-      tran: { signal, levelDb: run.levelDb || 0, fs: run.fs, tstop: run.tstop, nonlinear: !!run.nonlinear, robust },
-    })
-    return { raw: await runTransient(netlist), map }
-  }
-  let out
-  try {
-    out = await attempt(false)
-  } catch (err) {
-    // A run that stalls is retried once with robust settings before giving up.
-    if (!/timestep too small|aborted/i.test(err.message)) throw err
+  const tran = { signal, levelDb: run.levelDb || 0, fs: run.fs, tstop: run.tstop, nonlinear: !!run.nonlinear }
+  // Compiling can fail only for a project the compiler cannot build; that
+  // is reported at once, not retried.
+  const { map } = compileProject(project, modelFor(project, run.bandwidth || 1000), { tran })
+  let out = null
+  let first = null
+  for (const settings of SOLVER_SETTINGS) {
+    const { netlist } = compileProject(project, modelFor(project, run.bandwidth || 1000), { tran: { ...tran, ...settings } })
     try {
-      out = await attempt(true)
-    } catch (again) {
-      const at = /time = ([\d.e+-]+)/.exec(again.message)
-      throw new Error(`The solver stalled${at ? ` at ${(Number(at[1]) * 1000).toFixed(1)} ms` : ''} even with its most forgiving settings. `
-        + 'This usually means the drive is beyond what the driver curves describe — try a lower level, or check the curves past Xmax.')
+      out = { raw: await runTransient(netlist), map }
+      break
+    } catch (err) {
+      if (err.name === 'Cancelled') throw err
+      first = first || err
     }
   }
-  const { raw, map } = out
+  if (!out) throw first
+  const { raw } = out
   const n = raw.time.length
   /**
    * A silent series, one sample per time step.
@@ -666,8 +673,8 @@ export async function maxLevel(s) {
  * @param {string} mode - `harmonics`, `thd`, `compression` or `maxspl`.
  * @param {object} [opts] - See `DISTORTION_DEFAULTS`.
  * @param {Function} [onProgress] - Called with `(fraction, message)`.
- * @returns {Promise<object>} The mode's results, with `mode` set.
- * @throws {Error} For an unknown mode, or when SPICE cannot solve the circuit.
+ * @returns {Promise<object>} The mode's results, with `mode` set; for `thd`, `compression` and `maxspl`, `failed` lists the points no solver setting could solve — `{label, error}` — whose values are `null` (for max SPL, a level that cannot be solved counts as past the limit, `no solution`).
+ * @throws {Error} For an unknown mode, or when SPICE cannot solve the circuit at any point.
  * @sideEffect Runs the engine, many times.
  */
 export async function distortionAnalysis(project, mode, opts = {}, onProgress = () => {}) {
@@ -679,18 +686,57 @@ export async function distortionAnalysis(project, mode, opts = {}, onProgress = 
     return { mode, ...m }
   }
   const freqs = logFreqs(o.f1, o.f2, o.points)
+  // A point that cannot be solved with any solver settings is left out and
+  // listed in `failed`, rather than losing the rest; only when every point
+  // fails does the analysis fail.
+  const failed = []
+  /**
+   * Note a point that could not be solved.
+   *
+   * @param {string} label - Which point, e.g. `40 Hz at +6 dB`.
+   * @param {Error} err - Why.
+   * @returns {null} Always, to stand in for the point's result.
+   * @throws {Error} A cancellation, passed straight on.
+   * @mutates the enclosing `failed` list.
+   */
+  const fail = (label, err) => {
+    if (err.name === 'Cancelled') throw err
+    failed.push({ label, error: err.message })
+    return null
+  }
+  /**
+   * Fail the analysis when no point could be solved.
+   *
+   * @param {number} total - Points attempted.
+   * @returns {void}
+   * @throws {Error} The first point's error, when all of them failed.
+   * @reads the enclosing `failed` list.
+   */
+  const allFailed = (total) => {
+    if (failed.length && failed.length >= total) throw new Error(`No point could be solved. ${failed[0].label}: ${failed[0].error}`)
+  }
+  /**
+   * A level offset written for a label.
+   *
+   * @param {number} L - dB.
+   * @returns {string} `+6 dB`, `-3 dB`.
+   * @pure
+   */
+  const dB = (L) => `${L >= 0 ? '+' : ''}${L} dB`
   if (mode === 'thd') {
     // every frequency at once, the lowest (longest) first
     let done = 0
     onProgress(0, `${freqs.length} tones`)
     const rows = await Promise.all(freqs.map(async (f) => {
-      const m = await measureTone(project, f, o.levelDb, o)
+      const m = await measureTone(project, f, o.levelDb, o).catch((err) => fail(`${f} Hz`, err))
       done++
       onProgress(done / freqs.length, `${done} of ${freqs.length} tones done`)
+      if (!m) return { hz: f, thd: null, h2: null, h3: null, spl: null, xPeak: null }
       return { hz: f, thd: m.thd, h2: m.harmonics[1]?.db, h3: m.harmonics[2]?.db, spl: m.spl, xPeak: m.xPeak }
     }))
+    allFailed(freqs.length)
     onProgress(1, 'Done')
-    return { mode, levelDb: o.levelDb, rows }
+    return { mode, levelDb: o.levelDb, rows, failed }
   }
   if (mode === 'compression') {
     // The linear model's level scales with the drive, so one small AC run
@@ -699,24 +745,25 @@ export async function distortionAnalysis(project, mode, opts = {}, onProgress = 
     let done = 0
     onProgress(0, `${total} tones`)
     const [lins, tones] = await Promise.all([
-      Promise.all(freqs.map((hz) => linearLevel(project, hz, 0))),
+      Promise.all(freqs.map((hz) => linearLevel(project, hz, 0).catch((err) => fail(`${hz} Hz, linear level`, err)))),
       Promise.all(o.levels.flatMap((L) => freqs.map(async (hz) => {
-        const m = await measureTone(project, hz, L, o)
+        const m = await measureTone(project, hz, L, o).catch((err) => fail(`${hz} Hz at ${dB(L)}`, err))
         done++
         onProgress(done / total, `${done} of ${total} tones done`)
-        return { hz, L, spl: m.spl }
+        return { hz, L, spl: m ? m.spl : null }
       }))),
     ])
+    allFailed(total)
     const rows = freqs.map((hz, i) => {
       const row = { hz }
       for (const t of tones.filter((x) => x.hz === hz)) {
         row[`spl${t.L}`] = t.spl
-        row[`cmp${t.L}`] = t.spl - (lins[i] + t.L)
+        row[`cmp${t.L}`] = t.spl != null && lins[i] != null ? t.spl - (lins[i] + t.L) : null
       }
       return row
     })
     onProgress(1, 'Done')
-    return { mode, levels: o.levels, rows }
+    return { mode, levels: o.levels, rows, failed }
   }
   if (mode === 'maxspl') {
     const xmax = Object.fromEntries((project.nodes || []).filter((n) => n.type === 'driver').map((n) => [n.id, (Number(n.params.Xmax) || 0) * o.xLimit]))
@@ -744,8 +791,14 @@ export async function distortionAnalysis(project, mode, opts = {}, onProgress = 
          * @sideEffect Runs the engine.
          */
         test: async (L) => {
-          const m = await measureBurst(project, f, L, o)
-          return { m, broke: brokenLimit(m, xmax) }
+          try {
+            const m = await measureBurst(project, f, L, o)
+            return { m, broke: brokenLimit(m, xmax) }
+          } catch (err) {
+            // a level the circuit cannot be solved at counts as past the limit
+            fail(`${f} Hz at ${dB(Math.round(L * 100) / 100)}`, err)
+            return { m: null, broke: 'no solution' }
+          }
         },
         /**
          * How many levels this band may test at once: its share of the threads.
@@ -778,8 +831,9 @@ export async function distortionAnalysis(project, mode, opts = {}, onProgress = 
         xPeak: lo ? lo.m.xPeak : null,
       }
     }))
+    if (rows.every((r) => r.levelDb == null && r.limit === 'no solution')) allFailed(failed.length)
     onProgress(1, 'Done')
-    return { mode, rows }
+    return { mode, rows, failed }
   }
   throw new Error(`unknown distortion analysis "${mode}"`)
 }

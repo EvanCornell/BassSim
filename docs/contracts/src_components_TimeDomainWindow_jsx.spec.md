@@ -81,7 +81,7 @@ seconds to minutes, and a result says when the project has changed since.
 
 - Subscribes to the store, and starts the linear responses when they are out of date.
 
-## UNREACHABLE (22)
+## UNREACHABLE (23)
 
 ### `f(v, d)`
 
@@ -481,6 +481,24 @@ The distortion result for the selected analysis.
 **Side effects**
 
 - Subscribes to the store.
+
+### `FailedPoints(props)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+Points of a distortion analysis that could not be solved, and why.
+
+**Parameters**
+
+- `props` — `object` — Props.
+- `props.failed` — `Array<{label: string, error: string}>` _(optional)_ — The points.
+
+**Returns**
+
+- `React.ReactElement|null` — A notice, or nothing when every point solved.
+
+**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
 ### `ExitLosses()`
 
