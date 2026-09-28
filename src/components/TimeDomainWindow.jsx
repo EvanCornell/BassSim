@@ -767,6 +767,15 @@ function DistortionView({ mode, res, onRun }) {
 const dBText = (L) => `${L >= 0 ? '+' : ''}${L} dB`
 
 /**
+ * A dB change for a table cell, with rounding noise shown as zero.
+ *
+ * @param {number|null} v - dB.
+ * @returns {number|null} The value; 0 when it would print as ±0.00.
+ * @pure
+ */
+const dbCell = (v) => (v != null && Math.abs(v) < 0.005 ? 0 : v)
+
+/**
  * Chart rows of one figure of a compression result, against frequency.
  *
  * Each level `i` gives two keys: `n<i>`, the nonlinear run's value, and
@@ -873,6 +882,8 @@ function CompressionView({ res, stale, onRun }) {
    */
   const multi = (list, name) => (list.length > 1 ? ` — ${name}` : '')
   const row = res.rows[Math.min(at, res.rows.length - 1)]
+  // efficiency loss, keyed `e<i>` to sit beside the compression's `n<i>`
+  const lossRows = compressionRows(res, (m) => m.effLoss).map((r) => Object.fromEntries(res.levels.map((_, i) => [`e${i}`, r[`n${i}`]])))
   /**
    * A table cell's value, with the linear model's after it.
    *
@@ -896,7 +907,13 @@ function CompressionView({ res, stale, onRun }) {
         </label>
       </div>
       <div className="td-grid">
-        {chart('Compression: nonlinear level minus linear level', (m) => m.cmp, 'dB', { linear: false, refs: [{ y: 0, color: 'var(--text-3)' }] })}
+        <TdChart title="Compression, solid; efficiency loss, dashed" xKey="hz" xLabel="Hz" logX yLabel="dB"
+          data={compressionRows(res, (m) => m.cmp).map((r, i) => ({ ...r, ...lossRows[i] }))}
+          refs={[{ y: 0, color: 'var(--text-3)' }]}
+          lines={res.levels.flatMap((L, i) => [
+            { key: `n${i}`, name: dBText(L), color: SERIES[i % SERIES.length], width: 2 },
+            { key: `e${i}`, name: `${dBText(L)} efficiency`, color: SERIES[i % SERIES.length], dash: '4 3', width: 1.5, legend: false },
+          ])} />
         {chart('Output level at 1 m', (m) => m.spl, 'dB SPL')}
         {drivers.map((id) => chart(`Peak excursion${multi(drivers, nameOf(nodes, id))}`, (m) => m.xPeak?.[id], 'mm', {
           refs: xmax(id) ? [{ y: xmax(id), label: 'Xmax' }] : [],
@@ -917,7 +934,10 @@ function CompressionView({ res, stale, onRun }) {
       <table className="td-table">
         <thead>
           <tr>
-            <th>Level</th><th>SPL</th><th>Compression</th><th>THD</th>
+            <th>Level</th><th>SPL</th><th>Compression</th>
+            <th title="10·log10 of the efficiency over the linear model's: output lost as the power drawn is turned into sound less well">Efficiency loss</th>
+            <th title="10·log10 of the electrical power over the linear model's: output lost, or gained, because the load draws a different power">Power drawn</th>
+            <th>THD</th>
             {drivers.map((id) => <th key={id}>Excursion{multi(drivers, nameOf(nodes, id))}</th>)}
             {ports.map((id) => <th key={id}>Port velocity{multi(ports, nameOf(nodes, id))}</th>)}
             {channels.map((id) => <th key={id}>|Z|{multi(channels, id)}</th>)}
@@ -931,10 +951,12 @@ function CompressionView({ res, stale, onRun }) {
             return (
               <tr key={L}>
                 <td>{dBText(L)}</td>
-                {!n ? <td colSpan={6 + drivers.length + ports.length + channels.length} className="dim">not solved</td> : (
+                {!n ? <td colSpan={8 + drivers.length + ports.length + channels.length} className="dim">not solved</td> : (
                   <>
                     <td>{pair(n.spl, l?.spl, 1, ' dB')}</td>
-                    <td>{f(Math.abs(n.cmp) < 0.005 ? 0 : n.cmp, 2)} dB</td>
+                    <td>{f(dbCell(n.cmp), 2)} dB</td>
+                    <td>{f(dbCell(n.effLoss), 2)} dB</td>
+                    <td>{f(dbCell(n.powerChange), 2)} dB</td>
                     <td>{f(n.thd * 100, 2)} %</td>
                     {drivers.map((id) => <td key={id}>{pair(n.xPeak?.[id], l?.xPeak?.[id], 2, ' mm')}</td>)}
                     {ports.map((id) => <td key={id}>{pair(n.vPeak?.[id], l?.vPeak?.[id], 1, ' m/s')}</td>)}

@@ -8,7 +8,7 @@ import { compileProject } from '../../src/spice/compile.js'
 import { normalizeSignal } from '../../src/spice/dsp.js'
 import {
   linearResponses, transientRun, transientAnalysis, measureTone, linearLevel, distortionAnalysis,
-  logFreqs, brokenLimit, levels, splOf, CEA2010_LIMITS, maxLevel, linearPoint, scaleLinear,
+  logFreqs, brokenLimit, levels, splOf, CEA2010_LIMITS, maxLevel, linearPoint, scaleLinear, ratioDb,
 } from '../../src/spice/timedomain.js'
 import { setThreads, setRunner, runLocal } from '../../src/spice/run.js'
 
@@ -120,6 +120,24 @@ test('compression across level: the figures, against the linear model', async ()
   assert.ok(ratio(12) < ratio(0) && ratio(12) < 0.95, `velocity ratio ${ratio(0)} → ${ratio(12)}`)
   assert.ok(row.at[12].efficiency < row.linear[12].efficiency, 'efficiency falls')
   assert.ok(Math.abs(row.linear[12].pe / row.linear[0].pe - Math.pow(10, 1.2)) < 1e-6, 'linear power scales with the square')
+  // the split: efficiency loss and the change in power drawn
+  const a = row.at[12]
+  assert.ok(Math.abs(a.effLoss - ratioDb(a.efficiency, row.linear[12].efficiency)) < 1e-12)
+  assert.ok(Math.abs(a.powerChange - ratioDb(a.pe, row.linear[12].pe)) < 1e-12)
+  assert.ok(a.effLoss < 0, `efficiency loss ${a.effLoss}`)
+})
+
+// CONTRACT (effLoss, powerChange): with nothing radiating more or less
+// directionally and little distortion, the two parts of the compression
+// add up to it — radiated power is efficiency times power drawn.
+test('compression: efficiency loss and power drawn add up to the compression', async () => {
+  for (const p of [box(undefined, { throatK: 1, mouthK: 1 }), box({ Bl: { points: [{ x: 8, g: -0.3, w: 5 }], sym: true } })]) {
+    const res = await distortionAnalysis(p, 'compression', { ...O, f1: 25, f2: 60, points: 3, levels: [12] })
+    for (const r of res.rows) {
+      const a = r.at[12]
+      assert.ok(Math.abs(a.effLoss + a.powerChange - a.cmp) < 0.1 + 0.05 * Math.abs(a.cmp), `${r.hz} Hz: ${a.effLoss} + ${a.powerChange} vs ${a.cmp}`)
+    }
+  }
 })
 
 // CONTRACT: a curve with points of zero gain is flat, and reproduces the linear model.

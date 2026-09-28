@@ -102,7 +102,7 @@ seconds to minutes, and a result says when the project has changed since.
 
 - Subscribes to the store, and starts the linear responses when they are out of date.
 
-## UNREACHABLE (31)
+## UNREACHABLE (32)
 
 ### `f(v, d)`
 
@@ -518,6 +518,23 @@ A level offset, written for a legend or a table.
 **Returns**
 
 - `string` — `+6 dB`, `-3 dB`.
+
+**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
+
+### `dbCell(v)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+A dB change for a table cell, with rounding noise shown as zero.
+
+**Parameters**
+
+- `v` — `number|null` — dB.
+
+**Returns**
+
+- `number|null` — The value; 0 when it would print as ±0.00.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 

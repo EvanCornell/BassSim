@@ -573,6 +573,18 @@ export async function linearPoint(project, hz, levelDb) {
 }
 
 /**
+ * A power ratio in dB.
+ *
+ * @param {number|null} a - Power, or a ratio of powers.
+ * @param {number|null} b - The reference.
+ * @returns {number|null} 10·log10(a/b); null unless both are positive.
+ * @pure
+ */
+export function ratioDb(a, b) {
+  return a > 0 && b > 0 ? 10 * Math.log10(a / b) : null
+}
+
+/**
  * The linear model's figures at another level.
  *
  * Levels, excursion and velocity scale with the drive, powers with its
@@ -765,7 +777,11 @@ export async function maxLevel(s) {
  *   model's, as compression in dB; and, per point, the figures of
  *   `measureTone` (`row.at[L]`: THD, excursion, port velocity, impedance,
  *   electrical and acoustic power, efficiency) beside the linear model's at
- *   the same level (`row.linear[L]`, from `linearPoint`).
+ *   the same level (`row.linear[L]`, from `linearPoint`). The compression
+ *   is split in two: `effLoss`, 10·log10 of the efficiency over the linear
+ *   model's — output lost as the power drawn is turned into sound less
+ *   well — and `powerChange`, 10·log10 of the electrical power over the
+ *   linear model's — output lost because less power is drawn.
  * - `maxspl`: for each band frequency, the highest burst level that breaks
  *   neither the CEA-2010 distortion limits nor `xLimit` × Xmax of excursion,
  *   found by stepping 3 dB then narrowing to 0.25 dB (see `maxLevel`),
@@ -862,7 +878,13 @@ export async function distortionAnalysis(project, mode, opts = {}, onProgress = 
         const lin = lins[i] ? scaleLinear(lins[i], L) : null
         row[`spl${L}`] = m ? m.spl : null
         row[`cmp${L}`] = m && lin ? m.spl - lin.spl : null
-        row.at[L] = m ? { spl: m.spl, cmp: row[`cmp${L}`], thd: m.thd, xPeak: m.xPeak, vPeak: m.vPeak, z: m.z, pe: m.pe, pa: m.pa, efficiency: m.efficiency } : null
+        // Compression splits into the power drawn and what becomes of it:
+        // `effLoss` is the change in efficiency, `powerChange` the change in
+        // electrical power, both dB against the linear model.
+        row.at[L] = m ? {
+          effLoss: ratioDb(m.efficiency, lin?.efficiency),
+          powerChange: ratioDb(m.pe, lin?.pe),
+          spl: m.spl, cmp: row[`cmp${L}`], thd: m.thd, xPeak: m.xPeak, vPeak: m.vPeak, z: m.z, pe: m.pe, pa: m.pa, efficiency: m.efficiency } : null
         row.linear[L] = lin
       }
       return row

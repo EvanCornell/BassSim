@@ -69,7 +69,7 @@ Defaults for the distortion analyses.
 
 Keys: `hz`, `levelDb`, `harmonics`, `bandwidth`, `f1`, `f2`, `points`, `levels`, `bands`, `xLimit`, `maxBoostDb`
 
-## EXPORTED (15)
+## EXPORTED (16)
 
 ### `splOf(p)`
 
@@ -300,6 +300,24 @@ and power are then scaled to the level, as the linear model scales them.
 
 - Runs the engine.
 
+### `ratioDb(a, b)`
+
+- **Reachability:** EXPORTED
+- **Obtain via:** import { ratioDb } from '../../src/spice/timedomain.js'
+
+A power ratio in dB.
+
+**Parameters**
+
+- `a` — `number|null` — Power, or a ratio of powers.
+- `b` — `number|null` — The reference.
+
+**Returns**
+
+- `number|null` — 10·log10(a/b); null unless both are positive.
+
+**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
+
 ### `scaleLinear(lin, levelDb)`
 
 - **Reachability:** EXPORTED
@@ -439,7 +457,11 @@ Distortion analyses.
   model's, as compression in dB; and, per point, the figures of
   `measureTone` (`row.at[L]`: THD, excursion, port velocity, impedance,
   electrical and acoustic power, efficiency) beside the linear model's at
-  the same level (`row.linear[L]`, from `linearPoint`).
+  the same level (`row.linear[L]`, from `linearPoint`). The compression
+  is split in two: `effLoss`, 10·log10 of the efficiency over the linear
+  model's — output lost as the power drawn is turned into sound less
+  well — and `powerChange`, 10·log10 of the electrical power over the
+  linear model's — output lost because less power is drawn.
 - `maxspl`: for each band frequency, the highest burst level that breaks
   neither the CEA-2010 distortion limits nor `xLimit` × Xmax of excursion,
   found by stepping 3 dB then narrowing to 0.25 dB (see `maxLevel`),

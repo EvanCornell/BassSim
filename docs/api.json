@@ -25,8 +25,8 @@
   },
   "stats": {
     "modules": 100,
-    "methods": 1049,
-    "documented": 1049
+    "methods": 1051,
+    "documented": 1051
   },
   "modules": [
     {
@@ -16889,13 +16889,52 @@
           "other": []
         },
         {
+          "name": "dbCell",
+          "qualified": "dbCell",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 776,
+          "signature": [
+            "v"
+          ],
+          "documented": true,
+          "summary": "A dB change for a table cell, with rounding noise shown as zero.",
+          "description": "A dB change for a table cell, with rounding noise shown as zero.",
+          "params": [
+            {
+              "name": "v",
+              "type": "number|null",
+              "optional": false,
+              "default": null,
+              "desc": "dB."
+            }
+          ],
+          "returns": {
+            "type": "number|null",
+            "desc": "The value; 0 when it would print as ±0.00."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
           "name": "compressionRows",
           "qualified": "compressionRows",
           "kind": "function",
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 780,
+          "line": 789,
           "signature": [
             "res",
             "pick"
@@ -16942,7 +16981,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 800,
+          "line": 809,
           "signature": [
             "rows"
           ],
@@ -16981,7 +17020,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 821,
+          "line": 830,
           "signature": [
             "arg0"
           ],
@@ -17043,7 +17082,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 836,
+          "line": 845,
           "signature": [
             "id"
           ],
@@ -17084,7 +17123,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 844,
+          "line": 853,
           "signature": [
             "linear"
           ],
@@ -17123,7 +17162,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 858,
+          "line": 867,
           "signature": [
             "title",
             "pick",
@@ -17186,7 +17225,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 874,
+          "line": 883,
           "signature": [
             "list",
             "name"
@@ -17233,7 +17272,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 886,
+          "line": 897,
           "signature": [
             "n",
             "l",
@@ -17296,7 +17335,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 964,
+          "line": 986,
           "signature": [
             "arg0"
           ],
@@ -17342,7 +17381,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 983,
+          "line": 1005,
           "signature": [],
           "documented": true,
           "summary": "Duct exit losses, listed for every waveguide.",
@@ -17373,7 +17412,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1022,
+          "line": 1044,
           "signature": [],
           "documented": true,
           "summary": "The running job's progress, with a cancel button.",
@@ -17404,7 +17443,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 1046,
+          "line": 1068,
           "signature": [],
           "documented": true,
           "summary": "The time-domain workspace: its own full-screen view under the menu and quick bar.",
@@ -39045,13 +39084,60 @@
           "other": []
         },
         {
+          "name": "ratioDb",
+          "qualified": "ratioDb",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 583,
+          "signature": [
+            "a",
+            "b"
+          ],
+          "documented": true,
+          "summary": "A power ratio in dB.",
+          "description": "A power ratio in dB.",
+          "params": [
+            {
+              "name": "a",
+              "type": "number|null",
+              "optional": false,
+              "default": null,
+              "desc": "Power, or a ratio of powers."
+            },
+            {
+              "name": "b",
+              "type": "number|null",
+              "optional": false,
+              "default": null,
+              "desc": "The reference."
+            }
+          ],
+          "returns": {
+            "type": "number|null",
+            "desc": "10·log10(a/b); null unless both are positive."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
           "name": "scaleLinear",
           "qualified": "scaleLinear",
           "kind": "function",
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 586,
+          "line": 598,
           "signature": [
             "lin",
             "levelDb"
@@ -39098,7 +39184,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 595,
+          "line": 607,
           "signature": [
             "m"
           ],
@@ -39137,7 +39223,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 615,
+          "line": 627,
           "signature": [
             "f1",
             "f2",
@@ -39192,7 +39278,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 628,
+          "line": 640,
           "signature": [
             "m",
             "xLimitMm"
@@ -39239,7 +39325,7 @@
           "exported": true,
           "async": true,
           "generator": false,
-          "line": 655,
+          "line": 667,
           "signature": [
             "project",
             "hz",
@@ -39309,7 +39395,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 669,
+          "line": 681,
           "signature": [
             "f"
           ],
@@ -39348,7 +39434,7 @@
           "exported": true,
           "async": true,
           "generator": false,
-          "line": 710,
+          "line": 722,
           "signature": [
             "s"
           ],
@@ -39431,7 +39517,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 718,
+          "line": 730,
           "signature": [],
           "documented": true,
           "summary": "The current bracket: the lowest breaking level, and the highest passing one below it.",
@@ -39462,7 +39548,7 @@
           "exported": true,
           "async": true,
           "generator": false,
-          "line": 782,
+          "line": 798,
           "signature": [
             "project",
             "mode",
@@ -39471,7 +39557,7 @@
           ],
           "documented": true,
           "summary": "Distortion analyses.",
-          "description": "Distortion analyses.\n\n- `harmonics`: one tone at `hz`, `levelDb` — its harmonic levels, THD and\n  the last periods of its waveform.\n- `thd`: tones at `points` log-spaced frequencies from `f1` to `f2` — THD,\n  H2 and H3 against frequency.\n- `compression`: tones at the same frequencies at each of `levels` (dB\n  over the channels' level) — the fundamental's level against the linear\n  model's, as compression in dB; and, per point, the figures of\n  `measureTone` (`row.at[L]`: THD, excursion, port velocity, impedance,\n  electrical and acoustic power, efficiency) beside the linear model's at\n  the same level (`row.linear[L]`, from `linearPoint`).\n- `maxspl`: for each band frequency, the highest burst level that breaks\n  neither the CEA-2010 distortion limits nor `xLimit` × Xmax of excursion,\n  found by stepping 3 dB then narrowing to 0.25 dB (see `maxLevel`),\n  every band at once.",
+          "description": "Distortion analyses.\n\n- `harmonics`: one tone at `hz`, `levelDb` — its harmonic levels, THD and\n  the last periods of its waveform.\n- `thd`: tones at `points` log-spaced frequencies from `f1` to `f2` — THD,\n  H2 and H3 against frequency.\n- `compression`: tones at the same frequencies at each of `levels` (dB\n  over the channels' level) — the fundamental's level against the linear\n  model's, as compression in dB; and, per point, the figures of\n  `measureTone` (`row.at[L]`: THD, excursion, port velocity, impedance,\n  electrical and acoustic power, efficiency) beside the linear model's at\n  the same level (`row.linear[L]`, from `linearPoint`). The compression\n  is split in two: `effLoss`, 10·log10 of the efficiency over the linear\n  model's — output lost as the power drawn is turned into sound less\n  well — and `powerChange`, 10·log10 of the electrical power over the\n  linear model's — output lost because less power is drawn.\n- `maxspl`: for each band frequency, the highest burst level that breaks\n  neither the CEA-2010 distortion limits nor `xLimit` × Xmax of excursion,\n  found by stepping 3 dB then narrowing to 0.25 dB (see `maxLevel`),\n  every band at once.",
           "params": [
             {
               "name": "project",
@@ -39532,7 +39618,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 804,
+          "line": 820,
           "signature": [
             "label",
             "err"
@@ -39586,7 +39672,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 817,
+          "line": 833,
           "signature": [
             "total"
           ],
@@ -39632,7 +39718,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 827,
+          "line": 843,
           "signature": [
             "L"
           ],
@@ -39671,7 +39757,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 885,
+          "line": 907,
           "signature": [
             "message"
           ],
@@ -39712,7 +39798,7 @@
           "exported": false,
           "async": true,
           "generator": false,
-          "line": 898,
+          "line": 920,
           "signature": [
             "L"
           ],
@@ -39753,7 +39839,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 914,
+          "line": 936,
           "signature": [],
           "documented": true,
           "summary": "How many levels this band may test at once: its share of the threads.",
@@ -39784,7 +39870,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 922,
+          "line": 944,
           "signature": [
             "fraction"
           ],
