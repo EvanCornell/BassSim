@@ -5,7 +5,7 @@
 
 ## Module
 
-The whole page when AcouSim is loaded at panel?id=…: one panel — or one
+The whole page when SpeakerSpice is loaded at panel?id=…: one panel — or one
 docked window's worth of them — full-window, for dragging onto a second
 monitor.
 

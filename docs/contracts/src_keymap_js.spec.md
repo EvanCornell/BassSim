@@ -99,7 +99,7 @@ Keys: `edit.undo`, `edit.redo`, `edit.cut`, `edit.copy`, `edit.paste`, `edit.dup
 
 LocalStorage key holding the user's binding overrides.
 
-Value: `"acousim:keymap"`
+Value: `"speakerspice:keymap"`
 
 ## EXPORTED (7)
 
@@ -538,7 +538,7 @@ Add an empty project to the workspace and open it.
 - **Reachability:** COMMAND
 - **Obtain via:** import { COMMANDS } from '../../src/keymap.js'  →  COMMANDS['<id>'].run(storeState)
 
-Download the project as an `.acousim.json` file.
+Download the project as an `.speakerspice.json` file.
 
 **Parameters**
 

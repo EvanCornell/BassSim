@@ -2,7 +2,7 @@
 
 **Private — excluded from the public export (see `PUBLISH.md`).**
 
-AcouSim stops solving circuits itself. The node graph is translated into a
+SpeakerSpice stops solving circuits itself. The node graph is translated into a
 SPICE netlist, ngspice solves it, and the output is translated back into what
 a loudspeaker designer needs. Our code owns the two translations; the solver
 is ngspice's, and is trusted.
@@ -13,7 +13,7 @@ is ngspice's, and is trusted.
 
 Milestones 1–4 are built (`src/schema/`, `src/spice/`, `src/engine/pipeline.js`,
 and the editor panels). SPICE is the default engine in the app and the MCP
-server; the legacy solver is a Settings toggle (`ACOUSIM_ENGINE=legacy` for
+server; the legacy solver is a Settings toggle (`SPEAKERSPICE_ENGINE=legacy` for
 the server) and refuses what it cannot represent. Milestone 5 remains:
 deleting the legacy solver.
 
@@ -323,7 +323,7 @@ used; items marked *reserved* are shapes held open but not built yet.
 ```jsonc
 {
   "schemaVersion": 3,
-  "app": "AcouSim", "name": "…", "modified": "…",
+  "app": "SpeakerSpice", "name": "…", "modified": "…",
   "air":       { "temperatureC": 20, "altitudeM": 0 },   // reserved
   "params":    [ … ],          // named parameters (provisional)
   "nodes":     [ … ],          // the acoustic graph

@@ -54,11 +54,11 @@ const T_CHAMBER = 'chamber'
 // itself" (src/panelMeta.js).
 const CANVAS = 'canvas'
 
-// LocalStorage keys, all prefixed `acousim:` per the spec's Module section.
-const LS_LAYOUT = 'acousim:layout'
-const LS_PRESETS = 'acousim:layoutPresets'
-const LS_TOOLBAR = 'acousim:toolbar'
-const LS_KEYMAP = 'acousim:keymap'
+// LocalStorage keys, all prefixed `speakerspice:` per the spec's Module section.
+const LS_LAYOUT = 'speakerspice:layout'
+const LS_PRESETS = 'speakerspice:layoutPresets'
+const LS_TOOLBAR = 'speakerspice:toolbar'
+const LS_KEYMAP = 'speakerspice:keymap'
 
 const ls = () => globalThis.localStorage
 
@@ -67,7 +67,7 @@ const ls = () => globalThis.localStorage
 function blank(over = {}) {
   return {
     schemaVersion: 2,
-    app: 'acousim',
+    app: 'speakerspice',
     name: 'contract-test',
     modified: new Date().toISOString(),
     settings: { ...DEFAULT_SETTINGS },
@@ -224,7 +224,7 @@ test('loadLayout: a valid layout without the canvas is rejected for the default'
   // whatever the store itself writes — only its content is canvas-free.
   const others = PANEL_IDS.filter((p) => p !== CANVAS).slice(0, 2)
   st()._commitLayout(split('row', [stack([others[0]]), stack([others[1]])]))
-  assert.ok(ls().getItem(LS_LAYOUT), 'precondition: it was persisted to acousim:layout')
+  assert.ok(ls().getItem(LS_LAYOUT), 'precondition: it was persisted to speakerspice:layout')
 
   const t = __internals.loadLayout()
   assert.ok(
@@ -504,12 +504,12 @@ test('setBinding: replaces the command combos wholesale', () => {
 })
 
 // CONTRACT: "Writes store state and persists the bindings to LocalStorage."
-test('setBinding: persists the bindings to acousim:keymap', () => {
+test('setBinding: persists the bindings to speakerspice:keymap', () => {
   const id = Object.keys(st().bindings)[0]
   st().resetBindings()
   st().setBinding(id, ['mod+shift+f10'])
   const stored = ls().getItem(LS_KEYMAP)
-  assert.ok(stored, 'the binding change must reach acousim:keymap')
+  assert.ok(stored, 'the binding change must reach speakerspice:keymap')
   assert.ok(stored.includes('mod+shift+f10'), 'the stored value must carry the new combo')
   st().resetBindings()
 })
@@ -564,7 +564,7 @@ test('resetBindings: restores the default combos for every command', () => {
 
 // CONTRACT: "persists the bindings to LocalStorage, which removes the stored
 // overrides entirely."
-test('resetBindings: removes acousim:keymap entirely', () => {
+test('resetBindings: removes speakerspice:keymap entirely', () => {
   const id = Object.keys(st().bindings)[0]
   st().setBinding(id, ['mod+shift+f5'])
   assert.ok(ls().getItem(LS_KEYMAP), 'precondition: the override was stored')
@@ -577,12 +577,12 @@ test('resetBindings: removes acousim:keymap entirely', () => {
 
 // CONTRACT: "Adopt a new layout tree and persist it." / "Writes store state and
 // LocalStorage."
-test('_commitLayout: adopts the tree and persists it to acousim:layout', () => {
+test('_commitLayout: adopts the tree and persists it to speakerspice:layout', () => {
   const t = split('row', [stack([CANVAS]), stack([closablePanel()])])
   ls().removeItem(LS_LAYOUT)
   st()._commitLayout(t)
   assert.equal(st().layout, t, 'the committed tree becomes the layout')
-  assert.ok(ls().getItem(LS_LAYOUT), 'the layout must be persisted to acousim:layout')
+  assert.ok(ls().getItem(LS_LAYOUT), 'the layout must be persisted to speakerspice:layout')
   st().layoutOps.reset()
 })
 
@@ -761,12 +761,12 @@ test('saveLayoutPreset: saves under the name, replacing a preset of that name', 
 })
 
 // CONTRACT: "Writes store state and LocalStorage." (saveLayoutPreset)
-test('saveLayoutPreset: persists to acousim:layoutPresets', () => {
+test('saveLayoutPreset: persists to speakerspice:layoutPresets', () => {
   const name = '__preset_persist__'
   st().layoutOps.reset()
   st().saveLayoutPreset(name)
   const stored = ls().getItem(LS_PRESETS)
-  assert.ok(stored, 'presets must be persisted to acousim:layoutPresets')
+  assert.ok(stored, 'presets must be persisted to speakerspice:layoutPresets')
   assert.ok(stored.includes(name))
   st().deleteLayoutPreset(name)
 })
@@ -842,13 +842,13 @@ test('toggleToolbarItem: removes a present item and re-adds it at the end', () =
 })
 
 // CONTRACT: "Writes store state and persists the toolbar." (toggleToolbarItem)
-test('toggleToolbarItem: persists the toolbar to acousim:toolbar', () => {
+test('toggleToolbarItem: persists the toolbar to speakerspice:toolbar', () => {
   st().resetToolbar()
   ls().removeItem(LS_TOOLBAR)
   const id = st().toolbar[0]
   st().toggleToolbarItem(id)
   const stored = ls().getItem(LS_TOOLBAR)
-  assert.ok(stored, 'the toolbar must be persisted to acousim:toolbar')
+  assert.ok(stored, 'the toolbar must be persisted to speakerspice:toolbar')
   assert.ok(!JSON.parse(stored).includes(id), 'the stored bar reflects the removal')
   st().resetToolbar()
 })
@@ -903,7 +903,7 @@ test('deleteLayoutPreset: removes the preset', () => {
 })
 
 // CONTRACT: "Writes store state and LocalStorage." (deleteLayoutPreset)
-test('deleteLayoutPreset: the deletion reaches acousim:layoutPresets', () => {
+test('deleteLayoutPreset: the deletion reaches speakerspice:layoutPresets', () => {
   const name = '__preset_delete_ls__'
   st().saveLayoutPreset(name)
   assert.ok(ls().getItem(LS_PRESETS).includes(name), 'precondition: it was persisted')
@@ -924,7 +924,7 @@ test('setXZoom: stores the range under the chart id and null resets it', () => {
 test('setXZoom: is not persisted to LocalStorage', () => {
   const before = ls().getItem(LS_LAYOUT)
   st().setXZoom('zin', [30, 300])
-  assert.equal(ls().getItem('acousim:xZoom'), null, 'zoom has no LocalStorage key')
+  assert.equal(ls().getItem('speakerspice:xZoom'), null, 'zoom has no LocalStorage key')
   assert.equal(ls().getItem(LS_LAYOUT), before, 'and it does not disturb the layout key')
 })
 
@@ -1588,7 +1588,7 @@ test('serialize: settings round-trip through the v3 sections', () => {
 
 // CONTRACT: "Node positions are included — they are editor state, but losing
 // the layout of a saved graph would be worse than carrying it." The
-// `.acousim.json` node shape is `{id, type, position, params}`.
+// `.speakerspice.json` node shape is `{id, type, position, params}`.
 test('serialize: nodes carry id, type, position and params', () => {
   st().addNode(T_DRIVER, { x: 21, y: 43 })
   const p = st().serialize()

@@ -1,15 +1,15 @@
-# AcouSim modeling guide (for AI agents)
+# SpeakerSpice modeling guide (for AI agents)
 
-AcouSim simulates loudspeaker enclosures as free-form acoustic circuits using
+SpeakerSpice simulates loudspeaker enclosures as free-form acoustic circuits using
 transfer (ABCD) matrices — Hornresp-class physics without the fixed topology.
 A **project** is plain JSON; the same format the visual editor saves as
-`.acousim.json`, so anything you build here opens in the app unchanged.
+`.speakerspice.json`, so anything you build here opens in the app unchanged.
 
 ## Project format
 
 ```json
 {
-  "app": "AcouSim", "schemaVersion": 1, "name": "My box",
+  "app": "SpeakerSpice", "schemaVersion": 1, "name": "My box",
   "settings": { "fmin": 10, "fmax": 200, "npts": 256, "voltage": 28.3, "rg": 0 },
   "nodes": [
     { "id": "d1", "type": "driver",    "params": { "...": "..." } },

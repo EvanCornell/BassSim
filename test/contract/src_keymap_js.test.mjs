@@ -45,8 +45,8 @@ function storageKeys() {
 }
 
 // CONTRACT (constants): "`KEYMAP_KEY` — LocalStorage key holding the user's binding overrides.
-// Value: `"acousim:keymap"`"
-const KEYMAP_KEY = 'acousim:keymap'
+// Value: `"speakerspice:keymap"`"
+const KEYMAP_KEY = 'speakerspice:keymap'
 
 // CONTRACT (constants): "`COMMANDS` — Keys: `edit.undo`, `edit.redo`, `edit.cut`, `edit.copy`,
 // `edit.paste`, `edit.duplicate`, `edit.selectAll`, `edit.delete`, `drive.up`, `drive.down`,
@@ -275,7 +275,7 @@ test('saveBindings: persists only the differences and removes the key when nothi
 
   saveBindings(modified)
   // CONTRACT (constants): "`KEYMAP_KEY` — LocalStorage key holding the user's binding
-  // overrides. Value: `"acousim:keymap"`"
+  // overrides. Value: `"speakerspice:keymap"`"
   assert.deepEqual(storageKeys(), [KEYMAP_KEY], 'the overrides must live under the documented key')
   const KEY = KEYMAP_KEY
 
@@ -695,7 +695,7 @@ test('COMMANDS: project.new adds a project to the workspace', () => {
   assertDelegates('project.new', 'newFile', [''])
 })
 
-// CONTRACT: "`project.save > run(s)` — Download the project as an `.acousim.json` file."
+// CONTRACT: "`project.save > run(s)` — Download the project as an `.speakerspice.json` file."
 test('COMMANDS: project.save downloads the project', () => {
   assertDelegates('project.save', 'saveProjectJSON')
 })

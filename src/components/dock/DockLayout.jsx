@@ -16,7 +16,7 @@ import { StackContext } from './stackContext'
 /**
  * The dataTransfer type marking a panel tab drag.
  */
-const DRAG_MIME = 'application/acousim-panel'
+const DRAG_MIME = 'application/speakerspice-panel'
 /**
  * Smallest pane a splitter drag may produce, in pixels.
  */
@@ -30,10 +30,10 @@ const EDGE_FRACTION = 0.28 // outer 28% of a stack docks to that side
  * Whether a drag event is a panel tab drag.
  *
  * The payload decides what a drag means, never the store flag alone: a palette
- * element carries `application/acousim-node` and must reach the canvas
+ * element carries `application/speakerspice-node` and must reach the canvas
  * untouched, even if a previous tab drag left `draggingPanel` set.
  *
- * @param {React.DragEvent} e - The drag event. A panel tab drag is identified by `application/acousim-panel` appearing in `dataTransfer.types`.
+ * @param {React.DragEvent} e - The drag event. A panel tab drag is identified by `application/speakerspice-panel` appearing in `dataTransfer.types`.
  * @returns {boolean} True when the drag carries a panel tab.
  * @pure
  */

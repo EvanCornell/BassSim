@@ -28,9 +28,10 @@
 // back locked and waiting for a click rather than connected.
 
 import { workspaceToEntries, entriesToWorkspace, DEFAULT_WORKSPACE_NAME } from '../workspace'
+import { LEGACY_DB_NAME } from '../legacy'
 
 /** IndexedDB database holding the folder handle. */
-const DB_NAME = 'acousim'
+const DB_NAME = 'speakerspice'
 
 /** Object store inside it. */
 const DB_STORE = 'handles'
@@ -138,12 +139,13 @@ export function planSync(ws, previous, prune = true) {
 /**
  * Open the handle database, creating its store on first use.
  *
+ * @param {string} [name] - The database; this app's by default.
  * @returns {Promise<IDBDatabase>} The open database.
  * @sideEffect Opens IndexedDB, creating the database and its object store if they do not exist.
  */
-function openDb() {
+function openDb(name = DB_NAME) {
   return new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB_NAME, 1)
+    const req = indexedDB.open(name, 1)
     /**
      * Create the handle store the first time this database is opened.
      *
@@ -175,11 +177,12 @@ function openDb() {
  *
  * @param {string} mode - `'readonly'` or `'readwrite'`.
  * @param {Function} run - Given the object store, issues the request and returns it.
+ * @param {string} [name] - The database; this app's by default.
  * @returns {Promise<*>} The request's result, or `null` when it produced none.
  * @sideEffect Reads or writes IndexedDB.
  */
-async function withStore(mode, run) {
-  const db = await openDb()
+async function withStore(mode, run, name = DB_NAME) {
+  const db = await openDb(name)
   try {
     return await new Promise((resolve, reject) => {
       const tx = db.transaction(DB_STORE, mode)
@@ -236,13 +239,23 @@ export async function rememberFolder(handle) {
 /**
  * The folder remembered from a previous visit.
  *
+ * A folder remembered under the app's former name is moved to the current
+ * database, so a renamed app resumes the same folder.
+ *
  * @returns {Promise<FileSystemDirectoryHandle|null>} The handle, or `null` when none was stored or it could not be read.
- * @sideEffect Reads IndexedDB.
+ * @sideEffect Reads IndexedDB; may move a handle out of the former database and delete that database.
  */
 export async function recallFolder() {
   try {
     const handle = await withStore('readonly', (store) => store.get(DB_KEY))
-    return handle || null
+    if (handle) return handle
+  } catch {
+    return null
+  }
+  try {
+    const old = await withStore('readonly', (store) => store.get(DB_KEY), LEGACY_DB_NAME)
+    if (old && await rememberFolder(old)) indexedDB.deleteDatabase(LEGACY_DB_NAME)
+    return old || null
   } catch {
     return null
   }
@@ -294,7 +307,7 @@ export async function folderPermission(handle, ask = false) {
  */
 export async function pickFolder() {
   try {
-    return await window.showDirectoryPicker({ id: 'acousim-workspace', mode: 'readwrite' })
+    return await window.showDirectoryPicker({ id: 'speakerspice-workspace', mode: 'readwrite' })
   } catch {
     return null
   }
@@ -362,7 +375,17 @@ export async function readFolderWorkspace(handle) {
   // rather than from the raw files means the text compared later is the text
   // this app would write, so adopting a folder does not immediately rewrite
   // every file in it over a difference in indentation.
-  return { ok: true, workspace: parsed.workspace, skipped: parsed.skipped, previous: diskContents(parsed.workspace) }
+  // Files and folders read from a path under the app's former name are on
+  // disk at that path, not at their current one: recorded so, the first save
+  // writes them under the current name and removes the former, rather than
+  // leaving both behind.
+  const previous = diskContents(parsed.workspace)
+  for (const r of parsed.renamed || []) {
+    if (r.folder) { previous.folders.push(r.from); continue }
+    previous.files.delete(r.to)
+    previous.files.set(r.from, '')
+  }
+  return { ok: true, workspace: parsed.workspace, skipped: parsed.skipped, previous }
 }
 
 // ---------- writing ----------

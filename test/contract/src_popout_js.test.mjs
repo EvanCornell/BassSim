@@ -240,12 +240,12 @@ test('openPanelWindow: the URL it opens round-trips through popoutPanelId', () =
 // resolve correctly whether the app sits at a domain root or in a subdirectory.
 test('openPanelWindow: the URL round-trips when the app is served from a subdirectory', () => {
   const fake = { focus: () => {} }
-  const { win, opened } = makeWindow('/acousim/', '', () => fake)
+  const { win, opened } = makeWindow('/speakerspice/', '', () => fake)
   withWindow(win, () => {
     openPanelWindow('spl')
   })
-  const url = new URL(opened[0].url, 'http://localhost/acousim/')
-  assert.equal(url.pathname, '/acousim/panel', 'must stay under the deployment directory')
+  const url = new URL(opened[0].url, 'http://localhost/speakerspice/')
+  assert.equal(url.pathname, '/speakerspice/panel', 'must stay under the deployment directory')
   const { win: tab } = makeWindow(url.pathname, url.search)
   withWindow(tab, () => {
     assert.equal(popoutPanelId(), 'spl')

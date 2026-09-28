@@ -110,7 +110,7 @@ const call = async (name, args = {}) => {
   check('sweep voltage: excursion scales linearly', Math.abs(b / a - 2) < 0.01 && Math.abs(c / a - 4) < 0.01, `${a}/${b}/${c} mm`)
 }
 {
-  const res = await client.readResource({ uri: 'acousim://guide' })
+  const res = await client.readResource({ uri: 'speakerspice://guide' })
   check('guide resource', res.contents[0].text.includes('Project format'))
 }
 

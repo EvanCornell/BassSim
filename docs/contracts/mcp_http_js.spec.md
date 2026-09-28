@@ -8,12 +8,12 @@
 Streamable-HTTP entry point, for remote MCP clients (claude.ai custom
 connectors, ChatGPT, MCP inspector, or any HTTP MCP client).
 
-  PORT=8787 ACOUSIM_TOKEN=secret node mcp/http.js
+  PORT=8787 SPEAKERSPICE_TOKEN=secret node mcp/http.js
 
 Stateless mode: every tool takes the full project JSON, so no session
 state is kept — each POST gets a fresh server+transport pair, which also
 makes horizontal scaling trivial. Auth is an optional static bearer token
-(ACOUSIM_TOKEN); unset = open, for local/trusted networks only.
+(SPEAKERSPICE_TOKEN); unset = open, for local/trusted networks only.
 
 ## UNREACHABLE (3)
 

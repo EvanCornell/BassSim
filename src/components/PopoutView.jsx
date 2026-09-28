@@ -1,4 +1,4 @@
-// The whole page when AcouSim is loaded at panel?id=…: one panel — or one
+// The whole page when SpeakerSpice is loaded at panel?id=…: one panel — or one
 // docked window's worth of them — full-window, for dragging onto a second
 // monitor.
 //
@@ -60,7 +60,7 @@ export default function PopoutView() {
   }
 
   useEffect(() => {
-    document.title = `${active ? panelTitle(active) : 'Panel'} — ${projectName || 'AcouSim'}`
+    document.title = `${active ? panelTitle(active) : 'Panel'} — ${projectName || 'SpeakerSpice'}`
   }, [active, projectName])
 
   if (!ids.length) {
@@ -68,7 +68,7 @@ export default function PopoutView() {
       <div className="popout">
         <div className="popout-title"><span>Unknown panel</span></div>
         <div className="popout-body" style={{ padding: 24, color: 'var(--text-3)' }}>
-          No panel named “{popoutPanelIds().join(', ') || '?'}”. Open one from the View menu in the main AcouSim window.
+          No panel named “{popoutPanelIds().join(', ') || '?'}”. Open one from the View menu in the main SpeakerSpice window.
         </div>
       </div>
     )
@@ -81,7 +81,7 @@ export default function PopoutView() {
         <span className="pt-project">{projectName}</span>
         {/* Nothing arrives until the main window broadcasts, which is instant
             in practice but worth saying out loud if that window is gone. */}
-        {!results && <span className="pt-wait">waiting for the main AcouSim window…</span>}
+        {!results && <span className="pt-wait">waiting for the main SpeakerSpice window…</span>}
       </div>
       {ids.length > 1 && (
         <div className="popout-tabs">

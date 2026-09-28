@@ -52,7 +52,7 @@ Idempotent: migrating a migrated project changes nothing.
 
 **Parameters**
 
-- `proj` — `object` — A parsed `.acousim.json` project of any version.
+- `proj` — `object` — A parsed `.speakerspice.json` project of any version.
 
 **Returns**
 

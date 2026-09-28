@@ -1,4 +1,4 @@
-// AcouSim MCP server core: tool/resource registrations, transport-agnostic.
+// SpeakerSpice MCP server core: tool/resource registrations, transport-agnostic.
 // Entry points: mcp/server.js (stdio) and mcp/http.js (streamable HTTP).
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
@@ -78,9 +78,9 @@ function resolveNode(nodes, ref, types = null) {
 }
 
 /**
- * Which engine the server simulates with: `ACOUSIM_ENGINE`, or the default.
+ * Which engine the server simulates with: `SPEAKERSPICE_ENGINE`, or the default.
  */
-const ENGINE = ENGINES.includes(process.env.ACOUSIM_ENGINE) ? process.env.ACOUSIM_ENGINE : DEFAULT_ENGINE
+const ENGINE = ENGINES.includes(process.env.SPEAKERSPICE_ENGINE) ? process.env.SPEAKERSPICE_ENGINE : DEFAULT_ENGINE
 
 /**
  * Bring a project to the current schema, applying any flat `settings` over it.
@@ -474,23 +474,23 @@ const errResult = (e) => ({ isError: true, content: [{ type: 'text', text: `Erro
  */
 export function createServer() {
 const server = new McpServer(
-  { name: 'acousim', version: '0.1.0' },
+  { name: 'speakerspice', version: '0.1.0' },
   {
     instructions:
-      'AcouSim: loudspeaker enclosure simulation via acoustic transfer matrices. '
+      'SpeakerSpice: loudspeaker enclosure simulation via acoustic transfer matrices. '
       + 'Projects are JSON node graphs (drivers, chambers, waveguides, passive radiators, radiation terminations) '
-      + 'compatible with the AcouSim visual editor. Read the design_guide tool/resource FIRST — it documents the '
+      + 'compatible with the SpeakerSpice visual editor. Read the design_guide tool/resource FIRST — it documents the '
       + 'schema, units, and topology semantics. Typical flow: build project JSON → validate → simulate → '
       + 'sweep_parameter to tune → report metrics (F3, tuning, port velocity, excursion vs Xmax) against the user\'s goals.',
   },
 )
 
 const projectParam = z.record(z.string(), z.any()).describe(
-  'AcouSim project JSON: { settings, nodes: [{id, type, params}], edges: [{source, sourceHandle, target, targetHandle}] }. See design_guide.',
+  'SpeakerSpice project JSON: { settings, nodes: [{id, type, params}], edges: [{source, sourceHandle, target, targetHandle}] }. See design_guide.',
 )
 
 server.registerTool('design_guide', {
-  title: 'AcouSim design guide',
+  title: 'SpeakerSpice design guide',
   description: 'Returns the modeling guide: project JSON schema, node types with params and units, topology semantics, and design workflow. Call this before building your first project.',
   inputSchema: {},
 }, async () => ({ content: [{ type: 'text', text: GUIDE }] }))
@@ -897,11 +897,11 @@ server.registerTool('compare', {
   } catch (e) { return errResult(e) }
 })
 
-server.registerResource('design-guide', 'acousim://guide', {
-  title: 'AcouSim design guide',
+server.registerResource('design-guide', 'speakerspice://guide', {
+  title: 'SpeakerSpice design guide',
   description: 'Project schema, node types, units, topology semantics',
   mimeType: 'text/markdown',
-}, async () => ({ contents: [{ uri: 'acousim://guide', mimeType: 'text/markdown', text: GUIDE }] }))
+}, async () => ({ contents: [{ uri: 'speakerspice://guide', mimeType: 'text/markdown', text: GUIDE }] }))
 
 return server
 }

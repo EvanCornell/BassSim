@@ -32,7 +32,7 @@ so this is the vocabulary they assume.
 
 BroadcastChannel name the windows use to mirror shared state.
 
-Value: `"acousim-sync"`
+Value: `"speakerspice-sync"`
 
 ### `SHARED_KEYS`
 

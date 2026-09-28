@@ -17,13 +17,13 @@
 
 // Relative rather than absolute, so the app works wherever it is deployed.
 // `window.open('panel?…')` resolves against the current directory, which puts a
-// panel at /panel when served from a domain root and at /acousim/panel when
+// panel at /panel when served from a domain root and at /speakerspice/panel when
 // served from a subdirectory — a GitHub Pages project site, say. An absolute
 // '/panel' would escape to the domain root and 404 in the second case.
 /** Path segment a popped-out panel is served from, relative to the app root. */
 const PANEL_PATH = 'panel'
 /** BroadcastChannel name the windows use to mirror shared state. */
-export const SYNC_CHANNEL = 'acousim-sync'
+export const SYNC_CHANNEL = 'speakerspice-sync'
 
 /**
  * Store keys mirrored between the main window and every popped-out tab.
@@ -110,7 +110,7 @@ export const isPopout = () => popoutPanelId() != null
  * @sideEffect Opens a browser window and moves focus to it.
  */
 export function openPanelWindow(id) {
-  const w = window.open(`${PANEL_PATH}?id=${encodeURIComponent(id)}`, `acousim-panel-${id}`)
+  const w = window.open(`${PANEL_PATH}?id=${encodeURIComponent(id)}`, `speakerspice-panel-${id}`)
   w?.focus()
   return w
 }
@@ -134,7 +134,7 @@ export function openPanelGroupWindow(ids, active) {
   if (!ids.length) return null
   const front = ids.includes(active) ? active : ids[0]
   const query = `id=${encodeURIComponent(ids.join(','))}&active=${encodeURIComponent(front)}`
-  const name = `acousim-group-${[...ids].sort().join('-')}`
+  const name = `speakerspice-group-${[...ids].sort().join('-')}`
   const w = window.open(`${PANEL_PATH}?${query}`, name)
   w?.focus()
   return w

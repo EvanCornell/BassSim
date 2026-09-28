@@ -44,7 +44,7 @@ Carry a saved project to a resolved, validated v3 project.
 
 **Parameters**
 
-- `input` — `object` — A parsed `.acousim.json` project, any version.
+- `input` — `object` — A parsed `.speakerspice.json` project, any version.
 
 **Returns**
 
@@ -66,7 +66,7 @@ Simulate a saved project of any schema version.
 
 **Parameters**
 
-- `input` — `object` — A parsed `.acousim.json` project, any version.
+- `input` — `object` — A parsed `.speakerspice.json` project, any version.
 - `opts` — `object` _(optional)_ — Options.
 - `opts.engine` — `string` _(optional)_ — One of `ENGINES`; defaults to `DEFAULT_ENGINE`.
 

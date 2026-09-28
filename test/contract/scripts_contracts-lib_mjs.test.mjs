@@ -403,7 +403,7 @@ test('scanRepo: one entry per source file, in sorted path order', () => {
   }
   // Module headers are captured, not dropped: these modules all carry one
   // according to the contract pack.
-  for (const f of ['mcp/builders.js', 'mcp/acousim.js', 'scripts/contracts-lib.mjs', 'src/data/driver-fields.js']) {
+  for (const f of ['mcp/builders.js', 'mcp/speakerspice.js', 'scripts/contracts-lib.mjs', 'src/data/driver-fields.js']) {
     const e = all.find((x) => x.file === f)
     assert.ok(e, `${f} was not scanned`)
     assert.notEqual(e.moduleDoc, null, `${f} has a documented module header that was dropped`)

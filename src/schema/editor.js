@@ -154,7 +154,7 @@ export function fromEditor({ name, nodes, edges, settings, extras = {} }) {
   else delete display.yScales
   return {
     schemaVersion: SCHEMA_VERSION,
-    app: 'AcouSim',
+    app: 'SpeakerSpice',
     name: name || '',
     air: clone(extras.air),
     params: clone(extras.params || []),

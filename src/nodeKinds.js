@@ -27,4 +27,4 @@ export const NODE_KINDS = [
  * Named rather than inferred so the canvas can tell a palette drag from a
  * panel-tab drag, a file drag, or anything the OS hands it.
  */
-export const NODE_DRAG_TYPE = 'application/acousim-node'
+export const NODE_DRAG_TYPE = 'application/speakerspice-node'

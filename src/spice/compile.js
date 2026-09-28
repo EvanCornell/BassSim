@@ -92,7 +92,7 @@ function transientOutputs(ctx) {
  * @pure
  */
 export function compileProject(proj, analysis, opts = {}) {
-  const nl = createNetlist(`AcouSim: ${proj.name || 'project'}`)
+  const nl = createNetlist(`SpeakerSpice: ${proj.name || 'project'}`)
   const nets = buildNets(proj, nl)
   const tran = opts.tran || null
   const ctx = {

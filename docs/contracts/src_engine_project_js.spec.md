@@ -5,7 +5,7 @@
 
 ## Module
 
-Project (.acousim.json) schema helpers shared by the app and the MCP server.
+Project (.speakerspice.json) schema helpers shared by the app and the MCP server.
 A project is plain JSON: { name, settings, nodes: [{id,type,position,params}],
 edges: [{source,sourceHandle,target,targetHandle}] }.
 
@@ -17,7 +17,7 @@ so this is the vocabulary they assume.
 
 ### `SCHEMA_VERSION`
 
-Version of the `.acousim.json` project schema this build reads and writes.
+Version of the `.speakerspice.json` project schema this build reads and writes.
 
 Bumped only for changes a loader cannot absorb by falling back to defaults.
 
@@ -111,7 +111,7 @@ them one round-trip at a time is miserable.
 
 **Parameters**
 
-- `proj` — `object` — A parsed `.acousim.json` project.
+- `proj` — `object` — A parsed `.speakerspice.json` project.
 - `proj.nodes` — `Array<object>` _(optional)_ — Serialized nodes, each `{id, type, position, params}`.
 - `proj.edges` — `Array<object>` _(optional)_ — Serialized edges. Missing ids are assigned positionally.
 - `proj.settings` — `object` _(optional)_ — Sweep settings, merged over `DEFAULT_SETTINGS`.

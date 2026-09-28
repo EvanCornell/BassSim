@@ -5,13 +5,13 @@ import { THEMES, loadTheme, applyTheme, saveTheme } from '../../src/theme.js'
 
 // CONTRACT (loadTheme): "`system` when nothing valid is stored".
 test('loadTheme: the stored choice, or system', () => {
-  localStorage.removeItem('acousim:theme')
+  localStorage.removeItem('speakerspice:theme')
   assert.equal(loadTheme(), 'system')
-  localStorage.setItem('acousim:theme', 'light')
+  localStorage.setItem('speakerspice:theme', 'light')
   assert.equal(loadTheme(), 'light')
-  localStorage.setItem('acousim:theme', 'purple')
+  localStorage.setItem('speakerspice:theme', 'purple')
   assert.equal(loadTheme(), 'system')
-  localStorage.removeItem('acousim:theme')
+  localStorage.removeItem('speakerspice:theme')
   assert.deepEqual(THEMES.map(([k]) => k), ['system', 'dark', 'light'])
 })
 

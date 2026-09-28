@@ -12,7 +12,7 @@
 // a user who makes a folder and has not yet put anything in it would otherwise
 // watch it vanish, so those are listed explicitly and pruned as files arrive.
 //
-// One folder is special. `.acousim` holds data the app itself tracks rather
+// One folder is special. `.speakerspice` holds data the app itself tracks rather
 // than data the user authored — custom drivers today, more as features land.
 // It is created lazily and never eagerly: an imported workspace that predates
 // the folder, or one a user has trimmed by hand, stays exactly as imported
@@ -22,6 +22,8 @@
 // Nothing here touches storage or the DOM. Persistence, downloading and the
 // current time all belong to the caller; these are value-to-value functions so
 // that "what does renaming a folder do" can be answered without a browser.
+
+import { modernPath } from './legacy.js'
 
 /**
  * Version stamp written into every workspace this build produces.
@@ -37,7 +39,7 @@ export const WORKSPACE_VERSION = 1
  * Dot-prefixed by the same convention as `.git` and `.vscode`: it is the
  * workspace's own bookkeeping, shown in the browser but visibly not a project.
  */
-export const SYSTEM_FOLDER = '.acousim'
+export const SYSTEM_FOLDER = '.speakerspice'
 
 /**
  * Path of the custom driver library inside the system folder.
@@ -60,7 +62,7 @@ export const SNAPSHOTS_PATH = `${SYSTEM_FOLDER}/snapshots.json`
 /**
  * Filename extension for a project file inside a workspace.
  */
-export const PROJECT_EXT = '.acousim'
+export const PROJECT_EXT = '.speakerspice'
 
 /**
  * Name given to the workspace a first-time user lands in.
@@ -213,7 +215,7 @@ export function newWorkspace(name = DEFAULT_WORKSPACE_NAME, projectName = DEFAUL
   const now = new Date().toISOString()
   return {
     schemaVersion: WORKSPACE_VERSION,
-    app: 'AcouSim',
+    app: 'SpeakerSpice',
     kind: 'workspace',
     name,
     created: now,
@@ -267,7 +269,7 @@ export function hasEntry(ws, path) {
  * Every folder in a workspace.
  *
  * Union of the explicitly recorded folders and every ancestor of every file,
- * because a file at `boxes/ported/a.acousim` implies two folders that no one
+ * because a file at `boxes/ported/a.speakerspice` implies two folders that no one
  * ever created by hand.
  *
  * @param {object} ws - The workspace.
@@ -611,13 +613,13 @@ export function writeSnapshots(ws, snapshots) {
 //
 // A workspace downloads as an archive of real folders and real files, not as
 // one blob. Unzipped it is exactly the tree the explorer shows: projects where
-// the user filed them, each a readable JSON document, and `.acousim` holding
+// the user filed them, each a readable JSON document, and `.speakerspice` holding
 // the app's own data. It can be browsed, edited in a text editor, diffed,
 // committed to a repository, and zipped back up.
 //
 // The workspace's own metadata — its name, when it was created, when it was
 // last downloaded — is a file in the archive like everything else, at
-// `.acousim/workspace.json`. It is lifted back out into the workspace's fields
+// `.speakerspice/workspace.json`. It is lifted back out into the workspace's fields
 // on import rather than left in the file map, so there is one place the name
 // lives and both routes to editing it agree.
 
@@ -640,7 +642,7 @@ export const META_PATH = `${SYSTEM_FOLDER}/workspace.json`
 export function workspaceToEntries(ws) {
   const meta = {
     schemaVersion: WORKSPACE_VERSION,
-    app: 'AcouSim',
+    app: 'SpeakerSpice',
     kind: 'workspace',
     name: ws.name || DEFAULT_WORKSPACE_NAME,
     created: ws.created,
@@ -650,7 +652,7 @@ export function workspaceToEntries(ws) {
   // The system folder is listed only when the workspace actually has one. The
   // metadata file inside it still gets written — every unpacker creates the
   // parent — but a workspace that has never needed app data must not acquire
-  // an empty `.acousim` just by being downloaded and opened again.
+  // an empty `.speakerspice` just by being downloaded and opened again.
   return [
     ...listFolders(ws).map((path) => ({ path, folder: true })),
     { path: META_PATH, data: JSON.stringify(meta, null, 2) },
@@ -689,11 +691,11 @@ export function kindForPath(path) {
  *
  * The system folder is not created here. An archive that arrives without one
  * keeps the shape it arrived in — that is the whole point of creating it
- * lazily — so a folder of `.acousim` files imports as exactly those files.
+ * lazily — so a folder of `.speakerspice` files imports as exactly those files.
  *
  * @param {Array<{path: string, data: Uint8Array|null, folder: boolean}>} entries - Entries from `readZip`.
  * @param {string} fallbackName - Workspace name to use when the archive carries no metadata.
- * @returns {{ok: boolean, workspace?: object, error?: string, skipped?: string[]}} The workspace, the paths that could not be read, or the reason nothing could be.
+ * @returns {{ok: boolean, workspace?: object, error?: string, skipped?: string[], renamed?: Array<{from: string, to: string, folder: boolean}>}} The workspace, the paths that could not be read, the entries read from a path under the app's former name and the path they now have, or the reason nothing could be.
  * @sideEffect Reads the current time to stamp a workspace whose metadata is absent.
  */
 export function entriesToWorkspace(entries, fallbackName) {
@@ -704,9 +706,18 @@ export function entriesToWorkspace(entries, fallbackName) {
   const skipped = []
   let meta = null
 
+  // Paths saved under the app's former name are read under the current one;
+  // where both are present, the current one wins.
+  const renamed = []
+  const modern = new Set(entries.map((e) => normalizePath(e.path)).filter((p) => p && modernPath(p, SYSTEM_FOLDER, PROJECT_EXT) === p))
   for (const entry of entries) {
-    const path = normalizePath(entry.path)
-    if (!path) continue
+    const original = normalizePath(entry.path)
+    if (!original) continue
+    const path = modernPath(original, SYSTEM_FOLDER, PROJECT_EXT)
+    if (path !== original) {
+      if (modern.has(path)) continue
+      renamed.push({ from: original, to: path, folder: !!entry.folder })
+    }
     if (entry.folder) { folders.add(path); continue }
 
     let parsed
@@ -719,7 +730,7 @@ export function entriesToWorkspace(entries, fallbackName) {
     return { ok: false, error: 'That archive holds no workspace files.' }
   }
   if (meta && Number(meta.schemaVersion) > WORKSPACE_VERSION) {
-    return { ok: false, error: 'This workspace was saved by a newer version of AcouSim.' }
+    return { ok: false, error: 'This workspace was saved by a newer version of SpeakerSpice.' }
   }
 
   // Folders that only ever held the metadata file have no contents left to
@@ -732,9 +743,10 @@ export function entriesToWorkspace(entries, fallbackName) {
   return {
     ok: true,
     skipped,
+    renamed,
     workspace: {
       schemaVersion: WORKSPACE_VERSION,
-      app: 'AcouSim',
+      app: 'SpeakerSpice',
       kind: 'workspace',
       name: typeof meta?.name === 'string' && meta.name.trim() ? meta.name.trim() : fallbackName,
       created: typeof meta?.created === 'string' ? meta.created : now,
@@ -754,7 +766,7 @@ export function entriesToWorkspace(entries, fallbackName) {
  * @pure
  */
 export function workspaceFilename(ws) {
-  return `${ws.name || DEFAULT_WORKSPACE_NAME}.acousim.zip`
+  return `${ws.name || DEFAULT_WORKSPACE_NAME}.speakerspice.zip`
 }
 
 /**
@@ -778,20 +790,22 @@ export function parseWorkspace(text) {
   let raw
   try { raw = JSON.parse(text) } catch { return { ok: false, error: 'Not valid JSON.' } }
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
-    return { ok: false, error: 'Not an AcouSim workspace.' }
+    return { ok: false, error: 'Not a SpeakerSpice workspace.' }
   }
   if (raw.kind !== 'workspace' || !raw.files || typeof raw.files !== 'object') {
-    return { ok: false, error: 'Not an AcouSim workspace — no workspace files in it.' }
+    return { ok: false, error: 'Not a SpeakerSpice workspace — no workspace files in it.' }
   }
   if (Number(raw.schemaVersion) > WORKSPACE_VERSION) {
-    return { ok: false, error: 'This workspace was saved by a newer version of AcouSim.' }
+    return { ok: false, error: 'This workspace was saved by a newer version of SpeakerSpice.' }
   }
 
   const now = new Date().toISOString()
   const files = {}
   for (const [rawPath, entry] of Object.entries(raw.files)) {
-    const path = normalizePath(rawPath)
-    if (!path || !entry || typeof entry !== 'object') continue
+    const original = normalizePath(rawPath)
+    if (!original || !entry || typeof entry !== 'object') continue
+    const path = modernPath(original, SYSTEM_FOLDER, PROJECT_EXT)
+    if (path !== original && raw.files[path]) continue
     files[path] = {
       kind: typeof entry.kind === 'string' ? entry.kind : 'json',
       modified: typeof entry.modified === 'string' ? entry.modified : now,
@@ -799,14 +813,14 @@ export function parseWorkspace(text) {
     }
   }
   const folders = [...new Set(
-    (Array.isArray(raw.folders) ? raw.folders : []).map(normalizePath).filter(Boolean),
+    (Array.isArray(raw.folders) ? raw.folders : []).map(normalizePath).filter(Boolean).map((p) => modernPath(p, SYSTEM_FOLDER, PROJECT_EXT)),
   )].sort()
 
   return {
     ok: true,
     workspace: {
       schemaVersion: WORKSPACE_VERSION,
-      app: 'AcouSim',
+      app: 'SpeakerSpice',
       kind: 'workspace',
       name: typeof raw.name === 'string' && raw.name.trim() ? raw.name.trim() : DEFAULT_WORKSPACE_NAME,
       created: typeof raw.created === 'string' ? raw.created : now,

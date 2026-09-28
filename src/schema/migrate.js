@@ -201,7 +201,7 @@ function normalize(proj) {
     .map((a) => ({ ...(a.type === 'ac' || !a.type ? DEFAULT_ANALYSIS : {}), ...clone(a) }))
   const out = {
     schemaVersion: SCHEMA_VERSION,
-    app: proj.app || 'AcouSim',
+    app: proj.app || 'SpeakerSpice',
     name: proj.name || '',
     air: { ...DEFAULT_AIR, ...clone(proj.air || {}) },
     params: clone(proj.params || []),
@@ -227,7 +227,7 @@ function normalize(proj) {
  *
  * Idempotent: migrating a migrated project changes nothing.
  *
- * @param {object} proj - A parsed `.acousim.json` project of any version.
+ * @param {object} proj - A parsed `.speakerspice.json` project of any version.
  * @returns {object} A complete project at `SCHEMA_VERSION`.
  * @post proj is not modified
  * @pure

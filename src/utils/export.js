@@ -26,22 +26,22 @@ function download(filename, content, mime) {
 }
 
 /**
- * Download a project as a formatted `.acousim.json` file.
+ * Download a project as a formatted `.speakerspice.json` file.
  *
  * @param {object} proj - The project to serialize.
- * @param {string} [proj.name] - Used for the filename; falls back to `acousim-project`.
+ * @param {string} [proj.name] - Used for the filename; falls back to `speakerspice-project`.
  * @returns {void}
  * @sideEffect Triggers a browser download.
  */
 export function exportProjectJSON(proj) {
-  download(`${proj.name || 'acousim-project'}.acousim.json`, JSON.stringify(proj, null, 2), 'application/json')
+  download(`${proj.name || 'speakerspice-project'}.speakerspice.json`, JSON.stringify(proj, null, 2), 'application/json')
 }
 
 /**
  * Download a whole workspace as an archive of folders and files.
  *
  * Unzipped it is the tree the explorer shows: each project a readable JSON
- * document where the user filed it, and `.acousim` holding the app's own data.
+ * document where the user filed it, and `.speakerspice` holding the app's own data.
  * A single blob would download faster and be worth less — this one can be
  * browsed, edited in a text editor, diffed and committed.
  *
@@ -165,7 +165,7 @@ export async function exportSchematicPNG(projectName) {
 export function exportMetricsTxt(metrics, settings, projectName) {
   if (!metrics) return
   const l = []
-  l.push(`AcouSim — key metrics for "${projectName}"`)
+  l.push(`SpeakerSpice — key metrics for "${projectName}"`)
   l.push(`Generated ${new Date().toISOString()}`)
   l.push(`Drive: ${settings.voltage?.toFixed(2)} V into ${settings.impedance} Ω nominal (${settings.power?.toFixed(1)} W)`)
   l.push('')

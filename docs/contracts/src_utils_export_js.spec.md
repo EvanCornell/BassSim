@@ -20,12 +20,12 @@ Keys: `download`
 - **Reachability:** EXPORTED
 - **Obtain via:** import { exportProjectJSON } from '../../src/utils/export.js'
 
-Download a project as a formatted `.acousim.json` file.
+Download a project as a formatted `.speakerspice.json` file.
 
 **Parameters**
 
 - `proj` — `object` — The project to serialize.
-- `proj.name` — `string` _(optional)_ — Used for the filename; falls back to `acousim-project`.
+- `proj.name` — `string` _(optional)_ — Used for the filename; falls back to `speakerspice-project`.
 
 **Returns**
 
@@ -44,7 +44,7 @@ Download a project as a formatted `.acousim.json` file.
 Download a whole workspace as an archive of folders and files.
 
 Unzipped it is the tree the explorer shows: each project a readable JSON
-document where the user filed it, and `.acousim` holding the app's own data.
+document where the user filed it, and `.speakerspice` holding the app's own data.
 A single blob would download faster and be worth less — this one can be
 browsed, edited in a text editor, diffed and committed.
 

@@ -42,7 +42,7 @@ function throwsProjectError(fn, msg = '') {
 // ---------------------------------------------------------------------------
 // Exported constants
 
-// CONTRACT: "`SCHEMA_VERSION` — Version of the `.acousim.json` project schema
+// CONTRACT: "`SCHEMA_VERSION` — Version of the `.speakerspice.json` project schema
 // this build reads and writes. Value: `2`"
 test('SCHEMA_VERSION: is 2', () => {
   assert.equal(SCHEMA_VERSION, 2)

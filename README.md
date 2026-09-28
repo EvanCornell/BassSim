@@ -1,6 +1,6 @@
-# AcouSim — Node-Based Acoustic Circuit Simulator
+# SpeakerSpice — Open-Source Loudspeaker Design
 
-AcouSim simulates loudspeaker enclosure behavior with a free-form visual node
+SpeakerSpice simulates loudspeaker enclosure behavior with a free-form visual node
 graph instead of preset enclosure types. Drag acoustic elements onto an
 infinite canvas, wire their ports together, and every plot updates live: any
 topology — sealed, ported, bandpass, tapped horn, passive radiator, or a car
@@ -28,7 +28,7 @@ and the MCP endpoint:
 npm start       # build + serve everything on http://localhost:8788
 ```
 
-Or with Docker: `docker build -t acousim . && docker run -p 8788:8788 -v acousim-data:/data acousim`
+Or with Docker: `docker build -t speakerspice . && docker run -p 8788:8788 -v speakerspice-data:/data speakerspice`
 
 ### Accounts
 

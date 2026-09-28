@@ -1,4 +1,4 @@
-/* AcouSim UI — "Soft Dock".
+/* SpeakerSpice UI — "Soft Dock".
    ------------------------------------------------------------------
    The window is a dark (or light) frame with the working surfaces floating
    in it as rounded cards, ten pixels apart: the menu bar, the quick bar's
@@ -16,7 +16,7 @@
 
 /* Geist and Geist Mono, bundled rather than fetched: served from the app's
    own origin, so there is no CDN in the loading path and no third party
-   told who is running AcouSim. Variable weight, Latin subsets. SIL OFL —
+   told who is running SpeakerSpice. Variable weight, Latin subsets. SIL OFL —
    see src/assets/fonts/LICENSE-Geist.txt.
 
    Neither face has Greek, and Ω and λ appear in every readout: the figures

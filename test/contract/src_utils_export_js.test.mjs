@@ -102,8 +102,8 @@ test('download: accepts a ready Blob as well as text', () => {
 // exportProjectJSON
 // ---------------------------------------------------------------------------
 
-// CONTRACT: "Download a project as a formatted `.acousim.json` file." / "`void`"
-test('exportProjectJSON: triggers a download of a .acousim.json file', () => {
+// CONTRACT: "Download a project as a formatted `.speakerspice.json` file." / "`void`"
+test('exportProjectJSON: triggers a download of a .speakerspice.json file', () => {
   const rec = instrument()
   let ret
   try {
@@ -114,12 +114,12 @@ test('exportProjectJSON: triggers a download of a .acousim.json file', () => {
   assert.equal(ret, undefined)
   assert.equal(rec.created.length, 1, 'a download is triggered')
   const a = rec.anchors[rec.anchors.length - 1]
-  assert.match(a.download, /\.acousim\.json$/)
+  assert.match(a.download, /\.speakerspice\.json$/)
 })
 
 // CONTRACT: "`proj.name` — `string` (optional) — Used for the filename; falls
-// back to `acousim-project`."
-test('exportProjectJSON: the filename falls back to acousim-project', () => {
+// back to `speakerspice-project`."
+test('exportProjectJSON: the filename falls back to speakerspice-project', () => {
   const rec = instrument()
   try {
     exportProjectJSON({ nodes: [], edges: [] })
@@ -127,9 +127,9 @@ test('exportProjectJSON: the filename falls back to acousim-project', () => {
     rec.restore()
   }
   const a = rec.anchors[rec.anchors.length - 1]
-  assert.ok(a.download.includes('acousim-project'),
+  assert.ok(a.download.includes('speakerspice-project'),
     `expected the fallback name in "${a.download}"`)
-  assert.match(a.download, /\.acousim\.json$/)
+  assert.match(a.download, /\.speakerspice\.json$/)
 })
 
 // ---------------------------------------------------------------------------

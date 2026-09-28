@@ -88,7 +88,7 @@ async function runSpice(project, warnings) {
 /**
  * Carry a saved project to a resolved, validated v3 project.
  *
- * @param {object} input - A parsed `.acousim.json` project, any version.
+ * @param {object} input - A parsed `.speakerspice.json` project, any version.
  * @returns {{project: object, warnings: Object<string, string[]>}} The project with every expression resolved, and its warnings keyed by node id.
  * @throws {Error} When expressions do not resolve or the project cannot be simulated; every reason is on `projectErrors`.
  * @pure
@@ -104,7 +104,7 @@ export function prepareProject(input) {
 /**
  * Simulate a saved project of any schema version.
  *
- * @param {object} input - A parsed `.acousim.json` project, any version.
+ * @param {object} input - A parsed `.speakerspice.json` project, any version.
  * @param {object} [opts] - Options.
  * @param {string} [opts.engine] - One of `ENGINES`; defaults to `DEFAULT_ENGINE`.
  * @returns {Promise<{results: object, metrics: object|null, warnings: Object<string, string[]>, netlist?: string}>} The sweep, its metrics, the project's warnings keyed by node id, and — from the SPICE engine — the netlist it ran.

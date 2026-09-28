@@ -226,7 +226,7 @@ export const COMMANDS = {
     group: 'Project',
     scope: 'global',
     /**
-     * Download the project as an `.acousim.json` file.
+     * Download the project as an `.speakerspice.json` file.
      * @param {object} s - The store state, with actions bound.
      * @returns {*} Whatever the store action returns; the key handler ignores it.
      * @sideEffect Triggers a browser download.
@@ -478,7 +478,7 @@ export function formatCombo(combo) {
 // ---------- stored bindings ----------
 
 /** LocalStorage key holding the user's binding overrides. */
-export const KEYMAP_KEY = 'acousim:keymap'
+export const KEYMAP_KEY = 'speakerspice:keymap'
 
 /**
  * Load the effective bindings: stored overrides layered over the defaults.

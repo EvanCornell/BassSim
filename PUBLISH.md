@@ -33,8 +33,8 @@ dangling object across, and an orphan branch shares a repository with the
 history it is trying to escape.
 
 ```bash
-rsync -a --exclude='.git' BassSim/ acousim-public/
-cd acousim-public
+rsync -a --exclude='.git' BassSim/ speakerspice-public/
+cd speakerspice-public
 # apply the exclusions below
 rm -rf node_modules dist
 git init
@@ -83,7 +83,7 @@ Run in order. Step 6 is a one-way door — forks can appear within hours.
 2. [ ] `npm run build` succeeds; serve `dist/` and confirm a simulation runs
        and `/panel?id=spl` renders
 3. [ ] Exclusions above applied; `grep -ri` the tree for `better-auth`,
-       `ACOUSIM_TOKEN`, `SMTP`, `BETTER_AUTH_SECRET` — all should be absent
+       `SPEAKERSPICE_TOKEN`, `SMTP`, `BETTER_AUTH_SECRET` — all should be absent
 4. [ ] Secret scan the final tree (test fixtures are the usual culprit)
 5. [ ] `LICENSE`, `README.md`, `CONTRIBUTING.md` present and accurate.
        The simulation engine is ngspice compiled to WebAssembly

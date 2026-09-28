@@ -61,7 +61,7 @@ export default function WorkspacePrompt() {
       <div className="modal wsp" style={{ maxWidth: 520, minWidth: 420 }}>
         <h3>Where should your work be kept?</h3>
         <p className="wsp-lead">
-          AcouSim keeps your projects in a <b>workspace</b> — a set of files and
+          SpeakerSpice keeps your projects in a <b>workspace</b> — a set of files and
           folders you can download, edit and bring back. Starting in <b>{name}</b>.
         </p>
 

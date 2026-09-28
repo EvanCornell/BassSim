@@ -28,7 +28,7 @@ import { supportsFolders } from '../utils/folder'
 import { connectFolderWithPrompt, disconnectFolderWithPrompt } from '../utils/folderPrompts'
 
 /** The drag type marking a drag as one of the explorer's own rows. */
-const ROW_DRAG_TYPE = 'application/acousim-path'
+const ROW_DRAG_TYPE = 'application/speakerspice-path'
 
 /**
  * The twisty drawn beside a folder.

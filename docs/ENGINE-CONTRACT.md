@@ -135,7 +135,7 @@ quadruple, which does not express that the pair is a unit.
 
 ### 3.2 Node type registry
 
-The registry is data, owned by `@acousim/model`, and is the *only* place a node
+The registry is data, owned by `@speakerspice/model`, and is the *only* place a node
 type is defined. Each entry declares:
 
 ```ts
@@ -204,8 +204,8 @@ in prose and warnings; they belong in the contract.
 **The engine boundary is SI. Without exception.**
 
 The project file and the UI keep display units — litres and millimetres are what
-users think in, and a hand-written `.acousim.json` should stay readable. But
-conversion happens exactly once, in `@acousim/model`, on the way in.
+users think in, and a hand-written `.speakerspice.json` should stay readable. But
+conversion happens exactly once, in `@speakerspice/model`, on the way in.
 
 The reason is drift. `driverSI` currently converts inside the solver; a C++
 engine would need its own copy, and a discrepancy between the two produces
@@ -541,7 +541,7 @@ matrices. One format does not serve both well.
 **Recommendation:** JSON Schema as the single normative definition, generating
 zod validators for JavaScript and structs for C++. Wire format is JSON for
 `Model` and `AnalysisSpec` — human-editable, MCP-friendly, and it keeps
-`.acousim.json` a file people can hand-write — and **CBOR** for `Results`, which
+`.speakerspice.json` a file people can hand-write — and **CBOR** for `Results`, which
 has native typed arrays (RFC 8746) and avoids the ~3× bloat and slow parse of
 float matrices in JSON.
 
@@ -588,7 +588,7 @@ hard-to-trace bug later.
 This document replaces "define the results envelope" as the centre of Phase 0
 (`ARCHITECTURE.md` §8). The order that follows from it:
 
-1. Node registry and `Model` in `@acousim/model`, with SI normalisation
+1. Node registry and `Model` in `@speakerspice/model`, with SI normalisation
 2. `AnalysisSpec`, splitting display state out of `settings`
 3. `Results` with `perOutlet` complex data and typed diagnostics
 4. Conformance suite from §10

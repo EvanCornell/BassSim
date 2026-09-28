@@ -24,9 +24,9 @@ Fields prefixed with an underscore are solver and persistence bookkeeping
 (`_lastSig`, `_simToken`, `_computeTimer`, `_flowApi`) and are not part of
 any action's observable contract.
 
-LocalStorage keys, all prefixed `acousim:` — `acousim:layout`,
-`acousim:layoutPresets`, `acousim:toolbar`, `acousim:keymap`,
-`acousim:workspace` and `acousim:workspaceChosen`.
+LocalStorage keys, all prefixed `speakerspice:` — `speakerspice:layout`,
+`speakerspice:layoutPresets`, `speakerspice:toolbar`, `speakerspice:keymap`,
+`speakerspice:workspace` and `speakerspice:workspaceChosen`.
 
 A subset of the state is mirrored to popped-out panel windows over a
 BroadcastChannel; see src/popout.js for which keys and why.
@@ -1865,7 +1865,7 @@ over the sync channel, and a second sweep would duplicate the work.
 
 Capture the project as a plain, saveable object.
 
-The `.acousim.json` format, shared with the MCP server and the file
+The `.speakerspice.json` format, shared with the MCP server and the file
 export. Node positions are included — they are editor state, but losing
 the layout of a saved graph would be worse than carrying it.
 
@@ -2086,7 +2086,7 @@ Renaming a project file renames the project inside it too. The alternative
 a bug every time a user meets it.
 
 The system folder is not renamable: the app looks for its contents by
-path, and a moved `.acousim` would silently become a folder of orphaned
+path, and a moved `.speakerspice` would silently become a folder of orphaned
 data plus a fresh empty one.
 
 **Parameters**

@@ -1,9 +1,9 @@
-// Project (.acousim.json) schema helpers shared by the app and the MCP server.
+// Project (.speakerspice.json) schema helpers shared by the app and the MCP server.
 // A project is plain JSON: { name, settings, nodes: [{id,type,position,params}],
 // edges: [{source,sourceHandle,target,targetHandle}] }.
 
 /**
- * Version of the `.acousim.json` project schema this build reads and writes.
+ * Version of the `.speakerspice.json` project schema this build reads and writes.
  *
  * Bumped only for changes a loader cannot absorb by falling back to defaults.
  *
@@ -98,7 +98,7 @@ export function migrateParams(type, params, from) {
  * the first one, because a hand-edited file usually has more than one and fixing
  * them one round-trip at a time is miserable.
  *
- * @param {object} proj - A parsed `.acousim.json` project.
+ * @param {object} proj - A parsed `.speakerspice.json` project.
  * @param {Array<object>} [proj.nodes] - Serialized nodes, each `{id, type, position, params}`.
  * @param {Array<object>} [proj.edges] - Serialized edges. Missing ids are assigned positionally.
  * @param {object} [proj.settings] - Sweep settings, merged over `DEFAULT_SETTINGS`.

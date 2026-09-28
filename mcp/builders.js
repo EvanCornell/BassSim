@@ -187,7 +187,7 @@ const pos = (col, row = 0) => ({ x: 80 + col * 260, y: 120 + row * 200 })
  */
 function baseProject(name, settings = {}) {
   return {
-    app: 'AcouSim', schemaVersion: 1, name,
+    app: 'SpeakerSpice', schemaVersion: 1, name,
     settings: { fmin: 10, fmax: 200, npts: 256, voltage: 2.83, impedance: 4, ...settings },
     nodes: [], edges: [],
   }

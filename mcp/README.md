@@ -1,9 +1,9 @@
-# AcouSim MCP server
+# SpeakerSpice MCP server
 
-Exposes the AcouSim simulation engine to AI agents (Claude Desktop, Claude
+Exposes the SpeakerSpice simulation engine to AI agents (Claude Desktop, Claude
 Code, or any MCP client) over stdio. The agent can build enclosure models as
 project JSON, validate them, simulate, and sweep parameters — the same
-`.acousim.json` format the visual editor uses, so results round-trip both ways.
+`.speakerspice.json` format the visual editor uses, so results round-trip both ways.
 
 ## Tools
 
@@ -20,7 +20,7 @@ project JSON, validate them, simulate, and sweep parameters — the same
 | `optimize` | Bounded search over up to 3 parameters for `min_f3` / `max_spl` / `flat`, with Xmax and port-velocity constraints. Returns the optimized project. |
 | `compare` | Metrics for 2–6 candidate designs side by side. |
 
-The guide is also published as the resource `acousim://guide`.
+The guide is also published as the resource `speakerspice://guide`.
 
 ## Setup
 
@@ -32,14 +32,14 @@ node mcp/server.js   # runs on stdio (this is what the client launches)
 ### Claude Desktop / Claude Code
 
 Add to `claude_desktop_config.json` (Desktop → Settings → Developer) or run
-`claude mcp add acousim -- node /ABS/PATH/TO/BassSim/mcp/server.js`:
+`claude mcp add speakerspice -- node /ABS/PATH/TO/speakerspice/mcp/server.js`:
 
 ```json
 {
   "mcpServers": {
-    "acousim": {
+    "speakerspice": {
       "command": "node",
-      "args": ["/ABS/PATH/TO/BassSim/mcp/server.js"]
+      "args": ["/ABS/PATH/TO/speakerspice/mcp/server.js"]
     }
   }
 }
@@ -47,7 +47,7 @@ Add to `claude_desktop_config.json` (Desktop → Settings → Developer) or run
 
 Then ask, e.g.: *"Design me a ported box for a 12" driver with Fs 28 Hz,
 Qts 0.45, Vas 55 L that stays flat to 30 Hz at 500 W without port chuffing —
-use the acousim tools."*
+use the speakerspice tools."*
 
 > **Note:** the production web server (`npm run server`) already exposes the
 > same MCP endpoint at `/mcp` alongside the app and the simulation API — one
@@ -59,14 +59,14 @@ The same tools are served over **Streamable HTTP** by `mcp/http.js`, so the
 engine can run as a remote MCP connector instead of a local process.
 
 ```sh
-PORT=8787 ACOUSIM_TOKEN=your-secret npm run mcp:http
+PORT=8787 SPEAKERSPICE_TOKEN=your-secret npm run mcp:http
 # → http://0.0.0.0:8787/mcp   (health check at /healthz)
 ```
 
 - **Stateless**: every tool takes the full project JSON, so no session state
   is kept. Each POST is handled by a fresh server instance — safe to run
   behind a load balancer and scale horizontally.
-- **Auth**: set `ACOUSIM_TOKEN` to require `Authorization: Bearer <token>`.
+- **Auth**: set `SPEAKERSPICE_TOKEN` to require `Authorization: Bearer <token>`.
   Leave it unset only on a trusted/local network.
 - **CORS** is open (`*`) so browser-based MCP clients can connect.
 
@@ -78,8 +78,8 @@ the server speaks plain HTTP and expects to be terminated upstream.
 ### Docker
 
 ```sh
-docker build -t acousim-mcp .
-docker run -e ACOUSIM_TOKEN=your-secret -p 8787:8787 acousim-mcp
+docker build -t speakerspice-mcp .
+docker run -e SPEAKERSPICE_TOKEN=your-secret -p 8787:8787 speakerspice-mcp
 ```
 
 The image installs only the engine + MCP SDK (no build/UI deps) and includes

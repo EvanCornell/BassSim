@@ -1,4 +1,4 @@
-# AcouSim architecture
+# SpeakerSpice architecture
 
 Status: **proposal, not yet implemented.** This document exists to be argued
 with. Nothing in `src/` has moved.
@@ -497,7 +497,7 @@ The engine contract is the centre of this phase; see
 contract has to carry, see [`SOLVER-ARCHITECTURE.md`](./SOLVER-ARCHITECTURE.md).
 
 1. Stand up the monorepo and the boundary lint.
-2. Extract `@acousim/model`: node registry, project schema, migrations. This
+2. Extract `@speakerspice/model`: node registry, project schema, migrations. This
    alone removes the nine-file tax on every future node type.
 3. Define the results envelope as a tagged union, with **per-outlet complex data
    retained** and `metricSetVersion` in the header.

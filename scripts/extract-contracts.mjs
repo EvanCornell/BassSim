@@ -60,7 +60,7 @@ const total = modules.reduce((n, m) => n + m.methods.length, 0)
 const documented = modules.reduce((n, m) => n + m.methods.filter((x) => x.documented).length, 0)
 
 const out = {
-  $schema: 'https://acousim.dev/schema/api.v1.json',
+  $schema: 'https://speakerspice.com/schema/api.v1.json',
   generator: 'scripts/extract-contracts.mjs',
   // Deliberately no timestamp: a regenerated file with no source change should
   // produce no diff, or the commit log fills with noise.

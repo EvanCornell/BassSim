@@ -17,9 +17,9 @@
 // (`_lastSig`, `_simToken`, `_computeTimer`, `_flowApi`) and are not part of
 // any action's observable contract.
 //
-// LocalStorage keys, all prefixed `acousim:` — `acousim:layout`,
-// `acousim:layoutPresets`, `acousim:toolbar`, `acousim:keymap`,
-// `acousim:workspace` and `acousim:workspaceChosen`.
+// LocalStorage keys, all prefixed `speakerspice:` — `speakerspice:layout`,
+// `speakerspice:layoutPresets`, `speakerspice:toolbar`, `speakerspice:keymap`,
+// `speakerspice:workspace` and `speakerspice:workspaceChosen`.
 //
 // A subset of the state is mirrored to popped-out panel windows over a
 // BroadcastChannel; see src/popout.js for which keys and why.
@@ -38,6 +38,7 @@ import * as D from './driverParams'
 import { PANEL_META, PANEL_IDS } from './panelMeta'
 import { exportProjectJSON, exportWorkspaceZip } from './utils/export'
 import * as W from './workspace'
+import { stripLegacySuffix } from './legacy'
 import * as Z from './utils/zip'
 import * as F from './utils/folder'
 import { DEFAULT_TOOLBAR, sanitizeToolbar } from './toolbarItems'
@@ -194,12 +195,12 @@ function syncPopoutUrl(ids, active) {
   window.history.replaceState(null, '', `${window.location.pathname}?${query}`)
 }
 
-const LAYOUT_KEY = 'acousim:layout'
-const PRESETS_KEY = 'acousim:layoutPresets'
-const TOOLBAR_KEY = 'acousim:toolbar'
-const WORKSPACE_KEY = 'acousim:workspace'
-const LEGACY_DRIVERS_KEY = 'acousim:customDrivers'
-const STORAGE_CHOICE_KEY = 'acousim:workspaceChosen'
+const LAYOUT_KEY = 'speakerspice:layout'
+const PRESETS_KEY = 'speakerspice:layoutPresets'
+const TOOLBAR_KEY = 'speakerspice:toolbar'
+const WORKSPACE_KEY = 'speakerspice:workspace'
+const LEGACY_DRIVERS_KEY = 'speakerspice:customDrivers'
+const STORAGE_CHOICE_KEY = 'speakerspice:workspaceChosen'
 
 /**
  * How many reference overlays a chart will carry.
@@ -405,7 +406,7 @@ export const nextId = (type) => `${type}_${Date.now().toString(36)}_${idCounter+
 
 const HISTORY_LIMIT = 80
 
-const ENGINE_KEY = 'acousim:engine'
+const ENGINE_KEY = 'speakerspice:engine'
 
 /**
  * The simulation engine this browser last chose.
@@ -2019,7 +2020,7 @@ export const useStore = create((rawSet, get) => {
   /**
    * Capture the project as a plain, saveable object.
    *
-   * The `.acousim.json` format, shared with the MCP server and the file
+   * The `.speakerspice.json` format, shared with the MCP server and the file
    * export. Node positions are included — they are editor state, but losing
    * the layout of a saved graph would be worse than carrying it.
    *
@@ -2094,22 +2095,22 @@ export const useStore = create((rawSet, get) => {
    * @sideEffect Writes store state, persists the workspace and replaces what is on the canvas.
    */
   importProject: (proj, filename) => {
-    const stem = (proj.name || filename.replace(/\.acousim\.json$/i, '').replace(/\.json$/i, '') || 'Imported').trim()
+    const stem = (proj.name || stripLegacySuffix(filename.replace(/\.speakerspice\.json$/i, '')).replace(/\.json$/i, '') || 'Imported').trim()
     const name = W.uniqueName(get().workspace, '', `${stem}${W.PROJECT_EXT}`)
     get().saveActiveFile()
     get()._commitWorkspace(W.writeFile(get().workspace, name, {
       kind: 'project',
-      data: { ...proj, name: name.replace(/\.acousim$/, '') },
+      data: { ...proj, name: name.replace(/\.speakerspice$/, '') },
     }))
     set({ activeFile: name, wsSelection: [name] })
-    get().loadSerialized({ ...proj, name: name.replace(/\.acousim$/, '') })
+    get().loadSerialized({ ...proj, name: name.replace(/\.speakerspice$/, '') })
     return name
   },
 
   // ---- the workspace ----
   //
   // The workspace is the user's filing cabinet: projects, folders, and the app
-  // data under `.acousim`. It lives in LocalStorage while it is being worked
+  // data under `.speakerspice`. It lives in LocalStorage while it is being worked
   // on and leaves the browser as a single downloaded JSON file, which is the
   // only copy that is actually safe — hence the freshness stamp the file
   // browser shows.
@@ -2179,7 +2180,7 @@ export const useStore = create((rawSet, get) => {
     if (path === get().activeFile) return
     get().saveActiveFile()
     set({ activeFile: path })
-    get().loadSerialized({ ...entry.data, name: entry.data?.name || W.baseName(path).replace(/\.acousim$/, '') })
+    get().loadSerialized({ ...entry.data, name: entry.data?.name || W.baseName(path).replace(/\.speakerspice$/, '') })
   },
 
   /**
@@ -2192,7 +2193,7 @@ export const useStore = create((rawSet, get) => {
   newFile: (folder = '') => {
     const name = W.uniqueName(get().workspace, folder, `Untitled${W.PROJECT_EXT}`)
     const path = W.joinPath(folder, name)
-    const stem = name.replace(/\.acousim$/, '')
+    const stem = name.replace(/\.speakerspice$/, '')
     get().saveActiveFile()
     get()._commitWorkspace(W.writeFile(get().workspace, path, {
       kind: 'project',
@@ -2225,7 +2226,7 @@ export const useStore = create((rawSet, get) => {
    * a bug every time a user meets it.
    *
    * The system folder is not renamable: the app looks for its contents by
-   * path, and a moved `.acousim` would silently become a folder of orphaned
+   * path, and a moved `.speakerspice` would silently become a folder of orphaned
    * data plus a fresh empty one.
    *
    * @param {string} from - The existing path.
@@ -2245,7 +2246,7 @@ export const useStore = create((rawSet, get) => {
 
     const entry = next.files[dest]
     if (entry?.kind === 'project') {
-      const stem = W.baseName(dest).replace(/\.acousim$/, '')
+      const stem = W.baseName(dest).replace(/\.speakerspice$/, '')
       next = W.writeFile(next, dest, { ...entry, data: { ...entry.data, name: stem } })
       if (get().activeFile === from) set({ projectName: stem })
     }
@@ -2286,7 +2287,7 @@ export const useStore = create((rawSet, get) => {
     set({ activeFile: fallback })
     if (fallback) {
       const entry = next.files[fallback]
-      get().loadSerialized({ ...entry.data, name: entry.data?.name || W.baseName(fallback).replace(/\.acousim$/, '') })
+      get().loadSerialized({ ...entry.data, name: entry.data?.name || W.baseName(fallback).replace(/\.speakerspice$/, '') })
     } else {
       get().loadSerialized({ name: 'Untitled', nodes: [], edges: [] })
     }
@@ -2336,7 +2337,7 @@ export const useStore = create((rawSet, get) => {
     try {
       const buffer = await file.arrayBuffer()
       if (Z.isZip(buffer)) {
-        const stem = file.name.replace(/\.zip$/i, '').replace(/\.acousim$/i, '')
+        const stem = stripLegacySuffix(file.name.replace(/\.zip$/i, '').replace(/\.speakerspice$/i, ''))
         parsed = W.entriesToWorkspace(await Z.readZip(buffer), stem || W.DEFAULT_WORKSPACE_NAME)
       } else {
         parsed = W.parseWorkspace(new TextDecoder().decode(buffer))
@@ -2365,7 +2366,7 @@ export const useStore = create((rawSet, get) => {
     set({ activeFile: first })
     const entry = first ? ws.files[first] : null
     get().loadSerialized(entry
-      ? { ...entry.data, name: entry.data?.name || W.baseName(first).replace(/\.acousim$/, '') }
+      ? { ...entry.data, name: entry.data?.name || W.baseName(first).replace(/\.speakerspice$/, '') }
       : { name: 'Untitled', nodes: [], edges: [] })
     return { ok: true }
   },
@@ -2544,7 +2545,7 @@ export const useStore = create((rawSet, get) => {
       return { ok: true }
     }
 
-    const stem = W.baseName(path).replace(/\.acousim$/, '')
+    const stem = W.baseName(path).replace(/\.speakerspice$/, '')
     get().saveActiveFile()
     get()._commitWorkspace(W.writeFile(get().workspace, path, {
       kind: 'project',
@@ -2634,7 +2635,7 @@ export const useStore = create((rawSet, get) => {
     if (POPOUT || !folderHandle) return { ok: false }
     const state = await F.folderPermission(folderHandle, true)
     if (state !== 'granted') {
-      set({ folderStatus: 'locked', folderError: 'AcouSim needs permission to use that folder.' })
+      set({ folderStatus: 'locked', folderError: 'SpeakerSpice needs permission to use that folder.' })
       return { ok: false, error: 'Permission was not granted.' }
     }
     const read = await F.readFolderWorkspace(folderHandle)

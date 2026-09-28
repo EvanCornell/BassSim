@@ -16,13 +16,13 @@ const emptyDrag = () => ({
 
 // A palette drag: it "carries its own type", which is not a panel tab. The type
 // is documented in the Palette.jsx contract — "The canvas reads the
-// `application/acousim-node` type on drop, which is what keeps a palette drag
+// `application/speakerspice-node` type on drop, which is what keeps a palette drag
 // from being confused with any other drag."
 const paletteDrag = () => ({
   dataTransfer: {
-    types: ['application/acousim-node'],
-    items: [{ kind: 'string', type: 'application/acousim-node' }],
-    getData: (t) => (t === 'application/acousim-node' ? 'driver' : ''),
+    types: ['application/speakerspice-node'],
+    items: [{ kind: 'string', type: 'application/speakerspice-node' }],
+    getData: (t) => (t === 'application/speakerspice-node' ? 'driver' : ''),
   },
 })
 

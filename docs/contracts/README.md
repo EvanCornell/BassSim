@@ -5,9 +5,9 @@ no implementation. This is the sole input to the blind contract test suite.
 
 | Module | Methods | Testable | Unreachable |
 |---|---|---|---|
-| [`mcp/acousim.js`](mcp_acousim_js.spec.md) | 32 | 10 | 22 |
 | [`mcp/builders.js`](mcp_builders_js.spec.md) | 19 | 15 | 4 |
 | [`mcp/http.js`](mcp_http_js.spec.md) | 3 | 0 | 3 |
+| [`mcp/speakerspice.js`](mcp_speakerspice_js.spec.md) | 32 | 10 | 22 |
 | [`mcp/test-client.mjs`](mcp_test-client_mjs.spec.md) | 2 | 0 | 2 |
 | [`mcp/test-http.mjs`](mcp_test-http_mjs.spec.md) | 2 | 0 | 2 |
 | [`scripts/build-spec-pack.mjs`](scripts_build-spec-pack_mjs.spec.md) | 4 | 0 | 4 |
@@ -60,6 +60,7 @@ no implementation. This is the sole input to the blind contract test suite.
 | [`src/engine/worker.js`](src_engine_worker_js.spec.md) | 1 | 0 | 1 |
 | [`src/keymap.js`](src_keymap_js.spec.md) | 29 | 29 | 0 |
 | [`src/layout.js`](src_layout_js.spec.md) | 22 | 21 | 1 |
+| [`src/legacy.js`](src_legacy_js.spec.md) | 3 | 3 | 0 |
 | [`src/panelMeta.js`](src_panelMeta_js.spec.md) | 1 | 1 | 0 |
 | [`src/popout.js`](src_popout_js.spec.md) | 5 | 5 | 0 |
 | [`src/schema/editor.js`](src_schema_editor_js.spec.md) | 4 | 2 | 2 |
@@ -99,4 +100,4 @@ no implementation. This is the sole input to the blind contract test suite.
 | [`test/contracts.mjs`](test_contracts_mjs.spec.md) | 2 | 0 | 2 |
 | [`test/drivers.mjs`](test_drivers_mjs.spec.md) | 2 | 0 | 2 |
 | [`test/support/loader.mjs`](test_support_loader_mjs.spec.md) | 2 | 2 | 0 |
-| **Total** | **1051** | **550** | **501** |
+| **Total** | **1054** | **553** | **501** |

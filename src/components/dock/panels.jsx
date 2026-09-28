@@ -1,6 +1,6 @@
 // Panel registry — metadata from src/panelMeta.js paired with its component.
 //
-// Adding a panel to AcouSim means one entry in PANEL_META plus one line here:
+// Adding a panel to SpeakerSpice means one entry in PANEL_META plus one line here:
 // the dock layout, the View menu and the saved-layout sanitizer all read from
 // those, so nothing else needs to learn about it. Chart panels are generated
 // from the chart registry instead of listed one by one.

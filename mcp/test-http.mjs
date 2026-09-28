@@ -10,7 +10,7 @@ const TOKEN = 'test-secret'
 const BASE = `http://127.0.0.1:${PORT}`
 
 const proc = spawn('node', ['mcp/http.js'], {
-  env: { ...process.env, PORT: String(PORT), ACOUSIM_TOKEN: TOKEN },
+  env: { ...process.env, PORT: String(PORT), SPEAKERSPICE_TOKEN: TOKEN },
   stdio: ['ignore', 'inherit', 'inherit'],
 })
 

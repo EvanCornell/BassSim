@@ -207,11 +207,11 @@ export default function MenuBar() {
         // Older files are carried forward on load; only a newer one may hold
         // something this build cannot represent.
         if (Number(proj.schemaVersion) > SCHEMA_VERSION) {
-          if (!confirm(`This file was saved by a newer AcouSim (schema v${proj.schemaVersion}); this build reads up to v${SCHEMA_VERSION}. Anything it does not understand may be lost. Load anyway?`)) return
+          if (!confirm(`This file was saved by a newer SpeakerSpice (schema v${proj.schemaVersion}); this build reads up to v${SCHEMA_VERSION}. Anything it does not understand may be lost. Load anyway?`)) return
         }
         store.importProject(proj, file.name)
       } catch {
-        alert('Could not parse that file as an AcouSim project.')
+        alert('Could not parse that file as a SpeakerSpice project.')
       }
     }
     reader.readAsText(file)
@@ -546,7 +546,7 @@ export default function MenuBar() {
         onClick: () => store.setShowSettings(true, 'keyboard'),
       },
       {
-        label: 'About AcouSim',
+        label: 'About SpeakerSpice',
         /**
          * Show the about dialog.
          *
@@ -554,9 +554,9 @@ export default function MenuBar() {
          * @sideEffect Shows a browser dialog.
          */
         onClick: () => alert(
-          'AcouSim — node-based acoustic circuit simulator.\n\n'
-          + 'A 1-D electro-acoustic analogous circuit solved by the transfer-matrix\n'
-          + '(ABCD) method in [pressure; volume velocity] state.\n\n'
+          'SpeakerSpice — open-source loudspeaker design.\n\n'
+          + 'Every design is an electro-acoustic circuit, solved in the browser\n'
+          + 'by ngspice.\n\n'
           + 'View ▸ Reset Layout restores the default workspace.',
         ),
       },
@@ -565,7 +565,7 @@ export default function MenuBar() {
 
   return (
     <div className="menubar" ref={barRef} onClick={() => setOpen(null)}>
-      <span className="logo">Acou<span>Sim</span></span>
+      <span className="logo">Speaker<span>Spice</span></span>
       <ProjectTitle />
       {MENUS.map(([title, items]) => (
         <Menu

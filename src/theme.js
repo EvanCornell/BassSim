@@ -14,7 +14,7 @@ export const THEMES = [
   ['light', 'Light'],
 ]
 
-const THEME_KEY = 'acousim:theme'
+const THEME_KEY = 'speakerspice:theme'
 
 /**
  * The appearance this browser last chose.

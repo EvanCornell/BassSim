@@ -1,9 +1,9 @@
-# AcouSim full-stack server: web app + simulation API + MCP endpoint in one
+# SpeakerSpice full-stack server: web app + simulation API + MCP endpoint in one
 # container. The engine runs only server-side; the browser bundle has no
 # solver code.
 #
-#   docker build -t acousim .
-#   docker run -e ACOUSIM_TOKEN=secret -p 8788:8788 acousim
+#   docker build -t speakerspice .
+#   docker run -e SPEAKERSPICE_TOKEN=secret -p 8788:8788 speakerspice
 
 # ---- stage 1: build the web app ----
 FROM node:22-alpine AS build
@@ -29,7 +29,7 @@ COPY --from=build /app/dist ./dist
 
 ENV PORT=8788
 # accounts DB lives here — mount a volume to persist users across upgrades
-ENV ACOUSIM_DATA_DIR=/data
+ENV SPEAKERSPICE_DATA_DIR=/data
 VOLUME /data
 EXPOSE 8788
 

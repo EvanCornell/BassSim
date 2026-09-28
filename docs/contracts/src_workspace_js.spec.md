@@ -19,7 +19,7 @@ folder normally needs no record of its own. Empty folders are the exception:
 a user who makes a folder and has not yet put anything in it would otherwise
 watch it vanish, so those are listed explicitly and pruned as files arrive.
 
-One folder is special. `.acousim` holds data the app itself tracks rather
+One folder is special. `.speakerspice` holds data the app itself tracks rather
 than data the user authored — custom drivers today, more as features land.
 It is created lazily and never eagerly: an imported workspace that predates
 the folder, or one a user has trimmed by hand, stays exactly as imported
@@ -52,7 +52,7 @@ The folder holding app-tracked data rather than user-authored files.
 Dot-prefixed by the same convention as `.git` and `.vscode`: it is the
 workspace's own bookkeeping, shown in the browser but visibly not a project.
 
-Value: `".acousim"`
+Value: `".speakerspice"`
 
 ### `DRIVERS_PATH`
 
@@ -74,7 +74,7 @@ downloaded workspace.
 
 Filename extension for a project file inside a workspace.
 
-Value: `".acousim"`
+Value: `".speakerspice"`
 
 ### `DEFAULT_WORKSPACE_NAME`
 
@@ -316,7 +316,7 @@ files inside them, so a new entry can never collide with an existing one.
 Every folder in a workspace.
 
 Union of the explicitly recorded folders and every ancestor of every file,
-because a file at `boxes/ported/a.acousim` implies two folders that no one
+because a file at `boxes/ported/a.speakerspice` implies two folders that no one
 ever created by hand.
 
 **Parameters**
@@ -669,7 +669,7 @@ one bad file should not cost the user the other forty.
 
 The system folder is not created here. An archive that arrives without one
 keeps the shape it arrived in — that is the whole point of creating it
-lazily — so a folder of `.acousim` files imports as exactly those files.
+lazily — so a folder of `.speakerspice` files imports as exactly those files.
 
 **Parameters**
 
@@ -678,7 +678,7 @@ lazily — so a folder of `.acousim` files imports as exactly those files.
 
 **Returns**
 
-- `{ok: boolean, workspace?: object, error?: string, skipped?: string[]}` — The workspace, the paths that could not be read, or the reason nothing could be.
+- `{ok: boolean, workspace?: object, error?: string, skipped?: string[], renamed?: Array<{from: string, to: string, folder: boolean}>}` — The workspace, the paths that could not be read, the entries read from a path under the app's former name and the path they now have, or the reason nothing could be.
 
 **Side effects**
 

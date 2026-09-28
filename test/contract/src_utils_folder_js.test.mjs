@@ -135,7 +135,7 @@ test('supportsFolders: false without the File System Access API', () => {
 test('diskContents: every project file, plus the workspace metadata', () => {
   const ws = newWorkspace('bench', 'first')
   const { files } = diskContents(ws)
-  assert.ok(files.has('first.acousim'))
+  assert.ok(files.has('first.speakerspice'))
   assert.ok(files.has(META_PATH))
   assert.equal(JSON.parse(files.get(META_PATH)).name, 'bench')
 })
@@ -159,24 +159,24 @@ test('planSync: an unchanged workspace plans no work at all', () => {
 })
 
 test('planSync: only the file that changed is rewritten', () => {
-  const ws = writeFile(newWorkspace('w', 'a'), 'b.acousim', { kind: 'project', data: { name: 'b', nodes: [], edges: [] } })
+  const ws = writeFile(newWorkspace('w', 'a'), 'b.speakerspice', { kind: 'project', data: { name: 'b', nodes: [], edges: [] } })
   const state = planSync(ws, { files: new Map(), folders: [] }).next
 
-  const edited = writeFile(ws, 'b.acousim', { kind: 'project', data: { name: 'b', nodes: [1], edges: [] } })
+  const edited = writeFile(ws, 'b.speakerspice', { kind: 'project', data: { name: 'b', nodes: [1], edges: [] } })
   const plan = planSync(edited, state)
   const written = plan.writes.map((w) => w.path)
-  assert.ok(written.includes('b.acousim'))
+  assert.ok(written.includes('b.speakerspice'))
   // The untouched project is not rewritten. The metadata may be, since it
   // carries the workspace's modification stamp.
-  assert.ok(!written.includes('a.acousim'))
-  assert.ok(written.every((p) => p === 'b.acousim' || p === META_PATH))
+  assert.ok(!written.includes('a.speakerspice'))
+  assert.ok(written.every((p) => p === 'b.speakerspice' || p === META_PATH))
 })
 
 test('planSync: a deleted file is removed from the folder', () => {
-  const ws = writeFile(newWorkspace('w', 'a'), 'b.acousim', { kind: 'project', data: { name: 'b', nodes: [], edges: [] } })
+  const ws = writeFile(newWorkspace('w', 'a'), 'b.speakerspice', { kind: 'project', data: { name: 'b', nodes: [], edges: [] } })
   const state = planSync(ws, { files: new Map(), folders: [] }).next
-  const plan = planSync(deleteEntry(ws, 'b.acousim'), state)
-  assert.deepEqual(plan.deletes, ['b.acousim'])
+  const plan = planSync(deleteEntry(ws, 'b.speakerspice'), state)
+  assert.deepEqual(plan.deletes, ['b.speakerspice'])
 })
 
 test('planSync: a file the app never wrote is never deleted', () => {
@@ -195,7 +195,7 @@ test('planSync: a folder that no longer exists is listed for removal', () => {
 })
 
 test('planSync: pruning off writes but never deletes', () => {
-  const ws = writeFile(newWorkspace('w', 'a'), 'b.acousim', { kind: 'project', data: { name: 'b', nodes: [], edges: [] } })
+  const ws = writeFile(newWorkspace('w', 'a'), 'b.speakerspice', { kind: 'project', data: { name: 'b', nodes: [], edges: [] } })
   const state = planSync(ws, { files: new Map(), folders: [] }).next
 
   // The case that matters: a browser that has lost its storage arrives with an
@@ -208,7 +208,7 @@ test('planSync: pruning off writes but never deletes', () => {
 })
 
 test('planSync: pruning off forgets the files it did not delete', () => {
-  const ws = writeFile(newWorkspace('w', 'a'), 'b.acousim', { kind: 'project', data: { name: 'b', nodes: [], edges: [] } })
+  const ws = writeFile(newWorkspace('w', 'a'), 'b.speakerspice', { kind: 'project', data: { name: 'b', nodes: [], edges: [] } })
   const state = planSync(ws, { files: new Map(), folders: [] }).next
 
   // What survives an unpruned write becomes foreign: the next sync, pruning
@@ -223,14 +223,14 @@ test('planSync: pruning off forgets the files it did not delete', () => {
 // ---------------------------------------------------------------------------
 
 test('applyPlan: writes the workspace as real files in real folders', async () => {
-  const ws = writeFile(newWorkspace('w', 'a'), 'boxes/ported/b.acousim', {
+  const ws = writeFile(newWorkspace('w', 'a'), 'boxes/ported/b.speakerspice', {
     kind: 'project', data: { name: 'b', nodes: [], edges: [] },
   })
   const { root } = await seed(ws)
   const files = snapshot(root)
-  assert.ok(files['a.acousim'])
-  assert.ok(files['boxes/ported/b.acousim'])
-  assert.equal(JSON.parse(files['boxes/ported/b.acousim']).name, 'b')
+  assert.ok(files['a.speakerspice'])
+  assert.ok(files['boxes/ported/b.speakerspice'])
+  assert.equal(JSON.parse(files['boxes/ported/b.speakerspice']).name, 'b')
   assert.ok(dirs(root).includes('boxes/ported'))
 })
 
@@ -244,24 +244,24 @@ test('applyPlan: reports the files it could not write', async () => {
   const root = new FakeDir()
   // A directory where the file has to go: `getFileHandle` cannot produce a
   // handle for it, which is the shape a locked or unwritable path takes here.
-  root.children.set('a.acousim', new FakeDir('a.acousim'))
+  root.children.set('a.speakerspice', new FakeDir('a.speakerspice'))
   const { failed, written } = await applyPlan(root, planSync(ws, { files: new Map(), folders: [] }))
-  assert.deepEqual(failed, ['a.acousim'])
+  assert.deepEqual(failed, ['a.speakerspice'])
   assert.equal(written, 1)
 })
 
 test('applyPlan: a deletion takes the file and prunes the folder it emptied', async () => {
-  const ws = writeFile(newWorkspace('w', 'a'), 'old/b.acousim', {
+  const ws = writeFile(newWorkspace('w', 'a'), 'old/b.speakerspice', {
     kind: 'project', data: { name: 'b', nodes: [], edges: [] },
   })
   const { root, state } = await seed(ws)
   await applyPlan(root, planSync(deleteEntry(ws, 'old'), state))
-  assert.equal(snapshot(root)['old/b.acousim'], undefined)
+  assert.equal(snapshot(root)['old/b.speakerspice'], undefined)
   assert.ok(!dirs(root).includes('old'))
 })
 
 test('applyPlan: a folder holding something of the user\'s survives', async () => {
-  const ws = writeFile(newWorkspace('w', 'a'), 'old/b.acousim', {
+  const ws = writeFile(newWorkspace('w', 'a'), 'old/b.speakerspice', {
     kind: 'project', data: { name: 'b', nodes: [], edges: [] },
   })
   const { root, state } = await seed(ws)
@@ -278,31 +278,31 @@ test('applyPlan: a folder holding something of the user\'s survives', async () =
 // ---------------------------------------------------------------------------
 
 test('readFolderEntries: walks nested folders and reads the files', async () => {
-  const ws = writeFile(newWorkspace('w', 'a'), 'boxes/b.acousim', {
+  const ws = writeFile(newWorkspace('w', 'a'), 'boxes/b.speakerspice', {
     kind: 'project', data: { name: 'b', nodes: [], edges: [] },
   })
   const { root } = await seed(ws)
   const entries = await readFolderEntries(root)
   const paths = entries.map((e) => e.path).sort()
   assert.ok(paths.includes('boxes'))
-  assert.ok(paths.includes('boxes/b.acousim'))
+  assert.ok(paths.includes('boxes/b.speakerspice'))
   assert.equal(entries.find((e) => e.path === 'boxes').folder, true)
 })
 
 test('readFolderWorkspace: a folder the app wrote reads back as the same workspace', async () => {
-  const ws = writeFile(newWorkspace('bench', 'a'), 'boxes/b.acousim', {
+  const ws = writeFile(newWorkspace('bench', 'a'), 'boxes/b.speakerspice', {
     kind: 'project', data: { name: 'b', nodes: [], edges: [] },
   })
   const { root } = await seed(ws)
   const read = await readFolderWorkspace(root)
   assert.equal(read.ok, true)
   assert.equal(read.workspace.name, 'bench')
-  assert.deepEqual(Object.keys(read.workspace.files).sort(), ['a.acousim', 'boxes/b.acousim'])
-  assert.deepEqual(read.workspace.files['boxes/b.acousim'].data, { name: 'b', nodes: [], edges: [] })
+  assert.deepEqual(Object.keys(read.workspace.files).sort(), ['a.speakerspice', 'boxes/b.speakerspice'])
+  assert.deepEqual(read.workspace.files['boxes/b.speakerspice'].data, { name: 'b', nodes: [], edges: [] })
 })
 
 test('readFolderWorkspace: reading a folder then syncing to it writes nothing', async () => {
-  const ws = writeFile(newWorkspace('bench', 'a'), 'boxes/b.acousim', {
+  const ws = writeFile(newWorkspace('bench', 'a'), 'boxes/b.speakerspice', {
     kind: 'project', data: { name: 'b', nodes: [], edges: [] },
   })
   const { root } = await seed(ws)
@@ -315,11 +315,11 @@ test('readFolderWorkspace: reading a folder then syncing to it writes nothing', 
 
 test('readFolderWorkspace: a plain folder of project files takes the folder\'s name', async () => {
   const root = new FakeDir('from-git')
-  root.children.set('sub.acousim', new FakeFile(JSON.stringify({ name: 'sub', nodes: [], edges: [] })))
+  root.children.set('sub.speakerspice', new FakeFile(JSON.stringify({ name: 'sub', nodes: [], edges: [] })))
   const read = await readFolderWorkspace(root)
   assert.equal(read.ok, true)
   assert.equal(read.workspace.name, 'from-git')
-  assert.equal(read.workspace.files['sub.acousim'].kind, 'project')
+  assert.equal(read.workspace.files['sub.speakerspice'].kind, 'project')
 })
 
 test('readFolderWorkspace: an empty folder is reported as empty, not as a failure', async () => {
@@ -330,7 +330,7 @@ test('readFolderWorkspace: an empty folder is reported as empty, not as a failur
 
 test('readFolderWorkspace: a file that is not JSON is skipped, not fatal', async () => {
   const root = new FakeDir('mixed')
-  root.children.set('a.acousim', new FakeFile(JSON.stringify({ name: 'a', nodes: [], edges: [] })))
+  root.children.set('a.speakerspice', new FakeFile(JSON.stringify({ name: 'a', nodes: [], edges: [] })))
   root.children.set('README.md', new FakeFile('# my enclosures'))
   const read = await readFolderWorkspace(root)
   assert.equal(read.ok, true)
@@ -339,7 +339,7 @@ test('readFolderWorkspace: a file that is not JSON is skipped, not fatal', async
 })
 
 test('a browser that lost its storage does not empty the folder', async () => {
-  const ws = writeFile(newWorkspace('bench', 'a'), 'boxes/b.acousim', {
+  const ws = writeFile(newWorkspace('bench', 'a'), 'boxes/b.speakerspice', {
     kind: 'project', data: { name: 'b', nodes: [{ id: 'n1' }], edges: [] },
   })
   const { root, state } = await seed(ws)
@@ -350,9 +350,9 @@ test('a browser that lost its storage does not empty the folder', async () => {
   const read = await readFolderWorkspace(root)
   assert.deepEqual(
     Object.keys(read.workspace.files).sort(),
-    ['a.acousim', 'boxes/b.acousim', 'project.acousim'],
+    ['a.speakerspice', 'boxes/b.speakerspice', 'project.speakerspice'],
   )
-  assert.deepEqual(read.workspace.files['boxes/b.acousim'].data.nodes, [{ id: 'n1' }])
+  assert.deepEqual(read.workspace.files['boxes/b.speakerspice'].data.nodes, [{ id: 'n1' }])
 })
 
 test('a foreign file survives a full write-read-write cycle', async () => {
@@ -361,12 +361,57 @@ test('a foreign file survives a full write-read-write cycle', async () => {
   root.children.set('README.md', new FakeFile('# my enclosures'))
 
   const read = await readFolderWorkspace(root)
-  const edited = writeFile(read.workspace, 'a.acousim', {
+  const edited = writeFile(read.workspace, 'a.speakerspice', {
     kind: 'project', data: { name: 'a', nodes: [{ id: 'n1' }], edges: [] },
   })
   await applyPlan(root, planSync(edited, read.previous))
 
   const files = snapshot(root)
   assert.equal(files['README.md'], '# my enclosures')
-  assert.deepEqual(JSON.parse(files['a.acousim']).nodes, [{ id: 'n1' }])
+  assert.deepEqual(JSON.parse(files['a.speakerspice']).nodes, [{ id: 'n1' }])
+})
+
+// ---------------------------------------------------------------------------
+// Folders saved under the app's former name
+// ---------------------------------------------------------------------------
+
+// CONTRACT (readFolderWorkspace): files and folders read from a path under the
+// app's former name count as the app's own there, so the first save moves them
+// to the current name rather than leaving both behind.
+test('readFolderWorkspace: a folder saved under the former name is renamed by the next save', async () => {
+  const root = new FakeDir('old')
+  const sys = new FakeDir('.acousim')
+  sys.children.set('workspace.json', new FakeFile(JSON.stringify({ schemaVersion: 1, app: 'AcouSim', kind: 'workspace', name: 'bench' })))
+  sys.children.set('drivers.json', new FakeFile(JSON.stringify([{ id: 'x' }])))
+  root.children.set('.acousim', sys)
+  const boxes = new FakeDir('boxes')
+  boxes.children.set('a.acousim', new FakeFile(JSON.stringify({ name: 'a', nodes: [], edges: [] })))
+  root.children.set('boxes', boxes)
+  root.children.set('README.md', new FakeFile('# mine'))
+
+  const read = await readFolderWorkspace(root)
+  assert.equal(read.ok, true)
+  assert.equal(read.workspace.name, 'bench')
+  assert.deepEqual(Object.keys(read.workspace.files).sort(), ['.speakerspice/drivers.json', 'boxes/a.speakerspice'])
+  assert.equal(read.workspace.files['boxes/a.speakerspice'].kind, 'project')
+  assert.equal(read.workspace.files['.speakerspice/drivers.json'].kind, 'drivers')
+
+  await applyPlan(root, planSync(read.workspace, read.previous))
+  const files = snapshot(root)
+  assert.deepEqual(Object.keys(files).sort(), ['.speakerspice/drivers.json', '.speakerspice/workspace.json', 'README.md', 'boxes/a.speakerspice'])
+  assert.equal(files['README.md'], '# mine')
+  assert.ok(!dirs(root).includes('.acousim'), 'the emptied former folder is gone')
+  assert.deepEqual(JSON.parse(files['boxes/a.speakerspice']), { name: 'a', nodes: [], edges: [] })
+})
+
+// CONTRACT: where a file exists under both names, the current one wins and
+// the former one is left alone.
+test('readFolderWorkspace: a file under both names keeps the current one and leaves the other', async () => {
+  const root = new FakeDir('both')
+  root.children.set('a.acousim', new FakeFile(JSON.stringify({ name: 'old' })))
+  root.children.set('a.speakerspice', new FakeFile(JSON.stringify({ name: 'new' })))
+  const read = await readFolderWorkspace(root)
+  assert.deepEqual(read.workspace.files['a.speakerspice'].data, { name: 'new' })
+  await applyPlan(root, planSync(read.workspace, read.previous))
+  assert.ok('a.acousim' in snapshot(root))
 })

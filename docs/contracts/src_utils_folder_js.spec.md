@@ -140,13 +140,16 @@ why this is IndexedDB and not LocalStorage.
 
 The folder remembered from a previous visit.
 
+A folder remembered under the app's former name is moved to the current
+database, so a renamed app resumes the same folder.
+
 **Returns**
 
 - `Promise<FileSystemDirectoryHandle|null>` — The handle, or `null` when none was stored or it could not be read.
 
 **Side effects**
 
-- Reads IndexedDB.
+- Reads IndexedDB; may move a handle out of the former database and delete that database.
 
 ### `forgetFolder()`
 
@@ -285,12 +288,16 @@ save.
 
 ## UNREACHABLE (9)
 
-### `openDb()`
+### `openDb(name)`
 
 - **Reachability:** UNREACHABLE
 - **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
 
 Open the handle database, creating its store on first use.
+
+**Parameters**
+
+- `name` — `string` _(optional)_ — The database; this app's by default.
 
 **Returns**
 
@@ -345,7 +352,7 @@ Report that the database could not be opened.
 
 - Rejects the enclosing promise.
 
-### `withStore(mode, run)`
+### `withStore(mode, run, name)`
 
 - **Reachability:** UNREACHABLE
 - **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
@@ -357,6 +364,7 @@ Run one transaction against the handle store and close the database.
 
 - `mode` — `string` — `'readonly'` or `'readwrite'`.
 - `run` — `Function` — Given the object store, issues the request and returns it.
+- `name` — `string` _(optional)_ — The database; this app's by default.
 
 **Returns**
 

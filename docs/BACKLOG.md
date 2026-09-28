@@ -27,7 +27,7 @@ they under-read (1.8% shown against a true 9.8% at 50 Hz on a series-tuned
 - The export and MCP efficiency columns follow the same definition.
 
 **Where.** `emit.powers` in `src/engine/solver.js`, the `pow`/`eff` rows in
-`src/components/OutputPanel.jsx`, `src/utils/export.js`, `mcp/acousim.js`.
+`src/components/OutputPanel.jsx`, `src/utils/export.js`, `mcp/speakerspice.js`.
 The SPICE engine already knows each source (`map.radiators` in
 `src/spice/adapt.js`); power there is Re(p·U*) per counted radiator.
 
@@ -101,7 +101,7 @@ are silently blocked. Fixed by construction in the SPICE engine
 
 - **Snapshot browser check.** Snapshots surviving project switches and
   reloads, colours staying distinct after remove-and-retake, renames
-  persisting, `.acousim/snapshots.json` in the downloaded zip. Never run in a
+  persisting, `.speakerspice/snapshots.json` in the downloaded zip. Never run in a
   browser.
 - **README / LICENSE / CONTRIBUTING** for the release. README uses
   "workspace" for two things, doesn't document the explorer, and still claims

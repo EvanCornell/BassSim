@@ -2,18 +2,18 @@
 // Streamable-HTTP entry point, for remote MCP clients (claude.ai custom
 // connectors, ChatGPT, MCP inspector, or any HTTP MCP client).
 //
-//   PORT=8787 ACOUSIM_TOKEN=secret node mcp/http.js
+//   PORT=8787 SPEAKERSPICE_TOKEN=secret node mcp/http.js
 //
 // Stateless mode: every tool takes the full project JSON, so no session
 // state is kept — each POST gets a fresh server+transport pair, which also
 // makes horizontal scaling trivial. Auth is an optional static bearer token
-// (ACOUSIM_TOKEN); unset = open, for local/trusted networks only.
+// (SPEAKERSPICE_TOKEN); unset = open, for local/trusted networks only.
 import { createServer as createHttpServer } from 'node:http'
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js'
-import { createServer } from './acousim.js'
+import { createServer } from './speakerspice.js'
 
 const PORT = Number(process.env.PORT || 8787)
-const TOKEN = process.env.ACOUSIM_TOKEN || ''
+const TOKEN = process.env.SPEAKERSPICE_TOKEN || ''
 const MCP_PATH = '/mcp'
 
 /**
@@ -99,7 +99,7 @@ const httpServer = createHttpServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`)
 
   if (req.method === 'OPTIONS') { res.writeHead(204, CORS); return res.end() }
-  if (url.pathname === '/healthz') return send(res, 200, { ok: true, server: 'acousim-mcp' })
+  if (url.pathname === '/healthz') return send(res, 200, { ok: true, server: 'speakerspice-mcp' })
   if (url.pathname !== MCP_PATH) return send(res, 404, { error: `MCP endpoint is ${MCP_PATH}` })
 
   if (TOKEN) {
@@ -133,6 +133,6 @@ const httpServer = createHttpServer(async (req, res) => {
 })
 
 httpServer.listen(PORT, () => {
-  console.error(`AcouSim MCP server listening on http://0.0.0.0:${PORT}${MCP_PATH}`
-    + (TOKEN ? ' (bearer auth ON)' : ' (NO AUTH — set ACOUSIM_TOKEN before exposing publicly)'))
+  console.error(`SpeakerSpice MCP server listening on http://0.0.0.0:${PORT}${MCP_PATH}`
+    + (TOKEN ? ' (bearer auth ON)' : ' (NO AUTH — set SPEAKERSPICE_TOKEN before exposing publicly)'))
 })

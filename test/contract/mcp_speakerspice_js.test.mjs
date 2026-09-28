@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { createServer, __internals } from '../../mcp/acousim.js'
+import { createServer, __internals } from '../../mcp/speakerspice.js'
 // A real, simulatable project is needed to exercise `run`, `summarize` and
 // `metricsSummary`. It is obtained from the documented builder API rather than
 // hand-built, so no structural assumption is smuggled in.

@@ -15,7 +15,7 @@
 // SI happens only when a netlist is built.
 
 /**
- * Version of the `.acousim.json` project format this build reads and writes.
+ * Version of the `.speakerspice.json` project format this build reads and writes.
  *
  * v2 changed the meaning of `ecFactor`. v3 splits `settings` into `analyses`,
  * `wiring` and `display`, replaces per-element `Q` with physical loss

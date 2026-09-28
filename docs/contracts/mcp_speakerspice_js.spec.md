@@ -1,11 +1,11 @@
-# Contract specification: `mcp/acousim.js`
+# Contract specification: `mcp/speakerspice.js`
 
 > Generated from method contracts. This file contains **no implementation code**.
 > Write tests against what is claimed here, not against what you expect the code to do.
 
 ## Module
 
-AcouSim MCP server core: tool/resource registrations, transport-agnostic.
+SpeakerSpice MCP server core: tool/resource registrations, transport-agnostic.
 Entry points: mcp/server.js (stdio) and mcp/http.js (streamable HTTP).
 
 ## Exported constants
@@ -23,7 +23,7 @@ Keys: `sig`, `labelOf`, `resolveNode`, `run`, `downsample`, `metricsSummary`, `s
 ### `createServer()`
 
 - **Reachability:** EXPORTED
-- **Obtain via:** import { createServer } from '../../mcp/acousim.js'
+- **Obtain via:** import { createServer } from '../../mcp/speakerspice.js'
 
 Build a fully configured MCP server with every tool and resource registered.
 
@@ -44,7 +44,7 @@ it safe to run behind a load balancer.
 ### `sig(v, n)`
 
 - **Reachability:** INTERNAL
-- **Obtain via:** import { __internals } from '../../mcp/acousim.js'  →  __internals.sig
+- **Obtain via:** import { __internals } from '../../mcp/speakerspice.js'  →  __internals.sig
 
 Round a number to a fixed significant-figure count for JSON output.
 
@@ -66,7 +66,7 @@ well past the accuracy of the model producing them.
 ### `labelOf(nodes, id)`
 
 - **Reachability:** INTERNAL
-- **Obtain via:** import { __internals } from '../../mcp/acousim.js'  →  __internals.labelOf
+- **Obtain via:** import { __internals } from '../../mcp/speakerspice.js'  →  __internals.labelOf
 
 Describe a node as `label (id)`, or just its id when it has no label.
 
@@ -87,7 +87,7 @@ rather than an opaque id.
 ### `resolveNode(nodes, ref, types)`
 
 - **Reachability:** INTERNAL
-- **Obtain via:** import { __internals } from '../../mcp/acousim.js'  →  __internals.resolveNode
+- **Obtain via:** import { __internals } from '../../mcp/speakerspice.js'  →  __internals.resolveNode
 
 Resolve a node reference, which may be an id or a label.
 
@@ -113,7 +113,7 @@ work. Ids are matched first, then labels case-insensitively.
 ### `run(projRaw)`
 
 - **Reachability:** INTERNAL
-- **Obtain via:** import { __internals } from '../../mcp/acousim.js'  →  __internals.run
+- **Obtain via:** import { __internals } from '../../mcp/speakerspice.js'  →  __internals.run
 - **Async:** returns a Promise
 
 Hydrate a project and simulate it.
@@ -142,7 +142,7 @@ arbitrarily expensive sweep.
 ### `downsample(freqs, arr, points, fmin, fmax)`
 
 - **Reachability:** INTERNAL
-- **Obtain via:** import { __internals } from '../../mcp/acousim.js'  →  __internals.downsample
+- **Obtain via:** import { __internals } from '../../mcp/speakerspice.js'  →  __internals.downsample
 
 Reduce a curve to about `points` samples for a tool response.
 
@@ -173,7 +173,7 @@ agent would conclude the design is fine when it is not.
 ### `metricsSummary(metrics)`
 
 - **Reachability:** INTERNAL
-- **Obtain via:** import { __internals } from '../../mcp/acousim.js'  →  __internals.metricsSummary
+- **Obtain via:** import { __internals } from '../../mcp/speakerspice.js'  →  __internals.metricsSummary
 
 Reduce computed metrics to a labelled, unit-carrying object for JSON output.
 
@@ -194,7 +194,7 @@ reads to an agent as a missing measurement rather than an inapplicable one.
 ### `summarize(ctx, points)`
 
 - **Reachability:** INTERNAL
-- **Obtain via:** import { __internals } from '../../mcp/acousim.js'  →  __internals.summarize
+- **Obtain via:** import { __internals } from '../../mcp/speakerspice.js'  →  __internals.summarize
 
 Build the JSON summary returned by `simulate`.
 
@@ -220,7 +220,7 @@ A failed simulation returns early with the errors and no curves.
 ### `jsonResult(obj)`
 
 - **Reachability:** INTERNAL
-- **Obtain via:** import { __internals } from '../../mcp/acousim.js'  →  __internals.jsonResult
+- **Obtain via:** import { __internals } from '../../mcp/speakerspice.js'  →  __internals.jsonResult
 
 Wrap a value as a successful MCP tool result.
 
@@ -237,7 +237,7 @@ Wrap a value as a successful MCP tool result.
 ### `errResult(e)`
 
 - **Reachability:** INTERNAL
-- **Obtain via:** import { __internals } from '../../mcp/acousim.js'  →  __internals.errResult
+- **Obtain via:** import { __internals } from '../../mcp/speakerspice.js'  →  __internals.errResult
 
 Wrap an error as a failed MCP tool result.
 
