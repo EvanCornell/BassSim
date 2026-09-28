@@ -5,6 +5,7 @@ import { basisOf, baselineOf, matchesBaseline, BASIS_SIZE } from '../driverParam
 import ExprInput from './ExprInput'
 import { useResolvedParams } from '../useResolved'
 import { freshId } from '../schema/extras'
+import { driverNominal } from '../schema/nominal'
 
 /**
  * One-line physical explanation per parameter, shown as a label tooltip.
@@ -46,6 +47,125 @@ const TIPS = {
   addedMass: 'Extra mass bolted to the cone to lower its resonance.',
   space: 'Solid angle the opening radiates into — boundary loading.',
   label: 'Display name for this node.',
+}
+
+/**
+ * Which sections are open, by key, for the session.
+ *
+ * Kept outside React so a section stays as the user left it when another
+ * element of the same kind is selected, or the panel is re-docked.
+ */
+const OPEN = {}
+
+/**
+ * Whether a section is open, and the toggle for it.
+ *
+ * @param {string} id - Section key, e.g. `driver.electrical`.
+ * @param {boolean} initial - Open the first time it is shown.
+ * @returns {[boolean, Function]} Open, and a function that flips it.
+ * @sideEffect Holds React state and writes the module's open map when toggled.
+ */
+function useOpen(id, initial) {
+  const [open, setOpen] = useState(OPEN[id] ?? initial)
+  /**
+   * Flip the section, remembering the new state.
+   *
+   * @returns {void}
+   * @sideEffect Updates React state and the module's open map.
+   */
+  const toggle = () => { OPEN[id] = !open; setOpen(!open) }
+  return [open, toggle]
+}
+
+/**
+ * A figure written short, for a section summary.
+ *
+ * @param {any} v - A number, or anything else.
+ * @returns {string} Up to three significant figures without trailing zeros, the value itself when it is not a finite number, or `—` when absent.
+ * @pure
+ */
+const short = (v) => {
+  if (v == null || v === '') return '—'
+  const n = Number(v)
+  if (!Number.isFinite(n)) return String(v)
+  if (Math.abs(n) >= 100) return String(Math.round(n))
+  return String(Number(n.toPrecision(3)))
+}
+
+/**
+ * A collapsible section of the panel: a card whose head names it and, while
+ * closed, sums up what is in it on one line.
+ *
+ * @param {object} props - Component props.
+ * @param {string} props.id - Key the open state is remembered by.
+ * @param {string} props.title - The name.
+ * @param {string} [props.summary] - One line shown while closed.
+ * @param {string} [props.color] - An element hue: shows a dot, and rings the card when `focus`.
+ * @param {boolean} [props.focus] - The section being worked on — the selected element.
+ * @param {React.ReactNode} [props.actions] - Buttons shown in the head while open, in place of the summary.
+ * @param {boolean} [props.initial] - Open the first time it is shown.
+ * @param {React.ReactNode} props.children - The body.
+ * @returns {React.ReactElement} The section.
+ * @sideEffect Holds its open state.
+ */
+function Section({ id, title, summary, color, focus, actions, initial = false, children }) {
+  const [open, toggle] = useOpen(id, initial)
+  return (
+    <div className={`psec${open ? ' open' : ''}${focus ? ' focus' : ''}`} style={color ? { '--nc': color } : undefined}>
+      <div className="psec-head" onClick={toggle} role="button" aria-expanded={open}>
+        <span className="psec-twisty">{open ? '▾' : '▸'}</span>
+        {color && <span className="psec-dot" />}
+        <span className="psec-title">{title}</span>
+        {open && actions
+          ? <span className="psec-actions" onClick={(e) => e.stopPropagation()}>{actions}</span>
+          : <span className="psec-summary">{summary}</span>}
+      </div>
+      {open && <div className="psec-body">{children}</div>}
+    </div>
+  )
+}
+
+/**
+ * A collapsible group inside a section, with its own one-line summary.
+ *
+ * @param {object} props - Component props.
+ * @param {string} props.id - Key the open state is remembered by.
+ * @param {string} props.title - The name.
+ * @param {string} [props.summary] - One line shown in the head.
+ * @param {boolean} [props.initial] - Open the first time it is shown.
+ * @param {React.ReactNode} props.children - The body.
+ * @returns {React.ReactElement} The group.
+ * @sideEffect Holds its open state.
+ */
+function Sub({ id, title, summary, initial = false, children }) {
+  const [open, toggle] = useOpen(id, initial)
+  return (
+    <div className={`psub${open ? ' open' : ''}`}>
+      <div className="psub-head" onClick={toggle} role="button" aria-expanded={open}>
+        <span className="psec-twisty">{open ? '▾' : '▸'}</span>
+        <span className="psec-title">{title}</span>
+        <span className="psec-summary">{summary}</span>
+      </div>
+      {open && <div className="psub-body">{children}</div>}
+    </div>
+  )
+}
+
+/**
+ * A small padlock, closed or open.
+ *
+ * @param {object} props - Component props.
+ * @param {boolean} props.closed - Draw it locked.
+ * @returns {React.ReactElement} The icon.
+ * @pure
+ */
+function LockIcon({ closed }) {
+  return (
+    <svg viewBox="0 0 12 12" aria-hidden="true">
+      <rect x="2" y="5.5" width="8" height="5.5" rx="1.3" fill="currentColor" />
+      <path d={closed ? 'M3.8 5.5V4a2.2 2.2 0 0 1 4.4 0v1.5' : 'M3.8 5.5V4a2.2 2.2 0 0 1 4.3-.7'} fill="none" stroke="currentColor" strokeWidth="1.3" />
+    </svg>
+  )
 }
 
 /**
@@ -99,7 +219,7 @@ function NumField({ id, field, value, unit, label, step, min, onCommit }) {
 function SelectField({ id, field, value, label, options }) {
   const updateParams = useStore((s) => s.updateParams)
   return (
-    <div className="param-row">
+    <div className="param-row wide">
       <label title={TIPS[field] || ''}>{label || field}</label>
       <select value={value} onChange={(e) => updateParams(id, { [field]: e.target.value })}>
         {options.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
@@ -127,7 +247,7 @@ function LeakSection({ id, p }) {
   const sealed = !(Number(p.leakQL) > 0)
   return (
     <>
-      <div className="param-row">
+      <div className="param-row wide">
         <label title={TIPS.leakQL}>Leakage QL</label>
         <input
           type="number" step="1" min="1"
@@ -140,7 +260,7 @@ function LeakSection({ id, p }) {
           }}
         />
         <span className="unit">
-          <label style={{ display: 'flex', gap: 3, alignItems: 'center', fontSize: 10 }}>
+          <label style={{ display: 'flex', gap: 4, alignItems: 'center', fontSize: 11, cursor: 'pointer' }}>
             <input type="checkbox" checked={sealed} onChange={(e) => updateParams(id, { leakQL: e.target.checked ? null : 10 })} />sealed
           </label>
         </span>
@@ -162,7 +282,7 @@ function LeakSection({ id, p }) {
 function LabelField({ id, p }) {
   const updateParams = useStore((s) => s.updateParams)
   return (
-    <div className="param-row">
+    <div className="param-row wide">
       <label title={TIPS.label}>Label</label>
       <input value={p.label || ''} onChange={(e) => updateParams(id, { label: e.target.value })} />
       <span className="unit" />
@@ -210,21 +330,64 @@ function AmpSolver() {
     </div>
   )
   return (
-    <div className="panel-section">
-      <h4 title="The first amplifier channel at the master level. Changing the voltage moves the master, so every channel keeps its relative level.">
-        Drive · P = V²/Z
-        <button className="h4-link" onClick={() => useStore.getState().layoutOps.open('wiring')}>Wiring…</button>
-      </h4>
-      {f('voltage', 'Voltage', 'V')}
-      {f('impedance', 'Impedance', 'Ω')}
-      {f('power', 'Power', 'W')}
-      <div className="param-row">
-        <label title="The first channel's output resistance — amplifier output plus cable — in series with its load.">Rg</label>
-        <input type="number" step="any" min="0" value={settings.rg}
-          onChange={(e) => { const v = parseFloat(e.target.value); if (!Number.isNaN(v)) updateSettings({ rg: v }) }} />
-        <span className="unit">Ω</span>
+    <Section
+      id="amp" title="Amplifier"
+      summary={`${short(settings.voltage)} V · ${short(settings.impedance)} Ω · ${short(settings.power)} W`}
+      actions={<button onClick={() => useStore.getState().layoutOps.open('wiring')}
+        title="The first amplifier channel at the master level. Changing the voltage moves the master, so every channel keeps its relative level.">Wiring…</button>}
+    >
+      <div className="param-grid">
+        {f('voltage', 'Voltage', 'V')}
+        {f('impedance', 'Impedance', 'Ω')}
+        {f('power', 'Power', 'W')}
+        <div className="param-row">
+          <label title="The first channel's output resistance — amplifier output plus cable — in series with its load.">Rg</label>
+          <input type="number" step="any" min="0" value={settings.rg}
+            onChange={(e) => { const v = parseFloat(e.target.value); if (!Number.isNaN(v)) updateSettings({ rg: v }) }} />
+          <span className="unit">Ω</span>
+        </div>
       </div>
-    </div>
+    </Section>
+  )
+}
+
+/**
+ * The frequency sweep: its range, how many points, and resonance masking.
+ *
+ * @returns {React.ReactElement} The section.
+ * @sideEffect Subscribes to the store.
+ */
+function SweepSection() {
+  const settings = useStore((s) => s.settings)
+  const updateSettings = useStore((s) => s.updateSettings)
+  return (
+    <Section id="sweep" title="Sweep" summary={`${short(settings.fmin)}–${short(settings.fmax)} Hz · ${settings.npts}`}>
+      <div className="param-grid">
+        <div className="param-row">
+          <label title="Lowest frequency of the sweep">From</label>
+          <input type="number" min="1" value={settings.fmin}
+            onChange={(e) => { const v = parseFloat(e.target.value); if (v > 0 && v < settings.fmax) updateSettings({ fmin: v }) }} />
+          <span className="unit">Hz</span>
+        </div>
+        <div className="param-row">
+          <label title="Highest frequency of the sweep">To</label>
+          <input type="number" value={settings.fmax}
+            onChange={(e) => { const v = parseFloat(e.target.value); if (v > settings.fmin) updateSettings({ fmax: v }) }} />
+          <span className="unit">Hz</span>
+        </div>
+        <div className="param-row">
+          <label title="Frequencies solved across the sweep, spaced logarithmically">Points</label>
+          <input type="number" min="16" step="16" value={settings.npts}
+            onChange={(e) => { const v = parseInt(e.target.value, 10); if (v >= 16) updateSettings({ npts: v }) }} />
+          <span className="unit" />
+        </div>
+        <label className="param-row" style={{ cursor: 'pointer' }}
+          title="Suppress chamber standing-wave resonances (lumped-compliance chambers)">
+          <input type="checkbox" checked={!!settings.masking} onChange={(e) => updateSettings({ masking: e.target.checked })} />
+          <span style={{ fontSize: 12, color: 'var(--text-2)' }}>Mask resonances</span>
+        </label>
+      </div>
+    </Section>
   )
 }
 
@@ -262,6 +425,15 @@ function TSField({ id, field, value, held, unit, step }) {
   const setDriverLock = useStore((s) => s.setDriverLock)
   return (
     <div className={`param-row ts-row${held ? '' : ' derived'}`}>
+      <button
+        className={`ts-lock${held ? ' held' : ''}`}
+        aria-pressed={held}
+        aria-label={`${held ? 'Release' : 'Hold'} ${field}`}
+        title={held
+          ? `${field} is yours to set. Release it to let it follow the others.`
+          : `${field} follows the others. Hold it to set it yourself.`}
+        onClick={() => setDriverLock(id, field, !held)}
+      ><LockIcon closed={held} /></button>
       <label title={TIPS[field] || ''}>{field}</label>
       <input
         type="number"
@@ -277,15 +449,6 @@ function TSField({ id, field, value, held, unit, step }) {
         }}
       />
       <span className="unit">{unit || ''}</span>
-      <button
-        className={`ts-lock${held ? ' held' : ''}`}
-        aria-pressed={held}
-        aria-label={`${held ? 'Release' : 'Hold'} ${field}`}
-        title={held
-          ? `${field} is yours to set. Release it to let it follow the others.`
-          : `${field} follows the others. Hold it to set it yourself.`}
-        onClick={() => setDriverLock(id, field, !held)}
-      >{held ? '🔒' : '🔓'}</button>
     </div>
   )
 }
@@ -325,58 +488,74 @@ function DriverForm({ node }) {
   const ts = (field, unit, step) => (
     <TSField id={id} field={field} value={p[field]} held={basis.includes(field)} unit={unit} step={step} />
   )
+  const nominal = driverNominal(p)
   return (
-    <>
-      <div className="panel-section">
-        <h4>Driver — T/S Parameters</h4>
-        <LabelField id={id} p={p} />
-        <div className="drv-actions">
-          <button onClick={() => setShowDriverDB(true)}>Database…</button>
-          <button onClick={() => setShowTSCalc(true)}>T/S Solver…</button>
-          <button
-            onClick={() => setSaveDriverFor(id)}
-            title="Store these parameters in the workspace's driver library under a name you choose"
-          >Save to library…</button>
-          <button
-            disabled={!canRestore}
-            onClick={() => restoreDriverParams(id)}
-            title={baseline
-              ? 'Put every T/S parameter back to what this driver started as'
-              : 'Nothing to restore — this driver has not been changed since it was loaded'}
-          >Restore</button>
-        </div>
-        <div className="ts-hint">
-          {BASIS_SIZE} of these are yours to set; the rest follow. Move a padlock
-          to change which.
-        </div>
+    <Section
+      id="driver" title={p.label || 'Driver'} color="var(--s1)" focus initial
+      summary={`Fs ${short(p.Fs)} Hz · Qts ${short(p.Qts)}`}
+      actions={<>
+        <button onClick={() => setShowDriverDB(true)}>Database</button>
+        <button onClick={() => setShowTSCalc(true)}>T/S solver</button>
+      </>}
+    >
+      <div className="param-grid"><LabelField id={id} p={p} /></div>
+      <div className="psec-caption">
+        Core T/S
+        <span className="psec-caption-note" title={`${BASIS_SIZE} of the T/S figures are yours to set; the rest follow. Click a padlock to change which.`}>
+          {BASIS_SIZE} held · padlocks choose
+        </span>
+      </div>
+      <div className="param-grid">
         {ts('Fs', 'Hz')}
         {ts('Qts', '', '0.01')}
-        {ts('Qes', '', '0.01')}
-        {ts('Qms', '', '0.1')}
         {ts('Vas', 'L')}
-        {ts('Re', 'Ω')}
-        {ts('Bl', 'T·m')}
-        {ts('Mms', 'g')}
-        {ts('Cms', 'mm/N', '0.01')}
         {ts('Sd', 'cm²')}
-        {ts('Rms', 'kg/s', '0.1')}
-        <NumField id={id} field="Le" value={p.Le} unit="mH" step="0.1" />
-        <NumField id={id} field="LeExp" value={p.LeExp} label="Le exponent" step="0.05" min="0.3" />
+        {ts('Bl', 'T·m')}
         <NumField id={id} field="Xmax" value={p.Xmax} unit="mm" />
       </div>
-      <div className="panel-section">
-        <h4>Array &amp; voice coils</h4>
-        <NumField id={id} field="count" value={p.count} label="Drivers" step="1" min="1" />
-        <SelectField id={id} field="wiring" value={p.wiring} options={[
-          ['single', 'Single'], ['series', 'Series'], ['parallel', 'Parallel'], ['series-parallel', 'Series-parallel'],
-        ]} />
-        <DvcField id={id} p={p} />
+      <Sub id="driver.electrical" title="Electrical" summary={`Re ${short(p.Re)} Ω · Le ${short(p.Le)} mH`}>
+        <div className="param-grid">
+          {ts('Re', 'Ω')}
+          {ts('Qes', '', '0.01')}
+          <NumField id={id} field="Le" value={p.Le} unit="mH" step="0.1" />
+          <NumField id={id} field="LeExp" value={p.LeExp} label="Le exp." step="0.05" min="0.3" />
+        </div>
+      </Sub>
+      <Sub id="driver.mechanical" title="Mechanical" summary={`Mms ${short(p.Mms)} g · Qms ${short(p.Qms)}`}>
+        <div className="param-grid">
+          {ts('Mms', 'g')}
+          {ts('Cms', 'mm/N', '0.01')}
+          {ts('Rms', 'kg/s', '0.1')}
+          {ts('Qms', '', '0.1')}
+        </div>
+      </Sub>
+      <Sub id="driver.array" title="Array & wiring" summary={`${short(p.count)}× · ${nominal >= 1 ? nominal.toFixed(0) : nominal.toFixed(2)} Ω`}>
+        <div className="param-grid">
+          <NumField id={id} field="count" value={p.count} label="Drivers" step="1" min="1" />
+          <SelectField id={id} field="wiring" value={p.wiring} options={[
+            ['single', 'Single'], ['series', 'Series'], ['parallel', 'Parallel'], ['series-parallel', 'Series-parallel'],
+          ]} />
+          <DvcField id={id} p={p} />
+        </div>
         <div className="ts-hint">
           How this node's drivers connect to their amplifier channel is set in
           the <a href="#" onClick={(e) => { e.preventDefault(); useStore.getState().layoutOps.open('wiring') }}>Wiring</a> panel.
         </div>
+      </Sub>
+      <div className="drv-actions">
+        <button
+          onClick={() => setSaveDriverFor(id)}
+          title="Store these parameters in the workspace's driver library under a name you choose"
+        >Save to library…</button>
+        <button
+          disabled={!canRestore}
+          onClick={() => restoreDriverParams(id)}
+          title={baseline
+            ? 'Put every T/S parameter back to what this driver started as'
+            : 'Nothing to restore — this driver has not been changed since it was loaded'}
+        >Restore</button>
       </div>
-    </>
+    </Section>
   )
 }
 
@@ -396,7 +575,7 @@ function DriverForm({ node }) {
 function DvcField({ id, p }) {
   const updateParams = useStore((s) => s.updateParams)
   return (
-    <div className="param-row">
+    <div className="param-row wide">
       <label title="Dual voice coil wiring. The driver's parameters are taken as both coils in series; parallel quarters Re (same Qes), one coil alone halves Re and Bl (double Qes).">Voice coils</label>
       <select value={p.dvc?.coils || 'single'} onChange={(e) => updateParams(id, { dvc: e.target.value === 'single' ? null : { coils: e.target.value } })}>
         <option value="single">Single coil</option>
@@ -457,15 +636,10 @@ function TapsSection({ id, p, from }) {
   const addProbe = useStore((s) => s.addProbe)
   const taps = p.taps || []
   return (
-    <div className="sub-section">
-      <div className="sub-head">
-        <span title="Points along the line where anything may join it — a driver, a port, another chamber. Each shows as a handle on the node's right side.">Taps</span>
-        <button onClick={() => {
-          const tid = freshId('t', taps.map((t) => t.id))
-          setTaps(id, [...taps, { id: tid, position: Math.round((Number(p.length) || 0) / 2) || 1 }])
-        }}>+ Tap</button>
+    <Sub id={`taps`} title="Taps" summary={taps.length ? taps.map((t) => `${t.id} ${short(t.position)}`).join(' · ') : 'none'}>
+      <div className="ts-hint" title="Points along the line where anything may join it — a driver, a port, another chamber. Each shows as a handle on the node's right side.">
+        Points where something may join partway along, in cm from the {from} end.
       </div>
-      {!taps.length && <div className="ts-hint">None. Add one to join something partway along.</div>}
       {taps.map((t, i) => (
         <div className="param-row tap-row" key={t.id}>
           <label title={`Tap ${t.id}: its handle is tap:${t.id}`}>{t.id}</label>
@@ -477,7 +651,13 @@ function TapsSection({ id, p, from }) {
           </span>
         </div>
       ))}
-    </div>
+      <div className="drv-actions">
+        <button onClick={() => {
+          const tid = freshId('t', taps.map((t) => t.id))
+          setTaps(id, [...taps, { id: tid, position: Math.round((Number(p.length) || 0) / 2) || 1 }])
+        }}>+ Tap</button>
+      </div>
+    </Sub>
   )
 }
 
@@ -504,7 +684,6 @@ function ThroatCalc({ id }) {
     .map((e) => nodes.find((n) => n.id === (e.source === id ? e.target : e.source)))
     .find((n) => n?.type === 'driver')
   const dp = joined?.data.params || {}
-  const [open, setOpen] = useState(false)
   const [sd, setSd] = useState(Number(dp.Sd) * Math.max(1, Number(dp.count) || 1) || 500)
   const [depth, setDepth] = useState(60)
   const [shape, setShape] = useState('cone')
@@ -530,33 +709,27 @@ function ThroatCalc({ id }) {
     </div>
   )
   return (
-    <div className="sub-section">
-      <div className="sub-head">
-        <span title="Work out the air trapped between a cone and a smaller opening in front of it">Throat chamber calculator</span>
-        <button onClick={() => setOpen(!open)}>{open ? 'Hide' : 'Show'}</button>
+    <Sub id="throatcalc" title="Throat chamber calculator" summary={`${litres.toFixed(2)} L trapped`}>
+      <div className="ts-hint">The air trapped between a cone and a smaller opening in front of it.</div>
+      <div className="param-grid">
+        {row('Cone area', sd, setSd, 'cm²')}
+        {row('Depth', depth, setDepth, 'mm')}
+        {row('Excursion', xmax, setXmax, 'mm')}
+        {row('Clearance', gap, setGap, 'mm')}
+        <div className="param-row wide">
+          <label>Cone shape</label>
+          <select value={shape} onChange={(e) => setShape(e.target.value)}>
+            <option value="cone">Straight cone (⅓ of depth)</option>
+            <option value="curved">Curved cone (~0.45)</option>
+            <option value="flat">Flat piston</option>
+          </select>
+        </div>
       </div>
-      {open && (
-        <>
-          {row('Cone area', sd, setSd, 'cm²')}
-          {row('Cone depth', depth, setDepth, 'mm')}
-          <div className="param-row">
-            <label>Cone shape</label>
-            <select value={shape} onChange={(e) => setShape(e.target.value)}>
-              <option value="cone">Straight cone (⅓ of depth)</option>
-              <option value="curved">Curved cone (~0.45)</option>
-              <option value="flat">Flat piston</option>
-            </select>
-            <span className="unit" />
-          </div>
-          {row('Excursion', xmax, setXmax, 'mm')}
-          {row('Clearance', gap, setGap, 'mm')}
-          <div style={{ fontSize: 11, color: 'var(--text-2)', margin: '4px 0' }}>
-            Trapped air: <b>{litres.toFixed(2)} L</b>
-          </div>
-          <button onClick={() => updateParams(id, { volume: Number(litres.toFixed(3)) })}>Set this chamber's volume</button>
-        </>
-      )}
-    </div>
+      <div className="drv-actions" style={{ alignItems: 'center' }}>
+        <span style={{ fontSize: 12, color: 'var(--text-2)', padding: '0 4px' }}>Trapped air <b className="node-readout">{litres.toFixed(2)} L</b></span>
+        <button style={{ marginLeft: 'auto' }} onClick={() => updateParams(id, { volume: Number(litres.toFixed(3)) })}>Set as volume</button>
+      </div>
+    </Sub>
   )
 }
 
@@ -573,23 +746,25 @@ function ChamberForm({ node }) {
   const id = node.id
   const r = useResolvedParams(id, node.type, p)
   return (
-    <div className="panel-section">
-      <h4>Chamber</h4>
-      <LabelField id={id} p={p} />
-      <NumField id={id} field="volume" value={p.volume} label="Volume" unit="L" />
-      <NumField id={id} field="length" value={p.length} label="Length" unit="cm" />
-      <SelectField id={id} field="shape" value={p.shape} options={[['rectangular', 'Rectangular'], ['cylindrical', 'Cylindrical']]} />
-      <NumField id={id} field="stuffing" value={p.stuffing} label="Stuffing" unit="g/L" min="0" />
-      <LeakSection id={id} p={p} />
+    <Section id="chamber" title={p.label || 'Chamber'} color="var(--s2)" focus initial
+      summary={`${short(r.volume)} L · ${short(r.length)} cm`}>
+      <div className="param-grid">
+        <LabelField id={id} p={p} />
+        <NumField id={id} field="volume" value={p.volume} label="Volume" unit="L" />
+        <NumField id={id} field="length" value={p.length} label="Length" unit="cm" />
+        <SelectField id={id} field="shape" value={p.shape} options={[['rectangular', 'Rectangular'], ['cylindrical', 'Cylindrical']]} />
+        <NumField id={id} field="stuffing" value={p.stuffing} label="Stuffing" unit="g/L" min="0" />
+        <LeakSection id={id} p={p} />
+      </div>
       <TapsSection id={id} p={p} from="in" />
       <ProbeSection id={id} p={p} />
       <ThroatCalc id={id} />
-      <div style={{ fontSize: 10.5, color: 'var(--text-3)', lineHeight: 1.4 }}>
+      <div className="ts-hint">
         Typical QL: 5–10 for a leaky box or car door, 15+ for a well-sealed enclosure.
         First standing wave at c/2L = {(344 / (2 * r.length / 100)).toFixed(0)} Hz.
         An end with nothing joined to it is a closed wall.
       </div>
-    </div>
+    </Section>
   )
 }
 
@@ -612,18 +787,12 @@ function ChamberForm({ node }) {
 function ProbeSection({ id, p }) {
   const updateParams = useStore((s) => s.updateParams)
   return (
-    <div style={{ borderTop: '1px solid var(--border, #30363d)', marginTop: 8, paddingTop: 8 }}>
-      <div className="param-row">
-        <label title="Report SPL inside this volume (virtual microphone). Shows on the Interior SPL chart tab.">
-          <input
-            type="checkbox"
-            checked={!!p.probe}
-            onChange={(e) => updateParams(id, { probe: e.target.checked })}
-            style={{ marginRight: 6 }}
-          />
-          SPL probe (mic inside)
-        </label>
-      </div>
+    <Sub id="probe" title="Interior SPL probe" summary={p.probe ? `on · ${p.probePos ?? 100}%` : 'off'}>
+      <label className="param-row" style={{ cursor: 'pointer' }}
+        title="Report SPL inside this volume (virtual microphone). Shows on the Interior SPL chart tab.">
+        <input type="checkbox" checked={!!p.probe} onChange={(e) => updateParams(id, { probe: e.target.checked })} />
+        <span style={{ fontSize: 12, color: 'var(--text-2)' }}>SPL probe (mic inside)</span>
+      </label>
       {p.probe && (
         <>
           <div className="param-row">
@@ -635,14 +804,14 @@ function ProbeSection({ id, p }) {
               value={p.probePos ?? 100}
               onChange={(e) => updateParams(id, { probePos: parseFloat(e.target.value) })}
             />
-            <span style={{ fontSize: 11, minWidth: 34, textAlign: 'right' }}>{p.probePos ?? 100}%</span>
+            <span className="unit" style={{ minWidth: 34, textAlign: 'right' }}>{p.probePos ?? 100}%</span>
           </div>
-          <div style={{ fontSize: 10.5, color: 'var(--text-3)', lineHeight: 1.4 }}>
+          <div className="ts-hint">
             Uniform below c/2L (cabin-gain region); position matters at the standing-wave modes.
           </div>
         </>
       )}
-    </div>
+    </Sub>
   )
 }
 
@@ -664,31 +833,38 @@ function WaveguideForm({ node }) {
   const p = node.data.params
   const id = node.id
   const r = useResolvedParams(id, node.type, p)
+  const vol = waveguideVolume(r.flare, r.S1 * 1e-4, r.S2 * 1e-4, r.length / 100) * 1000
   return (
-    <div className="panel-section">
-      <h4>Waveguide Segment</h4>
-      <LabelField id={id} p={p} />
-      <NumField id={id} field="S1" value={p.S1} label="S1 throat" unit="cm²" />
-      <NumField id={id} field="S2" value={p.S2} label="S2 mouth" unit="cm²" />
-      <NumField id={id} field="length" value={p.length} label="Length" unit="cm" />
-      <SelectField id={id} field="flare" value={p.flare} options={[
-        ['conical', 'Conical'], ['exponential', 'Exponential'], ['parabolic', 'Parabolic'],
-        ['hypex', 'Hyperbolic-exp (hypex)'], ['tractrix', 'Tractrix ≈'], ['lecleach', 'Le Cléac’h ≈'],
-      ]} />
-      <SelectField id={id} field="throatSpace" value={p.throatSpace} label="Open throat into" options={END_SPACES} />
-      <SelectField id={id} field="mouthSpace" value={p.mouthSpace} label="Open mouth into" options={END_SPACES} />
-      <NumField id={id} field="ecFactor" value={p.ecFactor} label="End corr. ×" step="0.05" min="0" />
-      <NumField id={id} field="loss" value={p.loss} label="Wall loss ×" step="0.1" min="0" />
+    <Section id="waveguide" title={p.label || 'Waveguide'} color="var(--s3)" focus initial
+      summary={`${short(r.S1)}→${short(r.S2)} cm² · ${short(r.length)} cm`}>
+      <div className="param-grid">
+        <LabelField id={id} p={p} />
+        <NumField id={id} field="S1" value={p.S1} label="S1 throat" unit="cm²" />
+        <NumField id={id} field="S2" value={p.S2} label="S2 mouth" unit="cm²" />
+        <NumField id={id} field="length" value={p.length} label="Length" unit="cm" />
+        <NumField id={id} field="loss" value={p.loss} label="Wall loss ×" step="0.1" min="0" />
+        <SelectField id={id} field="flare" value={p.flare} label="Flare" options={[
+          ['conical', 'Conical'], ['exponential', 'Exponential'], ['parabolic', 'Parabolic'],
+          ['hypex', 'Hyperbolic-exp (hypex)'], ['tractrix', 'Tractrix ≈'], ['lecleach', 'Le Cléac’h ≈'],
+        ]} />
+      </div>
+      <Sub id="waveguide.ends" title="Ends" summary={`${p.throatSpace} · ${p.mouthSpace} · end corr. ×${short(p.ecFactor)}`}>
+        <div className="param-grid">
+          <SelectField id={id} field="throatSpace" value={p.throatSpace} label="Open throat into" options={END_SPACES} />
+          <SelectField id={id} field="mouthSpace" value={p.mouthSpace} label="Open mouth into" options={END_SPACES} />
+          <NumField id={id} field="ecFactor" value={p.ecFactor} label="End corr. ×" step="0.05" min="0" />
+        </div>
+        <div className="ts-hint">
+          End corrections come from what each end meets, so splitting a duct into
+          several segments does not change it. An end's solid angle applies only
+          while nothing is connected to it.
+        </div>
+      </Sub>
       <TapsSection id={id} p={p} from="throat" />
-      <div style={{ fontSize: 11, color: 'var(--text-2)', marginBottom: 4 }}>
-        Internal volume: <b>{(waveguideVolume(r.flare, r.S1 * 1e-4, r.S2 * 1e-4, r.length / 100) * 1000).toFixed(2)} L</b>
+      <div className="ts-hint">
+        Internal volume <b className="node-readout">{vol.toFixed(2)} L</b>. Set S1 = S2 for a straight port.
       </div>
-      <div style={{ fontSize: 10.5, color: 'var(--text-3)' }}>
-        Set S1 = S2 for a straight port. End corrections come from what each end
-        meets, so splitting a duct into several segments does not change it. An
-        end's solid angle applies only while nothing is connected to it.
-      </div>
-    </div>
+    </Section>
   )
 }
 
@@ -710,15 +886,21 @@ function PRForm({ node }) {
   const m = (r.Mmd + (r.addedMass || 0)) / 1000
   const fs = 1 / (2 * Math.PI * Math.sqrt(Math.max(m * (r.Cms / 1000), 1e-12)))
   return (
-    <div className="panel-section">
-      <h4>Passive Radiator</h4>
-      <LabelField id={id} p={p} />
-      <NumField id={id} field="Mmd" value={p.Mmd} unit="g" />
-      <div onDoubleClick={() => setCalcOpen(!calcOpen)} title="Double-click to derive Cms from a target Fs">
-        <NumField id={id} field="Cms" value={p.Cms} unit="mm/N" step="0.01" />
+    <Section id="pr" title={p.label || 'Passive radiator'} color="var(--s4)" focus initial
+      summary={`Fs ${fs.toFixed(1)} Hz · ${short(r.count)}×`}>
+      <div className="param-grid">
+        <LabelField id={id} p={p} />
+        <NumField id={id} field="Mmd" value={p.Mmd} unit="g" />
+        <div onDoubleClick={() => setCalcOpen(!calcOpen)} title="Double-click to derive Cms from a target Fs" style={{ display: 'contents' }}>
+          <NumField id={id} field="Cms" value={p.Cms} unit="mm/N" step="0.01" />
+        </div>
+        <NumField id={id} field="Rms" value={p.Rms} unit="kg/s" step="0.1" />
+        <NumField id={id} field="Sd" value={p.Sd} unit="cm²" />
+        <NumField id={id} field="addedMass" value={p.addedMass} label="Added mass" unit="g" min="0" />
+        <NumField id={id} field="count" value={p.count} label="Units" step="1" min="1" />
       </div>
-      {calcOpen && (
-        <div style={{ border: '1px solid var(--border)', padding: 6, marginBottom: 6 }}>
+      <Sub id="pr.tune" title="Tune to a resonance" summary={`now ${fs.toFixed(1)} Hz`} initial={calcOpen}>
+        <div className="param-grid">
           <div className="param-row">
             <label>Target Fs</label>
             <input type="number" value={calcFs} onChange={(e) => setCalcFs(parseFloat(e.target.value) || 0)} />
@@ -730,15 +912,11 @@ function PRForm({ node }) {
               updateParams(id, { Cms: Math.round(cms * 1000) / 1000 })
               setCalcOpen(false)
             }
-          }}>Cms = 1/((2πFs)²·Mmd) → apply</button>
+          }} title="Cms = 1/((2πFs)²·Mmd)">Set Cms</button>
         </div>
-      )}
-      <NumField id={id} field="Rms" value={p.Rms} unit="kg/s" step="0.1" />
-      <NumField id={id} field="Sd" value={p.Sd} unit="cm²" />
-      <NumField id={id} field="addedMass" value={p.addedMass} label="Added mass" unit="g" min="0" />
-      <NumField id={id} field="count" value={p.count} label="Units" step="1" min="1" />
-      <div style={{ fontSize: 11, color: 'var(--text-2)' }}>Resonance as configured: <b>{fs.toFixed(1)} Hz</b></div>
-    </div>
+      </Sub>
+      <div className="ts-hint">Resonance as configured: <b className="node-readout">{fs.toFixed(1)} Hz</b></div>
+    </Section>
   )
 }
 
@@ -753,27 +931,30 @@ function PRForm({ node }) {
 function RadiationForm({ node }) {
   const p = node.data.params
   const id = node.id
+  const SPACES = [
+    ['free', 'Free space (4π sr)'], ['half', 'Half space (2π sr)'],
+    ['quarter', 'Quarter space (π sr)'], ['eighth', 'Eighth space (π/2 sr)'],
+    ['rigid', 'Rigid wall (reflective)'], ['anechoic', 'Anechoic (absorbing)'],
+  ]
   return (
-    <div className="panel-section">
-      <h4>Radiation Termination</h4>
-      <LabelField id={id} p={p} />
-      <SelectField id={id} field="space" value={p.space} label="Boundary" options={[
-        ['free', 'Free space (4π sr)'], ['half', 'Half space (2π sr)'],
-        ['quarter', 'Quarter space (π sr)'], ['eighth', 'Eighth space (π/2 sr)'],
-        ['rigid', 'Rigid wall (reflective)'], ['anechoic', 'Anechoic (absorbing)'],
-      ]} />
-      <div style={{ fontSize: 10.5, color: 'var(--text-3)', lineHeight: 1.4 }}>
+    <Section id="radiation" title={p.label || 'Radiation'} color="var(--s5)" focus initial
+      summary={(SPACES.find(([k]) => k === p.space) || [, p.space])[1]}>
+      <div className="param-grid">
+        <LabelField id={id} p={p} />
+        <SelectField id={id} field="space" value={p.space} label="Boundary" options={SPACES} />
+      </div>
+      <div className="ts-hint">
         Applies circular-piston radiation impedance for the chosen solid angle.
         Rigid = perfect reflection; anechoic = ρc termination, no reflection.
       </div>
-    </div>
+    </Section>
   )
 }
 
 const FORMS = { driver: DriverForm, chamber: ChamberForm, waveguide: WaveguideForm, pr: PRForm, radiation: RadiationForm }
 
 /**
- * The Parameters panel: the amplifier section plus the selected node's form.
+ * The Parameters panel: the amplifier, the selected node's form, and the sweep.
  *
  * Which form is shown follows the selected node's type; with nothing
  * selected it prompts rather than rendering an empty panel.
@@ -791,10 +972,11 @@ export default function ParamPanel() {
       {node && <NodeWarnings node={node} key={`w_${node.id}`} />}
       {Form
         ? <Form node={node} key={node.id} />
-        : <div style={{ color: 'var(--text-3)', fontSize: 12, padding: 8 }}>
-            Select a node (click or right-click) to edit its parameters.
+        : <div className="ph-empty">
+            Select an element on the canvas to edit it here.
           </div>}
       {selectedNodeId && !node && null}
+      <SweepSection />
     </div>
   )
 }

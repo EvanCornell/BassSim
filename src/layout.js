@@ -78,8 +78,9 @@ export function split(dir, children, size = 1) {
  * The default workspace arrangement.
  *
  * Workspace files on the left, canvas over the four charts most designs are
- * judged by, parameters on the right — the classic three-column IDE arrangement. The
- * remaining plots are opened from View ▸ Charts.
+ * judged by, parameters on the right with the wiring and probes behind them —
+ * the classic three-column IDE arrangement. The remaining plots are opened
+ * from View ▸ Charts.
  *
  * @returns {object} A freshly built layout tree, safe for the caller to keep.
  * @sideEffect Consumes ids from `uid`, so two calls return trees with different node ids.
@@ -90,7 +91,7 @@ export const defaultLayout = () => split('row', [
     stack(['canvas'], { size: 60 }),
     stack(['spl', 'zin', 'exc', 'vel'], { size: 40, active: 'spl' }),
   ], 60),
-  stack(['params'], { size: 24 }),
+  stack(['params', 'wiring', 'probes'], { size: 24, active: 'params' }),
 ])
 
 // ---------- queries ----------

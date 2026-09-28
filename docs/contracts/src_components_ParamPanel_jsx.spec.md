@@ -20,7 +20,7 @@ Keys: `round3`
 - **Reachability:** EXPORTED
 - **Obtain via:** import { ParamPanel } from '../../src/components/ParamPanel.jsx'
 
-The Parameters panel: the amplifier section plus the selected node's form.
+The Parameters panel: the amplifier, the selected node's form, and the sweep.
 
 Which form is shown follows the selected node's type; with nothing
 selected it prompts rather than rendering an empty panel.
@@ -55,7 +55,129 @@ makes the boxes unreadable as you type.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
-## UNREACHABLE (19)
+## UNREACHABLE (26)
+
+### `useOpen(id, initial)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+Whether a section is open, and the toggle for it.
+
+**Parameters**
+
+- `id` — `string` — Section key, e.g. `driver.electrical`.
+- `initial` — `boolean` — Open the first time it is shown.
+
+**Returns**
+
+- `[boolean, Function]` — Open, and a function that flips it.
+
+**Side effects**
+
+- Holds React state and writes the module's open map when toggled.
+
+### `useOpen > toggle()`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+Flip the section, remembering the new state.
+
+**Returns**
+
+- `void`
+
+**Side effects**
+
+- Updates React state and the module's open map.
+
+### `short(v)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+A figure written short, for a section summary.
+
+**Parameters**
+
+- `v` — `any` — A number, or anything else.
+
+**Returns**
+
+- `string` — Up to three significant figures without trailing zeros, the value itself when it is not a finite number, or `—` when absent.
+
+**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
+
+### `Section(props)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+A collapsible section of the panel: a card whose head names it and, while
+closed, sums up what is in it on one line.
+
+**Parameters**
+
+- `props` — `object` — Component props.
+- `props.id` — `string` — Key the open state is remembered by.
+- `props.title` — `string` — The name.
+- `props.summary` — `string` _(optional)_ — One line shown while closed.
+- `props.color` — `string` _(optional)_ — An element hue: shows a dot, and rings the card when `focus`.
+- `props.focus` — `boolean` _(optional)_ — The section being worked on — the selected element.
+- `props.actions` — `React.ReactNode` _(optional)_ — Buttons shown in the head while open, in place of the summary.
+- `props.initial` — `boolean` _(optional)_ — Open the first time it is shown.
+- `props.children` — `React.ReactNode` — The body.
+
+**Returns**
+
+- `React.ReactElement` — The section.
+
+**Side effects**
+
+- Holds its open state.
+
+### `Sub(props)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+A collapsible group inside a section, with its own one-line summary.
+
+**Parameters**
+
+- `props` — `object` — Component props.
+- `props.id` — `string` — Key the open state is remembered by.
+- `props.title` — `string` — The name.
+- `props.summary` — `string` _(optional)_ — One line shown in the head.
+- `props.initial` — `boolean` _(optional)_ — Open the first time it is shown.
+- `props.children` — `React.ReactNode` — The body.
+
+**Returns**
+
+- `React.ReactElement` — The group.
+
+**Side effects**
+
+- Holds its open state.
+
+### `LockIcon(props)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+A small padlock, closed or open.
+
+**Parameters**
+
+- `props` — `object` — Component props.
+- `props.closed` — `boolean` — Draw it locked.
+
+**Returns**
+
+- `React.ReactElement` — The icon.
+
+**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
 ### `NumField(props)`
 
@@ -200,6 +322,21 @@ a zero would propagate infinities through the settings.
 **Reads external mutable state**
 
 - the enclosing `settings` and `setAmp`.
+
+### `SweepSection()`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+The frequency sweep: its range, how many points, and resonance masking.
+
+**Returns**
+
+- `React.ReactElement` — The section.
+
+**Side effects**
+
+- Subscribes to the store.
 
 ### `TSField(props)`
 

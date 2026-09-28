@@ -9,7 +9,6 @@ import { PANEL_META, CHART_IDS } from '../../panelMeta'
 import { useStore } from '../../store'
 import FileBrowser from '../FileBrowser'
 import FlowCanvas from '../FlowCanvas'
-import NodePalette from '../NodePalette'
 import ParamPanel from '../ParamPanel'
 import WiringPanel from '../WiringPanel'
 import VariablesPanel from '../VariablesPanel'
@@ -51,7 +50,6 @@ function CanvasPanel() {
   return (
     <div className="canvas-wrap">
       <FlowCanvas />
-      <NodePalette />
       <VelocityPopup />
     </div>
   )

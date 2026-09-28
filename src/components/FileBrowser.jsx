@@ -47,34 +47,19 @@ function Chevron({ open }) {
 }
 
 /**
- * The icon drawn beside a row.
+ * The marker drawn beside a row.
  *
- * Folders get an open or closed folder; files get a page tinted by what they
- * hold, so a project and the driver library are told apart at a glance rather
- * than by reading.
+ * A file gets a small square in the hue of what it holds — a project, the
+ * driver library, the snapshots — so they are told apart at a glance
+ * rather than by reading. A folder has its chevron and nothing else.
  *
  * @param {object} props - Component props.
  * @param {string} props.kind - `'folder'` for a folder, otherwise the file entry's kind.
- * @param {boolean} props.open - Whether an expanded folder is being drawn.
- * @returns {React.ReactElement} The icon.
+ * @returns {React.ReactElement} The marker.
  * @pure
  */
-function RowIcon({ kind, open }) {
-  if (kind === 'folder') {
-    return (
-      <svg className="ws-ico folder" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
-        {open
-          ? <path d="M1.5 13V4.5h4l1.2 1.5h6.3v1H4.6L2.6 13z" fill="currentColor" />
-          : <path d="M1.5 13V3.5h4.2l1.2 1.5h7.6V13z" fill="currentColor" />}
-      </svg>
-    )
-  }
-  return (
-    <svg className={`ws-ico file ${kind}`} viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
-      <path d="M4 1.5h5l3 3V14.5H4z" fill="none" stroke="currentColor" strokeWidth="1.1" />
-      <path d="M9 1.5v3.2h3" fill="none" stroke="currentColor" strokeWidth="1.1" />
-    </svg>
-  )
+function RowIcon({ kind }) {
+  return <span className={`ws-sq ${kind}`} aria-hidden="true" />
 }
 
 /**
@@ -501,7 +486,7 @@ export default function FileBrowser() {
           <span key={k} className="ws-guide" style={{ left: 9 + k * 12 }} />
         ))}
         {folder ? <Chevron open={open} /> : <span className="ws-chevron" />}
-        <RowIcon kind={folder ? 'folder' : node.entry.kind} open={open} />
+        <RowIcon kind={folder ? 'folder' : node.entry.kind} />
         {renaming
           ? <NameEditor value={baseName(path)} error={editError} onCommit={commitEdit} onCancel={cancelEdit} />
           : <>
@@ -522,7 +507,7 @@ export default function FileBrowser() {
       return (
         <div className="ws-row editing" style={{ paddingLeft: 4 + depth * 12 }}>
           <span className="ws-chevron" />
-          <RowIcon kind={edit.mode === 'newFolder' ? 'folder' : 'project'} open={false} />
+          <RowIcon kind={edit.mode === 'newFolder' ? 'folder' : 'project'} />
           <NameEditor
             value={edit.mode === 'newFolder' ? '' : `Untitled${PROJECT_EXT}`}
             error={editError}

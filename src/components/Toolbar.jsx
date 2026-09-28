@@ -24,10 +24,10 @@ import { TOOLBAR_ITEMS, metricValue } from '../toolbarItems'
 function UndoRedo() {
   const store = useStore()
   return (
-    <>
-      <button className="icon-btn" title="Undo (Ctrl+Z)" disabled={!store.history.length} onClick={store.undo}>↶</button>
-      <button className="icon-btn" title="Redo (Ctrl+Y)" disabled={!store.future.length} onClick={store.redo}>↷</button>
-    </>
+    <div className="tb-pill tb-undo">
+      <button className="tb-icon" title="Undo (Ctrl+Z)" disabled={!store.history.length} onClick={store.undo}>↶</button>
+      <button className="tb-icon" title="Redo (Ctrl+Y)" disabled={!store.future.length} onClick={store.redo}>↷</button>
+    </div>
   )
 }
 
@@ -44,7 +44,7 @@ function VoltageControl() {
   const settings = useStore((s) => s.settings)
   const setAmp = useStore((s) => s.setAmp)
   return (
-    <div className="tb-group tb-voltage" title="Amplifier drive voltage — power follows as V²/Z">
+    <div className="tb-pill tb-voltage" title="Amplifier drive voltage — power follows as V²/Z">
       <label>Drive</label>
       <input
         type="number" step="0.01" min="0" value={settings.voltage}
@@ -66,7 +66,7 @@ function SweepRange() {
   const settings = useStore((s) => s.settings)
   const updateSettings = useStore((s) => s.updateSettings)
   return (
-    <div className="tb-group" title="Frequency sweep range">
+    <div className="tb-pill tb-group" title="Frequency sweep range">
       <label>Sweep</label>
       <input type="number" value={settings.fmin} min="1"
         onChange={(e) => { const v = parseFloat(e.target.value); if (v > 0) updateSettings({ fmin: v }) }} />
@@ -88,7 +88,7 @@ function MaskingToggle() {
   const masking = useStore((s) => s.settings.masking)
   const updateSettings = useStore((s) => s.updateSettings)
   return (
-    <label className="tb-group" title="Suppress chamber standing-wave resonances (lumped-compliance chambers)" style={{ cursor: 'pointer' }}>
+    <label className="tb-pill tb-group" title="Suppress chamber standing-wave resonances (lumped-compliance chambers)" style={{ cursor: 'pointer' }}>
       <input type="checkbox" checked={masking} onChange={(e) => updateSettings({ masking: e.target.checked })} />
       <span style={{ fontSize: 11, color: 'var(--text-2)' }}>Mask resonances</span>
     </label>
@@ -109,21 +109,22 @@ function SnapshotControl() {
   const store = useStore()
   const snapshots = readSnapshots(store.workspace)
   return (
-    <>
+    <div className="tb-pill">
       <button
         className="snap-btn"
         onClick={store.takeSnapshot}
         disabled={snapshots.length >= SNAPSHOT_LIMIT || !store.results?.ok}
         title={`Freeze the current result as a reference overlay, kept until you remove it (max ${SNAPSHOT_LIMIT})`}
-      >Snap</button>
+      >Snapshot</button>
       {snapshots.map((s) => (
-        <span key={s.id} className="snapshot-chip" style={{ borderColor: s.color }} title={s.project ? `From ${s.project}` : ''}>
+        <span key={s.id} className="snapshot-chip" title={s.project ? `From ${s.project}` : ''}>
           <span className="pi-dot" style={{ background: s.color }} />
-          <input value={s.label} onChange={(e) => store.renameSnapshot(s.id, e.target.value)} />
-          <span className="x" onClick={() => store.removeSnapshot(s.id)}>✕</span>
+          <input value={s.label} size={Math.max(4, s.label.length)} style={{ width: 'auto' }}
+            onChange={(e) => store.renameSnapshot(s.id, e.target.value)} />
+          <span className="x" title="Remove this snapshot" onClick={() => store.removeSnapshot(s.id)}>✕</span>
         </span>
       ))}
-    </>
+    </div>
   )
 }
 
@@ -137,6 +138,16 @@ const CONTROLS = {
 
 // ---------- metric readout ----------
 
+/** Fuller names for the readouts whose labels are abbreviated on the bar. */
+const TITLES = {
+  m_bw: 'Bandwidth between the −3 dB points',
+  m_maxpower: 'Largest input before the cone reaches Xmax, and the voltage it takes',
+  m_volume: 'Air enclosed by every chamber and duct',
+  m_xf3: 'Cone excursion at F3, as a share of Xmax',
+  m_xfb: 'Cone excursion at Fb, as a share of Xmax',
+  m_zpeaks: 'Impedance peaks: frequency / magnitude',
+}
+
 /**
  * One read-only metric readout, flagged when it exceeds a limit.
  *
@@ -146,7 +157,7 @@ const CONTROLS = {
  *
  * @param {object} props - Component props.
  * @param {string} props.id - Quick-bar metric item id.
- * @returns {React.ReactElement|null} The readout, or `null` when the id is not a metric.
+ * @returns {React.ReactElement|null} The readout, or `null` when the id is not a metric or has no value for this design.
  * @sideEffect Subscribes to the store.
  */
 function Metric({ id }) {
@@ -154,13 +165,32 @@ function Metric({ id }) {
   const results = useStore((s) => s.results)
   const nodes = useStore((s) => s.nodes)
   const m = metricValue(id, { metrics, results, nodes })
-  if (!m) return null
+  // A figure that does not apply to this design — Qtc of a vented box, a
+  // limit with no Xmax — takes no room on the bar.
+  if (!m || m.value === '—') return null
   return (
-    <div className="tb-metric" title={m.label}>
+    <div className="tb-metric" title={TITLES[id] || m.label}>
       <span className="m-label">{m.label}</span>
       <span className={`m-value ${m.bad ? 'bad' : ''}`}>{m.value}</span>
     </div>
   )
+}
+
+/**
+ * One cluster of readouts in a pill, or nothing when none of them has a value.
+ *
+ * @param {object} props - Component props.
+ * @param {string[]} props.ids - Metric ids in the cluster.
+ * @returns {React.ReactElement|null} The pill.
+ * @sideEffect Subscribes to the store.
+ */
+function MetricPill({ ids }) {
+  const metrics = useStore((s) => s.metrics)
+  const results = useStore((s) => s.results)
+  const nodes = useStore((s) => s.nodes)
+  const shown = ids.filter((id) => metricValue(id, { metrics, results, nodes })?.value !== '—')
+  if (!shown.length) return null
+  return <div className="tb-pill">{shown.map((id) => <Metric key={id} id={id} />)}</div>
 }
 
 /**
@@ -179,7 +209,7 @@ function TimeDomainButton() {
   const close = useStore((s) => s.closeTimeDomain)
   return (
     <button
-      className={`td-toggle${open ? ' active' : ''}`}
+      className={`tb-pill td-toggle${open ? ' active' : ''}`}
       onClick={() => (open ? close() : openTd())}
       title={open ? 'Back to the editor (Alt+T)' : 'Time-domain responses, transient runs and distortion (Alt+T)'}
     >
@@ -194,9 +224,10 @@ function TimeDomainButton() {
  * The quick-access bar under the menu.
  *
  * Contents and order come from `store.toolbar`, configured in Settings ▸
- * Quick bar. Consecutive items of the same kind are collected into one
- * block that wraps internally, so a long metrics readout does not push the
- * controls onto a second row.
+ * Quick bar. Every control is a pill of its own; the metrics collect into
+ * one block that wraps, a pill per cluster of neighbours that describe the
+ * same thing (see `cluster` in `TOOLBAR_ITEMS`), so the response, the
+ * impedance, the limits and the size each read as a group.
  *
  * @returns {React.ReactElement} The quick bar.
  * @sideEffect Subscribes to the store.
@@ -215,21 +246,34 @@ export default function Toolbar() {
   return (
     <div className="toolbar">
       <TimeDomainButton />
-      <span className="tb-sep" />
-      {runs.map((run, i) => (
-        <React.Fragment key={run.ids[0]}>
-          {i > 0 && <span className="tb-sep" />}
-          {run.group === 'metrics' ? (
-            <div className="tb-metrics">
-              {run.ids.map((id) => <Metric key={id} id={id} />)}
-            </div>
-          ) : run.ids.map((id) => {
-            const Control = CONTROLS[id]
-            return Control ? <Control key={id} /> : null
-          })}
-        </React.Fragment>
+      {runs.map((run) => (
+        run.group === 'metrics' ? (
+          <div className="tb-metrics" key={run.ids[0]}>
+            {clusters(run.ids).map((ids) => <MetricPill key={ids[0]} ids={ids} />)}
+          </div>
+        ) : run.ids.map((id) => {
+          const Control = CONTROLS[id]
+          return Control ? <Control key={id} /> : null
+        })
       ))}
-
     </div>
   )
+}
+
+/**
+ * Metric ids split into runs of neighbours that share a cluster.
+ *
+ * @param {string[]} ids - Metric ids, in bar order.
+ * @returns {string[][]} The runs, in order.
+ * @pure
+ */
+export function clusters(ids) {
+  const out = []
+  for (const id of ids) {
+    const c = TOOLBAR_ITEMS[id]?.cluster || id
+    const last = out[out.length - 1]
+    if (last && (TOOLBAR_ITEMS[last[0]]?.cluster || last[0]) === c) last.push(id)
+    else out.push([id])
+  }
+  return out
 }

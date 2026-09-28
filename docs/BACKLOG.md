@@ -85,8 +85,9 @@ are silently blocked. Fixed by construction in the SPICE engine
 - **Expressions in the coupled T/S fields.** The padlock form derives five
   of the eleven from the other six; letting an expression drive a held one
   needs the derivation to run on resolved values.
-- **Node palette overlaps the canvas** at top left, hiding nodes placed
-  there (seen with imported projects).
+- **The element dock sits over the canvas** at the bottom centre. Nodes
+  behind it can still be panned into view, but a fit-to-view that leaves
+  room for it would be kinder.
 - **Listener positions** (reserved probe kind) for per-source distances.
 
 ## Modelling questions
@@ -104,7 +105,7 @@ are silently blocked. Fixed by construction in the SPICE engine
   browser.
 - **README / LICENSE / CONTRIBUTING** for the release. README uses
   "workspace" for two things, doesn't document the explorer, and still claims
-  simulations run server-side. Surface the bundled Cascadia OFL notice.
+  simulations run server-side. Surface the bundled Geist and Cascadia OFL notices.
 - **Display-only settings trigger a resimulation.** `graphSignature` includes
   `unwrapPhase`, `vThreshold` and `delayOffset`, which only change how
   results are drawn; toggling them costs a ~90 ms recompute for nothing.

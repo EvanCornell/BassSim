@@ -39,17 +39,17 @@ export default function VelocityPopup() {
       <div style={{ flex: 1, minHeight: 0 }}>
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data} margin={{ top: 8, right: 16, bottom: 4, left: 0 }}>
-            <CartesianGrid stroke="#2d3646" strokeDasharray="2 4" />
+            <CartesianGrid stroke="var(--grid)" strokeDasharray="2 4" />
             <XAxis dataKey="f" type="number" scale="log" domain={[settings.fmin, settings.fmax]}
-              ticks={ticks} tick={{ fill: '#9aa7b8', fontSize: 10 }} stroke="#2d3646" />
-            <YAxis tick={{ fill: '#9aa7b8', fontSize: 10 }} stroke="#2d3646" width={40}
-              label={{ value: 'm/s (peak)', angle: -90, position: 'insideLeft', fill: '#6b7687', fontSize: 10 }} />
-            <Tooltip contentStyle={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 0 }}
+              ticks={ticks} tick={{ fill: 'var(--text-2)', fontSize: 10 }} stroke="var(--grid)" />
+            <YAxis tick={{ fill: 'var(--text-2)', fontSize: 10 }} stroke="var(--grid)" width={40}
+              label={{ value: 'm/s (peak)', angle: -90, position: 'insideLeft', fill: 'var(--text-3)', fontSize: 10 }} />
+            <Tooltip contentStyle={{ background: 'var(--raised)', border: '1px solid var(--line-2)', borderRadius: 10 }}
               labelFormatter={(v) => `${v.toFixed(1)} Hz`} formatter={(v) => [`${v.toFixed(2)} m/s`, 'velocity']}
               isAnimationActive={false} />
-            <ReferenceLine y={vThreshold} stroke="#e66767" strokeDasharray="6 4"
-              label={{ value: `turbulence ~${vThreshold} m/s`, fill: '#e66767', fontSize: 10, position: 'insideTopRight' }} />
-            <Line type="monotone" dataKey="v" stroke="#c98500" strokeWidth={2} dot={false} isAnimationActive={false} />
+            <ReferenceLine y={vThreshold} stroke="var(--red)" strokeDasharray="6 4"
+              label={{ value: `turbulence ~${vThreshold} m/s`, fill: 'var(--red)', fontSize: 10, position: 'insideTopRight' }} />
+            <Line type="monotone" dataKey="v" stroke="var(--c3)" strokeWidth={2} dot={false} isAnimationActive={false} />
           </LineChart>
         </ResponsiveContainer>
       </div>

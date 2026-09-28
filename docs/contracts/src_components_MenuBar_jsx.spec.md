@@ -37,7 +37,7 @@ current state.
 
 - Subscribes to the store. Registers window mousedown and keydown listeners while a menu is open.
 
-## UNREACHABLE (33)
+## UNREACHABLE (34)
 
 ### `Menu(props)`
 
@@ -63,6 +63,24 @@ moving across a title switches to it without a second click.
 - `React.ReactElement` — The menu.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
+
+### `ProjectTitle()`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+The open project's name, centred in the bar, with a dot for the state of its result.
+
+Green once the result is current, amber while a sweep is running, red
+when the project cannot be simulated, grey when nothing is open.
+
+**Returns**
+
+- `React.ReactElement|null` — The title, or `null` when no project is open.
+
+**Side effects**
+
+- Subscribes to the store.
 
 ### `MenuBar > key(id)`
 

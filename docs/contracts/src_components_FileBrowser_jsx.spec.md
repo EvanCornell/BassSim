@@ -67,21 +67,20 @@ The twisty drawn beside a folder.
 - **Reachability:** UNREACHABLE
 - **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
 
-The icon drawn beside a row.
+The marker drawn beside a row.
 
-Folders get an open or closed folder; files get a page tinted by what they
-hold, so a project and the driver library are told apart at a glance rather
-than by reading.
+A file gets a small square in the hue of what it holds — a project, the
+driver library, the snapshots — so they are told apart at a glance
+rather than by reading. A folder has its chevron and nothing else.
 
 **Parameters**
 
 - `props` — `object` — Component props.
 - `props.kind` — `string` — `'folder'` for a folder, otherwise the file entry's kind.
-- `props.open` — `boolean` — Whether an expanded folder is being drawn.
 
 **Returns**
 
-- `React.ReactElement` — The icon.
+- `React.ReactElement` — The marker.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 

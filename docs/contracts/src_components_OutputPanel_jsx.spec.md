@@ -200,7 +200,7 @@ as the current result.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
-## UNREACHABLE (30)
+## UNREACHABLE (31)
 
 ### `BaseChart(props)`
 
@@ -768,6 +768,21 @@ Phase and group delay on separate axes.
 **Returns**
 
 - `React.ReactElement` — The chart.
+
+**Side effects**
+
+- Subscribes to the store.
+
+### `SolveTime()`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+How long the result on screen took to solve.
+
+**Returns**
+
+- `React.ReactElement|null` — The readout, or `null` before the first result.
 
 **Side effects**
 

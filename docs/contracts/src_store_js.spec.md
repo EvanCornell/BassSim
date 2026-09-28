@@ -222,7 +222,7 @@ around the canvas does not re-run the sweep.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
-## STORE ACTION (120)
+## STORE ACTION (121)
 
 ### `openContextMenu(x, y, target)`
 
@@ -1664,6 +1664,25 @@ Open the save-to-database prompt for one driver node, or close it.
 **Side effects**
 
 - Writes store state. The field is local to the window — `SHARED_KEYS` deliberately excludes it, so a popped-out panel keeps its own.
+
+### `setTheme(theme)`
+
+- **Reachability:** STORE ACTION
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().setTheme(…)
+
+Choose the appearance, remember it, and show it.
+
+**Parameters**
+
+- `theme` — `string` — `system`, `dark` or `light`; anything else is ignored.
+
+**Returns**
+
+- `void`
+
+**Side effects**
+
+- Writes LocalStorage, the page's theme attribute and store state.
 
 ### `setEngine(engine)`
 

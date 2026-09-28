@@ -27,18 +27,20 @@ export const TOOLBAR_ITEMS = {
   snapshot: { label: 'Snapshot + overlays', group: 'controls' },
 
   // --- metrics (mirrors what the Results panel used to show) ---
-  m_f3: { label: 'F3', group: 'metrics' },
-  m_f10: { label: 'F10', group: 'metrics' },
-  m_fb: { label: 'Fb', group: 'metrics' },
-  m_qtc: { label: 'Qtc', group: 'metrics' },
-  m_zpeaks: { label: 'Z peaks', group: 'metrics' },
-  m_peakspl: { label: 'Peak SPL', group: 'metrics' },
-  m_xfb: { label: 'X @ Fb', group: 'metrics' },
-  m_xf3: { label: 'X @ F3', group: 'metrics' },
-  m_bw: { label: 'BW (−3 dB)', group: 'metrics' },
-  m_maxpower: { label: 'Max power (Xmax)', group: 'metrics' },
-  m_volume: { label: 'System volume', group: 'metrics' },
-  m_solve: { label: 'Solve time', group: 'metrics' },
+  // `cluster` is the pill a metric shares on the bar with its neighbours:
+  // what the response does, the impedance, the limits, the size.
+  m_f3: { label: 'F3', group: 'metrics', cluster: 'response' },
+  m_f10: { label: 'F10', group: 'metrics', cluster: 'response' },
+  m_fb: { label: 'Fb', group: 'metrics', cluster: 'response' },
+  m_qtc: { label: 'Qtc', group: 'metrics', cluster: 'response' },
+  m_bw: { label: 'BW', group: 'metrics', cluster: 'response' },
+  m_zpeaks: { label: 'Z peaks (Hz/Ω)', group: 'metrics', cluster: 'impedance' },
+  m_peakspl: { label: 'Peak SPL', group: 'metrics', cluster: 'limits' },
+  m_xf3: { label: 'X @ F3', group: 'metrics', cluster: 'limits' },
+  m_xfb: { label: 'X @ Fb', group: 'metrics', cluster: 'limits' },
+  m_maxpower: { label: 'Max power', group: 'metrics', cluster: 'limits' },
+  m_volume: { label: 'Volume', group: 'metrics', cluster: 'volume' },
+  m_solve: { label: 'Solve time', group: 'metrics', cluster: 'solve' },
 }
 
 /** Quick-bar groups as `[id, heading]`, in the order Settings lists them. */
@@ -55,12 +57,14 @@ export const ALL_ITEM_IDS = Object.keys(TOOLBAR_ITEMS)
  *
  * Sweep range and resonance masking are deliberately absent: both are set-once
  * controls reachable from Settings ▸ Application and the Simulate menu, so they
- * earn a permanent slot only for someone who actually tweaks them often.
+ * earn a permanent slot only for someone who actually tweaks them often. The
+ * solve time is shown above every chart instead, where it is about the
+ * result being looked at.
  */
 export const DEFAULT_TOOLBAR = [
   'undo', 'voltage', 'snapshot',
-  'm_f3', 'm_f10', 'm_fb', 'm_qtc', 'm_zpeaks', 'm_peakspl',
-  'm_xfb', 'm_xf3', 'm_bw', 'm_maxpower', 'm_volume', 'm_solve',
+  'm_f3', 'm_f10', 'm_fb', 'm_qtc', 'm_bw', 'm_zpeaks',
+  'm_peakspl', 'm_xf3', 'm_xfb', 'm_maxpower', 'm_volume',
 ]
 
 /**
@@ -140,7 +144,7 @@ export function metricValue(id, { metrics, results, nodes }) {
     case 'm_qtc': return { label, value: m.qtc ? fmt(m.qtc, 2) : '—' }
     case 'm_zpeaks': return {
       label,
-      value: (m.zPeaks || []).slice(0, 3).map((p) => `${p.f.toFixed(0)}Hz/${p.v.toFixed(0)}Ω`).join('  ') || '—',
+      value: (m.zPeaks || []).slice(0, 3).map((p) => `${p.f.toFixed(0)}/${p.v.toFixed(0)}Ω`).join(' · ') || '—',
     }
     case 'm_peakspl': return { label, value: m.peakSPL ? `${fmt(m.peakSPL)} dB` : '—' }
     case 'm_xfb': return { label, value: frac(m.xAtFb), bad: over(m.xAtFb) }

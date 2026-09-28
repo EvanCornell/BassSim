@@ -1,10 +1,14 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
-import ReactFlow, { Background, Controls, MiniMap, useReactFlow, ReactFlowProvider, ConnectionMode } from 'reactflow'
+import ReactFlow, { Background, MiniMap, useReactFlow, ReactFlowProvider, ConnectionMode } from 'reactflow'
 import { useStore } from '../store'
 import { nodeTypes } from './nodes'
 import { useStackId } from './dock/stackContext'
 import { distance, marqueeRect, nodesInMarquee, MARQUEE_THRESHOLD } from '../selection'
 import { NODE_DRAG_TYPE } from '../nodeKinds'
+import NodePalette from './NodePalette'
+
+/** Each element's hue on the minimap, as on its node. */
+const MINIMAP_COLORS = { driver: 'var(--s1)', chamber: 'var(--s2)', waveguide: 'var(--s3)', pr: 'var(--s4)', radiation: 'var(--s5)' }
 
 /**
  * Whether a proposed edge is allowed.
@@ -285,18 +289,18 @@ function CanvasInner() {
         minZoom={0.15}
         maxZoom={2.5}
         proOptions={{ hideAttribution: true }}
-        defaultEdgeOptions={{ style: { stroke: '#5598e7' } }}
       >
-        <Background color="#232b3a" gap={22} />
-        <Controls position="bottom-left" />
+        <Background color="var(--canvas-dot)" gap={20} size={1.2} />
         <MiniMap
-          position="bottom-right"
+          position="top-right"
           pannable zoomable
-          style={{ background: 'var(--surface)' }}
-          nodeColor={(n) => ({ driver: '#3987e5', chamber: '#199e70', waveguide: '#c98500', pr: '#9085e9', radiation: '#d55181' }[n.type] || '#888')}
-          maskColor="rgba(13,17,23,0.7)"
+          style={{ width: 150, height: 96 }}
+          nodeColor={(n) => MINIMAP_COLORS[n.type] || 'var(--text-3)'}
+          nodeBorderRadius={4}
+          maskColor="transparent"
         />
       </ReactFlow>
+      <NodePalette />
       {marquee && (
         <div
           className="rf-marquee"

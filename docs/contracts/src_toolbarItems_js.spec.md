@@ -31,25 +31,25 @@ Every widget the quick bar can show, keyed by id.
 renderer; `metrics` are read-only and need nothing else, because
 `metricValue` is the single place that knows how to compute and format them.
 
-Keys: `undo`, `voltage`, `sweep`, `masking`, `snapshot`, `m_f3`, `m_f10`, `m_fb`, `m_qtc`, `m_zpeaks`, `m_peakspl`, `m_xfb`, `m_xf3`, `m_bw`, `m_maxpower`, `m_volume`, `m_solve`
+Keys: `undo`, `voltage`, `sweep`, `masking`, `snapshot`, `m_f3`, `m_f10`, `m_fb`, `m_qtc`, `m_bw`, `m_zpeaks`, `m_peakspl`, `m_xf3`, `m_xfb`, `m_maxpower`, `m_volume`, `m_solve`
 
 - `undo` holds: `label`, `group`
 - `voltage` holds: `label`, `group`
 - `sweep` holds: `label`, `group`
 - `masking` holds: `label`, `group`
 - `snapshot` holds: `label`, `group`
-- `m_f3` holds: `label`, `group`
-- `m_f10` holds: `label`, `group`
-- `m_fb` holds: `label`, `group`
-- `m_qtc` holds: `label`, `group`
-- `m_zpeaks` holds: `label`, `group`
-- `m_peakspl` holds: `label`, `group`
-- `m_xfb` holds: `label`, `group`
-- `m_xf3` holds: `label`, `group`
-- `m_bw` holds: `label`, `group`
-- `m_maxpower` holds: `label`, `group`
-- `m_volume` holds: `label`, `group`
-- `m_solve` holds: `label`, `group`
+- `m_f3` holds: `label`, `group`, `cluster`
+- `m_f10` holds: `label`, `group`, `cluster`
+- `m_fb` holds: `label`, `group`, `cluster`
+- `m_qtc` holds: `label`, `group`, `cluster`
+- `m_bw` holds: `label`, `group`, `cluster`
+- `m_zpeaks` holds: `label`, `group`, `cluster`
+- `m_peakspl` holds: `label`, `group`, `cluster`
+- `m_xf3` holds: `label`, `group`, `cluster`
+- `m_xfb` holds: `label`, `group`, `cluster`
+- `m_maxpower` holds: `label`, `group`, `cluster`
+- `m_volume` holds: `label`, `group`, `cluster`
+- `m_solve` holds: `label`, `group`, `cluster`
 
 ### `TOOLBAR_GROUPS`
 
@@ -67,9 +67,11 @@ The quick bar as it ships.
 
 Sweep range and resonance masking are deliberately absent: both are set-once
 controls reachable from Settings ▸ Application and the Simulate menu, so they
-earn a permanent slot only for someone who actually tweaks them often.
+earn a permanent slot only for someone who actually tweaks them often. The
+solve time is shown above every chart instead, where it is about the
+result being looked at.
 
-Values: `undo`, `voltage`, `snapshot`, `m_f3`, `m_f10`, `m_fb`, `m_qtc`, `m_zpeaks`, `m_peakspl`, `m_xfb`, `m_xf3`, `m_bw`, `m_maxpower`, `m_volume`, `m_solve`
+Values: `undo`, `voltage`, `snapshot`, `m_f3`, `m_f10`, `m_fb`, `m_qtc`, `m_bw`, `m_zpeaks`, `m_peakspl`, `m_xf3`, `m_xfb`, `m_maxpower`, `m_volume`
 
 ### `__internals`
 

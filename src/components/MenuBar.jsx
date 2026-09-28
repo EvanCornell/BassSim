@@ -56,6 +56,32 @@ function Menu({ title, items, open, onOpen, onHover }) {
 // ---------- the bar ----------
 
 /**
+ * The open project's name, centred in the bar, with a dot for the state of its result.
+ *
+ * Green once the result is current, amber while a sweep is running, red
+ * when the project cannot be simulated, grey when nothing is open.
+ *
+ * @returns {React.ReactElement|null} The title, or `null` when no project is open.
+ * @sideEffect Subscribes to the store.
+ */
+function ProjectTitle() {
+  const name = useStore((s) => s.projectName)
+  const open = useStore((s) => !!s.activeFile)
+  const busy = useStore((s) => s.simBusy)
+  const failed = useStore((s) => !!s.simError || !!s.results?.validation?.errors?.length)
+  const empty = useStore((s) => !s.nodes.length)
+  if (!open) return null
+  const state = failed ? 'error' : busy ? 'busy' : empty ? 'none' : 'ok'
+  const tip = { error: 'The project cannot be simulated — see the message below the bar', busy: 'Simulating…', none: 'Nothing to simulate yet', ok: 'Result is up to date' }[state]
+  return (
+    <div className="mb-project" title={tip}>
+      <span className={`mb-dot ${state}`} />
+      <span className="mb-name">{name || 'Untitled'}</span>
+    </div>
+  )
+}
+
+/**
  * The application menu bar.
  *
  * Follows the native pattern: click a title to open, then hover any other
@@ -540,6 +566,7 @@ export default function MenuBar() {
   return (
     <div className="menubar" ref={barRef} onClick={() => setOpen(null)}>
       <span className="logo">Acou<span>Sim</span></span>
+      <ProjectTitle />
       {MENUS.map(([title, items]) => (
         <Menu
           key={title}

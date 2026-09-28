@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import { THEMES } from '../theme'
 import { useStore } from '../store'
 import { TOOLBAR_ITEMS, TOOLBAR_GROUPS, ALL_ITEM_IDS } from '../toolbarItems'
 import { COMMANDS, COMMAND_GROUPS, DEFAULT_BINDINGS, comboFromEvent, formatCombo } from '../keymap'
@@ -6,18 +7,18 @@ import { COMMANDS, COMMAND_GROUPS, DEFAULT_BINDINGS, comboFromEvent, formatCombo
 // ---------- shared bits ----------
 
 const card = {
-  background: 'var(--surface)', border: '1px solid var(--border)',
-  borderRadius: 0, padding: 14, marginBottom: 12, maxWidth: 560,
+  background: 'var(--panel-2)', border: 'none',
+  borderRadius: 14, padding: 14, marginBottom: 10, maxWidth: 580,
 }
-const h = { margin: '0 0 10px', fontSize: 13, fontWeight: 600 }
+const h = { margin: '0 0 10px', fontSize: 13, fontWeight: 500 }
 const inputStyle = {
   width: '100%', boxSizing: 'border-box', padding: '5px 8px', marginBottom: 8,
-  background: 'var(--bg)', color: 'var(--text)',
-  border: '1px solid var(--border)', borderRadius: 2, fontSize: 13,
+  background: 'var(--field)', color: 'var(--text)',
+  border: '1px solid transparent', borderRadius: 8, fontSize: 13,
 }
 const btn = {
-  padding: '5px 12px', borderRadius: 2, border: '1px solid var(--border)',
-  background: 'var(--surface-2)', color: 'var(--text)', cursor: 'pointer', fontSize: 12,
+  padding: '5px 12px', borderRadius: 8, border: '1px solid transparent',
+  background: 'var(--btn)', color: 'var(--text)', cursor: 'pointer', fontSize: 12,
 }
 const okStyle = { color: 'var(--green)', fontSize: 12, margin: '4px 0 8px' }
 const dim = { color: 'var(--text-3)', fontSize: 12, lineHeight: 1.5 }
@@ -35,9 +36,20 @@ function ApplicationSection() {
   const updateSettings = useStore((s) => s.updateSettings)
   const engine = useStore((s) => s.engine)
   const setEngine = useStore((s) => s.setEngine)
+  const theme = useStore((s) => s.theme)
+  const setTheme = useStore((s) => s.setTheme)
   const row = { display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, marginBottom: 8 }
   return (
     <>
+      <div style={card}>
+        <h4 style={h}>Appearance</h4>
+        <div className="seg" role="radiogroup" aria-label="Appearance">
+          {THEMES.map(([k, label]) => (
+            <button key={k} role="radio" aria-checked={theme === k} className={theme === k ? 'on' : ''}
+              onClick={() => setTheme(k)}>{label}</button>
+          ))}
+        </div>
+      </div>
       <div style={card}>
         <h4 style={h}>Simulation</h4>
         <label style={row}>
@@ -114,7 +126,7 @@ function QuickBarSection() {
 
   const rowStyle = {
     display: 'flex', alignItems: 'center', gap: 8, padding: '5px 6px',
-    borderRadius: 0, fontSize: 13,
+    borderRadius: 8, fontSize: 13,
   }
 
   return (
@@ -147,7 +159,7 @@ function QuickBarSection() {
                 </div>
               ))}
               {hidden.map((id) => (
-                <div key={id} style={{ ...rowStyle, color: 'var(--text-3, #8b949e)' }}>
+                <div key={id} style={{ ...rowStyle, color: 'var(--text-3)' }}>
                   <input type="checkbox" checked={false} onChange={() => toggleToolbarItem(id)} />
                   <span style={{ flex: 1 }}>{TOOLBAR_ITEMS[id].label}</span>
                 </div>

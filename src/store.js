@@ -32,6 +32,7 @@ import { toEditor, fromEditor } from './schema/editor'
 import { pruneExtras, driveOf, masterForVoltage, freshId } from './schema/extras'
 import { ENGINES, DEFAULT_ENGINE } from './engine/pipeline'
 import { getPool, relay, cancelLane } from './engine/poolHost'
+import { loadTheme, saveTheme, THEMES } from './theme'
 import * as L from './layout'
 import * as D from './driverParams'
 import { PANEL_META, PANEL_IDS } from './panelMeta'
@@ -578,6 +579,7 @@ export const useStore = create((rawSet, get) => {
   projectExtras: defaultExtras(),
   // Which engine simulates: a preference of this browser, not of the project.
   engine: loadEngine(),
+  theme: loadTheme(),
   // ---- the time-domain workspace ----
   // A full-screen view of its own, replacing the dock while it is open.
   // Results belong to this window and this project; each records the graph
@@ -1822,6 +1824,18 @@ export const useStore = create((rawSet, get) => {
    */
   setSaveDriverFor: (id) => set({ saveDriverFor: id }),
   /**
+   * Choose the appearance, remember it, and show it.
+   *
+   * @param {string} theme - `system`, `dark` or `light`; anything else is ignored.
+   * @returns {void}
+   * @sideEffect Writes LocalStorage, the page's theme attribute and store state.
+   */
+  setTheme: (theme) => {
+    if (!THEMES.some(([k]) => k === theme)) return
+    saveTheme(theme)
+    set({ theme })
+  },
+  /**
    * Choose which engine simulates, remember it, and resimulate.
    *
    * @param {string} engine - One of the pipeline's `ENGINES`; anything else is ignored.
@@ -1948,6 +1962,7 @@ export const useStore = create((rawSet, get) => {
   _computeTimer: null,
   _lastSig: '',
   _simToken: null,
+  simBusy: false,
   simError: null,
   /**
    * Schedule a debounced simulation run.
@@ -1982,12 +1997,13 @@ export const useStore = create((rawSet, get) => {
       const sig = graphSignature(nodes, edges, settings, projectExtras, engine)
       if (sig === get()._lastSig && get().results) return
       const token = {}
-      set({ _simToken: token })
+      set({ _simToken: token, simBusy: true })
       const reply = await simulateInWorker(
         fromEditor({ name: projectName, nodes, edges, settings, extras: projectExtras }),
         engine,
       )
       if (get()._simToken !== token) return // a newer request superseded this one
+      set({ simBusy: false })
       if (reply.ok) {
         set({ results: reply.results, metrics: reply.metrics, _lastSig: sig, simError: null })
         get().saveActiveFile()

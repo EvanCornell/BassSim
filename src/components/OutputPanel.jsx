@@ -1,19 +1,22 @@
 import React, { useEffect, useMemo, useState, useCallback, useRef } from 'react'
 import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
+  ComposedChart, Line, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   ReferenceLine, ResponsiveContainer, ReferenceArea,
 } from 'recharts'
 import { useStore } from '../store'
 import { readSnapshots } from '../workspace'
 
 /**
- * Trace colours, cycled per series.
+ * Trace colours, cycled per series — theme tokens, so a chart follows the
+ * light and dark appearances without re-rendering.
  */
-const SERIES = ['#3987e5', '#199e70', '#c98500', '#9085e9', '#d55181', '#d95926']
+const SERIES = ['var(--c1)', 'var(--c2)', 'var(--c3)', 'var(--c4)', 'var(--c5)', 'var(--c6)']
 /**
  * Chart grid line colour.
  */
-const GRID = '#2d3646'
+const GRID = 'var(--grid)'
+/** Axis tick text. */
+const TICK = { fill: 'var(--text-3)', fontSize: 10.5 }
 /**
  * Preferred X-axis tick frequencies for the log scale.
  */
@@ -260,16 +263,16 @@ function BaseChart({ chartId, data, lines, yLabel, yDomain, y2Label, y2Domain, r
     setDragR(null)
   }
   return (
-    <div ref={wrapRef} style={{ width: '100%', height: '100%' }}>
+    <div ref={wrapRef} className="plot-body">
     {xZoom && (
       <button
-        style={{ position: 'absolute', bottom: 10, left: 14, zIndex: 5, fontSize: 11 }}
+        className="zoom-reset"
         title="Reset zoom (or double-click the chart). Wheel = zoom both axes, shift+drag = pan."
         onClick={resetAll}
       >⟲ {fmt(xZoom[0], 0)}–{fmt(xZoom[1], 0)} Hz</button>
     )}
     <ResponsiveContainer width="100%" height="100%">
-      <LineChart
+      <ComposedChart
         data={data} margin={{ top: 8, right: hasY2 ? 8 : 20, bottom: 4, left: 0 }}
         onMouseDown={(e) => { if (e && e.activeLabel != null) setDragL(e.activeLabel) }}
         onMouseMove={(e) => { if (e && e.activeLabel != null) { lastLabel.current = e.activeLabel; if (dragL != null) setDragR(e.activeLabel) } }}
@@ -278,34 +281,51 @@ function BaseChart({ chartId, data, lines, yLabel, yDomain, y2Label, y2Domain, r
         onDoubleClick={resetAll}
         style={{ userSelect: 'none' }}
       >
-        <CartesianGrid stroke={GRID} strokeDasharray="2 4" />
+        <defs>
+          <linearGradient id={`fill_${chartId}`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stopColor="var(--c1)" stopOpacity="var(--fill-top)" style={{ stopOpacity: 'var(--fill-top)' }} />
+            <stop offset="1" stopColor="var(--c1)" stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        <CartesianGrid stroke={GRID} strokeDasharray="3 4" vertical={true} />
         <XAxis
           dataKey="f" type="number" scale="log" allowDataOverflow
           domain={xDomain}
-          ticks={ticks} tick={{ fill: '#9aa7b8', fontSize: 10 }}
-          stroke={GRID} tickFormatter={(v) => (v >= 1000 ? `${v / 1000}k` : Math.round(v * 10) / 10)}
+          ticks={ticks} tick={TICK}
+          stroke={GRID} tickLine={false} tickFormatter={(v) => (v >= 1000 ? `${v / 1000}k` : Math.round(v * 10) / 10)}
         />
         <YAxis
           yAxisId="left" domain={yDomain || ['auto', 'auto']} allowDataOverflow
-          tick={{ fill: '#9aa7b8', fontSize: 10 }} stroke={GRID} width={44} tickFormatter={yTick}
-          label={yLabel ? { value: yLabel, angle: -90, position: 'insideLeft', fill: '#6b7687', fontSize: 10 } : undefined}
+          tick={TICK} stroke={GRID} tickLine={false} axisLine={false} width={44} tickFormatter={yTick}
+          label={yLabel ? { value: yLabel, angle: -90, position: 'insideLeft', fill: 'var(--text-3)', fontSize: 10.5 } : undefined}
         />
         {hasY2 && (
           <YAxis
             yAxisId="right" orientation="right" domain={y2Domain || ['auto', 'auto']}
-            tick={{ fill: '#9aa7b8', fontSize: 10 }} stroke={GRID} width={44} tickFormatter={yTick}
-            label={y2Label ? { value: y2Label, angle: 90, position: 'insideRight', fill: '#6b7687', fontSize: 10 } : undefined}
+            tick={TICK} stroke={GRID} tickLine={false} axisLine={false} width={44} tickFormatter={yTick}
+            label={y2Label ? { value: y2Label, angle: 90, position: 'insideRight', fill: 'var(--text-3)', fontSize: 10.5 } : undefined}
           />
         )}
         <Tooltip
-          contentStyle={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 0 }}
-          labelStyle={{ color: '#e6edf3' }}
+          contentStyle={{ background: 'var(--raised)', border: '1px solid var(--line-2)', borderRadius: 10 }}
+          labelStyle={{ color: 'var(--text)' }}
+          cursor={{ stroke: 'var(--line-2)' }}
           labelFormatter={(v) => `${fmt(v)} Hz`}
           formatter={(v) => fmt(v, 2)}
           isAnimationActive={false}
         />
-        <Legend wrapperStyle={{ fontSize: 11 }} />
+        <Legend
+          wrapperStyle={{ fontSize: 11.5 }}
+          payload={lines.map((l) => ({ id: l.dataKey, value: l.name, type: 'plainline', color: l.color, payload: { strokeDasharray: l.dash || '0' } }))}
+        />
         {refAreas}
+        {lines.filter((l) => l.area).map((l) => (
+          <Area
+            key={`area_${l.dataKey}`} yAxisId={l.yAxisId || 'left'} type="monotone" dataKey={l.dataKey}
+            stroke="none" fill={`url(#fill_${chartId})`} baseValue={Array.isArray(yDomain) && isFinite(yDomain[0]) ? yDomain[0] : 'dataMin'}
+            legendType="none" tooltipType="none" isAnimationActive={false} connectNulls={false} activeDot={false}
+          />
+        ))}
         {lines.map((l) => (
           <Line
             key={l.dataKey} yAxisId={l.yAxisId || 'left'}
@@ -317,10 +337,10 @@ function BaseChart({ chartId, data, lines, yLabel, yDomain, y2Label, y2Domain, r
         ))}
         {refLines}
         {dragL != null && dragR != null && (
-          <ReferenceArea yAxisId="left" x1={dragL} x2={dragR} fill="#3987e5" fillOpacity={0.15} />
+          <ReferenceArea yAxisId="left" x1={dragL} x2={dragR} fill="var(--accent)" fillOpacity={0.15} />
         )}
         {children}
-      </LineChart>
+      </ComposedChart>
     </ResponsiveContainer>
     </div>
   )
@@ -376,21 +396,22 @@ function useYScale(id, fitDomain) {
     if (isFinite(lo) && isFinite(hi) && hi > lo) domain = [lo, hi]
   }
   const control = (
-    <label title="Y-axis scale: Fit = zoom to the useful range, Full = entire data range, Manual = your own bounds">
-      Y
-      <select value={ys.mode} onChange={(e) => setYs({ mode: e.target.value })} style={{ width: 68 }}>
-        <option value="fit">Fit</option>
-        <option value="auto">Full</option>
-        <option value="manual">Manual</option>
-      </select>
+    <>
       {ys.mode === 'manual' && (
-        <>
+        <label title="Y-axis bounds">
           <input type="number" placeholder="min" value={ys.min} onChange={(e) => setYs({ min: e.target.value })} />
           –
           <input type="number" placeholder="max" value={ys.max} onChange={(e) => setYs({ max: e.target.value })} />
-        </>
+        </label>
       )}
-    </label>
+      <div className="seg" role="radiogroup" aria-label="Y-axis scale"
+        title="Y-axis scale: Fit = zoom to the useful range, Full = entire data range, Manual = your own bounds">
+        {[['fit', 'Fit'], ['auto', 'Full'], ['manual', 'Manual']].map(([k, label]) => (
+          <button key={k} role="radio" aria-checked={ys.mode === k} className={ys.mode === k ? 'on' : ''}
+            onClick={() => setYs({ mode: k })}>{label}</button>
+        ))}
+      </div>
+    </>
   )
   return [domain, control]
 }
@@ -597,7 +618,7 @@ function SPLTab() {
   const snapshots = useStore((s) => readSnapshots(s.workspace))
   const [show, setShow] = useState({ driver: true, ports: true, combined: true })
   const lines = []
-  if (show.combined) lines.push({ dataKey: 'combined', name: 'Combined', color: SERIES[0], width: 2.5 })
+  if (show.combined) lines.push({ dataKey: 'combined', name: 'Combined', color: SERIES[0], width: 2.2, area: true })
   if (show.driver) lines.push({ dataKey: 'driver', name: 'Driver direct', color: SERIES[1] })
   if (show.ports) portIds.forEach((pid, i) => {
     // A key may name one end or face of a node: `id:throat`, `id:rear`.
@@ -612,10 +633,20 @@ function SPLTab() {
   return (
     <>
       <div className="plot-controls">
-        {['combined', 'driver', 'ports'].map((k) => (
-          <label key={k}><input type="checkbox" checked={show[k]} onChange={(e) => setShow({ ...show, [k]: e.target.checked })} />{k}</label>
+        {[['combined', 'Combined', SERIES[0]], ['driver', 'Driver', SERIES[1]], ['ports', 'Ports', SERIES[2]]].map(([k, label, color]) => (
+          <button key={k} className={`chip-toggle${show[k] ? ' on' : ''}`} aria-pressed={show[k]}
+            onClick={() => setShow({ ...show, [k]: !show[k] })}>
+            <span className="ct-swatch" style={{ borderTopColor: color }} />{label}
+          </button>
         ))}
+        {snapshots.map((sn) => (
+          <span key={sn.id} className="chip-toggle on dashed" title={sn.project ? `Snapshot from ${sn.project}` : 'Snapshot'}>
+            <span className="ct-swatch" style={{ borderTopColor: sn.color }} />{sn.label}
+          </span>
+        ))}
+        <span style={{ flex: 1 }} />
         {yControl}
+        <SolveTime />
       </div>
       <BaseChart chartId="spl" data={data} lines={lines} yLabel="SPL dB @ 1m" yDomain={yDomain} />
     </>
@@ -647,14 +678,14 @@ function ImpedanceTab() {
         ...snapLines(snapshots, 'zin'),
       ]
   const refLines = (metrics?.zPeaks || []).map((p, i) => (
-    <ReferenceLine key={i} yAxisId="left" x={p.f} stroke="#6b7687" strokeDasharray="3 3"
-      label={{ value: `F${i + 1} ${p.f.toFixed(1)}`, fill: '#9aa7b8', fontSize: 10, position: 'insideTopLeft' }} />
+    <ReferenceLine key={i} yAxisId="left" x={p.f} stroke="var(--text-3)" strokeDasharray="3 3"
+      label={{ value: `F${i + 1} ${p.f.toFixed(1)}`, fill: 'var(--text-2)', fontSize: 10, position: 'insideTopLeft' }} />
   ))
   const fitData = useFitData('zin', data)
   const [yDomain, yControl] = useYScale('zin', fitLinear(fitData, [...(ids.length > 1 ? ids.map((c) => `zch_${c}`) : ['zmag']), ...snapshots.map((_, i) => `snap${i}_zin`)]))
   return (
     <>
-      <div className="plot-controls">{yControl}</div>
+      <div className="plot-controls">{yControl}<SolveTime /></div>
       <BaseChart chartId="zin" data={data} lines={lines} yLabel="|Z| Ω" yDomain={yDomain} y2Label="Phase °" y2Domain={[-90, 90]} refLines={refLines} />
     </>
   )
@@ -733,17 +764,17 @@ function ExcursionTab() {
     : `Xmax ${xm} mm`)
   const refLines = pct
     ? [
-      <ReferenceLine key="xmax100" yAxisId="left" y={100} stroke="#e66767" strokeDasharray="6 4"
-        label={{ value: 'Xmax', fill: '#e66767', fontSize: 10, position: 'insideTopRight' }} />,
+      <ReferenceLine key="xmax100" yAxisId="left" y={100} stroke="var(--red)" strokeDasharray="6 4"
+        label={{ value: 'Xmax', fill: 'var(--red)', fontSize: 10, position: 'insideTopRight' }} />,
     ]
     : xmaxes.map((xm) => (
-      <ReferenceLine key={`xmax${xm}`} yAxisId="left" y={xm} stroke="#e66767" strokeDasharray="6 4"
-        label={{ value: nameFor(xm), fill: '#e66767', fontSize: 10, position: 'insideTopRight' }} />
+      <ReferenceLine key={`xmax${xm}`} yAxisId="left" y={xm} stroke="var(--red)" strokeDasharray="6 4"
+        label={{ value: nameFor(xm), fill: 'var(--red)', fontSize: 10, position: 'insideTopRight' }} />
     ))
   // Shade above the first limit anything runs into.
   const ceiling = pct ? 100 : xmaxes[0]
   const refAreas = ceiling ? [
-    <ReferenceArea key="over" yAxisId="left" y1={ceiling} y2={ceiling * 3} fill="#e66767" fillOpacity={0.07} />,
+    <ReferenceArea key="over" yAxisId="left" y1={ceiling} y2={ceiling * 3} fill="var(--red)" fillOpacity={0.07} />,
   ] : []
 
   const fitData = useFitData('exc', data)
@@ -760,6 +791,7 @@ function ExcursionTab() {
           </select>
         </label>
         {yControl}
+        <SolveTime />
       </div>
       <BaseChart chartId="exc" data={data} lines={lines} yLabel={pct ? '% of Xmax' : 'mm'}
         yDomain={yDomain} refLines={refLines} refAreas={refAreas} />
@@ -796,10 +828,11 @@ function VelocityTab() {
           <input type="number" value={vThreshold} onChange={(e) => { const v = parseFloat(e.target.value); if (v > 0) updateSettings({ vThreshold: v }) }} /> m/s
         </label>
         {yControl}
+        <SolveTime />
       </div>
       <BaseChart chartId="vel" data={data} lines={lines} yLabel="m/s (peak)" yDomain={yDomain} refLines={[
-        <ReferenceLine key="th" yAxisId="left" y={vThreshold} stroke="#e66767" strokeDasharray="6 4"
-          label={{ value: `turbulence ~${vThreshold} m/s`, fill: '#e66767', fontSize: 10, position: 'insideTopRight' }} />,
+        <ReferenceLine key="th" yAxisId="left" y={vThreshold} stroke="var(--red)" strokeDasharray="6 4"
+          label={{ value: `turbulence ~${vThreshold} m/s`, fill: 'var(--red)', fontSize: 10, position: 'insideTopRight' }} />,
       ]} />
     </>
   )
@@ -842,6 +875,7 @@ function InteriorTab() {
           dB SPL inside the volume (no 1 m convention — point pressure at the mic station)
         </span>
         {yControl}
+        <SolveTime />
       </div>
       <BaseChart chartId="int" data={data} lines={lines} yLabel="dB SPL (interior)" yDomain={yDomain} />
     </>
@@ -908,6 +942,7 @@ function ProbeFlowTab() {
       <div className="plot-controls">
         <span style={{ fontSize: 11, color: 'var(--text-3)' }}>peak values</span>
         {yControl}
+        <SolveTime />
       </div>
       <BaseChart chartId="pfl" data={data} lines={lines} yLabel="m/s (peak)" yDomain={yDomain} {...(hasFlow ? { y2Label: 'L/s (peak)', y2Domain: ['auto', 'auto'] } : {})} />
     </>
@@ -928,7 +963,7 @@ function PowerTab() {
   const [yDomain, yControl] = useYScale('pow', fitDb(fitData, lines.map((l) => l.dataKey)))
   return (
     <>
-      <div className="plot-controls">{yControl}</div>
+      <div className="plot-controls">{yControl}<SolveTime /></div>
       <BaseChart chartId="pow" data={data} lines={lines} yLabel="dBW" yDomain={yDomain} />
     </>
   )
@@ -947,7 +982,7 @@ function EfficiencyTab() {
   const [yDomain, yControl] = useYScale('eff', fitLinear(fitData, ['eff']))
   return (
     <>
-      <div className="plot-controls">{yControl}</div>
+      <div className="plot-controls">{yControl}<SolveTime /></div>
       <BaseChart chartId="eff" data={data} lines={lines} yLabel="acoustic / electrical %" yDomain={yDomain} />
     </>
   )
@@ -969,7 +1004,7 @@ function ElecPowerTab() {
   const [yDomain, yControl] = useYScale('pe', fitLinear(fitData, ['peW', 'peVA']))
   return (
     <>
-      <div className="plot-controls">{yControl}</div>
+      <div className="plot-controls">{yControl}<SolveTime /></div>
       <BaseChart chartId="pe" data={data} lines={lines} yLabel="W / VA" yDomain={yDomain} />
     </>
   )
@@ -1002,10 +1037,23 @@ function PhaseTab() {
         <label><input type="checkbox" checked={settings.unwrapPhase} onChange={(e) => updateSettings({ unwrapPhase: e.target.checked })} />unwrap</label>
         <label>Delay offset <input type="number" step="0.5" value={off} onChange={(e) => { const v = parseFloat(e.target.value); if (!Number.isNaN(v)) updateSettings({ delayOffset: v }) }} /> ms</label>
         {yControl}
+        <SolveTime />
       </div>
       <BaseChart chartId="ph" data={adj} lines={lines} yLabel="deg" yDomain={yDomain} y2Label="ms" />
     </>
   )
+}
+
+/**
+ * How long the result on screen took to solve.
+ *
+ * @returns {React.ReactElement|null} The readout, or `null` before the first result.
+ * @sideEffect Subscribes to the store.
+ */
+function SolveTime() {
+  const ms = useStore((s) => s.results?.elapsedMs)
+  if (ms == null) return null
+  return <span className="plot-solved" title="Time to solve the frequency sweep">solved {ms.toFixed(0)} ms</span>
 }
 
 /**

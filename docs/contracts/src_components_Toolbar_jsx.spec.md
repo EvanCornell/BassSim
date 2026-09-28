@@ -13,7 +13,7 @@ that order. Metric items are data-driven and need no case here; controls get
 one each. Application-level switches (Settings, experimental features) belong
 to the menu bar, not here — this strip is for per-design adjustments.
 
-## EXPORTED (1)
+## EXPORTED (2)
 
 ### `Toolbar()`
 
@@ -23,9 +23,10 @@ to the menu bar, not here — this strip is for per-design adjustments.
 The quick-access bar under the menu.
 
 Contents and order come from `store.toolbar`, configured in Settings ▸
-Quick bar. Consecutive items of the same kind are collected into one
-block that wraps internally, so a long metrics readout does not push the
-controls onto a second row.
+Quick bar. Every control is a pill of its own; the metrics collect into
+one block that wraps, a pill per cluster of neighbours that describe the
+same thing (see `cluster` in `TOOLBAR_ITEMS`), so the response, the
+impedance, the limits and the size each read as a group.
 
 **Returns**
 
@@ -35,7 +36,24 @@ controls onto a second row.
 
 - Subscribes to the store.
 
-## UNREACHABLE (7)
+### `clusters(ids)`
+
+- **Reachability:** EXPORTED
+- **Obtain via:** import { clusters } from '../../src/components/Toolbar.jsx'
+
+Metric ids split into runs of neighbours that share a cluster.
+
+**Parameters**
+
+- `ids` — `string[]` — Metric ids, in bar order.
+
+**Returns**
+
+- `string[][]` — The runs, in order.
+
+**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
+
+## UNREACHABLE (8)
 
 ### `UndoRedo()`
 
@@ -140,7 +158,27 @@ here.
 
 **Returns**
 
-- `React.ReactElement|null` — The readout, or `null` when the id is not a metric.
+- `React.ReactElement|null` — The readout, or `null` when the id is not a metric or has no value for this design.
+
+**Side effects**
+
+- Subscribes to the store.
+
+### `MetricPill(props)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+One cluster of readouts in a pill, or nothing when none of them has a value.
+
+**Parameters**
+
+- `props` — `object` — Component props.
+- `props.ids` — `string[]` — Metric ids in the cluster.
+
+**Returns**
+
+- `React.ReactElement|null` — The pill.
 
 **Side effects**
 

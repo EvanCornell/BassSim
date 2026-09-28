@@ -395,7 +395,7 @@ function CurveEditor({ driverId, param, nl, xmax, width, height, refv }) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flex: 1, minHeight: 0 }}>
       <svg
         ref={svgRef} width={W} height={H}
-        style={{ background: 'var(--bg)', border: '1px solid var(--border)', cursor: 'crosshair' }}
+        style={{ background: 'var(--panel-2)', borderRadius: 14, cursor: 'crosshair' }}
         onClick={onSvgClick} onPointerDown={onSvgPointerDown}
         onPointerMove={onSvgMove} onPointerLeave={() => setHover(null)}
       >
@@ -405,59 +405,59 @@ function CurveEditor({ driverId, param, nl, xmax, width, height, refv }) {
         {niceTicks(v.x0, v.x1, 10).map((x) => {
           const [px] = toPx(x, v.y0)
           return <g key={`x${x}`}>
-            <line x1={px} y1={PAD} x2={px} y2={H - PAD} stroke="#232b3a" strokeDasharray={Math.abs(x) < 1e-9 ? '' : '2 4'} />
-            <text x={px} y={H - PAD + 15} fill="#6b7687" fontSize="10" textAnchor="middle">{x}</text>
+            <line x1={px} y1={PAD} x2={px} y2={H - PAD} stroke="var(--grid)" strokeDasharray={Math.abs(x) < 1e-9 ? '' : '2 4'} />
+            <text x={px} y={H - PAD + 15} fill="var(--text-3)" fontSize="10" textAnchor="middle">{x}</text>
           </g>
         })}
         {niceTicks(v.y0, v.y1, 6).map((r) => {
           const [, py] = toPx(v.x0, r)
           const isRef = Math.abs(r - 1) < 1e-9
           return <g key={`y${r}`}>
-            <line x1={PAD} y1={py} x2={W - PAD} y2={py} stroke={isRef ? '#3d4859' : '#232b3a'} strokeDasharray={isRef ? '' : '2 4'} />
-            <text x={PAD - 6} y={py + 3} fill={isRef ? '#9aa7b8' : '#6b7687'} fontSize="10" textAnchor="end">{fmtVal(r * refv.v)}</text>
+            <line x1={PAD} y1={py} x2={W - PAD} y2={py} stroke={isRef ? 'var(--line-2)' : 'var(--grid)'} strokeDasharray={isRef ? '' : '2 4'} />
+            <text x={PAD - 6} y={py + 3} fill={isRef ? 'var(--text-2)' : 'var(--text-3)'} fontSize="10" textAnchor="end">{fmtVal(r * refv.v)}</text>
           </g>
         })}
-        <text x={14} y={PAD - 8} fill="#9aa7b8" fontSize="10">{param} ({refv.unit})</text>
+        <text x={14} y={PAD - 8} fill="var(--text-2)" fontSize="10">{param} ({refv.unit})</text>
         <g clipPath="url(#plotclip)">
           {[-xmax, xmax].map((x) => {
             if (x < v.x0 || x > v.x1) return null
             const [px] = toPx(x, 0)
             return <g key={x}>
-              <line x1={px} y1={PAD} x2={px} y2={H - PAD} stroke="#e66767" strokeDasharray="5 4" opacity="0.6" />
-              <text x={px} y={PAD - 6} fill="#e66767" fontSize="10" textAnchor="middle">{x > 0 ? '+Xmax' : '−Xmax'}</text>
+              <line x1={px} y1={PAD} x2={px} y2={H - PAD} stroke="var(--red)" strokeDasharray="5 4" opacity="0.6" />
+              <text x={px} y={PAD - 6} fill="var(--red)" fontSize="10" textAnchor="middle">{x > 0 ? '+Xmax' : '−Xmax'}</text>
             </g>
           })}
           {/* cursor guide: vertical bar + dot on the curve */}
           {hover != null && (
             <g pointerEvents="none">
-              <line x1={hpx} y1={PAD} x2={hpx} y2={H - PAD} stroke="#5598e7" strokeDasharray="3 3" opacity="0.7" />
-              <circle cx={hpx} cy={hpy} r="4.5" fill="none" stroke="#5598e7" strokeWidth="2" />
-              <text x={hpx + 8} y={Math.max(hpy - 10, PAD + 12)} fill="#9ec5f4" fontSize="11">
+              <line x1={hpx} y1={PAD} x2={hpx} y2={H - PAD} stroke="var(--accent)" strokeDasharray="3 3" opacity="0.7" />
+              <circle cx={hpx} cy={hpy} r="4.5" fill="none" stroke="var(--accent)" strokeWidth="2" />
+              <text x={hpx + 8} y={Math.max(hpy - 10, PAD + 12)} fill="var(--accent-strong)" fontSize="11">
                 {hover.toFixed(1)} mm · {fmtVal(hoverR * refv.v)} {refv.unit} ({(hoverR * 100).toFixed(0)}%)
               </text>
             </g>
           )}
-          <path d={path} stroke="#3987e5" strokeWidth="2.5" fill="none" />
+          <path d={path} stroke="var(--c1)" strokeWidth="2.5" fill="none" />
           {(curve.points || []).map((p, k) => {
             const [px, py] = toPx(p.x, evalCurve(curve, p.x, xmax))
             return (
               <g key={k}>
                 <circle
                   data-pt={k} cx={px} cy={py} r={selected === k ? 9 : 7}
-                  fill={selected === k ? '#c98500' : '#9085e9'} stroke="var(--bg)" strokeWidth="2"
+                  fill={selected === k ? 'var(--c3)' : 'var(--c4)'} stroke="var(--bg)" strokeWidth="2"
                   style={{ cursor: 'grab' }}
                   onPointerDown={(e) => onDragPoint(k, e)}
                   onDoubleClick={(e) => { e.stopPropagation(); removePoint(k) }}
                 />
                 {curve.sym && Math.abs(p.x) > 0.01 && (() => {
                   const [mx, my] = toPx(-p.x, evalCurve(curve, -p.x, xmax))
-                  return <circle cx={mx} cy={my} r={5} fill="none" stroke="#9085e9" strokeWidth="1.5" strokeDasharray="2 2" />
+                  return <circle cx={mx} cy={my} r={5} fill="none" stroke="var(--c4)" strokeWidth="1.5" strokeDasharray="2 2" />
                 })()}
               </g>
             )
           })}
         </g>
-        <text x={W / 2} y={H - 8} fill="#6b7687" fontSize="10" textAnchor="middle">
+        <text x={W / 2} y={H - 8} fill="var(--text-3)" fontSize="10" textAnchor="middle">
           excursion (mm) — click: add point · drag point: shape · Delete/double-click: remove · wheel: zoom · shift+drag: pan
         </text>
       </svg>

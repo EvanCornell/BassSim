@@ -8,9 +8,9 @@ import { splOf, levels, CEA2010_LIMITS } from '../spice/timedomain'
 import NLLab from './NLLab'
 
 /** Trace colours, shared with the frequency charts. */
-const SERIES = ['#3987e5', '#199e70', '#c98500', '#9085e9', '#d55181', '#d95926']
-const GRID = '#2d3646'
-const TICK = { fill: '#9aa7b8', fontSize: 10 }
+const SERIES = ['var(--c1)', 'var(--c2)', 'var(--c3)', 'var(--c4)', 'var(--c5)', 'var(--c6)']
+const GRID = 'var(--grid)'
+const TICK = { fill: 'var(--text-3)', fontSize: 10.5 }
 /** Most points drawn per trace; longer series are thinned keeping their peaks. */
 const MAX_POINTS = 1600
 
@@ -135,21 +135,21 @@ function TdChart({ title, data, lines, xKey = 'ms', xLabel = 'ms', logX = false,
           />
           <YAxis yAxisId="left" domain={yDomain || ['auto', 'auto']} tick={TICK} stroke={GRID} width={50}
             tickFormatter={(v) => Number(Number(v).toPrecision(3))}
-            label={{ value: yLabel, angle: -90, position: 'insideLeft', fill: '#6b7687', fontSize: 10 }} />
+            label={{ value: yLabel, angle: -90, position: 'insideLeft', fill: 'var(--text-3)', fontSize: 10 }} />
           {right && (
             <YAxis yAxisId="right" orientation="right" tick={TICK} stroke={GRID} width={50}
               tickFormatter={(v) => Number(Number(v).toPrecision(3))}
-              label={{ value: y2Label, angle: 90, position: 'insideRight', fill: '#6b7687', fontSize: 10 }} />
+              label={{ value: y2Label, angle: 90, position: 'insideRight', fill: 'var(--text-3)', fontSize: 10 }} />
           )}
           <Tooltip
-            contentStyle={{ background: 'var(--surface)', border: '1px solid var(--border)', fontSize: 11 }}
+            contentStyle={{ background: 'var(--raised)', border: '1px solid var(--line-2)', borderRadius: 10, fontSize: 11.5 }}
             labelFormatter={(v) => `${Number(Number(v).toPrecision(5))} ${xLabel}`}
             formatter={(v) => (typeof v === 'number' ? Number(v.toPrecision(4)) : v)}
           />
           <Legend wrapperStyle={{ fontSize: 11 }} />
           {refs.map((r, i) => (
-            <ReferenceLine key={i} yAxisId="left" y={r.y} stroke={r.color || '#e66767'} strokeDasharray="5 4"
-              label={r.label ? { value: r.label, fill: r.color || '#e66767', fontSize: 10, position: 'insideTopRight' } : undefined} />
+            <ReferenceLine key={i} yAxisId="left" y={r.y} stroke={r.color || 'var(--red)'} strokeDasharray="5 4"
+              label={r.label ? { value: r.label, fill: r.color || 'var(--red)', fontSize: 10, position: 'insideTopRight' } : undefined} />
           ))}
           {lines.map((l, i) => (
             <Line key={l.key} yAxisId={l.right ? 'right' : 'left'} dataKey={l.key} name={l.name}
@@ -531,12 +531,12 @@ function TransientView({ res, onRun }) {
       </div>
       <div className="td-grid">
         <TdChart title="Pressure at 1 m" data={charts.p} yLabel="Pa"
-          lines={[{ key: 'nl', name: res.opts.nonlinear ? 'Nonlinear' : 'Linear', width: 2 }, ...(linear ? [{ key: 'lin', name: 'Linear', dash: '5 3', color: '#9aa7b8' }] : [])]} />
+          lines={[{ key: 'nl', name: res.opts.nonlinear ? 'Nonlinear' : 'Linear', width: 2 }, ...(linear ? [{ key: 'lin', name: 'Linear', dash: '5 3', color: 'var(--text-2)' }] : [])]} />
         <TdChart title="Cone excursion" data={charts.x} yLabel="mm"
           refs={charts.drivers.flatMap((id) => (charts.xmax[id] ? [{ y: charts.xmax[id], label: 'Xmax' }, { y: -charts.xmax[id] }] : []))}
           lines={charts.drivers.flatMap((id, i) => [
             { key: `x_${id}`, name: nameOf(nodes, id), width: 2, color: SERIES[i % SERIES.length] },
-            ...(linear ? [{ key: `xl_${id}`, name: `${nameOf(nodes, id)} linear`, dash: '5 3', color: '#9aa7b8' }] : []),
+            ...(linear ? [{ key: `xl_${id}`, name: `${nameOf(nodes, id)} linear`, dash: '5 3', color: 'var(--text-2)' }] : []),
           ])} />
         <TdChart title="Amplifier current and voltage" data={charts.cur} yLabel="A" y2Label="V"
           lines={charts.ch.flatMap((id, i) => [
@@ -548,7 +548,7 @@ function TransientView({ res, onRun }) {
             lines={charts.wgs.map((id, i) => ({ key: `w_${id}`, name: nameOf(nodes, id), color: SERIES[i % SERIES.length] }))} />
         )}
         <TdChart title="Output spectrum" data={charts.spRows} xKey="hz" xLabel="Hz" logX yLabel="dB SPL" yDomain={['dataMax - 90', 'dataMax + 5']}
-          lines={[{ key: 'nl', name: res.opts.nonlinear ? 'Nonlinear' : 'Linear', width: 1.5 }, ...(linear ? [{ key: 'lin', name: 'Linear', dash: '5 3', color: '#9aa7b8' }] : [])]} />
+          lines={[{ key: 'nl', name: res.opts.nonlinear ? 'Nonlinear' : 'Linear', width: 1.5 }, ...(linear ? [{ key: 'lin', name: 'Linear', dash: '5 3', color: 'var(--text-2)' }] : [])]} />
         {charts.probes.length > 0 && (
           <TdChart title="Probes" data={charts.prb} yLabel="Pa · m³/s · m/s"
             lines={charts.probes.map((id, i) => ({ key: `p_${id}`, name: `${id} (${run.probes[id].kind})`, color: SERIES[i % SERIES.length] }))} />
@@ -698,7 +698,7 @@ function DistortionView({ mode, res, onRun }) {
                 <CartesianGrid stroke={GRID} strokeDasharray="2 4" />
                 <XAxis dataKey="name" tick={TICK} stroke={GRID} />
                 <YAxis tick={TICK} stroke={GRID} width={50} domain={[0, -FLOOR]} ticks={[0, 20, 40, 60, 80, 100, 120]} tickFormatter={(v) => v + FLOOR} />
-                <Tooltip contentStyle={{ background: 'var(--surface)', border: '1px solid var(--border)', fontSize: 11 }}
+                <Tooltip contentStyle={{ background: 'var(--raised)', border: '1px solid var(--line-2)', borderRadius: 10, fontSize: 11.5 }}
                   formatter={(_v, _n, p) => [`${f(p.payload.db)} dB (${f(pct(p.payload.db), 3)} %)`, `${p.payload.hz} Hz`]} />
                 <Bar dataKey="up" isAnimationActive={false}>
                   {bars.map((b) => <Cell key={b.n} fill={b.n % 2 ? SERIES[0] : SERIES[1]} />)}
@@ -732,7 +732,7 @@ function DistortionView({ mode, res, onRun }) {
         <FailedPoints failed={res.failed} />
         <div className="td-grid one">
           <TdChart title="Compression: nonlinear level minus linear level" data={res.rows} xKey="hz" xLabel="Hz" logX yLabel="dB" height={320}
-            refs={[{ y: 0, color: '#6b7687' }]}
+            refs={[{ y: 0, color: 'var(--text-3)' }]}
             lines={res.levels.map((L, i) => ({ key: `cmp${L}`, name: `${L >= 0 ? '+' : ''}${L} dB`, color: SERIES[i % SERIES.length], width: 2 }))} />
           <TdChart title="Output level" data={res.rows} xKey="hz" xLabel="Hz" logX yLabel="dB SPL"
             lines={res.levels.map((L, i) => ({ key: `spl${L}`, name: `${L >= 0 ? '+' : ''}${L} dB`, color: SERIES[i % SERIES.length] }))} />

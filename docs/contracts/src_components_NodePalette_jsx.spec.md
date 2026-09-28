@@ -5,19 +5,15 @@
 
 ## Module
 
-The element palette, floating over the top-left of the node editor.
+The element dock, floating at the bottom centre of the node editor.
 
-It used to be a docked panel with a paragraph of explanation under every
-entry. That paragraph is read once and then occupies a column of the screen
-forever, and the column was the most valuable one — right beside the canvas.
-What a user actually needs while building is the shortest possible answer to
-"which one is the chamber": its colour, which is the same colour the node
-will be, and its name.
+One chip per element — its colour, which is the colour its node will be,
+its name, and the key that adds one at the pointer — then the zoom. A
+chip is dragged onto the canvas to place the element. The long
+description survives as the tooltip, where it costs nothing until wanted.
 
-Floating rather than docked because the palette is part of the canvas, not a
-neighbour of it. It travels with the canvas when the panel is popped out,
-and it costs the graph no space that the graph was using — the container
-ignores pointer events, so only the cubes themselves are in the way.
+It lives inside the canvas, not beside it: it travels with the canvas
+when the panel is popped out, and it costs the graph no space.
 
 ## EXPORTED (1)
 
@@ -26,20 +22,22 @@ ignores pointer events, so only the cubes themselves are in the way.
 - **Reachability:** EXPORTED
 - **Obtain via:** import { NodePalette } from '../../src/components/NodePalette.jsx'
 
-The floating stack of draggable element cubes.
+The element dock: draggable element chips with their shortcut keys, and the zoom.
 
-Each cube carries its element's theme colour and name; the long description
-survives as the tooltip, where it costs nothing until it is wanted.
+Must be rendered inside the canvas's React Flow provider, which the zoom
+reads and drives.
 
 **Returns**
 
-- `React.ReactElement` — The palette overlay.
+- `React.ReactElement` — The dock.
 
-**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
+**Side effects**
+
+- Subscribes to the store and to the canvas viewport.
 
 ## UNREACHABLE (1)
 
-### `NodePalette > onDragStart(e, type)`
+### `onDragStart(e, type)`
 
 - **Reachability:** UNREACHABLE
 - **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.

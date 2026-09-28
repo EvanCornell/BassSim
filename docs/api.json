@@ -24,9 +24,9 @@
     "pure": "flag"
   },
   "stats": {
-    "modules": 99,
-    "methods": 1021,
-    "documented": 1021
+    "modules": 100,
+    "methods": 1036,
+    "documented": 1036
   },
   "modules": [
     {
@@ -6586,13 +6586,13 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 62,
+          "line": 61,
           "signature": [
             "arg0"
           ],
           "documented": true,
-          "summary": "The icon drawn beside a row.",
-          "description": "The icon drawn beside a row.\n\nFolders get an open or closed folder; files get a page tinted by what they\nhold, so a project and the driver library are told apart at a glance rather\nthan by reading.",
+          "summary": "The marker drawn beside a row.",
+          "description": "The marker drawn beside a row.\n\nA file gets a small square in the hue of what it holds — a project, the\ndriver library, the snapshots — so they are told apart at a glance\nrather than by reading. A folder has its chevron and nothing else.",
           "params": [
             {
               "name": "props",
@@ -6607,18 +6607,11 @@
               "optional": false,
               "default": null,
               "desc": "`'folder'` for a folder, otherwise the file entry's kind."
-            },
-            {
-              "name": "props.open",
-              "type": "boolean",
-              "optional": false,
-              "default": null,
-              "desc": "Whether an expanded folder is being drawn."
             }
           ],
           "returns": {
             "type": "React.ReactElement",
-            "desc": "The icon."
+            "desc": "The marker."
           },
           "throws": [],
           "contract": {
@@ -6639,7 +6632,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 94,
+          "line": 79,
           "signature": [
             "nodes",
             "collapsed",
@@ -6694,7 +6687,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 121,
+          "line": 106,
           "signature": [
             "arg0"
           ],
@@ -6763,7 +6756,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 159,
+          "line": 144,
           "signature": [],
           "documented": true,
           "summary": "The workspace explorer panel.",
@@ -6794,7 +6787,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 196,
+          "line": 181,
           "signature": [
             "path",
             "e"
@@ -6843,7 +6836,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 221,
+          "line": 206,
           "signature": [
             "node"
           ],
@@ -6884,7 +6877,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 237,
+          "line": 222,
           "signature": [],
           "documented": true,
           "summary": "The folder a new entry or a paste belongs in, given what is selected.",
@@ -6915,7 +6908,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 249,
+          "line": 234,
           "signature": [],
           "documented": true,
           "summary": "Delete what is selected, after one confirmation covering all of it.",
@@ -6946,7 +6939,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 273,
+          "line": 258,
           "signature": [
             "name"
           ],
@@ -6987,7 +6980,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 299,
+          "line": 284,
           "signature": [],
           "documented": true,
           "summary": "Abandon an inline edit.",
@@ -7018,7 +7011,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 312,
+          "line": 297,
           "signature": [
             "e"
           ],
@@ -7059,7 +7052,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 324,
+          "line": 309,
           "signature": [
             "next"
           ],
@@ -7100,7 +7093,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 378,
+          "line": 363,
           "signature": [
             "e",
             "node"
@@ -7149,7 +7142,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 397,
+          "line": 382,
           "signature": [
             "e",
             "folder"
@@ -7198,7 +7191,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 413,
+          "line": 398,
           "signature": [
             "e",
             "folder"
@@ -7247,7 +7240,7 @@
           "exported": false,
           "async": true,
           "generator": false,
-          "line": 434,
+          "line": 419,
           "signature": [
             "e"
           ],
@@ -7288,7 +7281,7 @@
           "exported": false,
           "async": true,
           "generator": false,
-          "line": 452,
+          "line": 437,
           "signature": [],
           "documented": true,
           "summary": "Point the workspace at a folder on disk, reporting a refusal in the panel.",
@@ -7319,7 +7312,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 465,
+          "line": 450,
           "signature": [
             "row"
           ],
@@ -7361,7 +7354,7 @@
       "constants": [
         {
           "name": "__internals",
-          "line": 327,
+          "line": 331,
           "shape": {
             "kind": "object",
             "keys": [
@@ -7380,7 +7373,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 21,
+          "line": 25,
           "signature": [
             "conn"
           ],
@@ -7419,7 +7412,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 42,
+          "line": 46,
           "signature": [],
           "documented": true,
           "summary": "Discard the one `contextmenu` event that trails a completed right-drag.",
@@ -7450,7 +7443,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 50,
+          "line": 54,
           "signature": [
             "e"
           ],
@@ -7491,7 +7484,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 73,
+          "line": 77,
           "signature": [],
           "documented": true,
           "summary": "The node editor canvas.",
@@ -7522,7 +7515,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 102,
+          "line": 106,
           "signature": [],
           "documented": true,
           "summary": "Where a keyboard-added node should land, in canvas coordinates.",
@@ -7553,7 +7546,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 144,
+          "line": 148,
           "signature": [
             "e"
           ],
@@ -7594,7 +7587,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 162,
+          "line": 166,
           "signature": [
             "ev"
           ],
@@ -7637,7 +7630,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 181,
+          "line": 185,
           "signature": [
             "ev"
           ],
@@ -7680,7 +7673,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 226,
+          "line": 230,
           "signature": [
             "e",
             "target"
@@ -7731,7 +7724,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 316,
+          "line": 320,
           "signature": [],
           "documented": true,
           "summary": "The Node Editor panel, wrapping the canvas in its React Flow provider.",
@@ -7838,13 +7831,44 @@
           "other": []
         },
         {
+          "name": "ProjectTitle",
+          "qualified": "ProjectTitle",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 67,
+          "signature": [],
+          "documented": true,
+          "summary": "The open project's name, centred in the bar, with a dot for the state of its result.",
+          "description": "The open project's name, centred in the bar, with a dot for the state of its result.\n\nGreen once the result is current, amber while a sweep is running, red\nwhen the project cannot be simulated, grey when nothing is open.",
+          "params": [],
+          "returns": {
+            "type": "React.ReactElement|null",
+            "desc": "The title, or `null` when no project is open."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Subscribes to the store."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
           "name": "MenuBar",
           "qualified": "MenuBar",
           "kind": "function",
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 72,
+          "line": 98,
           "signature": [],
           "documented": true,
           "summary": "The application menu bar.",
@@ -7875,7 +7899,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 91,
+          "line": 117,
           "signature": [
             "id"
           ],
@@ -7916,7 +7940,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 104,
+          "line": 130,
           "signature": [
             "id"
           ],
@@ -7957,7 +7981,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 116,
+          "line": 142,
           "signature": [],
           "documented": true,
           "summary": "Bring a popped-out panel's tab to the front, or toggle a docked one.",
@@ -7988,7 +8012,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 128,
+          "line": 154,
           "signature": [
             "e"
           ],
@@ -8029,7 +8053,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 136,
+          "line": 162,
           "signature": [
             "e"
           ],
@@ -8070,7 +8094,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 160,
+          "line": 186,
           "signature": [
             "e"
           ],
@@ -8111,7 +8135,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 170,
+          "line": 196,
           "signature": [],
           "documented": true,
           "summary": "Parse the loaded file and add it to the workspace.",
@@ -8142,7 +8166,7 @@
           "exported": false,
           "async": true,
           "generator": false,
-          "line": 205,
+          "line": 231,
           "signature": [
             "e"
           ],
@@ -8183,7 +8207,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 221,
+          "line": 247,
           "signature": [],
           "documented": true,
           "summary": "Save the current window arrangement under a prompted name.",
@@ -8214,7 +8238,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 237,
+          "line": 263,
           "signature": [],
           "documented": true,
           "summary": "Add an empty project to the workspace and open it.",
@@ -8245,7 +8269,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 249,
+          "line": 275,
           "signature": [],
           "documented": true,
           "summary": "Open the file picker to import a project.",
@@ -8276,7 +8300,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 260,
+          "line": 286,
           "signature": [],
           "documented": true,
           "summary": "Download the whole workspace as one file.",
@@ -8307,7 +8331,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 270,
+          "line": 296,
           "signature": [],
           "documented": true,
           "summary": "Open the file picker to replace the workspace.",
@@ -8338,7 +8362,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 280,
+          "line": 306,
           "signature": [],
           "documented": true,
           "summary": "Connect the workspace to a folder on disk, or disconnect it.",
@@ -8369,7 +8393,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 294,
+          "line": 320,
           "signature": [],
           "documented": true,
           "summary": "Download every result series as a CSV.",
@@ -8400,7 +8424,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 304,
+          "line": 330,
           "signature": [],
           "documented": true,
           "summary": "Download a PNG of the node canvas.",
@@ -8431,7 +8455,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 314,
+          "line": 340,
           "signature": [],
           "documented": true,
           "summary": "Download a plain-text metrics summary.",
@@ -8462,7 +8486,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 343,
+          "line": 369,
           "signature": [],
           "documented": true,
           "summary": "Pop the focused panel out into its own browser tab.",
@@ -8493,7 +8517,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 358,
+          "line": 384,
           "signature": [],
           "documented": true,
           "summary": "Pop this specific panel out into its own browser tab.",
@@ -8524,7 +8548,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 371,
+          "line": 397,
           "signature": [],
           "documented": true,
           "summary": "Maximize the focused panel, or restore the one already maximized.",
@@ -8555,7 +8579,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 382,
+          "line": 408,
           "signature": [],
           "documented": true,
           "summary": "Restore the default workspace arrangement.",
@@ -8586,7 +8610,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 397,
+          "line": 423,
           "signature": [],
           "documented": true,
           "summary": "Apply this saved arrangement.",
@@ -8617,7 +8641,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 414,
+          "line": 440,
           "signature": [],
           "documented": true,
           "summary": "Delete this saved arrangement.",
@@ -8648,7 +8672,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 430,
+          "line": 456,
           "signature": [],
           "documented": true,
           "summary": "Toggle resonance masking, which lumps chambers to hide standing-wave artifacts.",
@@ -8679,7 +8703,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 441,
+          "line": 467,
           "signature": [],
           "documented": true,
           "summary": "Toggle phase unwrapping on the phase chart.",
@@ -8710,7 +8734,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 459,
+          "line": 485,
           "signature": [],
           "documented": true,
           "summary": "Discard every reference overlay.",
@@ -8741,7 +8765,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 474,
+          "line": 500,
           "signature": [],
           "documented": true,
           "summary": "Open the driver library browser.",
@@ -8772,7 +8796,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 484,
+          "line": 510,
           "signature": [],
           "documented": true,
           "summary": "Open the Thiele/Small parameter solver.",
@@ -8803,7 +8827,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 496,
+          "line": 522,
           "signature": [],
           "documented": true,
           "summary": "Open the time-domain workspace.",
@@ -8834,7 +8858,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 506,
+          "line": 532,
           "signature": [],
           "documented": true,
           "summary": "Open the time-domain workspace at the driver curve editor.",
@@ -8865,7 +8889,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 520,
+          "line": 546,
           "signature": [],
           "documented": true,
           "summary": "Open Settings at the keyboard section.",
@@ -8896,7 +8920,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 530,
+          "line": 556,
           "signature": [],
           "documented": true,
           "summary": "Show the about dialog.",
@@ -10186,48 +10210,19 @@
     {
       "file": "src/components/NodePalette.jsx",
       "module": {
-        "summary": "The element palette, floating over the top-left of the node editor.",
-        "description": "The element palette, floating over the top-left of the node editor.\n\nIt used to be a docked panel with a paragraph of explanation under every\nentry. That paragraph is read once and then occupies a column of the screen\nforever, and the column was the most valuable one — right beside the canvas.\nWhat a user actually needs while building is the shortest possible answer to\n\"which one is the chamber\": its colour, which is the same colour the node\nwill be, and its name.\n\nFloating rather than docked because the palette is part of the canvas, not a\nneighbour of it. It travels with the canvas when the panel is popped out,\nand it costs the graph no space that the graph was using — the container\nignores pointer events, so only the cubes themselves are in the way."
+        "summary": "The element dock, floating at the bottom centre of the node editor.",
+        "description": "The element dock, floating at the bottom centre of the node editor.\n\nOne chip per element — its colour, which is the colour its node will be,\nits name, and the key that adds one at the pointer — then the zoom. A\nchip is dragged onto the canvas to place the element. The long\ndescription survives as the tooltip, where it costs nothing until wanted.\n\nIt lives inside the canvas, not beside it: it travels with the canvas\nwhen the panel is popped out, and it costs the graph no space."
       },
       "constants": [],
       "methods": [
         {
-          "name": "NodePalette",
-          "qualified": "NodePalette",
-          "kind": "function",
-          "exported": true,
-          "async": false,
-          "generator": false,
-          "line": 26,
-          "signature": [],
-          "documented": true,
-          "summary": "The floating stack of draggable element cubes.",
-          "description": "The floating stack of draggable element cubes.\n\nEach cube carries its element's theme colour and name; the long description\nsurvives as the tooltip, where it costs nothing until it is wanted.",
-          "params": [],
-          "returns": {
-            "type": "React.ReactElement",
-            "desc": "The palette overlay."
-          },
-          "throws": [],
-          "contract": {
-            "pre": [],
-            "post": [],
-            "invariant": [],
-            "mutates": [],
-            "sideEffect": [],
-            "reads": [],
-            "pure": true
-          },
-          "other": []
-        },
-        {
           "name": "onDragStart",
-          "qualified": "NodePalette > onDragStart",
+          "qualified": "onDragStart",
           "kind": "function",
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 39,
+          "line": 28,
           "signature": [
             "e",
             "type"
@@ -10268,6 +10263,37 @@
             "pure": false
           },
           "other": []
+        },
+        {
+          "name": "NodePalette",
+          "qualified": "NodePalette",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 42,
+          "signature": [],
+          "documented": true,
+          "summary": "The element dock: draggable element chips with their shortcut keys, and the zoom.",
+          "description": "The element dock: draggable element chips with their shortcut keys, and the zoom.\n\nMust be rendered inside the canvas's React Flow provider, which the zoom\nreads and drives.",
+          "params": [],
+          "returns": {
+            "type": "React.ReactElement",
+            "desc": "The dock."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Subscribes to the store and to the canvas viewport."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
         }
       ]
     },
@@ -10277,7 +10303,7 @@
       "constants": [
         {
           "name": "CHART_PANELS",
-          "line": 1033,
+          "line": 1081,
           "shape": {
             "kind": "object",
             "keys": [
@@ -10298,7 +10324,7 @@
         },
         {
           "name": "__internals",
-          "line": 1075,
+          "line": 1123,
           "shape": {
             "kind": "object",
             "keys": [
@@ -10323,7 +10349,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 30,
+          "line": 33,
           "signature": [
             "v",
             "d"
@@ -10370,7 +10396,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 63,
+          "line": 66,
           "signature": [
             "arg0"
           ],
@@ -10481,7 +10507,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 94,
+          "line": 97,
           "signature": [
             "lo",
             "hi"
@@ -10530,7 +10556,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 104,
+          "line": 107,
           "signature": [
             "v"
           ],
@@ -10569,7 +10595,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 113,
+          "line": 116,
           "signature": [],
           "documented": true,
           "summary": "Return this chart to its default view: full sweep, Y back to Fit.",
@@ -10600,7 +10626,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 135,
+          "line": 138,
           "signature": [
             "clientX",
             "clientY"
@@ -10649,7 +10675,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 159,
+          "line": 162,
           "signature": [
             "e"
           ],
@@ -10692,7 +10718,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 194,
+          "line": 197,
           "signature": [
             "e"
           ],
@@ -10733,7 +10759,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 210,
+          "line": 213,
           "signature": [
             "ev"
           ],
@@ -10776,7 +10802,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 228,
+          "line": 231,
           "signature": [],
           "documented": true,
           "summary": "End the pan and remove its listeners.",
@@ -10807,7 +10833,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 253,
+          "line": 256,
           "signature": [],
           "documented": true,
           "summary": "Apply a completed drag-select as an X zoom.",
@@ -10838,7 +10864,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 341,
+          "line": 361,
           "signature": [
             "chartId",
             "data"
@@ -10887,7 +10913,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 358,
+          "line": 378,
           "signature": [
             "id",
             "fitDomain"
@@ -10936,7 +10962,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 368,
+          "line": 388,
           "signature": [
             "patch"
           ],
@@ -10977,7 +11003,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 406,
+          "line": 427,
           "signature": [
             "v",
             "up"
@@ -11024,7 +11050,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 425,
+          "line": 446,
           "signature": [
             "rows",
             "keys",
@@ -11079,7 +11105,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 441,
+          "line": 462,
           "signature": [
             "rows",
             "keys",
@@ -11142,7 +11168,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 460,
+          "line": 481,
           "signature": [
             "keys"
           ],
@@ -11183,7 +11209,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 545,
+          "line": 566,
           "signature": [
             "v"
           ],
@@ -11222,7 +11248,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 562,
+          "line": 583,
           "signature": [
             "arr",
             "f"
@@ -11271,7 +11297,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 582,
+          "line": 603,
           "signature": [
             "snapshots",
             "key"
@@ -11318,7 +11344,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 594,
+          "line": 615,
           "signature": [],
           "documented": true,
           "summary": "Sound pressure level, with a trace per radiator beside the combined response.",
@@ -11349,7 +11375,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 631,
+          "line": 662,
           "signature": [],
           "documented": true,
           "summary": "Electrical input impedance magnitude, with phase on a second axis.",
@@ -11380,7 +11406,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 678,
+          "line": 709,
           "signature": [],
           "documented": true,
           "summary": "Cone excursion against Xmax, one trace per driver.",
@@ -11411,7 +11437,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 693,
+          "line": 724,
           "signature": [
             "id"
           ],
@@ -11452,7 +11478,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 708,
+          "line": 739,
           "signature": [
             "id"
           ],
@@ -11493,7 +11519,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 731,
+          "line": 762,
           "signature": [
             "xm"
           ],
@@ -11534,7 +11560,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 779,
+          "line": 811,
           "signature": [],
           "documented": true,
           "summary": "Air velocity in each waveguide, against the turbulence threshold.",
@@ -11565,7 +11591,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 818,
+          "line": 851,
           "signature": [],
           "documented": true,
           "summary": "Interior SPL at each probed chamber's virtual microphone.",
@@ -11596,7 +11622,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 864,
+          "line": 898,
           "signature": [
             "key",
             "probes",
@@ -11651,7 +11677,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 883,
+          "line": 917,
           "signature": [],
           "documented": true,
           "summary": "Flow and velocity at each flow or velocity probe.",
@@ -11682,7 +11708,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 923,
+          "line": 958,
           "signature": [],
           "documented": true,
           "summary": "Radiated acoustic power.",
@@ -11713,7 +11739,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 943,
+          "line": 978,
           "signature": [],
           "documented": true,
           "summary": "Acoustic efficiency as a percentage of electrical input power.",
@@ -11744,7 +11770,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 962,
+          "line": 997,
           "signature": [],
           "documented": true,
           "summary": "Electrical input power, real and apparent.",
@@ -11775,7 +11801,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 984,
+          "line": 1019,
           "signature": [],
           "documented": true,
           "summary": "Phase and group delay on separate axes.",
@@ -11800,13 +11826,44 @@
           "other": []
         },
         {
+          "name": "SolveTime",
+          "qualified": "SolveTime",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 1053,
+          "signature": [],
+          "documented": true,
+          "summary": "How long the result on screen took to solve.",
+          "description": "How long the result on screen took to solve.",
+          "params": [],
+          "returns": {
+            "type": "React.ReactElement|null",
+            "desc": "The readout, or `null` before the first result."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Subscribes to the store."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
           "name": "ChartPanel",
           "qualified": "ChartPanel",
           "kind": "function",
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1019,
+          "line": 1067,
           "signature": [
             "arg0"
           ],
@@ -11852,7 +11909,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 1058,
+          "line": 1106,
           "signature": [
             "id"
           ],
@@ -11893,7 +11950,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1067,
+          "line": 1115,
           "signature": [],
           "documented": true,
           "summary": "The chart wrapped in its panel shell.",
@@ -11923,7 +11980,7 @@
       "constants": [
         {
           "name": "__internals",
-          "line": 805,
+          "line": 987,
           "shape": {
             "kind": "object",
             "keys": [
@@ -11936,13 +11993,351 @@
       ],
       "methods": [
         {
+          "name": "useOpen",
+          "qualified": "useOpen",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 68,
+          "signature": [
+            "id",
+            "initial"
+          ],
+          "documented": true,
+          "summary": "Whether a section is open, and the toggle for it.",
+          "description": "Whether a section is open, and the toggle for it.",
+          "params": [
+            {
+              "name": "id",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Section key, e.g. `driver.electrical`."
+            },
+            {
+              "name": "initial",
+              "type": "boolean",
+              "optional": false,
+              "default": null,
+              "desc": "Open the first time it is shown."
+            }
+          ],
+          "returns": {
+            "type": "[boolean, Function]",
+            "desc": "Open, and a function that flips it."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Holds React state and writes the module's open map when toggled."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "toggle",
+          "qualified": "useOpen > toggle",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 76,
+          "signature": [],
+          "documented": true,
+          "summary": "Flip the section, remembering the new state.",
+          "description": "Flip the section, remembering the new state.",
+          "params": [],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Updates React state and the module's open map."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "short",
+          "qualified": "short",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 87,
+          "signature": [
+            "v"
+          ],
+          "documented": true,
+          "summary": "A figure written short, for a section summary.",
+          "description": "A figure written short, for a section summary.",
+          "params": [
+            {
+              "name": "v",
+              "type": "any",
+              "optional": false,
+              "default": null,
+              "desc": "A number, or anything else."
+            }
+          ],
+          "returns": {
+            "type": "string",
+            "desc": "Up to three significant figures without trailing zeros, the value itself when it is not a finite number, or `—` when absent."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "Section",
+          "qualified": "Section",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 111,
+          "signature": [
+            "arg0"
+          ],
+          "documented": true,
+          "summary": "A collapsible section of the panel: a card whose head names it and, while closed, sums up what is in it on one line.",
+          "description": "A collapsible section of the panel: a card whose head names it and, while\nclosed, sums up what is in it on one line.",
+          "params": [
+            {
+              "name": "props",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "Component props."
+            },
+            {
+              "name": "props.id",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Key the open state is remembered by."
+            },
+            {
+              "name": "props.title",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "The name."
+            },
+            {
+              "name": "props.summary",
+              "type": "string",
+              "optional": true,
+              "default": null,
+              "desc": "One line shown while closed."
+            },
+            {
+              "name": "props.color",
+              "type": "string",
+              "optional": true,
+              "default": null,
+              "desc": "An element hue: shows a dot, and rings the card when `focus`."
+            },
+            {
+              "name": "props.focus",
+              "type": "boolean",
+              "optional": true,
+              "default": null,
+              "desc": "The section being worked on — the selected element."
+            },
+            {
+              "name": "props.actions",
+              "type": "React.ReactNode",
+              "optional": true,
+              "default": null,
+              "desc": "Buttons shown in the head while open, in place of the summary."
+            },
+            {
+              "name": "props.initial",
+              "type": "boolean",
+              "optional": true,
+              "default": null,
+              "desc": "Open the first time it is shown."
+            },
+            {
+              "name": "props.children",
+              "type": "React.ReactNode",
+              "optional": false,
+              "default": null,
+              "desc": "The body."
+            }
+          ],
+          "returns": {
+            "type": "React.ReactElement",
+            "desc": "The section."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Holds its open state."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "Sub",
+          "qualified": "Sub",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 140,
+          "signature": [
+            "arg0"
+          ],
+          "documented": true,
+          "summary": "A collapsible group inside a section, with its own one-line summary.",
+          "description": "A collapsible group inside a section, with its own one-line summary.",
+          "params": [
+            {
+              "name": "props",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "Component props."
+            },
+            {
+              "name": "props.id",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Key the open state is remembered by."
+            },
+            {
+              "name": "props.title",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "The name."
+            },
+            {
+              "name": "props.summary",
+              "type": "string",
+              "optional": true,
+              "default": null,
+              "desc": "One line shown in the head."
+            },
+            {
+              "name": "props.initial",
+              "type": "boolean",
+              "optional": true,
+              "default": null,
+              "desc": "Open the first time it is shown."
+            },
+            {
+              "name": "props.children",
+              "type": "React.ReactNode",
+              "optional": false,
+              "default": null,
+              "desc": "The body."
+            }
+          ],
+          "returns": {
+            "type": "React.ReactElement",
+            "desc": "The group."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Holds its open state."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "LockIcon",
+          "qualified": "LockIcon",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 162,
+          "signature": [
+            "arg0"
+          ],
+          "documented": true,
+          "summary": "A small padlock, closed or open.",
+          "description": "A small padlock, closed or open.",
+          "params": [
+            {
+              "name": "props",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "Component props."
+            },
+            {
+              "name": "props.closed",
+              "type": "boolean",
+              "optional": false,
+              "default": null,
+              "desc": "Draw it locked."
+            }
+          ],
+          "returns": {
+            "type": "React.ReactElement",
+            "desc": "The icon."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
           "name": "NumField",
           "qualified": "NumField",
           "kind": "function",
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 71,
+          "line": 191,
           "signature": [
             "arg0"
           ],
@@ -12039,7 +12434,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 99,
+          "line": 219,
           "signature": [
             "arg0"
           ],
@@ -12115,7 +12510,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 125,
+          "line": 245,
           "signature": [
             "arg0"
           ],
@@ -12170,7 +12565,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 162,
+          "line": 282,
           "signature": [
             "arg0"
           ],
@@ -12225,7 +12620,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 182,
+          "line": 302,
           "signature": [],
           "documented": true,
           "summary": "The amplifier section: voltage, impedance and power, linked by P = V²/Z.",
@@ -12256,7 +12651,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 198,
+          "line": 318,
           "signature": [
             "field",
             "label",
@@ -12307,13 +12702,44 @@
           "other": []
         },
         {
+          "name": "SweepSection",
+          "qualified": "SweepSection",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 360,
+          "signature": [],
+          "documented": true,
+          "summary": "The frequency sweep: its range, how many points, and resonance masking.",
+          "description": "The frequency sweep: its range, how many points, and resonance masking.",
+          "params": [],
+          "returns": {
+            "type": "React.ReactElement",
+            "desc": "The section."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Subscribes to the store."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
           "name": "round3",
           "qualified": "round3",
           "kind": "function",
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 241,
+          "line": 404,
           "signature": [
             "v"
           ],
@@ -12352,7 +12778,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 260,
+          "line": 423,
           "signature": [
             "arg0"
           ],
@@ -12435,7 +12861,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 306,
+          "line": 469,
           "signature": [
             "arg0"
           ],
@@ -12483,7 +12909,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 325,
+          "line": 488,
           "signature": [
             "field",
             "unit",
@@ -12540,7 +12966,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 396,
+          "line": 575,
           "signature": [
             "arg0"
           ],
@@ -12595,7 +13021,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 423,
+          "line": 602,
           "signature": [
             "arg0"
           ],
@@ -12643,7 +13069,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 455,
+          "line": 634,
           "signature": [
             "arg0"
           ],
@@ -12705,7 +13131,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 497,
+          "line": 677,
           "signature": [
             "arg0"
           ],
@@ -12753,7 +13179,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 525,
+          "line": 704,
           "signature": [
             "label",
             "v",
@@ -12816,7 +13242,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 571,
+          "line": 744,
           "signature": [
             "arg0"
           ],
@@ -12864,7 +13290,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 612,
+          "line": 787,
           "signature": [
             "arg0"
           ],
@@ -12919,7 +13345,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 663,
+          "line": 832,
           "signature": [
             "arg0"
           ],
@@ -12967,7 +13393,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 703,
+          "line": 879,
           "signature": [
             "arg0"
           ],
@@ -13015,7 +13441,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 753,
+          "line": 931,
           "signature": [
             "arg0"
           ],
@@ -13063,11 +13489,11 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 784,
+          "line": 965,
           "signature": [],
           "documented": true,
-          "summary": "The Parameters panel: the amplifier section plus the selected node's form.",
-          "description": "The Parameters panel: the amplifier section plus the selected node's form.\n\nWhich form is shown follows the selected node's type; with nothing\nselected it prompts rather than rendering an empty panel.",
+          "summary": "The Parameters panel: the amplifier, the selected node's form, and the sweep.",
+          "description": "The Parameters panel: the amplifier, the selected node's form, and the sweep.\n\nWhich form is shown follows the selected node's type; with nothing\nselected it prompts rather than rendering an empty panel.",
           "params": [],
           "returns": {
             "type": "React.ReactElement",
@@ -13347,7 +13773,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 33,
+          "line": 34,
           "signature": [],
           "documented": true,
           "summary": "The Application section: engine, sweep range and display options.",
@@ -13378,7 +13804,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 109,
+          "line": 121,
           "signature": [],
           "documented": true,
           "summary": "The Quick bar section: choose and reorder the items in the quick bar.",
@@ -13409,7 +13835,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 177,
+          "line": 189,
           "signature": [
             "arg0"
           ],
@@ -13469,7 +13895,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 201,
+          "line": 213,
           "signature": [],
           "documented": true,
           "summary": "The Keyboard section: view and rebind every command's shortcuts.",
@@ -13500,7 +13926,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 218,
+          "line": 230,
           "signature": [
             "e"
           ],
@@ -13541,7 +13967,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 242,
+          "line": 254,
           "signature": [
             "id"
           ],
@@ -13582,7 +14008,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 327,
+          "line": 339,
           "signature": [],
           "documented": true,
           "summary": "The settings window: a floating, draggable panel rather than a dock panel.",
@@ -13613,7 +14039,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 343,
+          "line": 355,
           "signature": [
             "e"
           ],
@@ -13654,7 +14080,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 359,
+          "line": 371,
           "signature": [
             "e"
           ],
@@ -13695,7 +14121,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 370,
+          "line": 382,
           "signature": [
             "ev"
           ],
@@ -13736,7 +14162,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 377,
+          "line": 389,
           "signature": [],
           "documented": true,
           "summary": "End the window drag and remove its listeners.",
@@ -16727,7 +17153,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 152,
+          "line": 163,
           "signature": [
             "arg0"
           ],
@@ -16752,7 +17178,55 @@
           ],
           "returns": {
             "type": "React.ReactElement|null",
-            "desc": "The readout, or `null` when the id is not a metric."
+            "desc": "The readout, or `null` when the id is not a metric or has no value for this design."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Subscribes to the store."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "MetricPill",
+          "qualified": "MetricPill",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 187,
+          "signature": [
+            "arg0"
+          ],
+          "documented": true,
+          "summary": "One cluster of readouts in a pill, or nothing when none of them has a value.",
+          "description": "One cluster of readouts in a pill, or nothing when none of them has a value.",
+          "params": [
+            {
+              "name": "props",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "Component props."
+            },
+            {
+              "name": "props.ids",
+              "type": "string[]",
+              "optional": false,
+              "default": null,
+              "desc": "Metric ids in the cluster."
+            }
+          ],
+          "returns": {
+            "type": "React.ReactElement|null",
+            "desc": "The pill."
           },
           "throws": [],
           "contract": {
@@ -16775,7 +17249,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 175,
+          "line": 205,
           "signature": [],
           "documented": true,
           "summary": "The switch between the editor and the time-domain workspace.",
@@ -16806,11 +17280,11 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 204,
+          "line": 235,
           "signature": [],
           "documented": true,
           "summary": "The quick-access bar under the menu.",
-          "description": "The quick-access bar under the menu.\n\nContents and order come from `store.toolbar`, configured in Settings ▸\nQuick bar. Consecutive items of the same kind are collected into one\nblock that wraps internally, so a long metrics readout does not push the\ncontrols onto a second row.",
+          "description": "The quick-access bar under the menu.\n\nContents and order come from `store.toolbar`, configured in Settings ▸\nQuick bar. Every control is a pill of its own; the metrics collect into\none block that wraps, a pill per cluster of neighbours that describe the\nsame thing (see `cluster` in `TOOLBAR_ITEMS`), so the response, the\nimpedance, the limits and the size each read as a group.",
           "params": [],
           "returns": {
             "type": "React.ReactElement",
@@ -16827,6 +17301,45 @@
             ],
             "reads": [],
             "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "clusters",
+          "qualified": "clusters",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 270,
+          "signature": [
+            "ids"
+          ],
+          "documented": true,
+          "summary": "Metric ids split into runs of neighbours that share a cluster.",
+          "description": "Metric ids split into runs of neighbours that share a cluster.",
+          "params": [
+            {
+              "name": "ids",
+              "type": "string[]",
+              "optional": false,
+              "default": null,
+              "desc": "Metric ids, in bar order."
+            }
+          ],
+          "returns": {
+            "type": "string[][]",
+            "desc": "The runs, in order."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
           },
           "other": []
         }
@@ -18178,7 +18691,7 @@
       "constants": [
         {
           "name": "PANELS",
-          "line": 81,
+          "line": 79,
           "shape": null,
           "summary": "The panel registry: each panel's metadata paired with its component.",
           "description": "The panel registry: each panel's metadata paired with its component.\n\nAdding a panel means one entry in `PANEL_META` plus one line in\n`COMPONENTS` — the dock, the View menu and the saved-layout sanitizer all\nread from these, so nothing else needs to learn about it."
@@ -18192,7 +18705,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 35,
+          "line": 34,
           "signature": [],
           "documented": true,
           "summary": "The Node Editor panel: the canvas with the palette and popup layered over it.",
@@ -26653,7 +27166,7 @@
         },
         {
           "name": "__internals",
-          "line": 517,
+          "line": 518,
           "shape": {
             "kind": "object",
             "keys": [
@@ -26846,11 +27359,11 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 87,
+          "line": 88,
           "signature": [],
           "documented": true,
           "summary": "The default workspace arrangement.",
-          "description": "The default workspace arrangement.\n\nWorkspace files on the left, canvas over the four charts most designs are\njudged by, parameters on the right — the classic three-column IDE arrangement. The\nremaining plots are opened from View ▸ Charts.",
+          "description": "The default workspace arrangement.\n\nWorkspace files on the left, canvas over the four charts most designs are\njudged by, parameters on the right with the wiring and probes behind them —\nthe classic three-column IDE arrangement. The remaining plots are opened\nfrom View ▸ Charts.",
           "params": [],
           "returns": {
             "type": "object",
@@ -26877,7 +27390,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 107,
+          "line": 108,
           "signature": [
             "tree",
             "id"
@@ -26926,7 +27439,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 128,
+          "line": 129,
           "signature": [
             "tree",
             "panelId"
@@ -26975,7 +27488,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 146,
+          "line": 147,
           "signature": [
             "tree",
             "out"
@@ -27024,7 +27537,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 161,
+          "line": 162,
           "signature": [
             "tree",
             "panelId"
@@ -27071,7 +27584,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 179,
+          "line": 180,
           "signature": [
             "tree",
             "fn"
@@ -27120,7 +27633,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 193,
+          "line": 194,
           "signature": [
             "tree",
             "stackId",
@@ -27175,7 +27688,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 212,
+          "line": 213,
           "signature": [
             "node",
             "panelId"
@@ -27222,7 +27735,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 239,
+          "line": 240,
           "signature": [
             "tree",
             "panelId"
@@ -27269,7 +27782,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 250,
+          "line": 251,
           "signature": [
             "zone"
           ],
@@ -27308,7 +27821,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 258,
+          "line": 259,
           "signature": [
             "zone"
           ],
@@ -27347,7 +27860,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 279,
+          "line": 280,
           "signature": [
             "node",
             "targetId",
@@ -27414,7 +27927,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 324,
+          "line": 325,
           "signature": [
             "tree",
             "panelId",
@@ -27479,7 +27992,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 352,
+          "line": 353,
           "signature": [
             "tree",
             "panelId",
@@ -27536,7 +28049,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 379,
+          "line": 380,
           "signature": [
             "tree",
             "stackId",
@@ -27603,7 +28116,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 407,
+          "line": 408,
           "signature": [
             "tree",
             "panelId",
@@ -27688,7 +28201,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 437,
+          "line": 438,
           "signature": [
             "tree",
             "splitId",
@@ -27761,7 +28274,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 460,
+          "line": 461,
           "signature": [
             "v"
           ],
@@ -27800,7 +28313,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 482,
+          "line": 483,
           "signature": [
             "tree",
             "knownPanels"
@@ -27862,17 +28375,17 @@
       "constants": [
         {
           "name": "NODE_KINDS",
-          "line": 15,
+          "line": 16,
           "shape": {
             "kind": "array",
             "length": 5
           },
           "summary": "The draggable node types.",
-          "description": "The draggable node types.\n\n`color` is the element's theme colour — the only thing the floating palette\nshows besides the name. `desc` is the long form, kept for tooltips and for\nanywhere a fuller explanation is wanted; the palette deliberately does not\nrender it."
+          "description": "The draggable node types.\n\n`color` is the element's theme colour — the only thing the element dock\nshows besides the name. `short` is the name the dock uses, where the full\none would crowd it. `desc` is the long form, kept for tooltips and for\nanywhere a fuller explanation is wanted; the dock deliberately does not\nrender it."
         },
         {
           "name": "NODE_DRAG_TYPE",
-          "line": 29,
+          "line": 30,
           "shape": {
             "kind": "literal",
             "value": "application/acousim-node"
@@ -38860,7 +39373,7 @@
       "constants": [
         {
           "name": "TD_DEFAULTS",
-          "line": 142,
+          "line": 143,
           "shape": {
             "kind": "object",
             "keys": [
@@ -38907,7 +39420,7 @@
         },
         {
           "name": "SNAPSHOT_LIMIT",
-          "line": 209,
+          "line": 210,
           "shape": {
             "kind": "literal",
             "value": 3
@@ -38917,7 +39430,7 @@
         },
         {
           "name": "SNAPSHOT_COLORS",
-          "line": 214,
+          "line": 215,
           "shape": {
             "kind": "array",
             "length": 3,
@@ -38932,14 +39445,14 @@
         },
         {
           "name": "useStore",
-          "line": 499,
+          "line": 500,
           "shape": null,
           "summary": null,
           "description": null
         },
         {
           "name": "__internals",
-          "line": 3080,
+          "line": 3096,
           "shape": {
             "kind": "object",
             "keys": [
@@ -38962,7 +39475,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 68,
+          "line": 69,
           "signature": [
             "project",
             "engine"
@@ -39011,7 +39524,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 81,
+          "line": 82,
           "signature": [
             "e"
           ],
@@ -39052,7 +39565,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 110,
+          "line": 111,
           "signature": [
             "msg",
             "onMessage"
@@ -39101,7 +39614,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 121,
+          "line": 122,
           "signature": [
             "e"
           ],
@@ -39142,7 +39655,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 135,
+          "line": 136,
           "signature": [],
           "documented": true,
           "summary": "Stop whatever the time-domain worker is doing.",
@@ -39173,7 +39686,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 165,
+          "line": 166,
           "signature": [
             "extras"
           ],
@@ -39212,7 +39725,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 190,
+          "line": 191,
           "signature": [
             "ids",
             "active"
@@ -39261,7 +39774,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 225,
+          "line": 226,
           "signature": [],
           "documented": true,
           "summary": "Whether the user has already been asked where their workspace lives.",
@@ -39292,7 +39805,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 258,
+          "line": 259,
           "signature": [],
           "documented": true,
           "summary": "Load the persisted workspace, or build a first-run one.",
@@ -39323,7 +39836,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 296,
+          "line": 297,
           "signature": [],
           "documented": true,
           "summary": "Load the persisted dock layout, falling back to the default.",
@@ -39354,7 +39867,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 314,
+          "line": 315,
           "signature": [],
           "documented": true,
           "summary": "Load the user's saved layout arrangements.",
@@ -39385,7 +39898,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 334,
+          "line": 335,
           "signature": [],
           "documented": true,
           "summary": "Load the quick-bar arrangement.",
@@ -39416,7 +39929,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 383,
+          "line": 384,
           "signature": [],
           "documented": true,
           "summary": "Queue a folder write.",
@@ -39449,7 +39962,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 403,
+          "line": 404,
           "signature": [
             "type"
           ],
@@ -39490,7 +40003,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 418,
+          "line": 419,
           "signature": [],
           "documented": true,
           "summary": "The simulation engine this browser last chose.",
@@ -39521,7 +40034,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 432,
+          "line": 433,
           "signature": [],
           "documented": true,
           "summary": "The editor sections of an empty project, for the initial state.",
@@ -39550,7 +40063,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 450,
+          "line": 451,
           "signature": [
             "spot",
             "nodes",
@@ -39615,7 +40128,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 458,
+          "line": 459,
           "signature": [
             "x",
             "y"
@@ -39664,7 +40177,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 479,
+          "line": 480,
           "signature": [
             "nodes",
             "edges",
@@ -39735,7 +40248,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 519,
+          "line": 520,
           "signature": [
             "partial",
             "replace"
@@ -39786,7 +40299,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 617,
+          "line": 619,
           "signature": [
             "x",
             "y",
@@ -39843,7 +40356,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 628,
+          "line": 630,
           "signature": [],
           "documented": true,
           "summary": "Dismiss the context menu.",
@@ -39874,7 +40387,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 637,
+          "line": 639,
           "signature": [
             "id"
           ],
@@ -39915,7 +40428,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 648,
+          "line": 650,
           "signature": [
             "id"
           ],
@@ -39956,7 +40469,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 656,
+          "line": 658,
           "signature": [
             "id"
           ],
@@ -39997,7 +40510,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 665,
+          "line": 667,
           "signature": [
             "v",
             "section"
@@ -40046,7 +40559,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 673,
+          "line": 675,
           "signature": [
             "id"
           ],
@@ -40087,7 +40600,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 685,
+          "line": 687,
           "signature": [
             "id",
             "combos"
@@ -40136,7 +40649,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 702,
+          "line": 704,
           "signature": [
             "id",
             "combo"
@@ -40185,7 +40698,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 720,
+          "line": 722,
           "signature": [
             "id",
             "combo"
@@ -40234,7 +40747,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 727,
+          "line": 729,
           "signature": [],
           "documented": true,
           "summary": "Restore every command to its default combos.",
@@ -40265,7 +40778,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 744,
+          "line": 746,
           "signature": [
             "tree"
           ],
@@ -40306,7 +40819,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 761,
+          "line": 763,
           "signature": [
             "stackId",
             "panelId"
@@ -40355,7 +40868,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 771,
+          "line": 773,
           "signature": [
             "panelId",
             "stackId",
@@ -40412,7 +40925,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 780,
+          "line": 782,
           "signature": [
             "panelId",
             "edge"
@@ -40461,7 +40974,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 791,
+          "line": 793,
           "signature": [
             "splitId",
             "index",
@@ -40526,7 +41039,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 805,
+          "line": 807,
           "signature": [
             "panelId",
             "stackId",
@@ -40583,7 +41096,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 826,
+          "line": 828,
           "signature": [
             "panelId"
           ],
@@ -40624,7 +41137,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 843,
+          "line": 845,
           "signature": [
             "panelId"
           ],
@@ -40665,7 +41178,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 855,
+          "line": 857,
           "signature": [
             "panelId"
           ],
@@ -40706,7 +41219,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 866,
+          "line": 868,
           "signature": [],
           "documented": true,
           "summary": "Restore the default workspace arrangement.",
@@ -40737,7 +41250,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 876,
+          "line": 878,
           "signature": [
             "name"
           ],
@@ -40778,7 +41291,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 895,
+          "line": 897,
           "signature": [
             "name"
           ],
@@ -40819,7 +41332,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 919,
+          "line": 921,
           "signature": [
             "ids"
           ],
@@ -40860,7 +41373,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 935,
+          "line": 937,
           "signature": [
             "id"
           ],
@@ -40901,7 +41414,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 947,
+          "line": 949,
           "signature": [
             "id",
             "delta"
@@ -40950,7 +41463,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 961,
+          "line": 963,
           "signature": [],
           "documented": true,
           "summary": "Restore the default quick-bar arrangement.",
@@ -40981,7 +41494,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 970,
+          "line": 972,
           "signature": [
             "name"
           ],
@@ -41022,7 +41535,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 988,
+          "line": 990,
           "signature": [
             "id",
             "range"
@@ -41071,7 +41584,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1004,
+          "line": 1006,
           "signature": [],
           "documented": true,
           "summary": "Record the current graph as an undo point.",
@@ -41102,7 +41615,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1017,
+          "line": 1019,
           "signature": [],
           "documented": true,
           "summary": "Step back one entry in the history.",
@@ -41133,7 +41646,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1035,
+          "line": 1037,
           "signature": [],
           "documented": true,
           "summary": "Step forward one entry in the history.",
@@ -41164,7 +41677,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1061,
+          "line": 1063,
           "signature": [
             "changes"
           ],
@@ -41205,7 +41718,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1075,
+          "line": 1077,
           "signature": [
             "changes"
           ],
@@ -41246,7 +41759,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1087,
+          "line": 1089,
           "signature": [
             "conn"
           ],
@@ -41287,7 +41800,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1105,
+          "line": 1107,
           "signature": [
             "id"
           ],
@@ -41328,7 +41841,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1118,
+          "line": 1120,
           "signature": [
             "type",
             "position"
@@ -41377,7 +41890,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1148,
+          "line": 1150,
           "signature": [
             "id",
             "params"
@@ -41426,7 +41939,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1175,
+          "line": 1177,
           "signature": [
             "id"
           ],
@@ -41467,7 +41980,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1196,
+          "line": 1198,
           "signature": [
             "id",
             "name"
@@ -41516,7 +42029,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1226,
+          "line": 1228,
           "signature": [
             "id",
             "field",
@@ -41573,7 +42086,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1249,
+          "line": 1251,
           "signature": [
             "id"
           ],
@@ -41614,7 +42127,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1277,
+          "line": 1279,
           "signature": [
             "id",
             "field",
@@ -41671,7 +42184,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1301,
+          "line": 1303,
           "signature": [
             "id",
             "patch"
@@ -41720,7 +42233,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1325,
+          "line": 1327,
           "signature": [],
           "documented": true,
           "summary": "Delete the selected nodes and edges.",
@@ -41751,7 +42264,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1352,
+          "line": 1354,
           "signature": [],
           "documented": true,
           "summary": "Copy the selected nodes in place, offset down-right.",
@@ -41782,7 +42295,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1377,
+          "line": 1379,
           "signature": [],
           "documented": true,
           "summary": "Select every node on the canvas.",
@@ -41813,7 +42326,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1392,
+          "line": 1394,
           "signature": [
             "ids",
             "additive"
@@ -41862,7 +42375,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1425,
+          "line": 1427,
           "signature": [],
           "documented": true,
           "summary": "Copy the selected nodes and their internal edges to the in-app clipboard.",
@@ -41893,7 +42406,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1451,
+          "line": 1453,
           "signature": [],
           "documented": true,
           "summary": "Copy the selection, then delete it.",
@@ -41924,7 +42437,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1472,
+          "line": 1474,
           "signature": [
             "at"
           ],
@@ -41965,7 +42478,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1520,
+          "line": 1522,
           "signature": [
             "type"
           ],
@@ -42006,7 +42519,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1536,
+          "line": 1538,
           "signature": [
             "delta"
           ],
@@ -42047,7 +42560,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1549,
+          "line": 1551,
           "signature": [],
           "documented": true,
           "summary": "Force a resimulation even though nothing has changed.",
@@ -42078,7 +42591,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1562,
+          "line": 1564,
           "signature": [
             "patch"
           ],
@@ -42119,7 +42632,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1585,
+          "line": 1587,
           "signature": [
             "field",
             "value"
@@ -42168,7 +42681,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1608,
+          "line": 1610,
           "signature": [
             "extras"
           ],
@@ -42209,7 +42722,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1629,
+          "line": 1631,
           "signature": [
             "key",
             "value",
@@ -42266,7 +42779,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1642,
+          "line": 1644,
           "signature": [
             "id",
             "taps"
@@ -42315,7 +42828,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1653,
+          "line": 1655,
           "signature": [
             "node",
             "handle"
@@ -42364,7 +42877,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1673,
+          "line": 1675,
           "signature": [
             "driverId",
             "face"
@@ -42413,7 +42926,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1708,
+          "line": 1710,
           "signature": [
             "probe"
           ],
@@ -42454,7 +42967,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1738,
+          "line": 1740,
           "signature": [],
           "documented": true,
           "summary": "Freeze the current result as a labelled reference overlay.",
@@ -42485,7 +42998,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1774,
+          "line": 1776,
           "signature": [
             "id"
           ],
@@ -42526,7 +43039,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1786,
+          "line": 1788,
           "signature": [
             "id",
             "label"
@@ -42575,7 +43088,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1799,
+          "line": 1801,
           "signature": [
             "id"
           ],
@@ -42616,7 +43129,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1807,
+          "line": 1809,
           "signature": [
             "v"
           ],
@@ -42657,7 +43170,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1815,
+          "line": 1817,
           "signature": [
             "v"
           ],
@@ -42698,7 +43211,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1823,
+          "line": 1825,
           "signature": [
             "id"
           ],
@@ -42733,13 +43246,54 @@
           "other": []
         },
         {
+          "name": "setTheme",
+          "qualified": "setTheme",
+          "kind": "method",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 1833,
+          "signature": [
+            "theme"
+          ],
+          "documented": true,
+          "summary": "Choose the appearance, remember it, and show it.",
+          "description": "Choose the appearance, remember it, and show it.",
+          "params": [
+            {
+              "name": "theme",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "`system`, `dark` or `light`; anything else is ignored."
+            }
+          ],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Writes LocalStorage, the page's theme attribute and store state."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
           "name": "setEngine",
           "qualified": "setEngine",
           "kind": "method",
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1831,
+          "line": 1845,
           "signature": [
             "engine"
           ],
@@ -42780,7 +43334,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1846,
+          "line": 1860,
           "signature": [
             "tab"
           ],
@@ -42821,7 +43375,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1857,
+          "line": 1871,
           "signature": [],
           "documented": true,
           "summary": "Return to the editor. A running job carries on.",
@@ -42852,7 +43406,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1865,
+          "line": 1879,
           "signature": [
             "tab"
           ],
@@ -42893,7 +43447,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1874,
+          "line": 1888,
           "signature": [
             "section",
             "patch"
@@ -42942,7 +43496,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1889,
+          "line": 1903,
           "signature": [],
           "documented": true,
           "summary": "The signature of what a time-domain result depends on — the graph, the extras and the engine.",
@@ -42973,7 +43527,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1904,
+          "line": 1918,
           "signature": [
             "kind",
             "mode"
@@ -43022,7 +43576,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1939,
+          "line": 1953,
           "signature": [],
           "documented": true,
           "summary": "Stop the running time-domain job.",
@@ -43053,7 +43607,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1973,
+          "line": 1988,
           "signature": [],
           "documented": true,
           "summary": "Schedule a debounced simulation run.",
@@ -43084,7 +43638,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2013,
+          "line": 2029,
           "signature": [],
           "documented": true,
           "summary": "Capture the project as a plain, saveable object.",
@@ -43115,7 +43669,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2036,
+          "line": 2052,
           "signature": [
             "proj"
           ],
@@ -43156,7 +43710,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2063,
+          "line": 2079,
           "signature": [],
           "documented": true,
           "summary": "Download the open project as a standalone JSON file.",
@@ -43187,7 +43741,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2080,
+          "line": 2096,
           "signature": [
             "proj",
             "filename"
@@ -43236,7 +43790,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2113,
+          "line": 2129,
           "signature": [
             "ws"
           ],
@@ -43277,7 +43831,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2128,
+          "line": 2144,
           "signature": [
             "name"
           ],
@@ -43318,7 +43872,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2142,
+          "line": 2158,
           "signature": [],
           "documented": true,
           "summary": "Write the editor's current project back into its file.",
@@ -43349,7 +43903,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2160,
+          "line": 2176,
           "signature": [
             "path"
           ],
@@ -43390,7 +43944,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2176,
+          "line": 2192,
           "signature": [
             "folder"
           ],
@@ -43431,7 +43985,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2197,
+          "line": 2213,
           "signature": [
             "parent"
           ],
@@ -43472,7 +44026,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2220,
+          "line": 2236,
           "signature": [
             "from",
             "to"
@@ -43521,7 +44075,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2257,
+          "line": 2273,
           "signature": [
             "path"
           ],
@@ -43562,7 +44116,7 @@
           "exported": false,
           "async": true,
           "generator": false,
-          "line": 2289,
+          "line": 2305,
           "signature": [],
           "documented": true,
           "summary": "Download the whole workspace, and record that it happened.",
@@ -43593,7 +44147,7 @@
           "exported": false,
           "async": true,
           "generator": false,
-          "line": 2318,
+          "line": 2334,
           "signature": [
             "file"
           ],
@@ -43634,7 +44188,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2342,
+          "line": 2358,
           "signature": [
             "ws"
           ],
@@ -43675,7 +44229,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2376,
+          "line": 2392,
           "signature": [
             "paths"
           ],
@@ -43716,7 +44270,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2386,
+          "line": 2402,
           "signature": [
             "path",
             "open"
@@ -43765,7 +44319,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2400,
+          "line": 2416,
           "signature": [],
           "documented": true,
           "summary": "Collapse every folder in the explorer.",
@@ -43796,7 +44350,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2415,
+          "line": 2431,
           "signature": [
             "mode",
             "path"
@@ -43845,7 +44399,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2426,
+          "line": 2442,
           "signature": [],
           "documented": true,
           "summary": "Dismiss the explorer's inline editor.",
@@ -43876,7 +44430,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2441,
+          "line": 2457,
           "signature": [
             "paths",
             "cut"
@@ -43925,7 +44479,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2454,
+          "line": 2470,
           "signature": [
             "folder"
           ],
@@ -43966,7 +44520,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2481,
+          "line": 2497,
           "signature": [
             "path"
           ],
@@ -44007,7 +44561,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2497,
+          "line": 2513,
           "signature": [
             "from",
             "folder"
@@ -44056,7 +44610,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2519,
+          "line": 2535,
           "signature": [
             "mode",
             "parent",
@@ -44113,7 +44667,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2553,
+          "line": 2569,
           "signature": [
             "kind"
           ],
@@ -44154,7 +44708,7 @@
           "exported": false,
           "async": true,
           "generator": false,
-          "line": 2584,
+          "line": 2600,
           "signature": [
             "confirmAdopt"
           ],
@@ -44195,7 +44749,7 @@
           "exported": false,
           "async": true,
           "generator": false,
-          "line": 2617,
+          "line": 2633,
           "signature": [],
           "documented": true,
           "summary": "Renew permission on a remembered folder and open it again.",
@@ -44226,7 +44780,7 @@
           "exported": false,
           "async": true,
           "generator": false,
-          "line": 2640,
+          "line": 2656,
           "signature": [],
           "documented": true,
           "summary": "Stop keeping the workspace in a folder.",
@@ -44259,7 +44813,7 @@
           "exported": false,
           "async": true,
           "generator": false,
-          "line": 2665,
+          "line": 2681,
           "signature": [
             "handle",
             "read",
@@ -44318,7 +44872,7 @@
           "exported": false,
           "async": true,
           "generator": false,
-          "line": 2706,
+          "line": 2722,
           "signature": [
             "prune"
           ],
@@ -44361,7 +44915,7 @@
           "exported": false,
           "async": true,
           "generator": false,
-          "line": 2748,
+          "line": 2764,
           "signature": [
             "since"
           ],
@@ -44404,7 +44958,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2781,
+          "line": 2797,
           "signature": [
             "drivers"
           ],
@@ -44445,7 +44999,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2803,
+          "line": 2819,
           "signature": [
             "id"
           ],
@@ -44486,7 +45040,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2819,
+          "line": 2835,
           "signature": [
             "id"
           ],
@@ -44527,7 +45081,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2842,
+          "line": 2858,
           "signature": [
             "id"
           ],
@@ -44568,7 +45122,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2869,
+          "line": 2885,
           "signature": [
             "id"
           ],
@@ -44609,7 +45163,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2885,
+          "line": 2901,
           "signature": [
             "stackId"
           ],
@@ -44650,7 +45204,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2909,
+          "line": 2925,
           "signature": [
             "panelId",
             "stackId"
@@ -44699,7 +45253,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2929,
+          "line": 2945,
           "signature": [
             "id"
           ],
@@ -44740,7 +45294,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2940,
+          "line": 2956,
           "signature": [
             "id"
           ],
@@ -44781,7 +45335,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2959,
+          "line": 2975,
           "signature": [
             "patch"
           ],
@@ -44824,7 +45378,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2969,
+          "line": 2985,
           "signature": [],
           "documented": true,
           "summary": "The full shared slice, sent to a popped-out tab when it announces itself.",
@@ -44855,7 +45409,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 3033,
+          "line": 3049,
           "signature": [
             "arg0"
           ],
@@ -44901,6 +45455,148 @@
       ]
     },
     {
+      "file": "src/theme.js",
+      "module": {
+        "summary": "Light and dark appearance.",
+        "description": "Light and dark appearance.\n\nA preference of the person, not of the project, so it lives in\nLocalStorage. `system` follows the operating system's setting, which the\nstylesheet reads with `prefers-color-scheme`; `dark` and `light` pin the\npage by setting `data-theme` on the root element, which the stylesheet's\ntoken blocks key on. Every colour in the app — charts included — is a\ntoken, so switching needs no re-render."
+      },
+      "constants": [
+        {
+          "name": "THEMES",
+          "line": 11,
+          "shape": {
+            "kind": "array",
+            "length": 3
+          },
+          "summary": "The choices, in the order Settings offers them.",
+          "description": "The choices, in the order Settings offers them."
+        }
+      ],
+      "methods": [
+        {
+          "name": "loadTheme",
+          "qualified": "loadTheme",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 25,
+          "signature": [],
+          "documented": true,
+          "summary": "The appearance this browser last chose.",
+          "description": "The appearance this browser last chose.",
+          "params": [],
+          "returns": {
+            "type": "string",
+            "desc": "`system`, `dark` or `light`; `system` when nothing valid is stored or storage is unavailable."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [
+              "LocalStorage."
+            ],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "applyTheme",
+          "qualified": "applyTheme",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 41,
+          "signature": [
+            "theme",
+            "root"
+          ],
+          "documented": true,
+          "summary": "Show the page in an appearance.",
+          "description": "Show the page in an appearance.",
+          "params": [
+            {
+              "name": "theme",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "`system`, `dark` or `light`."
+            },
+            {
+              "name": "root",
+              "type": "object",
+              "optional": true,
+              "default": null,
+              "desc": "The element carrying the theme; the document's root by default."
+            }
+          ],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Sets or removes `data-theme` on the root element."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "saveTheme",
+          "qualified": "saveTheme",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 54,
+          "signature": [
+            "theme"
+          ],
+          "documented": true,
+          "summary": "Remember and show an appearance.",
+          "description": "Remember and show an appearance.",
+          "params": [
+            {
+              "name": "theme",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "`system`, `dark` or `light`."
+            }
+          ],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Writes LocalStorage and applies the theme to the page."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        }
+      ]
+    },
+    {
       "file": "src/toolbarItems.js",
       "module": {
         "summary": "Quick-access bar registry.",
@@ -44922,11 +45618,11 @@
               "m_f10",
               "m_fb",
               "m_qtc",
+              "m_bw",
               "m_zpeaks",
               "m_peakspl",
-              "m_xfb",
               "m_xf3",
-              "m_bw",
+              "m_xfb",
               "m_maxpower",
               "m_volume",
               "m_solve"
@@ -44954,51 +45650,63 @@
               ],
               "m_f3": [
                 "label",
-                "group"
+                "group",
+                "cluster"
               ],
               "m_f10": [
                 "label",
-                "group"
+                "group",
+                "cluster"
               ],
               "m_fb": [
                 "label",
-                "group"
+                "group",
+                "cluster"
               ],
               "m_qtc": [
                 "label",
-                "group"
-              ],
-              "m_zpeaks": [
-                "label",
-                "group"
-              ],
-              "m_peakspl": [
-                "label",
-                "group"
-              ],
-              "m_xfb": [
-                "label",
-                "group"
-              ],
-              "m_xf3": [
-                "label",
-                "group"
+                "group",
+                "cluster"
               ],
               "m_bw": [
                 "label",
-                "group"
+                "group",
+                "cluster"
+              ],
+              "m_zpeaks": [
+                "label",
+                "group",
+                "cluster"
+              ],
+              "m_peakspl": [
+                "label",
+                "group",
+                "cluster"
+              ],
+              "m_xf3": [
+                "label",
+                "group",
+                "cluster"
+              ],
+              "m_xfb": [
+                "label",
+                "group",
+                "cluster"
               ],
               "m_maxpower": [
                 "label",
-                "group"
+                "group",
+                "cluster"
               ],
               "m_volume": [
                 "label",
-                "group"
+                "group",
+                "cluster"
               ],
               "m_solve": [
                 "label",
-                "group"
+                "group",
+                "cluster"
               ]
             }
           },
@@ -45007,7 +45715,7 @@
         },
         {
           "name": "TOOLBAR_GROUPS",
-          "line": 45,
+          "line": 47,
           "shape": {
             "kind": "array",
             "length": 2
@@ -45017,17 +45725,17 @@
         },
         {
           "name": "ALL_ITEM_IDS",
-          "line": 51,
+          "line": 53,
           "shape": null,
           "summary": "Every quick-bar item id, used to offer the full list in Settings.",
           "description": "Every quick-bar item id, used to offer the full list in Settings."
         },
         {
           "name": "DEFAULT_TOOLBAR",
-          "line": 60,
+          "line": 64,
           "shape": {
             "kind": "array",
-            "length": 15,
+            "length": 14,
             "values": [
               "undo",
               "voltage",
@@ -45036,22 +45744,21 @@
               "m_f10",
               "m_fb",
               "m_qtc",
+              "m_bw",
               "m_zpeaks",
               "m_peakspl",
-              "m_xfb",
               "m_xf3",
-              "m_bw",
+              "m_xfb",
               "m_maxpower",
-              "m_volume",
-              "m_solve"
+              "m_volume"
             ]
           },
           "summary": "The quick bar as it ships.",
-          "description": "The quick bar as it ships.\n\nSweep range and resonance masking are deliberately absent: both are set-once\ncontrols reachable from Settings ▸ Application and the Simulate menu, so they\nearn a permanent slot only for someone who actually tweaks them often."
+          "description": "The quick bar as it ships.\n\nSweep range and resonance masking are deliberately absent: both are set-once\ncontrols reachable from Settings ▸ Application and the Simulate menu, so they\nearn a permanent slot only for someone who actually tweaks them often. The\nsolve time is shown above every chart instead, where it is about the\nresult being looked at."
         },
         {
           "name": "__internals",
-          "line": 180,
+          "line": 184,
           "shape": {
             "kind": "object",
             "keys": [
@@ -45070,7 +45777,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 74,
+          "line": 78,
           "signature": [
             "v",
             "d"
@@ -45117,7 +45824,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 88,
+          "line": 92,
           "signature": [
             "nodes"
           ],
@@ -45158,7 +45865,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 117,
+          "line": 121,
           "signature": [
             "id",
             "arg1"
@@ -45226,7 +45933,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 127,
+          "line": 131,
           "signature": [
             "x"
           ],
@@ -45267,7 +45974,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 134,
+          "line": 138,
           "signature": [
             "x"
           ],
@@ -45308,7 +46015,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 170,
+          "line": 174,
           "signature": [
             "ids"
           ],
