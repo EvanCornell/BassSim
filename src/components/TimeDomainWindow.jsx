@@ -106,10 +106,11 @@ export function logTicks(lo, hi) {
  * @param {object} props - Component props.
  * @param {string} props.title - Heading above the chart.
  * @param {Array<object>} props.data - Rows.
- * @param {Array<object>} props.lines - `{key, name, color?, dash?, right?, width?}` per trace.
+ * @param {Array<object>} props.lines - `{key, name, color?, dash?, right?, width?, legend?}` per trace; `legend: false` leaves it out of the legend.
  * @param {string} [props.xKey] - Row field for x; `ms` by default.
  * @param {string} [props.xLabel] - X axis label.
  * @param {boolean} [props.logX] - Logarithmic x axis.
+ * @param {boolean} [props.logY] - Logarithmic left axis; give `yDomain` with it.
  * @param {string} props.yLabel - Left axis label.
  * @param {string} [props.y2Label] - Right axis label, when some trace uses it.
  * @param {Array} [props.yDomain] - Left axis domain.
@@ -118,7 +119,7 @@ export function logTicks(lo, hi) {
  * @returns {React.ReactElement} The chart.
  * @pure
  */
-function TdChart({ title, data, lines, xKey = 'ms', xLabel = 'ms', logX = false, yLabel, y2Label, yDomain, refs = [], height = 230 }) {
+function TdChart({ title, data, lines, xKey = 'ms', xLabel = 'ms', logX = false, logY = false, yLabel, y2Label, yDomain, refs = [], height = 230 }) {
   const right = lines.some((l) => l.right)
   const xs = data.length ? [data[0][xKey], data[data.length - 1][xKey]] : [0, 1]
   const ticks = logX ? logTicks(xs[0], xs[1]) : linearTicks(xs[0], xs[1])
@@ -134,6 +135,7 @@ function TdChart({ title, data, lines, xKey = 'ms', xLabel = 'ms', logX = false,
             tickFormatter={(v) => (Math.abs(v) >= 1000 ? `${Number((v / 1000).toPrecision(3))}k` : Number(v.toPrecision(3)))}
           />
           <YAxis yAxisId="left" domain={yDomain || ['auto', 'auto']} tick={TICK} stroke={GRID} width={50}
+            scale={logY ? 'log' : 'auto'} allowDataOverflow={logY}
             tickFormatter={(v) => Number(Number(v).toPrecision(3))}
             label={{ value: yLabel, angle: -90, position: 'insideLeft', fill: 'var(--text-3)', fontSize: 10 }} />
           {right && (
@@ -154,6 +156,7 @@ function TdChart({ title, data, lines, xKey = 'ms', xLabel = 'ms', logX = false,
           {lines.map((l, i) => (
             <Line key={l.key} yAxisId={l.right ? 'right' : 'left'} dataKey={l.key} name={l.name}
               stroke={l.color || SERIES[i % SERIES.length]} strokeWidth={l.width || 1.5} strokeDasharray={l.dash}
+              legendType={l.legend === false ? 'none' : 'line'}
               dot={false} isAnimationActive={false} connectNulls />
           ))}
         </LineChart>
@@ -635,7 +638,7 @@ function DistortionControls({ cfg, set }) {
       <div className="td-note">
         {m === 'harmonics' && 'One steady tone: settles, then whole periods are analysed, so the harmonics are exact.'}
         {m === 'thd' && 'A steady tone at each frequency — about a second of computing each.'}
-        {m === 'compression' && 'Each frequency at each level, against the linear model at the same level. Levels × points runs.'}
+        {m === 'compression' && 'Each frequency at each level, against the linear model at the same level: output, excursion, port velocity, impedance, electrical power and efficiency. Levels × points runs.'}
         {m === 'maxspl' && `A 6.5-cycle Hann burst per band, raised 3 dB at a time and then narrowed to 0.25 dB, until the harmonics pass the CEA-2010 limits (H2 ${CEA2010_LIMITS[2]} dB, H3 ${CEA2010_LIMITS[3]} dB, H4–5 −20 dB, H6–7 −30 dB, H8–10 −40 dB) or a cone passes its excursion limit.`}
       </div>
     </>
@@ -725,21 +728,8 @@ function DistortionView({ mode, res, onRun }) {
       </>
     )
   }
-  if (mode === 'compression') {
-    return (
-      <>
-        <StaleBanner stale={stale} onRun={onRun} />
-        <FailedPoints failed={res.failed} />
-        <div className="td-grid one">
-          <TdChart title="Compression: nonlinear level minus linear level" data={res.rows} xKey="hz" xLabel="Hz" logX yLabel="dB" height={320}
-            refs={[{ y: 0, color: 'var(--text-3)' }]}
-            lines={res.levels.map((L, i) => ({ key: `cmp${L}`, name: `${L >= 0 ? '+' : ''}${L} dB`, color: SERIES[i % SERIES.length], width: 2 }))} />
-          <TdChart title="Output level" data={res.rows} xKey="hz" xLabel="Hz" logX yLabel="dB SPL"
-            lines={res.levels.map((L, i) => ({ key: `spl${L}`, name: `${L >= 0 ? '+' : ''}${L} dB`, color: SERIES[i % SERIES.length] }))} />
-        </div>
-      </>
-    )
-  }
+  if (mode === 'compression') return <CompressionView res={res} stale={stale} onRun={onRun} />
+
   return (
     <>
       <StaleBanner stale={stale} onRun={onRun} />
@@ -763,6 +753,202 @@ function DistortionView({ mode, res, onRun }) {
           </tbody>
         </table>
       </div>
+    </>
+  )
+}
+
+/**
+ * A level offset, written for a legend or a table.
+ *
+ * @param {number} L - dB.
+ * @returns {string} `+6 dB`, `-3 dB`.
+ * @pure
+ */
+const dBText = (L) => `${L >= 0 ? '+' : ''}${L} dB`
+
+/**
+ * Chart rows of one figure of a compression result, against frequency.
+ *
+ * Each level `i` gives two keys: `n<i>`, the nonlinear run's value, and
+ * `l<i>`, the linear model's at the same level.
+ *
+ * @param {object} res - A compression result.
+ * @param {Function} pick - `(figures) → number|null`: the figure, from a point's measured or linear figures.
+ * @returns {Array<object>} `{hz, n0, l0, n1, l1, …}` per frequency.
+ * @pure
+ */
+export function compressionRows(res, pick) {
+  return res.rows.map((r) => {
+    const row = { hz: r.hz }
+    res.levels.forEach((L, i) => {
+      const n = r.at?.[L]
+      const l = r.linear?.[L]
+      row[`n${i}`] = n ? pick(n) ?? null : null
+      row[`l${i}`] = l ? pick(l) ?? null : null
+    })
+    return row
+  })
+}
+
+/**
+ * A log axis's domain around the positive values of some rows.
+ *
+ * @param {Array<object>} rows - Chart rows.
+ * @returns {number[]} `[lo, hi]`, a little outside the values; `[1e-3, 1]` when there are none.
+ * @pure
+ */
+function logDomain(rows) {
+  let lo = Infinity
+  let hi = 0
+  for (const r of rows) {
+    for (const [k, v] of Object.entries(r)) {
+      if (k !== 'hz' && v > 0) { lo = Math.min(lo, v); hi = Math.max(hi, v) }
+    }
+  }
+  return hi > 0 ? [lo / 1.3, hi * 1.3] : [1e-3, 1]
+}
+
+/**
+ * Compression across level: every measured figure against frequency, one trace per level, with the linear model's beside it.
+ *
+ * @param {object} props - Component props.
+ * @param {object} props.res - The compression result.
+ * @param {boolean} props.stale - Whether the project has changed since.
+ * @param {Function} props.onRun - Runs again.
+ * @returns {React.ReactElement} The view.
+ * @sideEffect Subscribes to the store; keeps the linear-trace toggle and the table's frequency as local state.
+ */
+function CompressionView({ res, stale, onRun }) {
+  const nodes = useStore((s) => s.nodes)
+  const [showLinear, setShowLinear] = useState(true)
+  const [at, setAt] = useState(0)
+  const first = res.rows.find((r) => r.at) || res.rows[0]
+  const drivers = Object.keys(Object.values(first?.linear || {}).find(Boolean)?.xPeak || {})
+  const ports = Object.keys(Object.values(first?.linear || {}).find(Boolean)?.vPeak || {})
+  const channels = Object.keys(Object.values(first?.linear || {}).find(Boolean)?.z || {})
+  /**
+   * A driver's Xmax.
+   *
+   * @param {string} id - Driver node id.
+   * @returns {number} mm; 0 when unknown.
+   * @reads the graph nodes.
+   */
+  const xmax = (id) => Number(nodes.find((n) => n.id === id)?.data.params.Xmax) || 0
+  /**
+   * Traces for a figure: each level solid, and its linear value dashed in the same colour.
+   *
+   * @param {boolean} [linear] - Whether the figure has a linear counterpart worth drawing.
+   * @returns {Array<object>} TdChart lines.
+   * @pure
+   */
+  const traces = (linear = true) => res.levels.flatMap((L, i) => [
+    { key: `n${i}`, name: dBText(L), color: SERIES[i % SERIES.length], width: 2 },
+    ...(linear && showLinear ? [{ key: `l${i}`, name: `${dBText(L)} linear`, color: SERIES[i % SERIES.length], dash: '4 3', width: 1, legend: false }] : []),
+  ])
+  /**
+   * One figure's chart.
+   *
+   * @param {string} title - Heading.
+   * @param {Function} pick - `(figures) → number|null`.
+   * @param {string} yLabel - Axis unit.
+   * @param {object} [extra] - `{linear, logY, refs}`: whether to draw the linear traces, a log axis, reference lines.
+   * @returns {React.ReactElement} The chart.
+   * @pure
+   */
+  const chart = (title, pick, yLabel, extra = {}) => {
+    const data = compressionRows(res, pick)
+    return (
+      <TdChart key={title} title={title} data={data} xKey="hz" xLabel="Hz" logX yLabel={yLabel}
+        {...(extra.logY ? { logY: true, yDomain: logDomain(data) } : {})}
+        refs={extra.refs} lines={traces(extra.linear !== false)} />
+    )
+  }
+  /**
+   * A name to add to a heading, when there is more than one of its kind.
+   *
+   * @param {Array} list - The drivers, ports or channels.
+   * @param {string} name - This one's name.
+   * @returns {string} ` — name`, or nothing.
+   * @pure
+   */
+  const multi = (list, name) => (list.length > 1 ? ` — ${name}` : '')
+  const row = res.rows[Math.min(at, res.rows.length - 1)]
+  /**
+   * A table cell's value, with the linear model's after it.
+   *
+   * @param {number} n - Nonlinear value.
+   * @param {number|null} l - Linear value.
+   * @param {number} d - Decimals.
+   * @param {string} [unit] - Unit.
+   * @returns {React.ReactElement} The cell's content.
+   * @pure
+   */
+  const pair = (n, l, d, unit = '') => (
+    <>{f(n, d)}{unit}{l != null && <span className="dim"> ({f(l, d)})</span>}</>
+  )
+  return (
+    <>
+      <StaleBanner stale={stale} onRun={onRun} />
+      <FailedPoints failed={res.failed} />
+      <div className="td-summary">
+        <label className="td-check" title="Draw the linear model at each level, dashed, beside the nonlinear result">
+          <input type="checkbox" checked={showLinear} onChange={(e) => setShowLinear(e.target.checked)} />Linear model at each level, dashed in the same colour
+        </label>
+      </div>
+      <div className="td-grid">
+        {chart('Compression: nonlinear level minus linear level', (m) => m.cmp, 'dB', { linear: false, refs: [{ y: 0, color: 'var(--text-3)' }] })}
+        {chart('Output level at 1 m', (m) => m.spl, 'dB SPL')}
+        {drivers.map((id) => chart(`Peak excursion${multi(drivers, nameOf(nodes, id))}`, (m) => m.xPeak?.[id], 'mm', {
+          refs: xmax(id) ? [{ y: xmax(id), label: 'Xmax' }] : [],
+        }))}
+        {ports.map((id) => chart(`Peak port velocity${multi(ports, nameOf(nodes, id))}`, (m) => m.vPeak?.[id], 'm/s'))}
+        {channels.map((id) => chart(`Impedance at the fundamental${multi(channels, id)}`, (m) => m.z?.[id]?.mag, 'Ω'))}
+        {chart('Electrical power', (m) => m.pe, 'W', { logY: true })}
+        {chart('Efficiency', (m) => (m.efficiency != null ? m.efficiency * 100 : null), '%')}
+        {chart('THD', (m) => (m.thd != null ? m.thd * 100 : null), '%', { linear: false })}
+      </div>
+      <div className="td-table-head">
+        <span>At</span>
+        <select value={at} onChange={(e) => setAt(Number(e.target.value))}>
+          {res.rows.map((r, i) => <option key={r.hz} value={i}>{r.hz} Hz</option>)}
+        </select>
+        <span className="dim">nonlinear, with the linear model in brackets</span>
+      </div>
+      <table className="td-table">
+        <thead>
+          <tr>
+            <th>Level</th><th>SPL</th><th>Compression</th><th>THD</th>
+            {drivers.map((id) => <th key={id}>Excursion{multi(drivers, nameOf(nodes, id))}</th>)}
+            {ports.map((id) => <th key={id}>Port velocity{multi(ports, nameOf(nodes, id))}</th>)}
+            {channels.map((id) => <th key={id}>|Z|{multi(channels, id)}</th>)}
+            <th>Electrical power</th><th>Acoustic power</th><th>Efficiency</th>
+          </tr>
+        </thead>
+        <tbody>
+          {res.levels.map((L) => {
+            const n = row?.at?.[L]
+            const l = row?.linear?.[L]
+            return (
+              <tr key={L}>
+                <td>{dBText(L)}</td>
+                {!n ? <td colSpan={6 + drivers.length + ports.length + channels.length} className="dim">not solved</td> : (
+                  <>
+                    <td>{pair(n.spl, l?.spl, 1, ' dB')}</td>
+                    <td>{f(Math.abs(n.cmp) < 0.005 ? 0 : n.cmp, 2)} dB</td>
+                    <td>{f(n.thd * 100, 2)} %</td>
+                    {drivers.map((id) => <td key={id}>{pair(n.xPeak?.[id], l?.xPeak?.[id], 2, ' mm')}</td>)}
+                    {ports.map((id) => <td key={id}>{pair(n.vPeak?.[id], l?.vPeak?.[id], 1, ' m/s')}</td>)}
+                    {channels.map((id) => <td key={id}>{pair(n.z?.[id]?.mag, l?.z?.[id]?.mag, 2, ' Ω')}</td>)}
+                    <td>{pair(n.pe, l?.pe, 2, ' W')}</td>
+                    <td>{pair(n.pa * 1000, l ? l.pa * 1000 : null, 2, ' mW')}</td>
+                    <td>{pair(n.efficiency != null ? n.efficiency * 100 : null, l?.efficiency != null ? l.efficiency * 100 : null, 2, ' %')}</td>
+                  </>
+                )}
+              </tr>
+            )
+          })}
+        </tbody>
+      </table>
     </>
   )
 }

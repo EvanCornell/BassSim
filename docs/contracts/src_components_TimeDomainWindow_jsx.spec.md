@@ -3,7 +3,7 @@
 > Generated from method contracts. This file contains **no implementation code**.
 > Write tests against what is claimed here, not against what you expect the code to do.
 
-## EXPORTED (4)
+## EXPORTED (5)
 
 ### `timeRows(t, series, tMax)`
 
@@ -61,6 +61,27 @@ Tick positions across a logarithmic range: 1, 2 and 5 of each decade.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
+### `compressionRows(res, pick)`
+
+- **Reachability:** EXPORTED
+- **Obtain via:** import { compressionRows } from '../../src/components/TimeDomainWindow.jsx'
+
+Chart rows of one figure of a compression result, against frequency.
+
+Each level `i` gives two keys: `n<i>`, the nonlinear run's value, and
+`l<i>`, the linear model's at the same level.
+
+**Parameters**
+
+- `res` — `object` — A compression result.
+- `pick` — `Function` — `(figures) → number|null`: the figure, from a point's measured or linear figures.
+
+**Returns**
+
+- `Array<object>` — `{hz, n0, l0, n1, l1, …}` per frequency.
+
+**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
+
 ### `TimeDomainWindow()`
 
 - **Reachability:** EXPORTED
@@ -81,7 +102,7 @@ seconds to minutes, and a result says when the project has changed since.
 
 - Subscribes to the store, and starts the linear responses when they are out of date.
 
-## UNREACHABLE (23)
+## UNREACHABLE (31)
 
 ### `f(v, d)`
 
@@ -130,10 +151,11 @@ A line chart for the time-domain views.
 - `props` — `object` — Component props.
 - `props.title` — `string` — Heading above the chart.
 - `props.data` — `Array<object>` — Rows.
-- `props.lines` — `Array<object>` — `{key, name, color?, dash?, right?, width?}` per trace.
+- `props.lines` — `Array<object>` — `{key, name, color?, dash?, right?, width?, legend?}` per trace; `legend: false` leaves it out of the legend.
 - `props.xKey` — `string` _(optional)_ — Row field for x; `ms` by default.
 - `props.xLabel` — `string` _(optional)_ — X axis label.
 - `props.logX` — `boolean` _(optional)_ — Logarithmic x axis.
+- `props.logY` — `boolean` _(optional)_ — Logarithmic left axis; give `yDomain` with it.
 - `props.yLabel` — `string` — Left axis label.
 - `props.y2Label` — `string` _(optional)_ — Right axis label, when some trace uses it.
 - `props.yDomain` — `Array` _(optional)_ — Left axis domain.
@@ -481,6 +503,156 @@ The distortion result for the selected analysis.
 **Side effects**
 
 - Subscribes to the store.
+
+### `dBText(L)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+A level offset, written for a legend or a table.
+
+**Parameters**
+
+- `L` — `number` — dB.
+
+**Returns**
+
+- `string` — `+6 dB`, `-3 dB`.
+
+**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
+
+### `logDomain(rows)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+A log axis's domain around the positive values of some rows.
+
+**Parameters**
+
+- `rows` — `Array<object>` — Chart rows.
+
+**Returns**
+
+- `number[]` — `[lo, hi]`, a little outside the values; `[1e-3, 1]` when there are none.
+
+**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
+
+### `CompressionView(props)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+Compression across level: every measured figure against frequency, one trace per level, with the linear model's beside it.
+
+**Parameters**
+
+- `props` — `object` — Component props.
+- `props.res` — `object` — The compression result.
+- `props.stale` — `boolean` — Whether the project has changed since.
+- `props.onRun` — `Function` — Runs again.
+
+**Returns**
+
+- `React.ReactElement` — The view.
+
+**Side effects**
+
+- Subscribes to the store; keeps the linear-trace toggle and the table's frequency as local state.
+
+### `CompressionView > xmax(id)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+A driver's Xmax.
+
+**Parameters**
+
+- `id` — `string` — Driver node id.
+
+**Returns**
+
+- `number` — mm; 0 when unknown.
+
+**Reads external mutable state**
+
+- the graph nodes.
+
+### `CompressionView > traces(linear)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+Traces for a figure: each level solid, and its linear value dashed in the same colour.
+
+**Parameters**
+
+- `linear` — `boolean` _(optional)_ — Whether the figure has a linear counterpart worth drawing.
+
+**Returns**
+
+- `Array<object>` — TdChart lines.
+
+**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
+
+### `CompressionView > chart(title, pick, yLabel, extra)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+One figure's chart.
+
+**Parameters**
+
+- `title` — `string` — Heading.
+- `pick` — `Function` — `(figures) → number|null`.
+- `yLabel` — `string` — Axis unit.
+- `extra` — `object` _(optional)_ — `{linear, logY, refs}`: whether to draw the linear traces, a log axis, reference lines.
+
+**Returns**
+
+- `React.ReactElement` — The chart.
+
+**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
+
+### `CompressionView > multi(list, name)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+A name to add to a heading, when there is more than one of its kind.
+
+**Parameters**
+
+- `list` — `Array` — The drivers, ports or channels.
+- `name` — `string` — This one's name.
+
+**Returns**
+
+- `string` — ` — name`, or nothing.
+
+**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
+
+### `CompressionView > pair(n, l, d, unit)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+A table cell's value, with the linear model's after it.
+
+**Parameters**
+
+- `n` — `number` — Nonlinear value.
+- `l` — `number|null` — Linear value.
+- `d` — `number` — Decimals.
+- `unit` — `string` _(optional)_ — Unit.
+
+**Returns**
+
+- `React.ReactElement` — The cell's content.
+
+**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
 ### `FailedPoints(props)`
 

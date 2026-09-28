@@ -25,8 +25,8 @@
   },
   "stats": {
     "modules": 100,
-    "methods": 1036,
-    "documented": 1036
+    "methods": 1049,
+    "documented": 1049
   },
   "modules": [
     {
@@ -15811,7 +15811,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 121,
+          "line": 122,
           "signature": [
             "arg0"
           ],
@@ -15845,7 +15845,7 @@
               "type": "Array<object>",
               "optional": false,
               "default": null,
-              "desc": "`{key, name, color?, dash?, right?, width?}` per trace."
+              "desc": "`{key, name, color?, dash?, right?, width?, legend?}` per trace; `legend: false` leaves it out of the legend."
             },
             {
               "name": "props.xKey",
@@ -15867,6 +15867,13 @@
               "optional": true,
               "default": null,
               "desc": "Logarithmic x axis."
+            },
+            {
+              "name": "props.logY",
+              "type": "boolean",
+              "optional": true,
+              "default": null,
+              "desc": "Logarithmic left axis; give `yDomain` with it."
             },
             {
               "name": "props.yLabel",
@@ -15927,7 +15934,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 179,
+          "line": 182,
           "signature": [
             "arg0"
           ],
@@ -16015,7 +16022,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 202,
+          "line": 205,
           "signature": [
             "arg0"
           ],
@@ -16089,7 +16096,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 228,
+          "line": 231,
           "signature": [
             "arg0"
           ],
@@ -16156,7 +16163,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 244,
+          "line": 247,
           "signature": [
             "nodes",
             "id"
@@ -16203,7 +16210,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 253,
+          "line": 256,
           "signature": [
             "res"
           ],
@@ -16244,7 +16251,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 267,
+          "line": 270,
           "signature": [
             "arg0"
           ],
@@ -16297,7 +16304,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 290,
+          "line": 293,
           "signature": [
             "arg0"
           ],
@@ -16364,7 +16371,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 337,
+          "line": 340,
           "signature": [
             "arg0"
           ],
@@ -16419,7 +16426,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 352,
+          "line": 355,
           "signature": [
             "fam",
             "withSignal"
@@ -16466,7 +16473,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 406,
+          "line": 409,
           "signature": [
             "arg0"
           ],
@@ -16521,7 +16528,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 416,
+          "line": 419,
           "signature": [
             "patch"
           ],
@@ -16562,7 +16569,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 461,
+          "line": 464,
           "signature": [
             "arg0"
           ],
@@ -16617,7 +16624,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 488,
+          "line": 491,
           "signature": [
             "y"
           ],
@@ -16656,7 +16663,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 578,
+          "line": 581,
           "signature": [
             "text"
           ],
@@ -16695,7 +16702,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 589,
+          "line": 592,
           "signature": [
             "arg0"
           ],
@@ -16748,7 +16755,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 652,
+          "line": 655,
           "signature": [
             "db"
           ],
@@ -16787,7 +16794,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 664,
+          "line": 667,
           "signature": [
             "arg0"
           ],
@@ -16843,13 +16850,453 @@
           "other": []
         },
         {
+          "name": "dBText",
+          "qualified": "dBText",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 767,
+          "signature": [
+            "L"
+          ],
+          "documented": true,
+          "summary": "A level offset, written for a legend or a table.",
+          "description": "A level offset, written for a legend or a table.",
+          "params": [
+            {
+              "name": "L",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "dB."
+            }
+          ],
+          "returns": {
+            "type": "string",
+            "desc": "`+6 dB`, `-3 dB`."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "compressionRows",
+          "qualified": "compressionRows",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 780,
+          "signature": [
+            "res",
+            "pick"
+          ],
+          "documented": true,
+          "summary": "Chart rows of one figure of a compression result, against frequency.",
+          "description": "Chart rows of one figure of a compression result, against frequency.\n\nEach level `i` gives two keys: `n<i>`, the nonlinear run's value, and\n`l<i>`, the linear model's at the same level.",
+          "params": [
+            {
+              "name": "res",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "A compression result."
+            },
+            {
+              "name": "pick",
+              "type": "Function",
+              "optional": false,
+              "default": null,
+              "desc": "`(figures) → number|null`: the figure, from a point's measured or linear figures."
+            }
+          ],
+          "returns": {
+            "type": "Array<object>",
+            "desc": "`{hz, n0, l0, n1, l1, …}` per frequency."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "logDomain",
+          "qualified": "logDomain",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 800,
+          "signature": [
+            "rows"
+          ],
+          "documented": true,
+          "summary": "A log axis's domain around the positive values of some rows.",
+          "description": "A log axis's domain around the positive values of some rows.",
+          "params": [
+            {
+              "name": "rows",
+              "type": "Array<object>",
+              "optional": false,
+              "default": null,
+              "desc": "Chart rows."
+            }
+          ],
+          "returns": {
+            "type": "number[]",
+            "desc": "`[lo, hi]`, a little outside the values; `[1e-3, 1]` when there are none."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "CompressionView",
+          "qualified": "CompressionView",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 821,
+          "signature": [
+            "arg0"
+          ],
+          "documented": true,
+          "summary": "Compression across level: every measured figure against frequency, one trace per level, with the linear model's beside it.",
+          "description": "Compression across level: every measured figure against frequency, one trace per level, with the linear model's beside it.",
+          "params": [
+            {
+              "name": "props",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "Component props."
+            },
+            {
+              "name": "props.res",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "The compression result."
+            },
+            {
+              "name": "props.stale",
+              "type": "boolean",
+              "optional": false,
+              "default": null,
+              "desc": "Whether the project has changed since."
+            },
+            {
+              "name": "props.onRun",
+              "type": "Function",
+              "optional": false,
+              "default": null,
+              "desc": "Runs again."
+            }
+          ],
+          "returns": {
+            "type": "React.ReactElement",
+            "desc": "The view."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Subscribes to the store; keeps the linear-trace toggle and the table's frequency as local state."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "xmax",
+          "qualified": "CompressionView > xmax",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 836,
+          "signature": [
+            "id"
+          ],
+          "documented": true,
+          "summary": "A driver's Xmax.",
+          "description": "A driver's Xmax.",
+          "params": [
+            {
+              "name": "id",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Driver node id."
+            }
+          ],
+          "returns": {
+            "type": "number",
+            "desc": "mm; 0 when unknown."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [
+              "the graph nodes."
+            ],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "traces",
+          "qualified": "CompressionView > traces",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 844,
+          "signature": [
+            "linear"
+          ],
+          "documented": true,
+          "summary": "Traces for a figure: each level solid, and its linear value dashed in the same colour.",
+          "description": "Traces for a figure: each level solid, and its linear value dashed in the same colour.",
+          "params": [
+            {
+              "name": "linear",
+              "type": "boolean",
+              "optional": true,
+              "default": null,
+              "desc": "Whether the figure has a linear counterpart worth drawing."
+            }
+          ],
+          "returns": {
+            "type": "Array<object>",
+            "desc": "TdChart lines."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "chart",
+          "qualified": "CompressionView > chart",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 858,
+          "signature": [
+            "title",
+            "pick",
+            "yLabel",
+            "extra"
+          ],
+          "documented": true,
+          "summary": "One figure's chart.",
+          "description": "One figure's chart.",
+          "params": [
+            {
+              "name": "title",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Heading."
+            },
+            {
+              "name": "pick",
+              "type": "Function",
+              "optional": false,
+              "default": null,
+              "desc": "`(figures) → number|null`."
+            },
+            {
+              "name": "yLabel",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "Axis unit."
+            },
+            {
+              "name": "extra",
+              "type": "object",
+              "optional": true,
+              "default": null,
+              "desc": "`{linear, logY, refs}`: whether to draw the linear traces, a log axis, reference lines."
+            }
+          ],
+          "returns": {
+            "type": "React.ReactElement",
+            "desc": "The chart."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "multi",
+          "qualified": "CompressionView > multi",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 874,
+          "signature": [
+            "list",
+            "name"
+          ],
+          "documented": true,
+          "summary": "A name to add to a heading, when there is more than one of its kind.",
+          "description": "A name to add to a heading, when there is more than one of its kind.",
+          "params": [
+            {
+              "name": "list",
+              "type": "Array",
+              "optional": false,
+              "default": null,
+              "desc": "The drivers, ports or channels."
+            },
+            {
+              "name": "name",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "This one's name."
+            }
+          ],
+          "returns": {
+            "type": "string",
+            "desc": "` — name`, or nothing."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "pair",
+          "qualified": "CompressionView > pair",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 886,
+          "signature": [
+            "n",
+            "l",
+            "d",
+            "unit"
+          ],
+          "documented": true,
+          "summary": "A table cell's value, with the linear model's after it.",
+          "description": "A table cell's value, with the linear model's after it.",
+          "params": [
+            {
+              "name": "n",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Nonlinear value."
+            },
+            {
+              "name": "l",
+              "type": "number|null",
+              "optional": false,
+              "default": null,
+              "desc": "Linear value."
+            },
+            {
+              "name": "d",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Decimals."
+            },
+            {
+              "name": "unit",
+              "type": "string",
+              "optional": true,
+              "default": null,
+              "desc": "Unit."
+            }
+          ],
+          "returns": {
+            "type": "React.ReactElement",
+            "desc": "The cell's content."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
           "name": "FailedPoints",
           "qualified": "FailedPoints",
           "kind": "function",
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 778,
+          "line": 964,
           "signature": [
             "arg0"
           ],
@@ -16895,7 +17342,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 797,
+          "line": 983,
           "signature": [],
           "documented": true,
           "summary": "Duct exit losses, listed for every waveguide.",
@@ -16926,7 +17373,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 836,
+          "line": 1022,
           "signature": [],
           "documented": true,
           "summary": "The running job's progress, with a cancel button.",
@@ -16957,7 +17404,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 860,
+          "line": 1046,
           "signature": [],
           "documented": true,
           "summary": "The time-domain workspace: its own full-screen view under the menu and quick bar.",
@@ -37441,7 +37888,7 @@
       "constants": [
         {
           "name": "LINEAR_DEFAULTS",
-          "line": 105,
+          "line": 106,
           "shape": {
             "kind": "object",
             "keys": [
@@ -37458,7 +37905,7 @@
         },
         {
           "name": "TRANSIENT_DEFAULTS",
-          "line": 259,
+          "line": 260,
           "shape": {
             "kind": "object",
             "keys": [
@@ -37482,7 +37929,7 @@
         },
         {
           "name": "SOLVER_SETTINGS",
-          "line": 284,
+          "line": 285,
           "shape": {
             "kind": "array",
             "length": 4
@@ -37492,7 +37939,7 @@
         },
         {
           "name": "CEA2010_LIMITS",
-          "line": 432,
+          "line": 441,
           "shape": {
             "kind": "object",
             "keys": [
@@ -37512,7 +37959,7 @@
         },
         {
           "name": "DISTORTION_DEFAULTS",
-          "line": 435,
+          "line": 444,
           "shape": {
             "kind": "object",
             "keys": [
@@ -37541,7 +37988,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 34,
+          "line": 35,
           "signature": [
             "p"
           ],
@@ -37580,7 +38027,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 43,
+          "line": 44,
           "signature": [
             "project"
           ],
@@ -37619,7 +38066,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 58,
+          "line": 59,
           "signature": [
             "raw",
             "map"
@@ -37666,7 +38113,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 66,
+          "line": 67,
           "signature": [],
           "documented": true,
           "summary": "A zeroed complex array.",
@@ -37695,7 +38142,7 @@
           "exported": true,
           "async": true,
           "generator": false,
-          "line": 123,
+          "line": 124,
           "signature": [
             "project",
             "opts",
@@ -37757,7 +38204,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 144,
+          "line": 145,
           "signature": [
             "k"
           ],
@@ -37796,7 +38243,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 156,
+          "line": 157,
           "signature": [
             "H",
             "dcFromLowest"
@@ -37843,7 +38290,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 174,
+          "line": 175,
           "signature": [
             "S"
           ],
@@ -37882,7 +38329,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 182,
+          "line": 183,
           "signature": [
             "h"
           ],
@@ -37921,7 +38368,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 191,
+          "line": 192,
           "signature": [
             "S",
             "B"
@@ -37968,7 +38415,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 224,
+          "line": 225,
           "signature": [
             "a"
           ],
@@ -38007,7 +38454,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 274,
+          "line": 275,
           "signature": [
             "project",
             "bandwidth"
@@ -38054,7 +38501,7 @@
           "exported": true,
           "async": true,
           "generator": false,
-          "line": 304,
+          "line": 305,
           "signature": [
             "project",
             "run"
@@ -38080,7 +38527,7 @@
           ],
           "returns": {
             "type": "Promise<object>",
-            "desc": "`{t, pressure, driverPressure, excursion: {id: mm[]}, current: {ch: A[]}, voltage: {ch: V[]}, velocity: {wg: m/s[]}, probes: {id: {kind, values}}}` — pressure in Pa at 1 m."
+            "desc": "`{t, pressure, driverPressure, excursion: {id: mm[]}, current: {ch: A[]}, voltage: {ch: V[]}, velocity: {wg: m/s[]}, acousticPower: W[], probes: {id: {kind, values}}}` — pressure in Pa at 1 m; `acousticPower` the instantaneous power into every counted radiator's load."
           },
           "throws": [
             {
@@ -38108,7 +38555,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 331,
+          "line": 332,
           "signature": [],
           "documented": true,
           "summary": "A silent series, one sample per time step.",
@@ -38137,7 +38584,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 372,
+          "line": 381,
           "signature": [
             "x"
           ],
@@ -38176,7 +38623,7 @@
           "exported": true,
           "async": true,
           "generator": false,
-          "line": 389,
+          "line": 398,
           "signature": [
             "project",
             "opts",
@@ -38238,7 +38685,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 413,
+          "line": 422,
           "signature": [
             "project"
           ],
@@ -38277,7 +38724,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 425,
+          "line": 434,
           "signature": [
             "project",
             "bandwidth"
@@ -38324,7 +38771,7 @@
           "exported": true,
           "async": true,
           "generator": false,
-          "line": 458,
+          "line": 467,
           "signature": [
             "project",
             "hz",
@@ -38366,7 +38813,7 @@
           ],
           "returns": {
             "type": "Promise<object>",
-            "desc": "`{hz, levelDb, harmonics: [{n, hz, amp, db}], thd, spl, xPeak: {id: mm}, currentPeak, voltagePeak}` — `amp` in Pa at 1 m, `db` relative to the fundamental, `spl` the fundamental's level."
+            "desc": "`{hz, levelDb, harmonics: [{n, hz, amp, db}], thd, spl, xPeak: {id: mm}, vPeak: {wg: m/s}, z: {ch: {mag, phase}}, pe, pa, efficiency, currentPeak, voltagePeak}` — `amp` in Pa at 1 m, `db` relative to the fundamental, `spl` the fundamental's level; `z` each channel's load impedance at the fundamental (Ω, degrees); `pe` the electrical power delivered to the loads and `pa` the acoustic power radiated, W, averaged over the analysed periods, harmonics and all; `efficiency` their ratio."
           },
           "throws": [
             {
@@ -38394,7 +38841,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 477,
+          "line": 486,
           "signature": [
             "x"
           ],
@@ -38427,13 +38874,60 @@
           "other": []
         },
         {
+          "name": "meanOf",
+          "qualified": "measureTone > meanOf",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 495,
+          "signature": [
+            "a",
+            "b"
+          ],
+          "documented": true,
+          "summary": "Mean of a product over the analysed periods: the average power of a flow and its pressure, or a current and its voltage.",
+          "description": "Mean of a product over the analysed periods: the average power of a flow and its pressure, or a current and its voltage.",
+          "params": [
+            {
+              "name": "a",
+              "type": "ArrayLike<number>",
+              "optional": false,
+              "default": null,
+              "desc": "Samples."
+            },
+            {
+              "name": "b",
+              "type": "ArrayLike<number>",
+              "optional": true,
+              "default": null,
+              "desc": "Samples; all ones when omitted."
+            }
+          ],
+          "returns": {
+            "type": "number",
+            "desc": "The mean."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
           "name": "linearLevel",
           "qualified": "linearLevel",
           "kind": "function",
           "exported": true,
           "async": true,
           "generator": false,
-          "line": 501,
+          "line": 541,
           "signature": [
             "project",
             "hz",
@@ -38489,13 +38983,161 @@
           "other": []
         },
         {
+          "name": "linearPoint",
+          "qualified": "linearPoint",
+          "kind": "function",
+          "exported": true,
+          "async": true,
+          "generator": false,
+          "line": 558,
+          "signature": [
+            "project",
+            "hz",
+            "levelDb"
+          ],
+          "documented": true,
+          "summary": "The linear model at one frequency, in the figures `measureTone` gives.",
+          "description": "The linear model at one frequency, in the figures `measureTone` gives.\n\nSolved once, by the same small AC run as the sweep's; excursion, velocity\nand power are then scaled to the level, as the linear model scales them.",
+          "params": [
+            {
+              "name": "project",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "A resolved project."
+            },
+            {
+              "name": "hz",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Frequency, Hz."
+            },
+            {
+              "name": "levelDb",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Level offset, dB."
+            }
+          ],
+          "returns": {
+            "type": "Promise<object>",
+            "desc": "`{spl, xPeak: {id: mm}, vPeak: {wg: m/s}, z: {ch: {mag, phase}}, pe, pa, efficiency}`, as `measureTone` defines them."
+          },
+          "throws": [
+            {
+              "type": "Error",
+              "desc": "When SPICE cannot solve the circuit."
+            }
+          ],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Runs the engine."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "scaleLinear",
+          "qualified": "scaleLinear",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 586,
+          "signature": [
+            "lin",
+            "levelDb"
+          ],
+          "documented": true,
+          "summary": "The linear model's figures at another level.",
+          "description": "The linear model's figures at another level.\n\nLevels, excursion and velocity scale with the drive, powers with its\nsquare; impedance and efficiency do not change.",
+          "params": [
+            {
+              "name": "lin",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "From `linearPoint` at 0 dB."
+            },
+            {
+              "name": "levelDb",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Level offset, dB."
+            }
+          ],
+          "returns": {
+            "type": "object",
+            "desc": "The same figures at `levelDb`."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "each",
+          "qualified": "scaleLinear > each",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 595,
+          "signature": [
+            "m"
+          ],
+          "documented": true,
+          "summary": "Scale every value of a map.",
+          "description": "Scale every value of a map.",
+          "params": [
+            {
+              "name": "m",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "`{id: number}`."
+            }
+          ],
+          "returns": {
+            "type": "object",
+            "desc": "Each value times the gain."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
           "name": "logFreqs",
           "qualified": "logFreqs",
           "kind": "function",
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 516,
+          "line": 615,
           "signature": [
             "f1",
             "f2",
@@ -38550,7 +39192,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 529,
+          "line": 628,
           "signature": [
             "m",
             "xLimitMm"
@@ -38597,7 +39239,7 @@
           "exported": true,
           "async": true,
           "generator": false,
-          "line": 556,
+          "line": 655,
           "signature": [
             "project",
             "hz",
@@ -38667,7 +39309,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 570,
+          "line": 669,
           "signature": [
             "f"
           ],
@@ -38706,7 +39348,7 @@
           "exported": true,
           "async": true,
           "generator": false,
-          "line": 611,
+          "line": 710,
           "signature": [
             "s"
           ],
@@ -38789,7 +39431,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 619,
+          "line": 718,
           "signature": [],
           "documented": true,
           "summary": "The current bracket: the lowest breaking level, and the highest passing one below it.",
@@ -38820,7 +39462,7 @@
           "exported": true,
           "async": true,
           "generator": false,
-          "line": 680,
+          "line": 782,
           "signature": [
             "project",
             "mode",
@@ -38829,7 +39471,7 @@
           ],
           "documented": true,
           "summary": "Distortion analyses.",
-          "description": "Distortion analyses.\n\n- `harmonics`: one tone at `hz`, `levelDb` — its harmonic levels, THD and\n  the last periods of its waveform.\n- `thd`: tones at `points` log-spaced frequencies from `f1` to `f2` — THD,\n  H2 and H3 against frequency.\n- `compression`: tones at the same frequencies at each of `levels` (dB\n  over the channels' level) — the fundamental's level against the linear\n  model's, as compression in dB.\n- `maxspl`: for each band frequency, the highest burst level that breaks\n  neither the CEA-2010 distortion limits nor `xLimit` × Xmax of excursion,\n  found by stepping 3 dB then narrowing to 0.25 dB (see `maxLevel`),\n  every band at once.",
+          "description": "Distortion analyses.\n\n- `harmonics`: one tone at `hz`, `levelDb` — its harmonic levels, THD and\n  the last periods of its waveform.\n- `thd`: tones at `points` log-spaced frequencies from `f1` to `f2` — THD,\n  H2 and H3 against frequency.\n- `compression`: tones at the same frequencies at each of `levels` (dB\n  over the channels' level) — the fundamental's level against the linear\n  model's, as compression in dB; and, per point, the figures of\n  `measureTone` (`row.at[L]`: THD, excursion, port velocity, impedance,\n  electrical and acoustic power, efficiency) beside the linear model's at\n  the same level (`row.linear[L]`, from `linearPoint`).\n- `maxspl`: for each band frequency, the highest burst level that breaks\n  neither the CEA-2010 distortion limits nor `xLimit` × Xmax of excursion,\n  found by stepping 3 dB then narrowing to 0.25 dB (see `maxLevel`),\n  every band at once.",
           "params": [
             {
               "name": "project",
@@ -38890,7 +39532,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 702,
+          "line": 804,
           "signature": [
             "label",
             "err"
@@ -38944,7 +39586,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 715,
+          "line": 817,
           "signature": [
             "total"
           ],
@@ -38990,7 +39632,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 725,
+          "line": 827,
           "signature": [
             "L"
           ],
@@ -39029,7 +39671,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 780,
+          "line": 885,
           "signature": [
             "message"
           ],
@@ -39070,7 +39712,7 @@
           "exported": false,
           "async": true,
           "generator": false,
-          "line": 793,
+          "line": 898,
           "signature": [
             "L"
           ],
@@ -39111,7 +39753,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 809,
+          "line": 914,
           "signature": [],
           "documented": true,
           "summary": "How many levels this band may test at once: its share of the threads.",
@@ -39142,7 +39784,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 817,
+          "line": 922,
           "signature": [
             "fraction"
           ],

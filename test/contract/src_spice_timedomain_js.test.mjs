@@ -8,7 +8,7 @@ import { compileProject } from '../../src/spice/compile.js'
 import { normalizeSignal } from '../../src/spice/dsp.js'
 import {
   linearResponses, transientRun, transientAnalysis, measureTone, linearLevel, distortionAnalysis,
-  logFreqs, brokenLimit, levels, splOf, CEA2010_LIMITS, maxLevel,
+  logFreqs, brokenLimit, levels, splOf, CEA2010_LIMITS, maxLevel, linearPoint, scaleLinear,
 } from '../../src/spice/timedomain.js'
 import { setThreads, setRunner, runLocal } from '../../src/spice/run.js'
 
@@ -71,6 +71,55 @@ test('measureTone: the linear fundamental is the sweep level, with no distortion
   const m = await measureTone(p, 40, 0, { ...O, nonlinear: false })
   assert.ok(Math.abs(m.spl - await linearLevel(p, 40, 0)) < 0.01)
   assert.ok(m.thd < 1e-4)
+})
+
+// CONTRACT (measureTone, linearPoint): a linear run's excursion, port
+// velocity, impedance, powers and efficiency are the linear model's.
+test('measureTone: a linear run gives the linear model\'s figures', async () => {
+  const p = box()
+  for (const hz of [25, 38, 80]) {
+    const m = await measureTone(p, hz, 6, { ...O, nonlinear: false })
+    const l = await linearPoint(p, hz, 6)
+    const near = (a, b, tol, what) => assert.ok(Math.abs(a - b) <= tol * Math.abs(b), `${hz} Hz ${what}: ${a} vs ${b}`)
+    near(m.xPeak.d, l.xPeak.d, 5e-3, 'excursion')
+    near(m.vPeak.w, l.vPeak.w, 5e-3, 'velocity')
+    near(m.z.ch1.mag, l.z.ch1.mag, 5e-3, '|Z|')
+    assert.ok(Math.abs(m.z.ch1.phase - l.z.ch1.phase) < 0.5, `${hz} Hz phase`)
+    near(m.pe, l.pe, 5e-3, 'electrical power')
+    near(m.pa, l.pa, 5e-3, 'acoustic power')
+    near(m.efficiency, l.efficiency, 5e-3, 'efficiency')
+  }
+})
+
+// CONTRACT (scaleLinear): excursion and velocity scale with the drive,
+// power with its square; impedance and efficiency do not change.
+test('scaleLinear', () => {
+  const lin = { spl: 90, xPeak: { d: 1 }, vPeak: { w: 2 }, z: { ch1: { mag: 6, phase: 10 } }, pe: 1, pa: 0.01, efficiency: 0.01 }
+  const s = scaleLinear(lin, 20)
+  assert.equal(s.spl, 110)
+  assert.ok(Math.abs(s.xPeak.d - 10) < 1e-12 && Math.abs(s.vPeak.w - 20) < 1e-12)
+  assert.ok(Math.abs(s.pe - 100) < 1e-9 && Math.abs(s.pa - 1) < 1e-9)
+  assert.deepEqual(s.z, lin.z)
+  assert.equal(s.efficiency, lin.efficiency)
+})
+
+// CONTRACT (distortionAnalysis compression): every point carries its
+// measured figures and the linear model's at the same level; exit losses
+// hold the port velocity and efficiency below the linear model's, more so
+// at higher level.
+test('compression across level: the figures, against the linear model', async () => {
+  const p = box(undefined, { throatK: 1, mouthK: 1 })
+  const res = await distortionAnalysis(p, 'compression', { ...O, f1: 38, f2: 38, points: 1, levels: [0, 12] })
+  const [row] = res.rows
+  for (const L of [0, 12]) {
+    assert.ok(row.at[L] && row.linear[L], `level ${L}`)
+    assert.equal(row.at[L].cmp, row[`cmp${L}`])
+    for (const k of ['xPeak', 'vPeak', 'z']) assert.ok(Object.keys(row.at[L][k]).length, k)
+  }
+  const ratio = (L) => row.at[L].vPeak.w / row.linear[L].vPeak.w
+  assert.ok(ratio(12) < ratio(0) && ratio(12) < 0.95, `velocity ratio ${ratio(0)} → ${ratio(12)}`)
+  assert.ok(row.at[12].efficiency < row.linear[12].efficiency, 'efficiency falls')
+  assert.ok(Math.abs(row.linear[12].pe / row.linear[0].pe - Math.pow(10, 1.2)) < 1e-6, 'linear power scales with the square')
 })
 
 // CONTRACT: a curve with points of zero gain is flat, and reproduces the linear model.

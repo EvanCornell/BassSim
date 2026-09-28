@@ -69,7 +69,7 @@ Defaults for the distortion analyses.
 
 Keys: `hz`, `levelDb`, `harmonics`, `bandwidth`, `f1`, `f2`, `points`, `levels`, `bands`, `xLimit`, `maxBoostDb`
 
-## EXPORTED (13)
+## EXPORTED (15)
 
 ### `splOf(p)`
 
@@ -160,7 +160,7 @@ from the first.
 
 **Returns**
 
-- `Promise<object>` — `{t, pressure, driverPressure, excursion: {id: mm[]}, current: {ch: A[]}, voltage: {ch: V[]}, velocity: {wg: m/s[]}, probes: {id: {kind, values}}}` — pressure in Pa at 1 m.
+- `Promise<object>` — `{t, pressure, driverPressure, excursion: {id: mm[]}, current: {ch: A[]}, voltage: {ch: V[]}, velocity: {wg: m/s[]}, acousticPower: W[], probes: {id: {kind, values}}}` — pressure in Pa at 1 m; `acousticPower` the instantaneous power into every counted radiator's load.
 
 **Throws**
 
@@ -235,7 +235,7 @@ samples and there is no leakage.
 
 **Returns**
 
-- `Promise<object>` — `{hz, levelDb, harmonics: [{n, hz, amp, db}], thd, spl, xPeak: {id: mm}, currentPeak, voltagePeak}` — `amp` in Pa at 1 m, `db` relative to the fundamental, `spl` the fundamental's level.
+- `Promise<object>` — `{hz, levelDb, harmonics: [{n, hz, amp, db}], thd, spl, xPeak: {id: mm}, vPeak: {wg: m/s}, z: {ch: {mag, phase}}, pe, pa, efficiency, currentPeak, voltagePeak}` — `amp` in Pa at 1 m, `db` relative to the fundamental, `spl` the fundamental's level; `z` each channel's load impedance at the fundamental (Ω, degrees); `pe` the electrical power delivered to the loads and `pa` the acoustic power radiated, W, averaged over the analysed periods, harmonics and all; `efficiency` their ratio.
 
 **Throws**
 
@@ -270,6 +270,56 @@ The linear model's fundamental level at one frequency, for compression.
 **Side effects**
 
 - Runs the engine.
+
+### `linearPoint(project, hz, levelDb)`
+
+- **Reachability:** EXPORTED
+- **Obtain via:** import { linearPoint } from '../../src/spice/timedomain.js'
+- **Async:** returns a Promise
+
+The linear model at one frequency, in the figures `measureTone` gives.
+
+Solved once, by the same small AC run as the sweep's; excursion, velocity
+and power are then scaled to the level, as the linear model scales them.
+
+**Parameters**
+
+- `project` — `object` — A resolved project.
+- `hz` — `number` — Frequency, Hz.
+- `levelDb` — `number` — Level offset, dB.
+
+**Returns**
+
+- `Promise<object>` — `{spl, xPeak: {id: mm}, vPeak: {wg: m/s}, z: {ch: {mag, phase}}, pe, pa, efficiency}`, as `measureTone` defines them.
+
+**Throws**
+
+- `Error` — When SPICE cannot solve the circuit.
+
+**Side effects**
+
+- Runs the engine.
+
+### `scaleLinear(lin, levelDb)`
+
+- **Reachability:** EXPORTED
+- **Obtain via:** import { scaleLinear } from '../../src/spice/timedomain.js'
+
+The linear model's figures at another level.
+
+Levels, excursion and velocity scale with the drive, powers with its
+square; impedance and efficiency do not change.
+
+**Parameters**
+
+- `lin` — `object` — From `linearPoint` at 0 dB.
+- `levelDb` — `number` — Level offset, dB.
+
+**Returns**
+
+- `object` — The same figures at `levelDb`.
+
+**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
 ### `logFreqs(f1, f2, n)`
 
@@ -386,7 +436,10 @@ Distortion analyses.
   H2 and H3 against frequency.
 - `compression`: tones at the same frequencies at each of `levels` (dB
   over the channels' level) — the fundamental's level against the linear
-  model's, as compression in dB.
+  model's, as compression in dB; and, per point, the figures of
+  `measureTone` (`row.at[L]`: THD, excursion, port velocity, impedance,
+  electrical and acoustic power, efficiency) beside the linear model's at
+  the same level (`row.linear[L]`, from `linearPoint`).
 - `maxspl`: for each band frequency, the highest burst level that breaks
   neither the CEA-2010 distortion limits nor `xLimit` × Xmax of excursion,
   found by stepping 3 dB then narrowing to 0.25 dB (see `maxLevel`),
@@ -411,7 +464,7 @@ Distortion analyses.
 
 - Runs the engine, many times.
 
-## UNREACHABLE (22)
+## UNREACHABLE (24)
 
 ### `sweepOf(project)`
 
@@ -630,6 +683,41 @@ Largest magnitude over the analysed periods.
 **Returns**
 
 - `number` — The peak.
+
+**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
+
+### `measureTone > meanOf(a, b)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+Mean of a product over the analysed periods: the average power of a flow and its pressure, or a current and its voltage.
+
+**Parameters**
+
+- `a` — `ArrayLike<number>` — Samples.
+- `b` — `ArrayLike<number>` _(optional)_ — Samples; all ones when omitted.
+
+**Returns**
+
+- `number` — The mean.
+
+**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
+
+### `scaleLinear > each(m)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+Scale every value of a map.
+
+**Parameters**
+
+- `m` — `object` — `{id: number}`.
+
+**Returns**
+
+- `object` — Each value times the gain.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 

@@ -1215,6 +1215,9 @@ svg.ws-chevron.open { transform: rotate(90deg); }
 .td-failed li { overflow-wrap: anywhere; }
 .td-bar { width: 140px; height: 6px; background: var(--field); border-radius: 999px; overflow: hidden; }
 .td-bar div { height: 100%; background: var(--accent); border-radius: 999px; transition: width 0.2s; }
+.td-table-head { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-2); margin: 14px 0 8px; }
+.td-table-head select { width: auto; }
+.td-table .dim, .td-table-head .dim { color: var(--text-3); }
 .td-table { border-collapse: separate; border-spacing: 0; font-size: 12.5px; width: 100%; background: var(--panel-2); border-radius: var(--r-pill); overflow: hidden; }
 .td-table th, .td-table td { border-bottom: 1px solid var(--line); padding: 7px 10px; text-align: left; font-variant-numeric: tabular-nums; }
 .td-table tr:last-child td { border-bottom: none; }

@@ -20,6 +20,7 @@
 import { compileProject } from './compile.js'
 import { runNetlist, runTransient, threadCount } from './run.js'
 import { RHO } from './physics.js'
+import { adaptResults } from './adapt.js'
 import { normalizeSignal, signalLength, irfft, rfft, harmonics, thd, nextPow2, signalFunction } from './dsp.js'
 
 const P_REF = 20e-6
@@ -297,7 +298,7 @@ export const SOLVER_SETTINGS = [
  *
  * @param {object} project - A resolved, validated project.
  * @param {object} run - `{signal, levelDb, fs, tstop, bandwidth, nonlinear}`.
- * @returns {Promise<object>} `{t, pressure, driverPressure, excursion: {id: mm[]}, current: {ch: A[]}, voltage: {ch: V[]}, velocity: {wg: m/s[]}, probes: {id: {kind, values}}}` — pressure in Pa at 1 m.
+ * @returns {Promise<object>} `{t, pressure, driverPressure, excursion: {id: mm[]}, current: {ch: A[]}, voltage: {ch: V[]}, velocity: {wg: m/s[]}, acousticPower: W[], probes: {id: {kind, values}}}` — pressure in Pa at 1 m; `acousticPower` the instantaneous power into every counted radiator's load.
  * @throws {Error} When SPICE cannot solve the circuit with any of the settings, or the run is cancelled.
  * @sideEffect Runs the engine, up to once per setting.
  */
@@ -352,6 +353,14 @@ export async function transientRun(project, run) {
       if (s > bestE) { bestE = s; best = U.map((v) => v / e.S) }
     }
     if (best) res.velocity[w.id] = best
+  }
+  // Power radiated: p·U at every radiator that counts, as the sweep sums it.
+  res.acousticPower = zeros()
+  for (const r of map.radiators) {
+    if (!r.counts) continue
+    const U = raw.vec(`i(${r.sense})`)
+    const P = raw.vec(`v(${r.node})`)
+    for (let i = 0; i < n; i++) res.acousticPower[i] += P[i] * U[i]
   }
   for (const p of map.probes) res.probes[p.key] = { kind: 'pressure', values: raw.vec(`v(${p.node})`) }
   for (const p of map.flowProbes) {
@@ -451,7 +460,7 @@ export const DISTORTION_DEFAULTS = {
  * @param {number} hz - Frequency, Hz.
  * @param {number} levelDb - Level offset, dB, over every channel's level.
  * @param {object} o - Distortion options: `harmonics`, `bandwidth`, `nonlinear`.
- * @returns {Promise<object>} `{hz, levelDb, harmonics: [{n, hz, amp, db}], thd, spl, xPeak: {id: mm}, currentPeak, voltagePeak}` — `amp` in Pa at 1 m, `db` relative to the fundamental, `spl` the fundamental's level.
+ * @returns {Promise<object>} `{hz, levelDb, harmonics: [{n, hz, amp, db}], thd, spl, xPeak: {id: mm}, vPeak: {wg: m/s}, z: {ch: {mag, phase}}, pe, pa, efficiency, currentPeak, voltagePeak}` — `amp` in Pa at 1 m, `db` relative to the fundamental, `spl` the fundamental's level; `z` each channel's load impedance at the fundamental (Ω, degrees); `pe` the electrical power delivered to the loads and `pa` the acoustic power radiated, W, averaged over the analysed periods, harmonics and all; `efficiency` their ratio.
  * @throws {Error} When SPICE cannot solve the circuit.
  * @sideEffect Runs the engine.
  */
@@ -475,13 +484,44 @@ export async function measureTone(project, hz, levelDb, o) {
    * @pure
    */
   const peakOf = (x) => levels(Array.prototype.slice.call(x, x.length - tail)).peak
+  /**
+   * Mean of a product over the analysed periods: the average power of a flow and its pressure, or a current and its voltage.
+   *
+   * @param {ArrayLike<number>} a - Samples.
+   * @param {ArrayLike<number>} [b] - Samples; all ones when omitted.
+   * @returns {number} The mean.
+   * @pure
+   */
+  const meanOf = (a, b) => {
+    let s = 0
+    for (let i = a.length - tail; i < a.length; i++) s += a[i] * (b ? b[i] : 1)
+    return s / tail
+  }
   const firstCh = Object.keys(run.current)[0]
+  // Impedance at the fundamental: the voltage's fundamental over the current's.
+  const z = {}
+  let pe = 0
+  for (const ch of Object.keys(run.current)) {
+    const [v] = harmonics(run.voltage[ch], fs, hz, 1, periods)
+    const [i] = harmonics(run.current[ch], fs, hz, 1, periods)
+    let ph = ((v.phase - i.phase) * 180) / Math.PI
+    while (ph > 180) ph -= 360
+    while (ph <= -180) ph += 360
+    z[ch] = { mag: v.amp / Math.max(i.amp, 1e-15), phase: ph }
+    pe += meanOf(run.voltage[ch], run.current[ch])
+  }
+  const pa = meanOf(run.acousticPower)
   return {
     hz, levelDb,
     harmonics: h.map((x) => ({ ...x, db: 20 * Math.log10(Math.max(x.amp, 1e-15) / Math.max(f, 1e-15)) })),
     thd: thd(h),
     spl: splOf(f / Math.SQRT2),
     xPeak: Object.fromEntries(Object.entries(run.excursion).map(([id, x]) => [id, peakOf(x)])),
+    vPeak: Object.fromEntries(Object.entries(run.velocity).map(([id, v]) => [id, peakOf(v)])),
+    z,
+    pe,
+    pa,
+    efficiency: pe > 0 ? pa / pe : null,
     currentPeak: firstCh ? peakOf(run.current[firstCh]) : 0,
     voltagePeak: firstCh ? peakOf(run.voltage[firstCh]) : 0,
     waveform: { fs, t: Array.prototype.slice.call(run.t, run.t.length - tail), pressure: Array.prototype.slice.call(run.pressure, run.pressure.length - tail) },
@@ -499,9 +539,68 @@ export async function measureTone(project, hz, levelDb, o) {
  * @sideEffect Runs the engine.
  */
 export async function linearLevel(project, hz, levelDb) {
+  return (await linearPoint(project, hz, levelDb)).spl
+}
+
+/**
+ * The linear model at one frequency, in the figures `measureTone` gives.
+ *
+ * Solved once, by the same small AC run as the sweep's; excursion, velocity
+ * and power are then scaled to the level, as the linear model scales them.
+ *
+ * @param {object} project - A resolved project.
+ * @param {number} hz - Frequency, Hz.
+ * @param {number} levelDb - Level offset, dB.
+ * @returns {Promise<object>} `{spl, xPeak: {id: mm}, vPeak: {wg: m/s}, z: {ch: {mag, phase}}, pe, pa, efficiency}`, as `measureTone` defines them.
+ * @throws {Error} When SPICE cannot solve the circuit.
+ * @sideEffect Runs the engine.
+ */
+export async function linearPoint(project, hz, levelDb) {
   const { netlist, map } = compileProject(project, { ...sweepOf(project), type: 'ac', scale: 'lin', fmin: hz, fmax: hz, npts: 1 })
-  const out = complexOutputs(await runNetlist(netlist), map)
-  return splOf(Math.hypot(out.pressure.re[0], out.pressure.im[0])) + levelDb
+  const raw = await runNetlist(netlist)
+  const out = complexOutputs(raw, map)
+  const r = adaptResults(raw, map)
+  const pe = r.peReal[0]
+  const pa = r.power[0]
+  return scaleLinear({
+    spl: splOf(Math.hypot(out.pressure.re[0], out.pressure.im[0])),
+    xPeak: Object.fromEntries(Object.entries(r.excursionByDriver).map(([id, x]) => [id, x[0]])),
+    vPeak: Object.fromEntries(Object.entries(r.velocity).map(([id, v]) => [id, v[0]])),
+    z: Object.fromEntries(Object.entries(r.zinByChannel).map(([id, c]) => [id, { mag: c.mag[0], phase: c.phase[0] }])),
+    pe, pa,
+    efficiency: pe > 0 ? pa / pe : null,
+  }, levelDb)
+}
+
+/**
+ * The linear model's figures at another level.
+ *
+ * Levels, excursion and velocity scale with the drive, powers with its
+ * square; impedance and efficiency do not change.
+ *
+ * @param {object} lin - From `linearPoint` at 0 dB.
+ * @param {number} levelDb - Level offset, dB.
+ * @returns {object} The same figures at `levelDb`.
+ * @pure
+ */
+export function scaleLinear(lin, levelDb) {
+  const g = Math.pow(10, levelDb / 20)
+  /**
+   * Scale every value of a map.
+   *
+   * @param {object} m - `{id: number}`.
+   * @returns {object} Each value times the gain.
+   * @pure
+   */
+  const each = (m) => Object.fromEntries(Object.entries(m).map(([k, v]) => [k, v * g]))
+  return {
+    ...lin,
+    spl: lin.spl + levelDb,
+    xPeak: each(lin.xPeak),
+    vPeak: each(lin.vPeak),
+    pe: lin.pe * g * g,
+    pa: lin.pa * g * g,
+  }
 }
 
 /**
@@ -663,7 +762,10 @@ export async function maxLevel(s) {
  *   H2 and H3 against frequency.
  * - `compression`: tones at the same frequencies at each of `levels` (dB
  *   over the channels' level) — the fundamental's level against the linear
- *   model's, as compression in dB.
+ *   model's, as compression in dB; and, per point, the figures of
+ *   `measureTone` (`row.at[L]`: THD, excursion, port velocity, impedance,
+ *   electrical and acoustic power, efficiency) beside the linear model's at
+ *   the same level (`row.linear[L]`, from `linearPoint`).
  * - `maxspl`: for each band frequency, the highest burst level that breaks
  *   neither the CEA-2010 distortion limits nor `xLimit` × Xmax of excursion,
  *   found by stepping 3 dB then narrowing to 0.25 dB (see `maxLevel`),
@@ -745,20 +847,23 @@ export async function distortionAnalysis(project, mode, opts = {}, onProgress = 
     let done = 0
     onProgress(0, `${total} tones`)
     const [lins, tones] = await Promise.all([
-      Promise.all(freqs.map((hz) => linearLevel(project, hz, 0).catch((err) => fail(`${hz} Hz, linear level`, err)))),
+      Promise.all(freqs.map((hz) => linearPoint(project, hz, 0).catch((err) => fail(`${hz} Hz, linear level`, err)))),
       Promise.all(o.levels.flatMap((L) => freqs.map(async (hz) => {
         const m = await measureTone(project, hz, L, o).catch((err) => fail(`${hz} Hz at ${dB(L)}`, err))
         done++
         onProgress(done / total, `${done} of ${total} tones done`)
-        return { hz, L, spl: m ? m.spl : null }
+        return { hz, L, m }
       }))),
     ])
     allFailed(total)
     const rows = freqs.map((hz, i) => {
-      const row = { hz }
-      for (const t of tones.filter((x) => x.hz === hz)) {
-        row[`spl${t.L}`] = t.spl
-        row[`cmp${t.L}`] = t.spl != null && lins[i] != null ? t.spl - (lins[i] + t.L) : null
+      const row = { hz, at: {}, linear: {} }
+      for (const { L, m } of tones.filter((x) => x.hz === hz)) {
+        const lin = lins[i] ? scaleLinear(lins[i], L) : null
+        row[`spl${L}`] = m ? m.spl : null
+        row[`cmp${L}`] = m && lin ? m.spl - lin.spl : null
+        row.at[L] = m ? { spl: m.spl, cmp: row[`cmp${L}`], thd: m.thd, xPeak: m.xPeak, vPeak: m.vPeak, z: m.z, pe: m.pe, pa: m.pa, efficiency: m.efficiency } : null
+        row.linear[L] = lin
       }
       return row
     })
