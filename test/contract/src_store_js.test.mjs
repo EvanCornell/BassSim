@@ -29,7 +29,7 @@
 import { test, beforeEach } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { useStore, nextId, __internals } from '../../src/store.js'
+import { useStore, nextId, __internals, isLocked } from '../../src/store.js'
 import { readSnapshots, writeSnapshots } from '../../src/workspace.js'
 import {
   stack, split, defaultLayout, findNode, findPanelStack, openPanels, isOpen,
@@ -1906,4 +1906,62 @@ test('time domain: the signature follows the project, not its own settings', () 
   assert.equal(st().tdSignature(), a)
   st().updateParams('c', { volume: 70 })
   assert.notEqual(st().tdSignature(), a)
+})
+
+// ---------------------------------------------------------------------------
+// Records
+// ---------------------------------------------------------------------------
+
+// CONTRACT (records): adding a record copies the selected one to the end and
+// selects it; going back saves the working copy first; an earlier record is
+// read-only until its Edit is pressed; deleting shows the one before.
+test('records: add, go back, lock, edit, delete', async () => {
+  const id = st().addNode('chamber', { x: 0, y: 0 })
+  st().updateParams(id, { volume: 10 })
+  assert.equal(st().recordNav.count, 1)
+  assert.equal(isLocked(st()), false)
+
+  await st().recordAdd()
+  assert.deepEqual([st().recordNav.count, st().recordNav.selected], [2, 1])
+  assert.equal(st().serialize().records.list.length, 2)
+  st().updateParams(id, { volume: 20 })
+
+  await st().recordStep(-1)
+  assert.equal(st().recordNav.selected, 0)
+  assert.equal(paramsOf(id).volume, 10)
+  assert.equal(isLocked(st()), true)
+  assert.equal(st().history.length, 0, 'undo does not reach into another record')
+
+  // read-only: every edit is refused
+  st().updateParams(id, { volume: 99 })
+  assert.equal(st().addNode('driver', { x: 5, y: 5 }), null)
+  st().onNodesChange([{ type: 'position', id, position: { x: 500, y: 500 } }])
+  st().setAmp('voltage', 99)
+  assert.equal(paramsOf(id).volume, 10)
+  assert.equal(nodesOf().length, 1)
+  assert.deepEqual(nodeById(id).position, { x: 0, y: 0 })
+  assert.notEqual(st().settings.voltage, 99)
+
+  st().setRecordEditing(true)
+  assert.equal(isLocked(st()), false)
+  st().updateParams(id, { volume: 15 })
+
+  await st().recordStep(1)
+  assert.equal(paramsOf(id).volume, 20, 'record 2 kept its own edit')
+  assert.equal(st().recordNav.editing, false, 'unlocking lasts only while the record is selected')
+  await st().recordStep(-1)
+  assert.equal(paramsOf(id).volume, 15, 'the edit made in record 1 was saved into it')
+
+  await st().recordDelete()
+  assert.deepEqual([st().recordNav.count, st().recordNav.selected], [1, 0])
+  assert.equal(paramsOf(id).volume, 20)
+  await st().recordDelete()
+  assert.equal(st().recordNav.count, 1, 'the last record is never deleted')
+
+  // records travel in the file and come back with it
+  const saved = st().serialize()
+  st().loadSerialized(blank())
+  assert.equal(st().records, null)
+  st().loadSerialized(saved)
+  assert.equal(st().records.list.length, 1)
 })

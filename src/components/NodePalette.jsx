@@ -10,7 +10,7 @@
 import React from 'react'
 import { useReactFlow, useViewport } from 'reactflow'
 import { NODE_KINDS, NODE_DRAG_TYPE } from '../nodeKinds'
-import { useStore } from '../store'
+import { useStore, isLocked } from '../store'
 import { formatCombo } from '../keymap'
 
 /**
@@ -41,6 +41,7 @@ function onDragStart(e, type) {
  */
 export default function NodePalette() {
   const bindings = useStore((s) => s.bindings)
+  const locked = useStore(isLocked)
   const { zoomIn, zoomOut, fitView } = useReactFlow()
   const { zoom } = useViewport()
   return (
@@ -50,8 +51,8 @@ export default function NodePalette() {
         return (
           <div
             key={it.type}
-            className="np-cube"
-            draggable
+            className={`np-cube${locked ? ' off' : ''}`}
+            draggable={!locked}
             title={`${it.desc}${key ? `\n\nDrag onto the canvas, or press ${formatCombo(key)} to add one at the pointer.` : ''}`}
             onDragStart={(e) => onDragStart(e, it.type)}
           >

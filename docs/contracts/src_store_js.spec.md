@@ -68,7 +68,7 @@ Values: `#f59e0b`, `#10b981`, `#8b5cf6`
 
 Keys: `loadLayout`, `loadPresets`, `loadToolbar`, `freeSpotNear`, `graphSignature`
 
-## EXPORTED (2)
+## EXPORTED (4)
 
 ### `tdSettingsOf(extras)`
 
@@ -112,6 +112,46 @@ millisecond, and stay readable in a saved project file.
 **Side effects**
 
 - Advances the module-level counter.
+
+### `isLocked(s)`
+
+- **Reachability:** EXPORTED
+- **Obtain via:** import { isLocked } from '../../src/store.js'
+
+Whether the open project is read-only: an earlier record is selected and
+its Edit button has not been pressed.
+
+The last record is always editable; any earlier one must be unlocked
+first, so an old design is not changed by a stray keystroke.
+
+**Parameters**
+
+- `s` — `object` — Store state.
+
+**Returns**
+
+- `boolean` — True when edits to the project are refused.
+
+**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
+
+### `recordNavOf(records, editing, busy)`
+
+- **Reachability:** EXPORTED
+- **Obtain via:** import { recordNavOf } from '../../src/store.js'
+
+The record summary a window needs to draw the records bar and the lock.
+
+**Parameters**
+
+- `records` — `object|null` — The project's records.
+- `editing` — `boolean` — Whether the selected record has been unlocked.
+- `busy` — `boolean` — Whether a record operation is running.
+
+**Returns**
+
+- `{count: number, selected: number, editing: boolean, busy: boolean}` — The summary; a project without records is one record.
+
+**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
 ## INTERNAL (5)
 
@@ -222,7 +262,7 @@ around the canvas does not re-run the sweep.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
-## STORE ACTION (121)
+## STORE ACTION (128)
 
 ### `openContextMenu(x, y, target)`
 
@@ -968,7 +1008,7 @@ copied, nudged or deleted straight away without clicking it first.
 
 **Returns**
 
-- `string` — The new node's id, so callers can immediately update its params.
+- `string|null` — The new node's id, so callers can immediately update its params; `null` when the project is read-only.
 
 **Side effects**
 
@@ -1327,7 +1367,7 @@ stepped down-right by `freeSpotNear`.
 
 **Returns**
 
-- `string` — The new node's id.
+- `string|null|undefined` — The new node's id; nothing when the project is read-only.
 
 **Side effects**
 
@@ -1857,6 +1897,133 @@ over the sync channel, and a second sweep would duplicate the work.
 **Side effects**
 
 - Sets a timer, posts to the simulation worker, writes store state, and on success triggers an auto-save. A structurally invalid project is recorded in `simError` and retried on the next edit rather than thrown.
+
+### `_recordOp(op)`
+
+- **Reachability:** STORE ACTION
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState()._recordOp(…)
+- **Async:** returns a Promise
+
+Run a record operation: one at a time, with the project locked meanwhile.
+
+**Parameters**
+
+- `op` — `Function` — `async () → void`, doing the work.
+
+**Returns**
+
+- `Promise<void>` — Resolves once done, or once the failure is recorded.
+
+**Side effects**
+
+- Writes store state.
+
+### `_showRecord(records, content)`
+
+- **Reachability:** STORE ACTION
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState()._showRecord(…)
+
+Put a record's content on the canvas.
+
+**Parameters**
+
+- `records` — `object` — The records, the one to show selected.
+- `content` — `object` — Its content.
+
+**Returns**
+
+- `void`
+
+**Side effects**
+
+- Replaces the project in the store, saves the open file and schedules a resimulation.
+
+### `recordGo(index)`
+
+- **Reachability:** STORE ACTION
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().recordGo(…)
+
+Select a record, saving the selected one first.
+
+**Parameters**
+
+- `index` — `number` — The record, from 0.
+
+**Returns**
+
+- `Promise<void>` — Resolves once it is shown.
+
+**Side effects**
+
+- Replaces the project on the canvas and saves the open file.
+
+### `recordStep(delta)`
+
+- **Reachability:** STORE ACTION
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().recordStep(…)
+
+Select the record before or after the selected one.
+
+**Parameters**
+
+- `delta` — `number` — `-1` for the previous, `1` for the next.
+
+**Returns**
+
+- `Promise<void>` — Resolves once it is shown; at once at either end.
+
+**Side effects**
+
+- As `recordGo`.
+
+### `recordAdd()`
+
+- **Reachability:** STORE ACTION
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().recordAdd(…)
+
+Add a record at the end, from the selected one, and select it.
+
+**Returns**
+
+- `Promise<void>` — Resolves once added.
+
+**Side effects**
+
+- Writes store state and saves the open file.
+
+### `recordDelete()`
+
+- **Reachability:** STORE ACTION
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().recordDelete(…)
+
+Delete the selected record, showing the one before it.
+
+**Returns**
+
+- `Promise<void>` — Resolves once deleted; does nothing with a single record.
+
+**Side effects**
+
+- Replaces the project on the canvas and saves the open file.
+
+### `setRecordEditing(on)`
+
+- **Reachability:** STORE ACTION
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().setRecordEditing(…)
+
+Unlock, or lock again, an earlier record for editing.
+
+**Parameters**
+
+- `on` — `boolean` — Whether edits are allowed.
+
+**Returns**
+
+- `void`
+
+**Side effects**
+
+- Writes store state.
 
 ### `serialize()`
 

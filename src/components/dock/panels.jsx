@@ -15,6 +15,7 @@ import VariablesPanel from '../VariablesPanel'
 import ProbesPanel from '../ProbesPanel'
 import VelocityPopup from '../VelocityPopup'
 import { chartPanelComponent } from '../OutputPanel'
+import { readOnlyWhenLocked } from '../Records'
 
 /**
  * The Node Editor panel: the canvas with the palette and popup layered over it.
@@ -62,10 +63,12 @@ function CanvasPanel() {
 const COMPONENTS = {
   files: FileBrowser,
   canvas: CanvasPanel,
-  params: ParamPanel,
-  wiring: WiringPanel,
-  vars: VariablesPanel,
-  probes: ProbesPanel,
+  // Every panel that edits the project is disabled while an earlier record
+  // is selected and locked.
+  params: readOnlyWhenLocked(ParamPanel),
+  wiring: readOnlyWhenLocked(WiringPanel),
+  vars: readOnlyWhenLocked(VariablesPanel),
+  probes: readOnlyWhenLocked(ProbesPanel),
   ...Object.fromEntries(CHART_IDS.map((id) => [id, chartPanelComponent(id)])),
 }
 

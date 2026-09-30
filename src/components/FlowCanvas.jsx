@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import ReactFlow, { Background, MiniMap, useReactFlow, ReactFlowProvider, ConnectionMode } from 'reactflow'
-import { useStore } from '../store'
+import { useStore, isLocked } from '../store'
 import { nodeTypes } from './nodes'
 import { useStackId } from './dock/stackContext'
 import { distance, marqueeRect, nodesInMarquee, MARQUEE_THRESHOLD } from '../selection'
@@ -82,6 +82,7 @@ function CanvasInner() {
   const onConnect = useStore((s) => s.onConnect)
   const addNode = useStore((s) => s.addNode)
   const setSelected = useStore((s) => s.setSelected)
+  const locked = useStore(isLocked)
   const { screenToFlowPosition } = useReactFlow()
   const stackId = useStackId()
   const wrapper = useRef(null)
@@ -262,6 +263,9 @@ function CanvasInner() {
         isValidConnection={isValidConnection}
         connectionMode={ConnectionMode.Loose}
         onDrop={onDrop}
+        // An earlier record, locked, can be looked at and selected, not changed.
+        nodesDraggable={!locked}
+        nodesConnectable={!locked}
         onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move' }}
         onNodeClick={(_, n) => setSelected(n.id)}
         onNodeContextMenu={(e, n) => {

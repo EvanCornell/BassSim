@@ -2,7 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react'
 import {
   ResponsiveContainer, LineChart, Line, BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ReferenceLine,
 } from 'recharts'
-import { useStore, tdSettingsOf } from '../store'
+import { useStore, tdSettingsOf, isLocked } from '../store'
+import { LockNote } from './Records'
 import { decimate, rfft } from '../spice/dsp'
 import { splOf, levels, CEA2010_LIMITS } from '../spice/timedomain'
 import NLLab from './NLLab'
@@ -1071,6 +1072,7 @@ export default function TimeDomainWindow() {
   const close = useStore((s) => s.closeTimeDomain)
   const extras = useStore((s) => s.projectExtras)
   const setTd = useStore((s) => s.setTdSettings)
+  const locked = useStore(isLocked)
   const run = useStore((s) => s.runTimeDomain)
   const results = useStore((s) => s.tdResults)
   const job = useStore((s) => s.tdJob)
@@ -1113,15 +1115,18 @@ export default function TimeDomainWindow() {
       {error && <div className="err-banner">{error}</div>}
       {tab === 'nonlinear' ? (
         <div className="td-body">
-          <aside className="td-side"><ExitLosses /></aside>
-          <main className="td-main td-main-nl"><NLLab /></main>
+          <aside className="td-side"><LockNote /><fieldset className="rec-fieldset" disabled={locked}><ExitLosses /></fieldset></aside>
+          <main className="td-main td-main-nl"><fieldset className="rec-fieldset" disabled={locked}><NLLab /></fieldset></main>
         </div>
       ) : (
         <div className="td-body">
           <aside className="td-side">
+            <LockNote />
+            <fieldset className="rec-fieldset" disabled={locked}>
             {tab === 'linear' && <LinearControls cfg={cfg.linear} set={(p) => setTd('linear', p)} view={view} setView={setView} />}
             {tab === 'transient' && <TransientControls cfg={cfg.transient} set={(p) => setTd('transient', p)} />}
             {tab === 'distortion' && <DistortionControls cfg={cfg.distortion} set={(p) => setTd('distortion', p)} />}
+            </fieldset>
           </aside>
           <main className="td-main">
             {tab === 'linear' && <LinearView res={lin} view={view} />}

@@ -6,7 +6,8 @@
 // one each. Application-level switches (Settings, experimental features) belong
 // to the menu bar, not here — this strip is for per-design adjustments.
 import React from 'react'
-import { useStore, SNAPSHOT_LIMIT } from '../store'
+import { useStore, SNAPSHOT_LIMIT, isLocked } from '../store'
+import { RecordsBar } from './Records'
 import { readSnapshots } from '../workspace'
 import { TOOLBAR_ITEMS, metricValue } from '../toolbarItems'
 
@@ -23,10 +24,11 @@ import { TOOLBAR_ITEMS, metricValue } from '../toolbarItems'
  */
 function UndoRedo() {
   const store = useStore()
+  const locked = isLocked(store)
   return (
     <div className="tb-pill tb-undo">
-      <button className="tb-icon" title="Undo (Ctrl+Z)" disabled={!store.history.length} onClick={store.undo}>↶</button>
-      <button className="tb-icon" title="Redo (Ctrl+Y)" disabled={!store.future.length} onClick={store.redo}>↷</button>
+      <button className="tb-icon" title="Undo (Ctrl+Z)" disabled={locked || !store.history.length} onClick={store.undo}>↶</button>
+      <button className="tb-icon" title="Redo (Ctrl+Y)" disabled={locked || !store.future.length} onClick={store.redo}>↷</button>
     </div>
   )
 }
@@ -43,11 +45,12 @@ function UndoRedo() {
 function VoltageControl() {
   const settings = useStore((s) => s.settings)
   const setAmp = useStore((s) => s.setAmp)
+  const locked = useStore(isLocked)
   return (
     <div className="tb-pill tb-voltage" title="Amplifier drive voltage — power follows as V²/Z">
       <label>Drive</label>
       <input
-        type="number" step="0.01" min="0" value={settings.voltage}
+        type="number" step="0.01" min="0" value={settings.voltage} disabled={locked}
         onChange={(e) => { const x = parseFloat(e.target.value); if (x >= 0) setAmp('voltage', x) }}
       />
       <label>V</label>
@@ -65,13 +68,14 @@ function VoltageControl() {
 function SweepRange() {
   const settings = useStore((s) => s.settings)
   const updateSettings = useStore((s) => s.updateSettings)
+  const locked = useStore(isLocked)
   return (
     <div className="tb-pill tb-group" title="Frequency sweep range">
       <label>Sweep</label>
-      <input type="number" value={settings.fmin} min="1"
+      <input type="number" value={settings.fmin} min="1" disabled={locked}
         onChange={(e) => { const v = parseFloat(e.target.value); if (v > 0) updateSettings({ fmin: v }) }} />
       <label>–</label>
-      <input type="number" value={settings.fmax}
+      <input type="number" value={settings.fmax} disabled={locked}
         onChange={(e) => { const v = parseFloat(e.target.value); if (v > settings.fmin) updateSettings({ fmax: v }) }} />
       <label>Hz</label>
     </div>
@@ -87,9 +91,10 @@ function SweepRange() {
 function MaskingToggle() {
   const masking = useStore((s) => s.settings.masking)
   const updateSettings = useStore((s) => s.updateSettings)
+  const locked = useStore(isLocked)
   return (
     <label className="tb-pill tb-group" title="Suppress chamber standing-wave resonances (lumped-compliance chambers)" style={{ cursor: 'pointer' }}>
-      <input type="checkbox" checked={masking} onChange={(e) => updateSettings({ masking: e.target.checked })} />
+      <input type="checkbox" checked={masking} disabled={locked} onChange={(e) => updateSettings({ masking: e.target.checked })} />
       <span style={{ fontSize: 11, color: 'var(--text-2)' }}>Mask resonances</span>
     </label>
   )
@@ -246,6 +251,7 @@ export default function Toolbar() {
   return (
     <div className="toolbar">
       <TimeDomainButton />
+      <RecordsBar />
       {runs.map((run) => (
         run.group === 'metrics' ? (
           <div className="tb-metrics" key={run.ids[0]}>

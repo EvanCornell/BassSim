@@ -24,9 +24,9 @@
     "pure": "flag"
   },
   "stats": {
-    "modules": 103,
-    "methods": 1061,
-    "documented": 1061
+    "modules": 105,
+    "methods": 1101,
+    "documented": 1101
   },
   "modules": [
     {
@@ -7354,7 +7354,7 @@
       "constants": [
         {
           "name": "__internals",
-          "line": 331,
+          "line": 335,
           "shape": {
             "kind": "object",
             "keys": [
@@ -7515,7 +7515,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 106,
+          "line": 107,
           "signature": [],
           "documented": true,
           "summary": "Where a keyboard-added node should land, in canvas coordinates.",
@@ -7546,7 +7546,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 148,
+          "line": 149,
           "signature": [
             "e"
           ],
@@ -7587,7 +7587,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 166,
+          "line": 167,
           "signature": [
             "ev"
           ],
@@ -7630,7 +7630,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 185,
+          "line": 186,
           "signature": [
             "ev"
           ],
@@ -7673,7 +7673,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 230,
+          "line": 231,
           "signature": [
             "e",
             "target"
@@ -7724,7 +7724,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 320,
+          "line": 324,
           "signature": [],
           "documented": true,
           "summary": "The Node Editor panel, wrapping the canvas in its React Flow provider.",
@@ -13724,6 +13724,158 @@
       ]
     },
     {
+      "file": "src/components/Records.jsx",
+      "module": {
+        "summary": "Records: the bar that steps through a project's save states, and the lock that keeps an earlier record from being edited by accident.",
+        "description": "Records: the bar that steps through a project's save states, and the lock\nthat keeps an earlier record from being edited by accident.\n\nThe last record is always editable. Selecting any earlier one makes the\nproject read-only — every field that edits it is disabled — until its Edit\nbutton is pressed; the lock returns when another record is selected."
+      },
+      "constants": [],
+      "methods": [
+        {
+          "name": "RecordsBar",
+          "qualified": "RecordsBar",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 16,
+          "signature": [],
+          "documented": true,
+          "summary": "The records bar: previous and next, the record number, Add, Delete and Edit.",
+          "description": "The records bar: previous and next, the record number, Add, Delete and Edit.",
+          "params": [],
+          "returns": {
+            "type": "React.ReactElement",
+            "desc": "The bar."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Subscribes to the store."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "LockNote",
+          "qualified": "LockNote",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 54,
+          "signature": [],
+          "documented": true,
+          "summary": "The note an editing panel shows while the project is read-only.",
+          "description": "The note an editing panel shows while the project is read-only.",
+          "params": [],
+          "returns": {
+            "type": "React.ReactElement|null",
+            "desc": "The note, or nothing when the project can be edited."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Subscribes to the store."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "readOnlyWhenLocked",
+          "qualified": "readOnlyWhenLocked",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 76,
+          "signature": [
+            "Panel"
+          ],
+          "documented": true,
+          "summary": "Wrap an editing panel so every field in it is disabled while the project is read-only.",
+          "description": "Wrap an editing panel so every field in it is disabled while the project is read-only.\n\nA disabled fieldset disables every input, select and button inside it at\nonce, so a panel needs no change of its own; its section headers, which\nare not form controls, still open and close.",
+          "params": [
+            {
+              "name": "Panel",
+              "type": "Function",
+              "optional": false,
+              "default": null,
+              "desc": "The panel component."
+            }
+          ],
+          "returns": {
+            "type": "Function",
+            "desc": "The wrapped component."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "Locked",
+          "qualified": "readOnlyWhenLocked > Locked",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 84,
+          "signature": [
+            "props"
+          ],
+          "documented": true,
+          "summary": "The panel, disabled while the project is read-only.",
+          "description": "The panel, disabled while the project is read-only.",
+          "params": [
+            {
+              "name": "props",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "Passed to the panel."
+            }
+          ],
+          "returns": {
+            "type": "React.ReactElement",
+            "desc": "The panel."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Subscribes to the store."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        }
+      ]
+    },
+    {
       "file": "src/components/SaveDriverPrompt.jsx",
       "module": null,
       "constants": [],
@@ -15599,7 +15751,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 33,
+          "line": 34,
           "signature": [
             "v",
             "d"
@@ -15646,7 +15798,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 44,
+          "line": 45,
           "signature": [
             "t",
             "series",
@@ -15701,7 +15853,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 56,
+          "line": 57,
           "signature": [
             "a"
           ],
@@ -15740,7 +15892,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 74,
+          "line": 75,
           "signature": [
             "lo",
             "hi",
@@ -15795,7 +15947,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 92,
+          "line": 93,
           "signature": [
             "lo",
             "hi"
@@ -15842,7 +15994,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 122,
+          "line": 123,
           "signature": [
             "arg0"
           ],
@@ -15965,7 +16117,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 182,
+          "line": 183,
           "signature": [
             "arg0"
           ],
@@ -16053,7 +16205,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 205,
+          "line": 206,
           "signature": [
             "arg0"
           ],
@@ -16127,7 +16279,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 231,
+          "line": 232,
           "signature": [
             "arg0"
           ],
@@ -16194,7 +16346,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 247,
+          "line": 248,
           "signature": [
             "nodes",
             "id"
@@ -16241,7 +16393,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 256,
+          "line": 257,
           "signature": [
             "res"
           ],
@@ -16282,7 +16434,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 270,
+          "line": 271,
           "signature": [
             "arg0"
           ],
@@ -16335,7 +16487,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 293,
+          "line": 294,
           "signature": [
             "arg0"
           ],
@@ -16402,7 +16554,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 340,
+          "line": 341,
           "signature": [
             "arg0"
           ],
@@ -16457,7 +16609,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 355,
+          "line": 356,
           "signature": [
             "fam",
             "withSignal"
@@ -16504,7 +16656,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 409,
+          "line": 410,
           "signature": [
             "arg0"
           ],
@@ -16559,7 +16711,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 419,
+          "line": 420,
           "signature": [
             "patch"
           ],
@@ -16600,7 +16752,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 464,
+          "line": 465,
           "signature": [
             "arg0"
           ],
@@ -16655,7 +16807,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 491,
+          "line": 492,
           "signature": [
             "y"
           ],
@@ -16694,7 +16846,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 581,
+          "line": 582,
           "signature": [
             "text"
           ],
@@ -16733,7 +16885,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 592,
+          "line": 593,
           "signature": [
             "arg0"
           ],
@@ -16786,7 +16938,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 655,
+          "line": 656,
           "signature": [
             "db"
           ],
@@ -16825,7 +16977,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 667,
+          "line": 668,
           "signature": [
             "arg0"
           ],
@@ -16887,7 +17039,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 767,
+          "line": 768,
           "signature": [
             "L"
           ],
@@ -16926,7 +17078,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 776,
+          "line": 777,
           "signature": [
             "v"
           ],
@@ -16965,7 +17117,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 789,
+          "line": 790,
           "signature": [
             "res",
             "pick"
@@ -17012,7 +17164,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 809,
+          "line": 810,
           "signature": [
             "rows"
           ],
@@ -17051,7 +17203,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 830,
+          "line": 831,
           "signature": [
             "arg0"
           ],
@@ -17113,7 +17265,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 845,
+          "line": 846,
           "signature": [
             "id"
           ],
@@ -17154,7 +17306,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 853,
+          "line": 854,
           "signature": [
             "linear"
           ],
@@ -17193,7 +17345,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 867,
+          "line": 868,
           "signature": [
             "title",
             "pick",
@@ -17256,7 +17408,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 883,
+          "line": 884,
           "signature": [
             "list",
             "name"
@@ -17303,7 +17455,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 897,
+          "line": 898,
           "signature": [
             "n",
             "l",
@@ -17366,7 +17518,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 986,
+          "line": 987,
           "signature": [
             "arg0"
           ],
@@ -17412,7 +17564,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1005,
+          "line": 1006,
           "signature": [],
           "documented": true,
           "summary": "Duct exit losses, listed for every waveguide.",
@@ -17443,7 +17595,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1044,
+          "line": 1045,
           "signature": [],
           "documented": true,
           "summary": "The running job's progress, with a cancel button.",
@@ -17474,7 +17626,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 1068,
+          "line": 1069,
           "signature": [],
           "documented": true,
           "summary": "The time-domain workspace: its own full-screen view under the menu and quick bar.",
@@ -17515,7 +17667,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 24,
+          "line": 25,
           "signature": [],
           "documented": true,
           "summary": "Undo and redo buttons, disabled when their stacks are empty.",
@@ -17546,7 +17698,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 43,
+          "line": 45,
           "signature": [],
           "documented": true,
           "summary": "Drive-level control, with the resulting wattage beside it.",
@@ -17577,7 +17729,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 65,
+          "line": 68,
           "signature": [],
           "documented": true,
           "summary": "Sweep start and end frequency. Off by default — it is a set-once control.",
@@ -17608,7 +17760,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 87,
+          "line": 91,
           "signature": [],
           "documented": true,
           "summary": "Toggle resonance masking, which lumps chambers to hide standing-wave artifacts.",
@@ -17639,7 +17791,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 108,
+          "line": 113,
           "signature": [],
           "documented": true,
           "summary": "Take a snapshot and manage the reference overlays already taken.",
@@ -17670,7 +17822,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 163,
+          "line": 168,
           "signature": [
             "arg0"
           ],
@@ -17718,7 +17870,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 187,
+          "line": 192,
           "signature": [
             "arg0"
           ],
@@ -17766,7 +17918,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 205,
+          "line": 210,
           "signature": [],
           "documented": true,
           "summary": "The switch between the editor and the time-domain workspace.",
@@ -17797,7 +17949,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 235,
+          "line": 240,
           "signature": [],
           "documented": true,
           "summary": "The quick-access bar under the menu.",
@@ -17828,7 +17980,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 270,
+          "line": 276,
           "signature": [
             "ids"
           ],
@@ -19208,7 +19360,7 @@
       "constants": [
         {
           "name": "PANELS",
-          "line": 79,
+          "line": 82,
           "shape": null,
           "summary": "The panel registry: each panel's metadata paired with its component.",
           "description": "The panel registry: each panel's metadata paired with its component.\n\nAdding a panel means one entry in `PANEL_META` plus one line in\n`COMPONENTS` — the dock, the View menu and the saved-layout sanitizer all\nread from these, so nothing else needs to learn about it."
@@ -19222,7 +19374,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 34,
+          "line": 35,
           "signature": [],
           "documented": true,
           "summary": "The Node Editor panel: the canvas with the palette and popup layered over it.",
@@ -29296,7 +29448,7 @@
           "line": 35,
           "shape": {
             "kind": "array",
-            "length": 18,
+            "length": 19,
             "values": [
               "nodes",
               "edges",
@@ -29315,7 +29467,8 @@
               "folderStatus",
               "folderName",
               "folderError",
-              "folderSaved"
+              "folderSaved",
+              "recordNav"
             ]
           },
           "summary": "Store keys mirrored between the main window and every popped-out tab.",
@@ -29323,7 +29476,7 @@
         },
         {
           "name": "SIM_INPUT_KEYS",
-          "line": 46,
+          "line": 49,
           "shape": {
             "kind": "array",
             "length": 4,
@@ -29339,7 +29492,7 @@
         },
         {
           "name": "channel",
-          "line": 149,
+          "line": 152,
           "shape": null,
           "summary": "The shared BroadcastChannel, or `null` where the API is unavailable.",
           "description": "The shared BroadcastChannel, or `null` where the API is unavailable.\n\nNull-checked at every use rather than polyfilled: without it the app still\nworks, it just cannot mirror state between windows."
@@ -29353,7 +29506,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 62,
+          "line": 65,
           "signature": [],
           "documented": true,
           "summary": "Every panel id this window was opened to show.",
@@ -29384,7 +29537,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 80,
+          "line": 83,
           "signature": [],
           "documented": true,
           "summary": "The panel this window is currently showing, if it is a popped-out tab.",
@@ -29415,7 +29568,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 96,
+          "line": 99,
           "signature": [],
           "documented": true,
           "summary": "Whether this window is a popped-out panel rather than the main workspace.",
@@ -29446,7 +29599,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 112,
+          "line": 115,
           "signature": [
             "id"
           ],
@@ -29487,7 +29640,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 133,
+          "line": 136,
           "signature": [
             "ids",
             "active"
@@ -29523,6 +29676,1237 @@
             "mutates": [],
             "sideEffect": [
               "Opens a browser window and moves focus to it."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        }
+      ]
+    },
+    {
+      "file": "src/records.js",
+      "module": {
+        "summary": "Records: numbered save states of one project, kept in the project file.",
+        "description": "Records: numbered save states of one project, kept in the project file.\n\nEach record is a git commit — made and read by isomorphic-git — whose tree\nholds the project as one file. Git's object store is content-addressed:\nevery object is named by the hash of what it holds, so records that share\na design share its objects, and a record saved twice unchanged is stored\nonce. The objects travel inside the project file, deflated as git keeps\nthem, so a project's records go wherever the project goes.\n\nThere is no branching or merging. The records are a numbered list; the\nproject's own content is the working copy of the selected one, written\ninto it when another record is selected, added or the list is changed.\n\nNothing here touches the store or the DOM: each function takes the records\nand returns new ones."
+      },
+      "constants": [],
+      "methods": [
+        {
+          "name": "git",
+          "qualified": "git",
+          "kind": "function",
+          "exported": false,
+          "async": true,
+          "generator": false,
+          "line": 42,
+          "signature": [],
+          "documented": true,
+          "summary": "The version-control library, loaded on first use.",
+          "description": "The version-control library, loaded on first use.",
+          "params": [],
+          "returns": {
+            "type": "Promise<object>",
+            "desc": "isomorphic-git."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Loads the library the first time."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "fsError",
+          "qualified": "fsError",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 55,
+          "signature": [
+            "code",
+            "path"
+          ],
+          "documented": true,
+          "summary": "An error as Node's filesystem raises it, which is how isomorphic-git tells a missing file.",
+          "description": "An error as Node's filesystem raises it, which is how isomorphic-git tells a missing file.",
+          "params": [
+            {
+              "name": "code",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "`ENOENT` and the like."
+            },
+            {
+              "name": "path",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "The path."
+            }
+          ],
+          "returns": {
+            "type": "Error",
+            "desc": "The error."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "statOf",
+          "qualified": "statOf",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 69,
+          "signature": [
+            "file",
+            "size"
+          ],
+          "documented": true,
+          "summary": "A stat result, as isomorphic-git reads one.",
+          "description": "A stat result, as isomorphic-git reads one.",
+          "params": [
+            {
+              "name": "file",
+              "type": "boolean",
+              "optional": false,
+              "default": null,
+              "desc": "A file; otherwise a directory."
+            },
+            {
+              "name": "size",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Its size, bytes."
+            }
+          ],
+          "returns": {
+            "type": "object",
+            "desc": "The stat."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "memoryRepo",
+          "qualified": "memoryRepo",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 90,
+          "signature": [
+            "objects"
+          ],
+          "documented": true,
+          "summary": "A filesystem in memory holding a repository's objects, as isomorphic-git reads and writes them.",
+          "description": "A filesystem in memory holding a repository's objects, as isomorphic-git reads and writes them.\n\nOnly loose objects are ever written — the repository is never packed — so\nthe object's path names its hash, and the files are exactly the objects.",
+          "params": [
+            {
+              "name": "objects",
+              "type": "Object<string, string>",
+              "optional": false,
+              "default": null,
+              "desc": "Each object's deflated bytes, base64, by hash."
+            }
+          ],
+          "returns": {
+            "type": "{fs: object, objects: Map<string, Uint8Array>}",
+            "desc": "The filesystem, and the object map it reads and writes."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "isDir",
+          "qualified": "memoryRepo > isDir",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 103,
+          "signature": [
+            "path"
+          ],
+          "documented": true,
+          "summary": "Whether a path is a directory: some file lies beneath it.",
+          "description": "Whether a path is a directory: some file lies beneath it.",
+          "params": [
+            {
+              "name": "path",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "The path."
+            }
+          ],
+          "returns": {
+            "type": "boolean",
+            "desc": "True when it holds a file."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [
+              "the files."
+            ],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "stat",
+          "qualified": "memoryRepo > stat",
+          "kind": "function",
+          "exported": false,
+          "async": true,
+          "generator": false,
+          "line": 116,
+          "signature": [
+            "path"
+          ],
+          "documented": true,
+          "summary": "A stat result.",
+          "description": "A stat result.",
+          "params": [
+            {
+              "name": "path",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "The path."
+            }
+          ],
+          "returns": {
+            "type": "object",
+            "desc": "What isomorphic-git reads of a stat."
+          },
+          "throws": [
+            {
+              "type": "Error",
+              "desc": "ENOENT when nothing is there."
+            }
+          ],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [
+              "the files."
+            ],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "readFile",
+          "qualified": "memoryRepo > readFile",
+          "kind": "method",
+          "exported": false,
+          "async": true,
+          "generator": false,
+          "line": 131,
+          "signature": [
+            "path",
+            "opts"
+          ],
+          "documented": true,
+          "summary": "Read a file.",
+          "description": "Read a file.",
+          "params": [
+            {
+              "name": "path",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "The path."
+            },
+            {
+              "name": "opts",
+              "type": "object|string",
+              "optional": true,
+              "default": null,
+              "desc": "`{encoding: 'utf8'}` for text."
+            }
+          ],
+          "returns": {
+            "type": "Promise<Uint8Array|string>",
+            "desc": "Its contents."
+          },
+          "throws": [
+            {
+              "type": "Error",
+              "desc": "ENOENT when it does not exist."
+            }
+          ],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [
+              "the files."
+            ],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "writeFile",
+          "qualified": "memoryRepo > writeFile",
+          "kind": "method",
+          "exported": false,
+          "async": true,
+          "generator": false,
+          "line": 145,
+          "signature": [
+            "path",
+            "data"
+          ],
+          "documented": true,
+          "summary": "Write a file.",
+          "description": "Write a file.",
+          "params": [
+            {
+              "name": "path",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "The path."
+            },
+            {
+              "name": "data",
+              "type": "Uint8Array|string",
+              "optional": false,
+              "default": null,
+              "desc": "The contents."
+            }
+          ],
+          "returns": {
+            "type": "Promise<void>",
+            "desc": "Resolves once written."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [
+              "the files."
+            ],
+            "sideEffect": [],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "unlink",
+          "qualified": "memoryRepo > unlink",
+          "kind": "method",
+          "exported": false,
+          "async": true,
+          "generator": false,
+          "line": 155,
+          "signature": [
+            "path"
+          ],
+          "documented": true,
+          "summary": "Remove a file.",
+          "description": "Remove a file.",
+          "params": [
+            {
+              "name": "path",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "The path."
+            }
+          ],
+          "returns": {
+            "type": "Promise<void>",
+            "desc": "Resolves once removed."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [
+              "the files."
+            ],
+            "sideEffect": [],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "readdir",
+          "qualified": "memoryRepo > readdir",
+          "kind": "method",
+          "exported": false,
+          "async": true,
+          "generator": false,
+          "line": 164,
+          "signature": [
+            "path"
+          ],
+          "documented": true,
+          "summary": "List a directory.",
+          "description": "List a directory.",
+          "params": [
+            {
+              "name": "path",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "The path."
+            }
+          ],
+          "returns": {
+            "type": "Promise<string[]>",
+            "desc": "The names directly inside it."
+          },
+          "throws": [
+            {
+              "type": "Error",
+              "desc": "ENOENT when it holds nothing."
+            }
+          ],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [
+              "the files."
+            ],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "mkdir",
+          "qualified": "memoryRepo > mkdir",
+          "kind": "method",
+          "exported": false,
+          "async": true,
+          "generator": false,
+          "line": 177,
+          "signature": [],
+          "documented": true,
+          "summary": "Make a directory; directories exist implicitly here.",
+          "description": "Make a directory; directories exist implicitly here.",
+          "params": [],
+          "returns": {
+            "type": "Promise<void>",
+            "desc": "Resolves at once."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "rmdir",
+          "qualified": "memoryRepo > rmdir",
+          "kind": "method",
+          "exported": false,
+          "async": true,
+          "generator": false,
+          "line": 184,
+          "signature": [],
+          "documented": true,
+          "summary": "Remove a directory; directories exist implicitly here.",
+          "description": "Remove a directory; directories exist implicitly here.",
+          "params": [],
+          "returns": {
+            "type": "Promise<void>",
+            "desc": "Resolves at once."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "readlink",
+          "qualified": "memoryRepo > readlink",
+          "kind": "method",
+          "exported": false,
+          "async": true,
+          "generator": false,
+          "line": 195,
+          "signature": [
+            "path"
+          ],
+          "documented": true,
+          "summary": "Read a symbolic link; there are none.",
+          "description": "Read a symbolic link; there are none.",
+          "params": [
+            {
+              "name": "path",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "The path."
+            }
+          ],
+          "returns": {
+            "type": "Promise<never>",
+            "desc": "Always rejects."
+          },
+          "throws": [
+            {
+              "type": "Error",
+              "desc": "ENOENT."
+            }
+          ],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "symlink",
+          "qualified": "memoryRepo > symlink",
+          "kind": "method",
+          "exported": false,
+          "async": true,
+          "generator": false,
+          "line": 205,
+          "signature": [
+            "target",
+            "path"
+          ],
+          "documented": true,
+          "summary": "Make a symbolic link; not supported.",
+          "description": "Make a symbolic link; not supported.",
+          "params": [
+            {
+              "name": "target",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "The target."
+            },
+            {
+              "name": "path",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "The path."
+            }
+          ],
+          "returns": {
+            "type": "Promise<never>",
+            "desc": "Always rejects."
+          },
+          "throws": [
+            {
+              "type": "Error",
+              "desc": "ENOTSUP."
+            }
+          ],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "chmod",
+          "qualified": "memoryRepo > chmod",
+          "kind": "method",
+          "exported": false,
+          "async": true,
+          "generator": false,
+          "line": 212,
+          "signature": [],
+          "documented": true,
+          "summary": "Change a file's mode; modes are not kept.",
+          "description": "Change a file's mode; modes are not kept.",
+          "params": [],
+          "returns": {
+            "type": "Promise<void>",
+            "desc": "Resolves at once."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "objectsOf",
+          "qualified": "objectsOf",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 224,
+          "signature": [
+            "files"
+          ],
+          "documented": true,
+          "summary": "The objects of an in-memory repository, as the project file keeps them.",
+          "description": "The objects of an in-memory repository, as the project file keeps them.",
+          "params": [
+            {
+              "name": "files",
+              "type": "Map<string, Uint8Array>",
+              "optional": false,
+              "default": null,
+              "desc": "The repository's files."
+            }
+          ],
+          "returns": {
+            "type": "Object<string, string>",
+            "desc": "Each object's deflated bytes, base64, by hash."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "recordContent",
+          "qualified": "recordContent",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 242,
+          "signature": [
+            "project"
+          ],
+          "documented": true,
+          "summary": "A project's content as a record holds it: everything but its name, save stamp and records.",
+          "description": "A project's content as a record holds it: everything but its name, save stamp and records.",
+          "params": [
+            {
+              "name": "project",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "A serialized project."
+            }
+          ],
+          "returns": {
+            "type": "object",
+            "desc": "The content."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "readRecords",
+          "qualified": "readRecords",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 255,
+          "signature": [
+            "raw"
+          ],
+          "documented": true,
+          "summary": "The records a project file carries, checked; none when it carries none or they are unusable.",
+          "description": "The records a project file carries, checked; none when it carries none or they are unusable.",
+          "params": [
+            {
+              "name": "raw",
+              "type": "*",
+              "optional": false,
+              "default": null,
+              "desc": "The file's `records` field."
+            }
+          ],
+          "returns": {
+            "type": "{list: string[], selected: number, objects: Object<string, string>}|null",
+            "desc": "The records, or `null`."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "writeRecord",
+          "qualified": "writeRecord",
+          "kind": "function",
+          "exported": false,
+          "async": true,
+          "generator": false,
+          "line": 272,
+          "signature": [
+            "repo",
+            "content",
+            "now"
+          ],
+          "documented": true,
+          "summary": "Write content as a record: its blob, a tree holding it, and a commit of that tree.",
+          "description": "Write content as a record: its blob, a tree holding it, and a commit of that tree.",
+          "params": [
+            {
+              "name": "repo",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "From `memoryRepo`."
+            },
+            {
+              "name": "content",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "The record's content."
+            },
+            {
+              "name": "now",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "The time, ms since the epoch."
+            }
+          ],
+          "returns": {
+            "type": "Promise<string>",
+            "desc": "The commit's hash."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Loads the library; writes the repository."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "recordParts",
+          "qualified": "recordParts",
+          "kind": "function",
+          "exported": false,
+          "async": true,
+          "generator": false,
+          "line": 288,
+          "signature": [
+            "repo",
+            "oid"
+          ],
+          "documented": true,
+          "summary": "The hash of the project file inside a record.",
+          "description": "The hash of the project file inside a record.",
+          "params": [
+            {
+              "name": "repo",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "From `memoryRepo`."
+            },
+            {
+              "name": "oid",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "The record's commit."
+            }
+          ],
+          "returns": {
+            "type": "Promise<{tree: string, blob: string, time: number}>",
+            "desc": "Its tree, its file's blob, and when it was saved, ms since the epoch."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Loads the library."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "collect",
+          "qualified": "collect",
+          "kind": "function",
+          "exported": false,
+          "async": true,
+          "generator": false,
+          "line": 305,
+          "signature": [
+            "repo",
+            "list"
+          ],
+          "documented": true,
+          "summary": "Drop every object no record reaches.",
+          "description": "Drop every object no record reaches.",
+          "params": [
+            {
+              "name": "repo",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "From `memoryRepo`."
+            },
+            {
+              "name": "list",
+              "type": "string[]",
+              "optional": false,
+              "default": null,
+              "desc": "The records."
+            }
+          ],
+          "returns": {
+            "type": "Promise<void>",
+            "desc": "Resolves once done."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Loads the library; removes objects from the repository."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "readRecord",
+          "qualified": "readRecord",
+          "kind": "function",
+          "exported": true,
+          "async": true,
+          "generator": false,
+          "line": 325,
+          "signature": [
+            "records",
+            "index"
+          ],
+          "documented": true,
+          "summary": "Read a record's content.",
+          "description": "Read a record's content.",
+          "params": [
+            {
+              "name": "records",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "The project's records."
+            },
+            {
+              "name": "index",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Which record."
+            }
+          ],
+          "returns": {
+            "type": "Promise<object>",
+            "desc": "The content it holds."
+          },
+          "throws": [
+            {
+              "type": "Error",
+              "desc": "When the record is missing or unreadable."
+            }
+          ],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Loads the library."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "recordTimes",
+          "qualified": "recordTimes",
+          "kind": "function",
+          "exported": true,
+          "async": true,
+          "generator": false,
+          "line": 342,
+          "signature": [
+            "records"
+          ],
+          "documented": true,
+          "summary": "When each record was last saved.",
+          "description": "When each record was last saved.",
+          "params": [
+            {
+              "name": "records",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "The project's records."
+            }
+          ],
+          "returns": {
+            "type": "Promise<number[]>",
+            "desc": "Ms since the epoch, per record."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Loads the library."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "saveRecord",
+          "qualified": "saveRecord",
+          "kind": "function",
+          "exported": true,
+          "async": true,
+          "generator": false,
+          "line": 361,
+          "signature": [
+            "records",
+            "project",
+            "now"
+          ],
+          "documented": true,
+          "summary": "Save content into the selected record, or start the records with it.",
+          "description": "Save content into the selected record, or start the records with it.\n\nA record saved unchanged keeps its commit — content-addressed, the\ncontent's hash already says so — and so its time.",
+          "params": [
+            {
+              "name": "records",
+              "type": "object|null",
+              "optional": false,
+              "default": null,
+              "desc": "The project's records; `null` for a project that has none yet."
+            },
+            {
+              "name": "project",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "The serialized project; its content is saved."
+            },
+            {
+              "name": "now",
+              "type": "number",
+              "optional": true,
+              "default": null,
+              "desc": "The time, ms since the epoch."
+            }
+          ],
+          "returns": {
+            "type": "Promise<object>",
+            "desc": "The records."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Loads the library."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "addRecord",
+          "qualified": "addRecord",
+          "kind": "function",
+          "exported": true,
+          "async": true,
+          "generator": false,
+          "line": 392,
+          "signature": [
+            "records",
+            "project",
+            "now"
+          ],
+          "documented": true,
+          "summary": "Add a record at the end, from the selected one, and select it.",
+          "description": "Add a record at the end, from the selected one, and select it.\n\nThe selected record is saved first, with the project's content, and the\nnew one starts as a copy of it.",
+          "params": [
+            {
+              "name": "records",
+              "type": "object|null",
+              "optional": false,
+              "default": null,
+              "desc": "The project's records."
+            },
+            {
+              "name": "project",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "The serialized project."
+            },
+            {
+              "name": "now",
+              "type": "number",
+              "optional": true,
+              "default": null,
+              "desc": "The time, ms since the epoch."
+            }
+          ],
+          "returns": {
+            "type": "Promise<object>",
+            "desc": "The records, the new one selected."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Loads the library."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "deleteRecord",
+          "qualified": "deleteRecord",
+          "kind": "function",
+          "exported": true,
+          "async": true,
+          "generator": false,
+          "line": 409,
+          "signature": [
+            "records"
+          ],
+          "documented": true,
+          "summary": "Delete the selected record, selecting the one before it (or the new first).",
+          "description": "Delete the selected record, selecting the one before it (or the new first).",
+          "params": [
+            {
+              "name": "records",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "The project's records."
+            }
+          ],
+          "returns": {
+            "type": "Promise<object>",
+            "desc": "The records."
+          },
+          "throws": [
+            {
+              "type": "Error",
+              "desc": "When it is the only record."
+            }
+          ],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Loads the library."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "selectRecord",
+          "qualified": "selectRecord",
+          "kind": "function",
+          "exported": true,
+          "async": true,
+          "generator": false,
+          "line": 428,
+          "signature": [
+            "records",
+            "project",
+            "index",
+            "now"
+          ],
+          "documented": true,
+          "summary": "Select another record, saving the selected one first.",
+          "description": "Select another record, saving the selected one first.",
+          "params": [
+            {
+              "name": "records",
+              "type": "object|null",
+              "optional": false,
+              "default": null,
+              "desc": "The project's records."
+            },
+            {
+              "name": "project",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "The serialized project, the selected record's working copy."
+            },
+            {
+              "name": "index",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "The record to select."
+            },
+            {
+              "name": "now",
+              "type": "number",
+              "optional": true,
+              "default": null,
+              "desc": "The time, ms since the epoch."
+            }
+          ],
+          "returns": {
+            "type": "Promise<{records: object, content: object}>",
+            "desc": "The records, and the content of the one now selected."
+          },
+          "throws": [
+            {
+              "type": "Error",
+              "desc": "When there is no such record."
+            }
+          ],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Loads the library."
             ],
             "reads": [],
             "pure": false
@@ -40547,7 +41931,7 @@
       "constants": [
         {
           "name": "TD_DEFAULTS",
-          "line": 144,
+          "line": 145,
           "shape": {
             "kind": "object",
             "keys": [
@@ -40594,7 +41978,7 @@
         },
         {
           "name": "SNAPSHOT_LIMIT",
-          "line": 211,
+          "line": 212,
           "shape": {
             "kind": "literal",
             "value": 3
@@ -40604,7 +41988,7 @@
         },
         {
           "name": "SNAPSHOT_COLORS",
-          "line": 216,
+          "line": 217,
           "shape": {
             "kind": "array",
             "length": 3,
@@ -40619,14 +42003,14 @@
         },
         {
           "name": "useStore",
-          "line": 501,
+          "line": 531,
           "shape": null,
           "summary": null,
           "description": null
         },
         {
           "name": "__internals",
-          "line": 3097,
+          "line": 3253,
           "shape": {
             "kind": "object",
             "keys": [
@@ -40649,7 +42033,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 70,
+          "line": 71,
           "signature": [
             "project",
             "engine"
@@ -40698,7 +42082,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 83,
+          "line": 84,
           "signature": [
             "e"
           ],
@@ -40739,7 +42123,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 112,
+          "line": 113,
           "signature": [
             "msg",
             "onMessage"
@@ -40788,7 +42172,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 123,
+          "line": 124,
           "signature": [
             "e"
           ],
@@ -40829,7 +42213,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 137,
+          "line": 138,
           "signature": [],
           "documented": true,
           "summary": "Stop whatever the time-domain worker is doing.",
@@ -40860,7 +42244,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 167,
+          "line": 168,
           "signature": [
             "extras"
           ],
@@ -40899,7 +42283,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 192,
+          "line": 193,
           "signature": [
             "ids",
             "active"
@@ -40948,7 +42332,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 227,
+          "line": 228,
           "signature": [],
           "documented": true,
           "summary": "Whether the user has already been asked where their workspace lives.",
@@ -40979,7 +42363,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 260,
+          "line": 261,
           "signature": [],
           "documented": true,
           "summary": "Load the persisted workspace, or build a first-run one.",
@@ -41010,7 +42394,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 298,
+          "line": 299,
           "signature": [],
           "documented": true,
           "summary": "Load the persisted dock layout, falling back to the default.",
@@ -41041,7 +42425,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 316,
+          "line": 317,
           "signature": [],
           "documented": true,
           "summary": "Load the user's saved layout arrangements.",
@@ -41072,7 +42456,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 336,
+          "line": 337,
           "signature": [],
           "documented": true,
           "summary": "Load the quick-bar arrangement.",
@@ -41103,7 +42487,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 385,
+          "line": 386,
           "signature": [],
           "documented": true,
           "summary": "Queue a folder write.",
@@ -41136,7 +42520,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 405,
+          "line": 406,
           "signature": [
             "type"
           ],
@@ -41177,7 +42561,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 420,
+          "line": 421,
           "signature": [],
           "documented": true,
           "summary": "The simulation engine this browser last chose.",
@@ -41208,7 +42592,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 434,
+          "line": 435,
           "signature": [],
           "documented": true,
           "summary": "The editor sections of an empty project, for the initial state.",
@@ -41237,7 +42621,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 452,
+          "line": 453,
           "signature": [
             "spot",
             "nodes",
@@ -41302,7 +42686,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 460,
+          "line": 461,
           "signature": [
             "x",
             "y"
@@ -41351,7 +42735,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 481,
+          "line": 482,
           "signature": [
             "nodes",
             "edges",
@@ -41416,13 +42800,107 @@
           "other": []
         },
         {
+          "name": "isLocked",
+          "qualified": "isLocked",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 513,
+          "signature": [
+            "s"
+          ],
+          "documented": true,
+          "summary": "Whether the open project is read-only: an earlier record is selected and its Edit button has not been pressed.",
+          "description": "Whether the open project is read-only: an earlier record is selected and\nits Edit button has not been pressed.\n\nThe last record is always editable; any earlier one must be unlocked\nfirst, so an old design is not changed by a stray keystroke.",
+          "params": [
+            {
+              "name": "s",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "Store state."
+            }
+          ],
+          "returns": {
+            "type": "boolean",
+            "desc": "True when edits to the project are refused."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "recordNavOf",
+          "qualified": "recordNavOf",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 527,
+          "signature": [
+            "records",
+            "editing",
+            "busy"
+          ],
+          "documented": true,
+          "summary": "The record summary a window needs to draw the records bar and the lock.",
+          "description": "The record summary a window needs to draw the records bar and the lock.",
+          "params": [
+            {
+              "name": "records",
+              "type": "object|null",
+              "optional": false,
+              "default": null,
+              "desc": "The project's records."
+            },
+            {
+              "name": "editing",
+              "type": "boolean",
+              "optional": false,
+              "default": null,
+              "desc": "Whether the selected record has been unlocked."
+            },
+            {
+              "name": "busy",
+              "type": "boolean",
+              "optional": false,
+              "default": null,
+              "desc": "Whether a record operation is running."
+            }
+          ],
+          "returns": {
+            "type": "{count: number, selected: number, editing: boolean, busy: boolean}",
+            "desc": "The summary; a project without records is one record."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
           "name": "set",
           "qualified": "set",
           "kind": "function",
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 521,
+          "line": 551,
           "signature": [
             "partial",
             "replace"
@@ -41473,7 +42951,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 620,
+          "line": 657,
           "signature": [
             "x",
             "y",
@@ -41530,7 +43008,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 631,
+          "line": 668,
           "signature": [],
           "documented": true,
           "summary": "Dismiss the context menu.",
@@ -41561,7 +43039,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 640,
+          "line": 677,
           "signature": [
             "id"
           ],
@@ -41602,7 +43080,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 651,
+          "line": 688,
           "signature": [
             "id"
           ],
@@ -41643,7 +43121,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 659,
+          "line": 696,
           "signature": [
             "id"
           ],
@@ -41684,7 +43162,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 668,
+          "line": 705,
           "signature": [
             "v",
             "section"
@@ -41733,7 +43211,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 676,
+          "line": 713,
           "signature": [
             "id"
           ],
@@ -41774,7 +43252,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 688,
+          "line": 725,
           "signature": [
             "id",
             "combos"
@@ -41823,7 +43301,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 705,
+          "line": 742,
           "signature": [
             "id",
             "combo"
@@ -41872,7 +43350,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 723,
+          "line": 760,
           "signature": [
             "id",
             "combo"
@@ -41921,7 +43399,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 730,
+          "line": 767,
           "signature": [],
           "documented": true,
           "summary": "Restore every command to its default combos.",
@@ -41952,7 +43430,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 747,
+          "line": 784,
           "signature": [
             "tree"
           ],
@@ -41993,7 +43471,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 764,
+          "line": 801,
           "signature": [
             "stackId",
             "panelId"
@@ -42042,7 +43520,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 774,
+          "line": 811,
           "signature": [
             "panelId",
             "stackId",
@@ -42099,7 +43577,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 783,
+          "line": 820,
           "signature": [
             "panelId",
             "edge"
@@ -42148,7 +43626,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 794,
+          "line": 831,
           "signature": [
             "splitId",
             "index",
@@ -42213,7 +43691,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 808,
+          "line": 845,
           "signature": [
             "panelId",
             "stackId",
@@ -42270,7 +43748,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 829,
+          "line": 866,
           "signature": [
             "panelId"
           ],
@@ -42311,7 +43789,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 846,
+          "line": 883,
           "signature": [
             "panelId"
           ],
@@ -42352,7 +43830,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 858,
+          "line": 895,
           "signature": [
             "panelId"
           ],
@@ -42393,7 +43871,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 869,
+          "line": 906,
           "signature": [],
           "documented": true,
           "summary": "Restore the default workspace arrangement.",
@@ -42424,7 +43902,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 879,
+          "line": 916,
           "signature": [
             "name"
           ],
@@ -42465,7 +43943,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 898,
+          "line": 935,
           "signature": [
             "name"
           ],
@@ -42506,7 +43984,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 922,
+          "line": 959,
           "signature": [
             "ids"
           ],
@@ -42547,7 +44025,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 938,
+          "line": 975,
           "signature": [
             "id"
           ],
@@ -42588,7 +44066,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 950,
+          "line": 987,
           "signature": [
             "id",
             "delta"
@@ -42637,7 +44115,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 964,
+          "line": 1001,
           "signature": [],
           "documented": true,
           "summary": "Restore the default quick-bar arrangement.",
@@ -42668,7 +44146,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 973,
+          "line": 1010,
           "signature": [
             "name"
           ],
@@ -42709,7 +44187,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 991,
+          "line": 1028,
           "signature": [
             "id",
             "range"
@@ -42758,7 +44236,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1007,
+          "line": 1044,
           "signature": [],
           "documented": true,
           "summary": "Record the current graph as an undo point.",
@@ -42789,7 +44267,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1020,
+          "line": 1057,
           "signature": [],
           "documented": true,
           "summary": "Step back one entry in the history.",
@@ -42820,7 +44298,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1038,
+          "line": 1076,
           "signature": [],
           "documented": true,
           "summary": "Step forward one entry in the history.",
@@ -42851,7 +44329,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1064,
+          "line": 1103,
           "signature": [
             "changes"
           ],
@@ -42892,7 +44370,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1078,
+          "line": 1120,
           "signature": [
             "changes"
           ],
@@ -42933,7 +44411,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1090,
+          "line": 1134,
           "signature": [
             "conn"
           ],
@@ -42974,7 +44452,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1108,
+          "line": 1153,
           "signature": [
             "id"
           ],
@@ -43015,7 +44493,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1121,
+          "line": 1166,
           "signature": [
             "type",
             "position"
@@ -43040,8 +44518,8 @@
             }
           ],
           "returns": {
-            "type": "string",
-            "desc": "The new node's id, so callers can immediately update its params."
+            "type": "string|null",
+            "desc": "The new node's id, so callers can immediately update its params; `null` when the project is read-only."
           },
           "throws": [],
           "contract": {
@@ -43064,7 +44542,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1151,
+          "line": 1197,
           "signature": [
             "id",
             "params"
@@ -43113,7 +44591,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1178,
+          "line": 1225,
           "signature": [
             "id"
           ],
@@ -43154,7 +44632,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1199,
+          "line": 1247,
           "signature": [
             "id",
             "name"
@@ -43203,7 +44681,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1229,
+          "line": 1277,
           "signature": [
             "id",
             "field",
@@ -43260,7 +44738,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1252,
+          "line": 1301,
           "signature": [
             "id"
           ],
@@ -43301,7 +44779,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1280,
+          "line": 1329,
           "signature": [
             "id",
             "field",
@@ -43358,7 +44836,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1304,
+          "line": 1354,
           "signature": [
             "id",
             "patch"
@@ -43407,7 +44885,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1328,
+          "line": 1379,
           "signature": [],
           "documented": true,
           "summary": "Delete the selected nodes and edges.",
@@ -43438,7 +44916,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1355,
+          "line": 1407,
           "signature": [],
           "documented": true,
           "summary": "Copy the selected nodes in place, offset down-right.",
@@ -43469,7 +44947,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1380,
+          "line": 1433,
           "signature": [],
           "documented": true,
           "summary": "Select every node on the canvas.",
@@ -43500,7 +44978,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1395,
+          "line": 1448,
           "signature": [
             "ids",
             "additive"
@@ -43549,7 +45027,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1428,
+          "line": 1481,
           "signature": [],
           "documented": true,
           "summary": "Copy the selected nodes and their internal edges to the in-app clipboard.",
@@ -43580,7 +45058,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1454,
+          "line": 1507,
           "signature": [],
           "documented": true,
           "summary": "Copy the selection, then delete it.",
@@ -43611,7 +45089,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1475,
+          "line": 1529,
           "signature": [
             "at"
           ],
@@ -43652,7 +45130,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1523,
+          "line": 1578,
           "signature": [
             "type"
           ],
@@ -43669,8 +45147,8 @@
             }
           ],
           "returns": {
-            "type": "string",
-            "desc": "The new node's id."
+            "type": "string|null|undefined",
+            "desc": "The new node's id; nothing when the project is read-only."
           },
           "throws": [],
           "contract": {
@@ -43693,7 +45171,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1539,
+          "line": 1595,
           "signature": [
             "delta"
           ],
@@ -43734,7 +45212,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1552,
+          "line": 1609,
           "signature": [],
           "documented": true,
           "summary": "Force a resimulation even though nothing has changed.",
@@ -43765,7 +45243,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1565,
+          "line": 1622,
           "signature": [
             "patch"
           ],
@@ -43806,7 +45284,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1588,
+          "line": 1646,
           "signature": [
             "field",
             "value"
@@ -43855,7 +45333,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1611,
+          "line": 1670,
           "signature": [
             "extras"
           ],
@@ -43896,7 +45374,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1632,
+          "line": 1691,
           "signature": [
             "key",
             "value",
@@ -43953,7 +45431,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1645,
+          "line": 1705,
           "signature": [
             "id",
             "taps"
@@ -44002,7 +45480,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1656,
+          "line": 1717,
           "signature": [
             "node",
             "handle"
@@ -44051,7 +45529,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1676,
+          "line": 1737,
           "signature": [
             "driverId",
             "face"
@@ -44100,7 +45578,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1711,
+          "line": 1773,
           "signature": [
             "probe"
           ],
@@ -44141,7 +45619,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1741,
+          "line": 1804,
           "signature": [],
           "documented": true,
           "summary": "Freeze the current result as a labelled reference overlay.",
@@ -44172,7 +45650,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1777,
+          "line": 1840,
           "signature": [
             "id"
           ],
@@ -44213,7 +45691,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1789,
+          "line": 1852,
           "signature": [
             "id",
             "label"
@@ -44262,7 +45740,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1802,
+          "line": 1865,
           "signature": [
             "id"
           ],
@@ -44303,7 +45781,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1810,
+          "line": 1873,
           "signature": [
             "v"
           ],
@@ -44344,7 +45822,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1818,
+          "line": 1881,
           "signature": [
             "v"
           ],
@@ -44385,7 +45863,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1826,
+          "line": 1889,
           "signature": [
             "id"
           ],
@@ -44426,7 +45904,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1834,
+          "line": 1897,
           "signature": [
             "theme"
           ],
@@ -44467,7 +45945,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1846,
+          "line": 1909,
           "signature": [
             "engine"
           ],
@@ -44508,7 +45986,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1861,
+          "line": 1924,
           "signature": [
             "tab"
           ],
@@ -44549,7 +46027,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1872,
+          "line": 1935,
           "signature": [],
           "documented": true,
           "summary": "Return to the editor. A running job carries on.",
@@ -44580,7 +46058,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1880,
+          "line": 1943,
           "signature": [
             "tab"
           ],
@@ -44621,7 +46099,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1889,
+          "line": 1952,
           "signature": [
             "section",
             "patch"
@@ -44670,7 +46148,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1904,
+          "line": 1968,
           "signature": [],
           "documented": true,
           "summary": "The signature of what a time-domain result depends on — the graph, the extras and the engine.",
@@ -44701,7 +46179,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1919,
+          "line": 1983,
           "signature": [
             "kind",
             "mode"
@@ -44750,7 +46228,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1954,
+          "line": 2018,
           "signature": [],
           "documented": true,
           "summary": "Stop the running time-domain job.",
@@ -44781,7 +46259,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 1989,
+          "line": 2053,
           "signature": [],
           "documented": true,
           "summary": "Schedule a debounced simulation run.",
@@ -44806,13 +46284,288 @@
           "other": []
         },
         {
+          "name": "_recordOp",
+          "qualified": "_recordOp",
+          "kind": "method",
+          "exported": false,
+          "async": true,
+          "generator": false,
+          "line": 2091,
+          "signature": [
+            "op"
+          ],
+          "documented": true,
+          "summary": "Run a record operation: one at a time, with the project locked meanwhile.",
+          "description": "Run a record operation: one at a time, with the project locked meanwhile.",
+          "params": [
+            {
+              "name": "op",
+              "type": "Function",
+              "optional": false,
+              "default": null,
+              "desc": "`async () → void`, doing the work."
+            }
+          ],
+          "returns": {
+            "type": "Promise<void>",
+            "desc": "Resolves once done, or once the failure is recorded."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Writes store state."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "_showRecord",
+          "qualified": "_showRecord",
+          "kind": "method",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 2110,
+          "signature": [
+            "records",
+            "content"
+          ],
+          "documented": true,
+          "summary": "Put a record's content on the canvas.",
+          "description": "Put a record's content on the canvas.",
+          "params": [
+            {
+              "name": "records",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "The records, the one to show selected."
+            },
+            {
+              "name": "content",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "Its content."
+            }
+          ],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Replaces the project in the store, saves the open file and schedules a resimulation."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "recordGo",
+          "qualified": "recordGo",
+          "kind": "method",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 2121,
+          "signature": [
+            "index"
+          ],
+          "documented": true,
+          "summary": "Select a record, saving the selected one first.",
+          "description": "Select a record, saving the selected one first.",
+          "params": [
+            {
+              "name": "index",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "The record, from 0."
+            }
+          ],
+          "returns": {
+            "type": "Promise<void>",
+            "desc": "Resolves once it is shown."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Replaces the project on the canvas and saves the open file."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "recordStep",
+          "qualified": "recordStep",
+          "kind": "method",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 2134,
+          "signature": [
+            "delta"
+          ],
+          "documented": true,
+          "summary": "Select the record before or after the selected one.",
+          "description": "Select the record before or after the selected one.",
+          "params": [
+            {
+              "name": "delta",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "`-1` for the previous, `1` for the next."
+            }
+          ],
+          "returns": {
+            "type": "Promise<void>",
+            "desc": "Resolves once it is shown; at once at either end."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "As `recordGo`."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "recordAdd",
+          "qualified": "recordAdd",
+          "kind": "method",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 2146,
+          "signature": [],
+          "documented": true,
+          "summary": "Add a record at the end, from the selected one, and select it.",
+          "description": "Add a record at the end, from the selected one, and select it.",
+          "params": [],
+          "returns": {
+            "type": "Promise<void>",
+            "desc": "Resolves once added."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Writes store state and saves the open file."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "recordDelete",
+          "qualified": "recordDelete",
+          "kind": "method",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 2157,
+          "signature": [],
+          "documented": true,
+          "summary": "Delete the selected record, showing the one before it.",
+          "description": "Delete the selected record, showing the one before it.",
+          "params": [],
+          "returns": {
+            "type": "Promise<void>",
+            "desc": "Resolves once deleted; does nothing with a single record."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Replaces the project on the canvas and saves the open file."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "setRecordEditing",
+          "qualified": "setRecordEditing",
+          "kind": "method",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 2170,
+          "signature": [
+            "on"
+          ],
+          "documented": true,
+          "summary": "Unlock, or lock again, an earlier record for editing.",
+          "description": "Unlock, or lock again, an earlier record for editing.",
+          "params": [
+            {
+              "name": "on",
+              "type": "boolean",
+              "optional": false,
+              "default": null,
+              "desc": "Whether edits are allowed."
+            }
+          ],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Writes store state."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
           "name": "serialize",
           "qualified": "serialize",
           "kind": "method",
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2030,
+          "line": 2183,
           "signature": [],
           "documented": true,
           "summary": "Capture the project as a plain, saveable object.",
@@ -44843,7 +46596,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2053,
+          "line": 2206,
           "signature": [
             "proj"
           ],
@@ -44884,7 +46637,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2080,
+          "line": 2236,
           "signature": [],
           "documented": true,
           "summary": "Download the open project as a standalone JSON file.",
@@ -44915,7 +46668,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2097,
+          "line": 2253,
           "signature": [
             "proj",
             "filename"
@@ -44964,7 +46717,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2130,
+          "line": 2286,
           "signature": [
             "ws"
           ],
@@ -45005,7 +46758,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2145,
+          "line": 2301,
           "signature": [
             "name"
           ],
@@ -45046,7 +46799,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2159,
+          "line": 2315,
           "signature": [],
           "documented": true,
           "summary": "Write the editor's current project back into its file.",
@@ -45077,7 +46830,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2177,
+          "line": 2333,
           "signature": [
             "path"
           ],
@@ -45118,7 +46871,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2193,
+          "line": 2349,
           "signature": [
             "folder"
           ],
@@ -45159,7 +46912,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2214,
+          "line": 2370,
           "signature": [
             "parent"
           ],
@@ -45200,7 +46953,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2237,
+          "line": 2393,
           "signature": [
             "from",
             "to"
@@ -45249,7 +47002,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2274,
+          "line": 2430,
           "signature": [
             "path"
           ],
@@ -45290,7 +47043,7 @@
           "exported": false,
           "async": true,
           "generator": false,
-          "line": 2306,
+          "line": 2462,
           "signature": [],
           "documented": true,
           "summary": "Download the whole workspace, and record that it happened.",
@@ -45321,7 +47074,7 @@
           "exported": false,
           "async": true,
           "generator": false,
-          "line": 2335,
+          "line": 2491,
           "signature": [
             "file"
           ],
@@ -45362,7 +47115,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2359,
+          "line": 2515,
           "signature": [
             "ws"
           ],
@@ -45403,7 +47156,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2393,
+          "line": 2549,
           "signature": [
             "paths"
           ],
@@ -45444,7 +47197,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2403,
+          "line": 2559,
           "signature": [
             "path",
             "open"
@@ -45493,7 +47246,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2417,
+          "line": 2573,
           "signature": [],
           "documented": true,
           "summary": "Collapse every folder in the explorer.",
@@ -45524,7 +47277,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2432,
+          "line": 2588,
           "signature": [
             "mode",
             "path"
@@ -45573,7 +47326,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2443,
+          "line": 2599,
           "signature": [],
           "documented": true,
           "summary": "Dismiss the explorer's inline editor.",
@@ -45604,7 +47357,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2458,
+          "line": 2614,
           "signature": [
             "paths",
             "cut"
@@ -45653,7 +47406,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2471,
+          "line": 2627,
           "signature": [
             "folder"
           ],
@@ -45694,7 +47447,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2498,
+          "line": 2654,
           "signature": [
             "path"
           ],
@@ -45735,7 +47488,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2514,
+          "line": 2670,
           "signature": [
             "from",
             "folder"
@@ -45784,7 +47537,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2536,
+          "line": 2692,
           "signature": [
             "mode",
             "parent",
@@ -45841,7 +47594,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2570,
+          "line": 2726,
           "signature": [
             "kind"
           ],
@@ -45882,7 +47635,7 @@
           "exported": false,
           "async": true,
           "generator": false,
-          "line": 2601,
+          "line": 2757,
           "signature": [
             "confirmAdopt"
           ],
@@ -45923,7 +47676,7 @@
           "exported": false,
           "async": true,
           "generator": false,
-          "line": 2634,
+          "line": 2790,
           "signature": [],
           "documented": true,
           "summary": "Renew permission on a remembered folder and open it again.",
@@ -45954,7 +47707,7 @@
           "exported": false,
           "async": true,
           "generator": false,
-          "line": 2657,
+          "line": 2813,
           "signature": [],
           "documented": true,
           "summary": "Stop keeping the workspace in a folder.",
@@ -45987,7 +47740,7 @@
           "exported": false,
           "async": true,
           "generator": false,
-          "line": 2682,
+          "line": 2838,
           "signature": [
             "handle",
             "read",
@@ -46046,7 +47799,7 @@
           "exported": false,
           "async": true,
           "generator": false,
-          "line": 2723,
+          "line": 2879,
           "signature": [
             "prune"
           ],
@@ -46089,7 +47842,7 @@
           "exported": false,
           "async": true,
           "generator": false,
-          "line": 2765,
+          "line": 2921,
           "signature": [
             "since"
           ],
@@ -46132,7 +47885,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2798,
+          "line": 2954,
           "signature": [
             "drivers"
           ],
@@ -46173,7 +47926,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2820,
+          "line": 2976,
           "signature": [
             "id"
           ],
@@ -46214,7 +47967,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2836,
+          "line": 2992,
           "signature": [
             "id"
           ],
@@ -46255,7 +48008,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2859,
+          "line": 3015,
           "signature": [
             "id"
           ],
@@ -46296,7 +48049,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2886,
+          "line": 3042,
           "signature": [
             "id"
           ],
@@ -46337,7 +48090,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2902,
+          "line": 3058,
           "signature": [
             "stackId"
           ],
@@ -46378,7 +48131,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2926,
+          "line": 3082,
           "signature": [
             "panelId",
             "stackId"
@@ -46427,7 +48180,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2946,
+          "line": 3102,
           "signature": [
             "id"
           ],
@@ -46468,7 +48221,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2957,
+          "line": 3113,
           "signature": [
             "id"
           ],
@@ -46509,7 +48262,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2976,
+          "line": 3132,
           "signature": [
             "patch"
           ],
@@ -46552,7 +48305,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 2986,
+          "line": 3142,
           "signature": [],
           "documented": true,
           "summary": "The full shared slice, sent to a popped-out tab when it announces itself.",
@@ -46583,7 +48336,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 3050,
+          "line": 3206,
           "signature": [
             "arg0"
           ],

@@ -39,6 +39,7 @@ import { PANEL_META, PANEL_IDS } from './panelMeta'
 import { exportProjectJSON, exportWorkspaceZip } from './utils/export'
 import * as W from './workspace'
 import { stripLegacySuffix } from './legacy'
+import * as R from './records'
 import * as Z from './utils/zip'
 import * as F from './utils/folder'
 import { DEFAULT_TOOLBAR, sanitizeToolbar } from './toolbarItems'
@@ -498,6 +499,35 @@ function graphSignature(nodes, edges, settings, extras = {}, engine = '') {
 let applyingRemote = false
 let muted = POPOUT
 
+/**
+ * Whether the open project is read-only: an earlier record is selected and
+ * its Edit button has not been pressed.
+ *
+ * The last record is always editable; any earlier one must be unlocked
+ * first, so an old design is not changed by a stray keystroke.
+ *
+ * @param {object} s - Store state.
+ * @returns {boolean} True when edits to the project are refused.
+ * @pure
+ */
+export function isLocked(s) {
+  const n = s.recordNav
+  return !!n && (n.busy || (n.selected < n.count - 1 && !n.editing))
+}
+
+/**
+ * The record summary a window needs to draw the records bar and the lock.
+ *
+ * @param {object|null} records - The project's records.
+ * @param {boolean} editing - Whether the selected record has been unlocked.
+ * @param {boolean} busy - Whether a record operation is running.
+ * @returns {{count: number, selected: number, editing: boolean, busy: boolean}} The summary; a project without records is one record.
+ * @pure
+ */
+export function recordNavOf(records, editing, busy) {
+  return { count: records ? records.list.length : 1, selected: records ? records.selected : 0, editing: !!editing, busy: !!busy }
+}
+
 export const useStore = create((rawSet, get) => {
   /**
    * Update state and mirror the shared slice to other windows.
@@ -578,6 +608,13 @@ export const useStore = create((rawSet, get) => {
   // analyses, probes, components, air. Edited through `setExtra`; see
   // src/schema/editor.js for how they meet the flat `settings`.
   projectExtras: defaultExtras(),
+  // ---- records ----
+  // Numbered save states of the open project, kept in its file (see
+  // src/records.js). `records` holds them; `recordNav` is the summary every
+  // window draws from and the lock is read from.
+  records: null,
+  recordNav: recordNavOf(null, false, false),
+  recordError: null,
   // Which engine simulates: a preference of this browser, not of the project.
   engine: loadEngine(),
   theme: loadTheme(),
@@ -1018,6 +1055,7 @@ export const useStore = create((rawSet, get) => {
    * @sideEffect Writes store state and schedules a resimulation. Does nothing when the history is empty.
    */
   undo: () => {
+    if (isLocked(get())) return
     const { history, future, nodes, edges, projectExtras } = get()
     if (!history.length) return
     const prev = history[history.length - 1]
@@ -1036,6 +1074,7 @@ export const useStore = create((rawSet, get) => {
    * @sideEffect Writes store state and schedules a resimulation. Does nothing when the redo stack is empty.
    */
   redo: () => {
+    if (isLocked(get())) return
     const { history, future, nodes, edges, projectExtras } = get()
     if (!future.length) return
     const next = future[future.length - 1]
@@ -1062,6 +1101,9 @@ export const useStore = create((rawSet, get) => {
    * @sideEffect Writes store state, and schedules a resimulation when a node was removed.
    */
   onNodesChange: (changes) => {
+    // A read-only project can still be selected and measured, not moved or cut.
+    if (isLocked(get())) changes = changes.filter((c) => c.type === 'select' || c.type === 'dimensions')
+    if (!changes.length) return
     set({ nodes: applyNodeChanges(changes, get().nodes) })
     if (changes.some((c) => c.type === 'remove')) get().scheduleCompute()
   },
@@ -1076,6 +1118,8 @@ export const useStore = create((rawSet, get) => {
    * @sideEffect Writes store state, and on removal records history and schedules a resimulation.
    */
   onEdgesChange: (changes) => {
+    if (isLocked(get())) changes = changes.filter((c) => c.type === 'select')
+    if (!changes.length) return
     if (changes.some((c) => c.type === 'remove')) get().pushHistory()
     set({ edges: applyEdgeChanges(changes, get().edges) })
     if (changes.some((c) => c.type === 'remove')) get().scheduleCompute()
@@ -1088,6 +1132,7 @@ export const useStore = create((rawSet, get) => {
    * @sideEffect Records history, writes store state and schedules a resimulation. Does nothing when the same two handles are already joined, in either order.
    */
   onConnect: (conn) => {
+    if (isLocked(get())) return
     // Connections have no direction, so a join already made the other way
     // round is the same join.
     const same = get().edges.some((e) =>
@@ -1115,10 +1160,11 @@ export const useStore = create((rawSet, get) => {
    *
    * @param {string} type - Node type; its entry in `DEFAULT_PARAMS` supplies the initial params.
    * @param {{x: number, y: number}} position - Canvas position.
-   * @returns {string} The new node's id, so callers can immediately update its params.
+   * @returns {string|null} The new node's id, so callers can immediately update its params; `null` when the project is read-only.
    * @sideEffect Records history, writes store state and schedules a resimulation.
    */
   addNode: (type, position) => {
+    if (isLocked(get())) return null
     get().pushHistory()
     const id = nextId(type)
     const params = JSON.parse(JSON.stringify(DEFAULT_PARAMS[type]))
@@ -1149,6 +1195,7 @@ export const useStore = create((rawSet, get) => {
    * @sideEffect Writes store state and schedules a resimulation.
    */
   applyDriverParams: (id, params) => {
+    if (isLocked(get())) return
     const node = get().nodes.find((n) => n.id === id)
     if (!node) return
     const merged = { ...node.data.params, ...params }
@@ -1176,6 +1223,7 @@ export const useStore = create((rawSet, get) => {
    * @sideEffect Writes store state and schedules a resimulation.
    */
   restoreDriverParams: (id) => {
+    if (isLocked(get())) return
     const node = get().nodes.find((n) => n.id === id)
     const base = node && D.baselineOf(node)
     if (!base) return
@@ -1227,6 +1275,7 @@ export const useStore = create((rawSet, get) => {
    * @sideEffect Writes store state and schedules a resimulation.
    */
   setDriverParam: (id, field, value) => {
+    if (isLocked(get())) return
     const node = get().nodes.find((n) => n.id === id)
     if (!node) return
     get()._markDriverBaseline(id)
@@ -1278,6 +1327,7 @@ export const useStore = create((rawSet, get) => {
    * @sideEffect Writes store state and schedules a resimulation. Does nothing when no valid swap exists.
    */
   setDriverLock: (id, field, held) => {
+    if (isLocked(get())) return
     const node = get().nodes.find((n) => n.id === id)
     if (!node || !D.COUPLED.includes(field)) return
     const basis = D.basisOf(node)
@@ -1302,6 +1352,7 @@ export const useStore = create((rawSet, get) => {
    * @sideEffect Writes store state and schedules a resimulation.
    */
   updateParams: (id, patch) => {
+    if (isLocked(get())) return
     const nodes = get().nodes
     // Return before writing rather than mapping to an identical list: `set`
     // installs a fresh array either way, which re-renders every node and
@@ -1326,6 +1377,7 @@ export const useStore = create((rawSet, get) => {
    * @sideEffect Records history, writes store state and schedules a resimulation. Does nothing when the selection is empty.
    */
   deleteSelected: () => {
+    if (isLocked(get())) return
     const { nodes, edges } = get()
     const selNodes = nodes.filter((n) => n.selected).map((n) => n.id)
     const selEdges = edges.filter((e) => e.selected).map((e) => e.id)
@@ -1353,6 +1405,7 @@ export const useStore = create((rawSet, get) => {
    * @sideEffect Records history, writes store state and schedules a resimulation. Does nothing when the selection is empty.
    */
   duplicateSelected: () => {
+    if (isLocked(get())) return
     const { nodes } = get()
     const sel = nodes.filter((n) => n.selected)
     if (!sel.length) return
@@ -1452,6 +1505,7 @@ export const useStore = create((rawSet, get) => {
    * @sideEffect Records history, writes store state and schedules a resimulation.
    */
   cutSelection: () => {
+    if (isLocked(get())) return
     if (!get().copySelection()) return
     get().deleteSelected()
   },
@@ -1473,6 +1527,7 @@ export const useStore = create((rawSet, get) => {
    * @sideEffect Records history, writes store state and schedules a resimulation. Does nothing when the clipboard is empty.
    */
   pasteClipboard: (at) => {
+    if (isLocked(get())) return
     const clip = get().clipboard
     if (!clip?.nodes?.length) return
     get().pushHistory()
@@ -1517,10 +1572,11 @@ export const useStore = create((rawSet, get) => {
    * stepped down-right by `freeSpotNear`.
    *
    * @param {string} type - Node type to add.
-   * @returns {string} The new node's id.
+   * @returns {string|null|undefined} The new node's id; nothing when the project is read-only.
    * @sideEffect Reads the live React Flow viewport, records history, writes store state and schedules a resimulation.
    */
   addNodeAtCursor: (type) => {
+    if (isLocked(get())) return
     const api = get()._flowApi
     const spot = api?.dropPoint?.() || { x: 80, y: 80 }
     return get().addNode(type, freeSpotNear(spot, get().nodes))
@@ -1537,6 +1593,7 @@ export const useStore = create((rawSet, get) => {
    * @sideEffect Writes store state and schedules a resimulation.
    */
   nudgeVoltage: (delta) => {
+    if (isLocked(get())) return
     const v = Math.max(0, Math.round((get().settings.voltage + delta) * 100) / 100)
     get().setAmp('voltage', v)
   },
@@ -1563,6 +1620,7 @@ export const useStore = create((rawSet, get) => {
    * @sideEffect Writes store state and schedules a resimulation.
    */
   updateSettings: (patch) => {
+    if (isLocked(get())) return
     set({ settings: { ...get().settings, ...patch } })
     if ('rg' in patch) {
       const w = get().projectExtras.wiring
@@ -1586,6 +1644,7 @@ export const useStore = create((rawSet, get) => {
    * @sideEffect Writes store state and schedules a resimulation.
    */
   setAmp: (field, value) => {
+    if (isLocked(get())) return
     const s = { ...get().settings }
     s[field] = value
     if (field === 'voltage') s.power = (value * value) / s.impedance
@@ -1630,6 +1689,7 @@ export const useStore = create((rawSet, get) => {
    * @sideEffect Records history when undoable, writes store state and schedules a resimulation.
    */
   setExtra: (key, value, undoable = true) => {
+    if (isLocked(get())) return
     if (undoable) get().pushHistory()
     get()._setExtras({ ...get().projectExtras, [key]: value })
     get().scheduleCompute()
@@ -1643,6 +1703,7 @@ export const useStore = create((rawSet, get) => {
    * @sideEffect Records history, writes store state and schedules a resimulation.
    */
   setTaps: (id, taps) => {
+    if (isLocked(get())) return
     get().pushHistory()
     const live = new Set(taps.map((t) => `tap:${t.id}`))
     /**
@@ -1674,6 +1735,7 @@ export const useStore = create((rawSet, get) => {
    * @sideEffect Records history, writes store state and schedules a resimulation.
    */
   insertThroatChamber: (driverId, face) => {
+    if (isLocked(get())) return
     const { nodes, edges } = get()
     const drv = nodes.find((n) => n.id === driverId)
     const joined = edges.filter((e) => (e.source === driverId && e.sourceHandle === face) || (e.target === driverId && e.targetHandle === face))
@@ -1709,6 +1771,7 @@ export const useStore = create((rawSet, get) => {
    * @sideEffect Records history, writes store state and schedules a resimulation.
    */
   addProbe: (probe) => {
+    if (isLocked(get())) return
     const probes = get().projectExtras.probes || []
     const id = freshId('probe', probes.map((p) => p.id))
     get().setExtra('probes', [...probes, { id, ...probe }])
@@ -1887,6 +1950,7 @@ export const useStore = create((rawSet, get) => {
    * @sideEffect Writes the project's analyses; does not start a run.
    */
   setTdSettings: (section, patch) => {
+    if (isLocked(get())) return
     const ex = get().projectExtras
     const cur = tdSettingsOf(ex)
     const others = (ex.analyses || []).filter((x) => x.type !== 'timedomain')
@@ -2016,6 +2080,95 @@ export const useStore = create((rawSet, get) => {
     set({ _computeTimer: timer })
   },
 
+  // ---- records ----
+  /**
+   * Run a record operation: one at a time, with the project locked meanwhile.
+   *
+   * @param {Function} op - `async () → void`, doing the work.
+   * @returns {Promise<void>} Resolves once done, or once the failure is recorded.
+   * @sideEffect Writes store state.
+   */
+  _recordOp: async (op) => {
+    if (get().recordNav.busy || POPOUT) return
+    set({ recordNav: { ...get().recordNav, busy: true }, recordError: null })
+    try {
+      await op()
+    } catch (err) {
+      set({ recordError: err.message })
+    } finally {
+      set({ recordNav: recordNavOf(get().records, get().recordNav.editing, false) })
+    }
+  },
+  /**
+   * Put a record's content on the canvas.
+   *
+   * @param {object} records - The records, the one to show selected.
+   * @param {object} content - Its content.
+   * @returns {void}
+   * @sideEffect Replaces the project in the store, saves the open file and schedules a resimulation.
+   */
+  _showRecord: (records, content) => {
+    get().loadSerialized({ ...content, name: get().projectName, records })
+    get().saveActiveFile()
+  },
+  /**
+   * Select a record, saving the selected one first.
+   *
+   * @param {number} index - The record, from 0.
+   * @returns {Promise<void>} Resolves once it is shown.
+   * @sideEffect Replaces the project on the canvas and saves the open file.
+   */
+  recordGo: (index) => get()._recordOp(async () => {
+    const cur = get().records
+    if (index === (cur ? cur.selected : 0) || index < 0) return
+    const { records, content } = await R.selectRecord(cur, get().serialize(), index)
+    get()._showRecord(records, content)
+  }),
+  /**
+   * Select the record before or after the selected one.
+   *
+   * @param {number} delta - `-1` for the previous, `1` for the next.
+   * @returns {Promise<void>} Resolves once it is shown; at once at either end.
+   * @sideEffect As `recordGo`.
+   */
+  recordStep: (delta) => {
+    const n = get().recordNav
+    const to = n.selected + delta
+    if (to < 0 || to >= n.count) return Promise.resolve()
+    return get().recordGo(to)
+  },
+  /**
+   * Add a record at the end, from the selected one, and select it.
+   *
+   * @returns {Promise<void>} Resolves once added.
+   * @sideEffect Writes store state and saves the open file.
+   */
+  recordAdd: () => get()._recordOp(async () => {
+    const records = await R.addRecord(get().records, get().serialize())
+    set({ records, recordNav: recordNavOf(records, false, true) })
+    get().saveActiveFile()
+  }),
+  /**
+   * Delete the selected record, showing the one before it.
+   *
+   * @returns {Promise<void>} Resolves once deleted; does nothing with a single record.
+   * @sideEffect Replaces the project on the canvas and saves the open file.
+   */
+  recordDelete: () => get()._recordOp(async () => {
+    const cur = get().records
+    if (!cur || cur.list.length <= 1) return
+    const records = await R.deleteRecord(cur)
+    get()._showRecord(records, await R.readRecord(records, records.selected))
+  }),
+  /**
+   * Unlock, or lock again, an earlier record for editing.
+   *
+   * @param {boolean} on - Whether edits are allowed.
+   * @returns {void}
+   * @sideEffect Writes store state.
+   */
+  setRecordEditing: (on) => set({ recordNav: { ...get().recordNav, editing: !!on } }),
+
   // ---- persistence ----
   /**
    * Capture the project as a plain, saveable object.
@@ -2028,9 +2181,9 @@ export const useStore = create((rawSet, get) => {
    * @sideEffect Reads the current time for the `modified` stamp.
    */
   serialize: () => {
-    const { nodes, edges, projectName, settings, projectExtras } = get()
+    const { nodes, edges, projectName, settings, projectExtras, records } = get()
     const proj = fromEditor({ name: projectName, nodes, edges, settings, extras: projectExtras })
-    return { ...proj, modified: new Date().toISOString() }
+    return { ...proj, modified: new Date().toISOString(), ...(records ? { records } : {}) }
   },
   /**
    * Replace the current project with a deserialized one.
@@ -2062,6 +2215,9 @@ export const useStore = create((rawSet, get) => {
         ? { ...ed.extras, wiring: cur.projectExtras.wiring, analyses: cur.projectExtras.analyses, display: cur.projectExtras.display }
         : ed.extras,
       history: [], future: [], selectedNodeId: null,
+      records: R.readRecords(proj.records),
+      recordNav: recordNavOf(R.readRecords(proj.records), false, false),
+      recordError: null,
       // time-domain results describe the project being replaced
       tdResults: { linear: null, transient: null, distortion: {} }, tdError: null,
     })

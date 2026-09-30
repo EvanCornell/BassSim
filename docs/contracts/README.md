@@ -27,6 +27,7 @@ no implementation. This is the sole input to the blind contract test suite.
 | [`src/components/ParamPanel.jsx`](src_components_ParamPanel_jsx.spec.md) | 28 | 2 | 26 |
 | [`src/components/PopoutView.jsx`](src_components_PopoutView_jsx.spec.md) | 2 | 1 | 1 |
 | [`src/components/ProbesPanel.jsx`](src_components_ProbesPanel_jsx.spec.md) | 2 | 1 | 1 |
+| [`src/components/Records.jsx`](src_components_Records_jsx.spec.md) | 4 | 3 | 1 |
 | [`src/components/SaveDriverPrompt.jsx`](src_components_SaveDriverPrompt_jsx.spec.md) | 2 | 1 | 1 |
 | [`src/components/SettingsWindow.jsx`](src_components_SettingsWindow_jsx.spec.md) | 11 | 1 | 10 |
 | [`src/components/TSCalc.jsx`](src_components_TSCalc_jsx.spec.md) | 23 | 6 | 17 |
@@ -63,6 +64,7 @@ no implementation. This is the sole input to the blind contract test suite.
 | [`src/legacy.js`](src_legacy_js.spec.md) | 3 | 3 | 0 |
 | [`src/panelMeta.js`](src_panelMeta_js.spec.md) | 1 | 1 | 0 |
 | [`src/popout.js`](src_popout_js.spec.md) | 5 | 5 | 0 |
+| [`src/records.js`](src_records_js.spec.md) | 27 | 8 | 19 |
 | [`src/schema/editor.js`](src_schema_editor_js.spec.md) | 4 | 2 | 2 |
 | [`src/schema/extras.js`](src_schema_extras_js.spec.md) | 7 | 6 | 1 |
 | [`src/schema/migrate.js`](src_schema_migrate_js.spec.md) | 8 | 5 | 3 |
@@ -88,7 +90,7 @@ no implementation. This is the sole input to the blind contract test suite.
 | [`src/spice/split.js`](src_spice_split_js.spec.md) | 6 | 4 | 2 |
 | [`src/spice/timedomain.js`](src_spice_timedomain_js.spec.md) | 40 | 16 | 24 |
 | [`src/spice/wiring.js`](src_spice_wiring_js.spec.md) | 3 | 1 | 2 |
-| [`src/store.js`](src_store_js.spec.md) | 143 | 128 | 15 |
+| [`src/store.js`](src_store_js.spec.md) | 152 | 137 | 15 |
 | [`src/theme.js`](src_theme_js.spec.md) | 3 | 3 | 0 |
 | [`src/toolbarItems.js`](src_toolbarItems_js.spec.md) | 6 | 4 | 2 |
 | [`src/useResolved.js`](src_useResolved_js.spec.md) | 2 | 2 | 0 |
@@ -101,4 +103,4 @@ no implementation. This is the sole input to the blind contract test suite.
 | [`test/contracts.mjs`](test_contracts_mjs.spec.md) | 2 | 0 | 2 |
 | [`test/drivers.mjs`](test_drivers_mjs.spec.md) | 2 | 0 | 2 |
 | [`test/support/loader.mjs`](test_support_loader_mjs.spec.md) | 2 | 2 | 0 |
-| **Total** | **1061** | **556** | **505** |
+| **Total** | **1101** | **576** | **525** |

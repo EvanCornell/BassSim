@@ -1231,3 +1231,26 @@ svg.ws-chevron.open { transform: rotate(90deg); }
   box-shadow: var(--shadow-float); display: flex; flex-direction: column; gap: 6px;
 }
 .poly-pop textarea { width: 100%; box-sizing: border-box; font-family: var(--mono-font); font-size: 12px; }
+
+/* ---------- records ---------- */
+.tb-records { gap: 2px; padding: 0 6px; }
+.tb-records .rec-num { font-size: 12.5px; color: var(--text-2); padding: 0 4px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.tb-records .rec-num b { color: var(--text); font-weight: 600; }
+.tb-records .rec-sep { width: 1px; height: 22px; background: var(--line); margin: 0 4px; }
+.rec-btn {
+  background: var(--btn); border: 1px solid var(--line); color: var(--text);
+  border-radius: 9px; padding: 5px 11px; font-size: 12.5px; font-weight: 500;
+}
+.rec-btn:hover:not(:disabled) { background: var(--active); }
+.rec-btn:disabled { color: var(--text-4); }
+.rec-btn.on, .rec-btn.on:hover:not(:disabled) { background: var(--primary-bg); color: var(--primary-fg); border-color: transparent; }
+.tb-records.locked { border-color: color-mix(in oklch, var(--amber) 55%, var(--line)); }
+.rec-fieldset { border: none; margin: 0; padding: 0; min-width: 0; display: contents; }
+.rec-fieldset:disabled input, .rec-fieldset:disabled select, .rec-fieldset:disabled textarea { opacity: 0.6; }
+.rec-lock-note {
+  flex: none; height: auto; align-self: stretch;
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  margin: 8px 10px 0; padding: 7px 8px 7px 12px; border-radius: var(--r-pill);
+  font-size: 12px; color: var(--amber); background: var(--amber-soft);
+}
+.np-cube.off { opacity: 0.45; cursor: not-allowed; }

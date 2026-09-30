@@ -40,6 +40,9 @@ export const SHARED_KEYS = [
   // truth; the folder itself belongs to the main window, which is the only one
   // that holds its handle and the only one that writes to it.
   'folderStatus', 'folderName', 'folderError', 'folderSaved',
+  // The open project's records, in summary — enough for a popped-out panel
+  // to know when the project is read-only.
+  'recordNav',
 ]
 
 /** Shared keys whose change invalidates the current result and forces a resolve. */
