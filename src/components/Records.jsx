@@ -10,6 +10,9 @@ import { useStore, isLocked } from '../store'
 /**
  * The records bar: previous and next, the record number, Add, Delete and Edit.
  *
+ * Sits at the right-hand end of the menu bar, where it stays in view
+ * whatever the quick bar holds.
+ *
  * @returns {React.ReactElement} The bar.
  * @sideEffect Subscribes to the store.
  */
@@ -21,7 +24,7 @@ export function RecordsBar() {
   const last = nav.selected === nav.count - 1
   const off = nav.busy || !activeFile
   return (
-    <div className={`tb-pill tb-records${isLocked({ recordNav: nav }) && !nav.busy ? ' locked' : ''}`}
+    <div className={`mb-records${isLocked({ recordNav: nav }) && !nav.busy ? ' locked' : ''}`}
       title={error ? `The last record action failed: ${error}` : 'Records: numbered save states of this project'}>
       <button className="tb-icon" title="Previous record" disabled={off || nav.selected === 0}
         onClick={() => st().recordStep(-1)}>◀</button>

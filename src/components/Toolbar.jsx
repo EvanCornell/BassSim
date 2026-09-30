@@ -7,7 +7,6 @@
 // to the menu bar, not here — this strip is for per-design adjustments.
 import React from 'react'
 import { useStore, SNAPSHOT_LIMIT, isLocked } from '../store'
-import { RecordsBar } from './Records'
 import { readSnapshots } from '../workspace'
 import { TOOLBAR_ITEMS, metricValue } from '../toolbarItems'
 
@@ -251,7 +250,6 @@ export default function Toolbar() {
   return (
     <div className="toolbar">
       <TimeDomainButton />
-      <RecordsBar />
       {runs.map((run) => (
         run.group === 'metrics' ? (
           <div className="tb-metrics" key={run.ids[0]}>

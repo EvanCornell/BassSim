@@ -21,6 +21,9 @@ button is pressed; the lock returns when another record is selected.
 
 The records bar: previous and next, the record number, Add, Delete and Edit.
 
+Sits at the right-hand end of the menu bar, where it stays in view
+whatever the quick bar holds.
+
 **Returns**
 
 - `React.ReactElement` — The bar.

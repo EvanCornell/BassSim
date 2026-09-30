@@ -1233,10 +1233,16 @@ svg.ws-chevron.open { transform: rotate(90deg); }
 .poly-pop textarea { width: 100%; box-sizing: border-box; font-family: var(--mono-font); font-size: 12px; }
 
 /* ---------- records ---------- */
-.tb-records { gap: 2px; padding: 0 6px; }
-.tb-records .rec-num { font-size: 12.5px; color: var(--text-2); padding: 0 4px; white-space: nowrap; font-variant-numeric: tabular-nums; }
-.tb-records .rec-num b { color: var(--text); font-weight: 600; }
-.tb-records .rec-sep { width: 1px; height: 22px; background: var(--line); margin: 0 4px; }
+/* At the right-hand end of the menu bar. */
+.mb-records {
+  margin-left: auto; display: flex; align-items: center; gap: 2px;
+  height: 34px; padding: 0 4px; border-radius: 11px; border: 1px solid transparent;
+}
+.mb-records .tb-icon { padding: 4px 8px; font-size: 13px; }
+.mb-records .rec-num { font-size: 12.5px; color: var(--text-2); padding: 0 4px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.mb-records .rec-num b { color: var(--text); font-weight: 600; }
+.mb-records .rec-sep { width: 1px; height: 18px; background: var(--line); margin: 0 4px; }
+.mb-records .rec-btn { padding: 3px 10px; font-size: 12px; }
 .rec-btn {
   background: var(--btn); border: 1px solid var(--line); color: var(--text);
   border-radius: 9px; padding: 5px 11px; font-size: 12.5px; font-weight: 500;
@@ -1244,7 +1250,7 @@ svg.ws-chevron.open { transform: rotate(90deg); }
 .rec-btn:hover:not(:disabled) { background: var(--active); }
 .rec-btn:disabled { color: var(--text-4); }
 .rec-btn.on, .rec-btn.on:hover:not(:disabled) { background: var(--primary-bg); color: var(--primary-fg); border-color: transparent; }
-.tb-records.locked { border-color: color-mix(in oklch, var(--amber) 55%, var(--line)); }
+.mb-records.locked { border-color: color-mix(in oklch, var(--amber) 55%, var(--line)); background: var(--amber-soft); }
 .rec-fieldset { border: none; margin: 0; padding: 0; min-width: 0; display: contents; }
 .rec-fieldset:disabled input, .rec-fieldset:disabled select, .rec-fieldset:disabled textarea { opacity: 0.6; }
 .rec-lock-note {

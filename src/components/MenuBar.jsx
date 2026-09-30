@@ -14,6 +14,7 @@ import { PANEL_META, PANEL_IDS, MAIN_IDS, CHART_IDS } from '../panelMeta'
 import { exportCSV, exportSchematicPNG, exportMetricsTxt, exportCircuitSVG } from '../utils/export'
 import { formatCombo } from '../keymap'
 import { ItemList } from './MenuItem'
+import { RecordsBar } from './Records'
 
 
 // ---------- dropdown primitives ----------
@@ -594,6 +595,7 @@ export default function MenuBar() {
         onClick={(e) => { e.stopPropagation(); setOpen(null); store.setShowSettings(true) }}
         onMouseEnter={() => { if (open) setOpen(null) }}
       >Settings</button>
+      <RecordsBar />
       <input ref={fileRef} type="file" accept=".json,application/json" style={{ display: 'none' }} onChange={onLoadFile} />
       <input ref={workspaceRef} type="file" accept=".zip,.json,application/zip,application/json" style={{ display: 'none' }} onChange={onLoadWorkspace} />
 
