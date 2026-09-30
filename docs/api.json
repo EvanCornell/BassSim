@@ -24,9 +24,9 @@
     "pure": "flag"
   },
   "stats": {
-    "modules": 102,
-    "methods": 1054,
-    "documented": 1054
+    "modules": 103,
+    "methods": 1061,
+    "documented": 1061
   },
   "modules": [
     {
@@ -8458,6 +8458,37 @@
           "line": 340,
           "signature": [],
           "documented": true,
+          "summary": "Download the circuit the sweep solves, every element drawn, as an SVG.",
+          "description": "Download the circuit the sweep solves, every element drawn, as an SVG.",
+          "params": [],
+          "returns": {
+            "type": "Promise<void>",
+            "desc": "Resolves once the download has started, or once the failure has been shown."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Compiles the project, lays out the diagram and triggers a browser download; shows a dialog when it cannot."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "onClick",
+          "qualified": "MenuBar > onClick",
+          "kind": "method",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 350,
+          "signature": [],
+          "documented": true,
           "summary": "Download a plain-text metrics summary.",
           "description": "Download a plain-text metrics summary.",
           "params": [],
@@ -8486,7 +8517,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 369,
+          "line": 379,
           "signature": [],
           "documented": true,
           "summary": "Pop the focused panel out into its own browser tab.",
@@ -8517,7 +8548,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 384,
+          "line": 394,
           "signature": [],
           "documented": true,
           "summary": "Pop this specific panel out into its own browser tab.",
@@ -8548,7 +8579,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 397,
+          "line": 407,
           "signature": [],
           "documented": true,
           "summary": "Maximize the focused panel, or restore the one already maximized.",
@@ -8579,7 +8610,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 408,
+          "line": 418,
           "signature": [],
           "documented": true,
           "summary": "Restore the default workspace arrangement.",
@@ -8610,7 +8641,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 423,
+          "line": 433,
           "signature": [],
           "documented": true,
           "summary": "Apply this saved arrangement.",
@@ -8641,7 +8672,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 440,
+          "line": 450,
           "signature": [],
           "documented": true,
           "summary": "Delete this saved arrangement.",
@@ -8672,7 +8703,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 456,
+          "line": 466,
           "signature": [],
           "documented": true,
           "summary": "Toggle resonance masking, which lumps chambers to hide standing-wave artifacts.",
@@ -8703,7 +8734,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 467,
+          "line": 477,
           "signature": [],
           "documented": true,
           "summary": "Toggle phase unwrapping on the phase chart.",
@@ -8734,7 +8765,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 485,
+          "line": 495,
           "signature": [],
           "documented": true,
           "summary": "Discard every reference overlay.",
@@ -8765,7 +8796,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 500,
+          "line": 510,
           "signature": [],
           "documented": true,
           "summary": "Open the driver library browser.",
@@ -8796,7 +8827,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 510,
+          "line": 520,
           "signature": [],
           "documented": true,
           "summary": "Open the Thiele/Small parameter solver.",
@@ -8827,7 +8858,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 522,
+          "line": 532,
           "signature": [],
           "documented": true,
           "summary": "Open the time-domain workspace.",
@@ -8858,7 +8889,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 532,
+          "line": 542,
           "signature": [],
           "documented": true,
           "summary": "Open the time-domain workspace at the driver curve editor.",
@@ -8889,7 +8920,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 546,
+          "line": 556,
           "signature": [],
           "documented": true,
           "summary": "Open Settings at the keyboard section.",
@@ -8920,7 +8951,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 556,
+          "line": 566,
           "signature": [],
           "documented": true,
           "summary": "Show the about dialog.",
@@ -37841,6 +37872,236 @@
       ]
     },
     {
+      "file": "src/spice/schematic.js",
+      "module": {
+        "summary": "A SPICE netlist → a circuit diagram, drawn by netlistsvg.",
+        "description": "A SPICE netlist → a circuit diagram, drawn by netlistsvg.\n\nThe diagram is the raw circuit, part for part: every element of the\nnetlist is one symbol, every node one wire, laid out automatically by ELK.\nIt is not meant to be read like a hand-drawn schematic — it is the netlist\nthe engine solves, shown as a picture.\n\nnetlistsvg reads the JSON netlist format of the Yosys synthesis tool:\ncells, each with named ports and the numbered nets they connect to. Two-\nterminal parts use the analog skin's symbols; the rest — controlled\nsources, behavioural sources, transmission lines — are labelled boxes."
+      },
+      "constants": [],
+      "methods": [
+        {
+          "name": "short",
+          "qualified": "short",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 43,
+          "signature": [
+            "text"
+          ],
+          "documented": true,
+          "summary": "A number written short, for a label.",
+          "description": "A number written short, for a label.",
+          "params": [
+            {
+              "name": "text",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "A SPICE number."
+            }
+          ],
+          "returns": {
+            "type": "string",
+            "desc": "Four significant figures when it is a plain number; the text unchanged otherwise."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "valueOf",
+          "qualified": "valueOf",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 56,
+          "signature": [
+            "letter",
+            "rest"
+          ],
+          "documented": true,
+          "summary": "The value label for one element.",
+          "description": "The value label for one element.",
+          "params": [
+            {
+              "name": "letter",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "The element letter."
+            },
+            {
+              "name": "rest",
+              "type": "string[]",
+              "optional": false,
+              "default": null,
+              "desc": "The tokens after its nodes."
+            }
+          ],
+          "returns": {
+            "type": "string",
+            "desc": "A short label; at most 48 characters."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "netlistToYosys",
+          "qualified": "netlistToYosys",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 82,
+          "signature": [
+            "netlist"
+          ],
+          "documented": true,
+          "summary": "Convert a SPICE netlist to the JSON netlist netlistsvg draws.",
+          "description": "Convert a SPICE netlist to the JSON netlist netlistsvg draws.\n\nComments, control lines and the title are skipped. Each element becomes a\ncell named as in the netlist, labelled with its value; each node becomes a\nnet. Ground is drawn as its own symbol at every terminal that touches it,\nas a schematic would, rather than one wire to every part.",
+          "params": [
+            {
+              "name": "netlist",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "The netlist text."
+            }
+          ],
+          "returns": {
+            "type": "{modules: {circuit: {ports: object, cells: object}}}, elements: number",
+            "desc": "} The JSON netlist, and how many elements it holds."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "netOf",
+          "qualified": "netlistToYosys > netOf",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 95,
+          "signature": [
+            "node"
+          ],
+          "documented": true,
+          "summary": "The net for a node, connecting a new ground symbol when it is ground.",
+          "description": "The net for a node, connecting a new ground symbol when it is ground.",
+          "params": [
+            {
+              "name": "node",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "The node name."
+            }
+          ],
+          "returns": {
+            "type": "number",
+            "desc": "Its net number."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [
+              "the enclosing nets and cells."
+            ],
+            "sideEffect": [],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "netlistToSvg",
+          "qualified": "netlistToSvg",
+          "kind": "function",
+          "exported": true,
+          "async": true,
+          "generator": false,
+          "line": 145,
+          "signature": [
+            "netlist",
+            "lib"
+          ],
+          "documented": true,
+          "summary": "Draw a SPICE netlist as an SVG circuit diagram.",
+          "description": "Draw a SPICE netlist as an SVG circuit diagram.",
+          "params": [
+            {
+              "name": "netlist",
+              "type": "string",
+              "optional": false,
+              "default": null,
+              "desc": "The netlist text."
+            },
+            {
+              "name": "lib",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "The renderer: `{render, skin}` — netlistsvg's `render` and the text of its analog skin."
+            }
+          ],
+          "returns": {
+            "type": "Promise<string>",
+            "desc": "The SVG document."
+          },
+          "throws": [
+            {
+              "type": "Error",
+              "desc": "When the netlist has no elements, or the layout fails."
+            }
+          ],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Runs the layout engine."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        }
+      ]
+    },
+    {
       "file": "src/spice/split.js",
       "module": {
         "summary": "Splitting one frequency sweep into several, to run side by side.",
@@ -47198,7 +47459,7 @@
       "constants": [
         {
           "name": "__internals",
-          "line": 198,
+          "line": 223,
           "shape": {
             "kind": "object",
             "keys": [
@@ -47217,7 +47478,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 18,
+          "line": 21,
           "signature": [
             "filename",
             "content",
@@ -47274,7 +47535,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 36,
+          "line": 39,
           "signature": [
             "proj"
           ],
@@ -47316,13 +47577,66 @@
           "other": []
         },
         {
+          "name": "exportCircuitSVG",
+          "qualified": "exportCircuitSVG",
+          "kind": "function",
+          "exported": true,
+          "async": true,
+          "generator": false,
+          "line": 56,
+          "signature": [
+            "proj"
+          ],
+          "documented": true,
+          "summary": "Download the circuit the frequency sweep solves, drawn as an SVG diagram.",
+          "description": "Download the circuit the frequency sweep solves, drawn as an SVG diagram.\n\nEvery element of the netlist is drawn, laid out automatically — the raw\ncircuit, not a tidied schematic. The renderer and its symbols are loaded\nonly when asked for.",
+          "params": [
+            {
+              "name": "proj",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "The project, as saved."
+            },
+            {
+              "name": "proj.name",
+              "type": "string",
+              "optional": true,
+              "default": null,
+              "desc": "Used for the filename."
+            }
+          ],
+          "returns": {
+            "type": "Promise<void>",
+            "desc": "Resolves once the download has been handed to the browser."
+          },
+          "throws": [
+            {
+              "type": "Error",
+              "desc": "When the project cannot be compiled, or the diagram cannot be laid out."
+            }
+          ],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Loads the renderer, runs the layout and triggers a browser download."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
           "name": "exportWorkspaceZip",
           "qualified": "exportWorkspaceZip",
           "kind": "function",
           "exported": true,
           "async": true,
           "generator": false,
-          "line": 52,
+          "line": 77,
           "signature": [
             "ws"
           ],
@@ -47363,7 +47677,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 74,
+          "line": 99,
           "signature": [
             "results",
             "nodes",
@@ -47420,7 +47734,7 @@
           "exported": true,
           "async": true,
           "generator": false,
-          "line": 128,
+          "line": 153,
           "signature": [
             "projectName"
           ],
@@ -47461,7 +47775,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 142,
+          "line": 167,
           "signature": [
             "n"
           ],
@@ -47500,7 +47814,7 @@
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 165,
+          "line": 190,
           "signature": [
             "metrics",
             "settings",
@@ -47557,7 +47871,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 179,
+          "line": 204,
           "signature": [
             "k",
             "v"

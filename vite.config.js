@@ -12,5 +12,9 @@ export default defineConfig({
   // a dynamic import, which needs ES-module workers to be split into its own
   // chunk rather than inlined.
   worker: { format: 'es' },
+  // The circuit-diagram export draws with netlistsvg, whose layout engine
+  // (ELK) reaches for Node's worker threads unless given its self-contained
+  // browser build.
+  resolve: { alias: { elkjs: 'elkjs/lib/elk.bundled.js' } },
   build: { chunkSizeWarningLimit: 1200 },
 })

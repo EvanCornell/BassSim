@@ -11,7 +11,7 @@ import { supportsFolders } from '../utils/folder'
 import { connectFolderWithPrompt, disconnectFolderWithPrompt } from '../utils/folderPrompts'
 import { isOpen } from '../layout'
 import { PANEL_META, PANEL_IDS, MAIN_IDS, CHART_IDS } from '../panelMeta'
-import { exportCSV, exportSchematicPNG, exportMetricsTxt } from '../utils/export'
+import { exportCSV, exportSchematicPNG, exportMetricsTxt, exportCircuitSVG } from '../utils/export'
 import { formatCombo } from '../keymap'
 import { ItemList } from './MenuItem'
 
@@ -328,6 +328,16 @@ export default function MenuBar() {
              * @sideEffect Rasterizes the live canvas and triggers a browser download.
              */
             onClick: () => exportSchematicPNG(store.projectName),
+          },
+          {
+            label: 'Circuit diagram (SVG)',
+            /**
+             * Download the circuit the sweep solves, every element drawn, as an SVG.
+             *
+             * @returns {Promise<void>} Resolves once the download has started, or once the failure has been shown.
+             * @sideEffect Compiles the project, lays out the diagram and triggers a browser download; shows a dialog when it cannot.
+             */
+            onClick: () => exportCircuitSVG(store.serialize()).catch((err) => alert(`Could not draw the circuit: ${err.message}`)),
           },
           {
             label: 'Metrics summary (TXT)',

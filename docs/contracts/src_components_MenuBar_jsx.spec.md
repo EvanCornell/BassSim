@@ -37,7 +37,7 @@ current state.
 
 - Subscribes to the store. Registers window mousedown and keydown listeners while a menu is open.
 
-## UNREACHABLE (34)
+## UNREACHABLE (35)
 
 ### `Menu(props)`
 
@@ -367,6 +367,21 @@ Download a PNG of the node canvas.
 **Side effects**
 
 - Rasterizes the live canvas and triggers a browser download.
+
+### `MenuBar > onClick()`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+Download the circuit the sweep solves, every element drawn, as an SVG.
+
+**Returns**
+
+- `Promise<void>` — Resolves once the download has started, or once the failure has been shown.
+
+**Side effects**
+
+- Compiles the project, lays out the diagram and triggers a browser download; shows a dialog when it cannot.
 
 ### `MenuBar > onClick()`
 

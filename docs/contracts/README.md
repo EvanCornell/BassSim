@@ -19,7 +19,7 @@ no implementation. This is the sole input to the blind contract test suite.
 | [`src/components/ExprInput.jsx`](src_components_ExprInput_jsx.spec.md) | 4 | 3 | 1 |
 | [`src/components/FileBrowser.jsx`](src_components_FileBrowser_jsx.spec.md) | 19 | 1 | 18 |
 | [`src/components/FlowCanvas.jsx`](src_components_FlowCanvas_jsx.spec.md) | 10 | 2 | 8 |
-| [`src/components/MenuBar.jsx`](src_components_MenuBar_jsx.spec.md) | 35 | 1 | 34 |
+| [`src/components/MenuBar.jsx`](src_components_MenuBar_jsx.spec.md) | 36 | 1 | 35 |
 | [`src/components/MenuItem.jsx`](src_components_MenuItem_jsx.spec.md) | 2 | 2 | 0 |
 | [`src/components/NLLab.jsx`](src_components_NLLab_jsx.spec.md) | 24 | 4 | 20 |
 | [`src/components/NodePalette.jsx`](src_components_NodePalette_jsx.spec.md) | 2 | 1 | 1 |
@@ -84,6 +84,7 @@ no implementation. This is the sole input to the blind contract test suite.
 | [`src/spice/nonlinear.js`](src_spice_nonlinear_js.spec.md) | 6 | 5 | 1 |
 | [`src/spice/physics.js`](src_spice_physics_js.spec.md) | 5 | 5 | 0 |
 | [`src/spice/run.js`](src_spice_run_js.spec.md) | 10 | 7 | 3 |
+| [`src/spice/schematic.js`](src_spice_schematic_js.spec.md) | 5 | 2 | 3 |
 | [`src/spice/split.js`](src_spice_split_js.spec.md) | 6 | 4 | 2 |
 | [`src/spice/timedomain.js`](src_spice_timedomain_js.spec.md) | 40 | 16 | 24 |
 | [`src/spice/wiring.js`](src_spice_wiring_js.spec.md) | 3 | 1 | 2 |
@@ -92,7 +93,7 @@ no implementation. This is the sole input to the blind contract test suite.
 | [`src/toolbarItems.js`](src_toolbarItems_js.spec.md) | 6 | 4 | 2 |
 | [`src/useResolved.js`](src_useResolved_js.spec.md) | 2 | 2 | 0 |
 | [`src/utils/backdrop.js`](src_utils_backdrop_js.spec.md) | 3 | 1 | 2 |
-| [`src/utils/export.js`](src_utils_export_js.spec.md) | 8 | 6 | 2 |
+| [`src/utils/export.js`](src_utils_export_js.spec.md) | 9 | 7 | 2 |
 | [`src/utils/folder.js`](src_utils_folder_js.spec.md) | 20 | 11 | 9 |
 | [`src/utils/folderPrompts.js`](src_utils_folderPrompts_js.spec.md) | 2 | 2 | 0 |
 | [`src/utils/zip.js`](src_utils_zip_js.spec.md) | 10 | 5 | 5 |
@@ -100,4 +101,4 @@ no implementation. This is the sole input to the blind contract test suite.
 | [`test/contracts.mjs`](test_contracts_mjs.spec.md) | 2 | 0 | 2 |
 | [`test/drivers.mjs`](test_drivers_mjs.spec.md) | 2 | 0 | 2 |
 | [`test/support/loader.mjs`](test_support_loader_mjs.spec.md) | 2 | 2 | 0 |
-| **Total** | **1054** | **553** | **501** |
+| **Total** | **1061** | **556** | **505** |

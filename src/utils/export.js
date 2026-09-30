@@ -1,6 +1,9 @@
 import { toPng } from 'html-to-image'
 import { workspaceToEntries, workspaceFilename } from '../workspace'
 import { createZip } from './zip'
+import { prepareProject } from '../engine/pipeline'
+import { compileProject } from '../spice/compile'
+import { netlistToSvg } from '../spice/schematic'
 
 /**
  * Push content to the user as a file download.
@@ -35,6 +38,28 @@ function download(filename, content, mime) {
  */
 export function exportProjectJSON(proj) {
   download(`${proj.name || 'speakerspice-project'}.speakerspice.json`, JSON.stringify(proj, null, 2), 'application/json')
+}
+
+/**
+ * Download the circuit the frequency sweep solves, drawn as an SVG diagram.
+ *
+ * Every element of the netlist is drawn, laid out automatically — the raw
+ * circuit, not a tidied schematic. The renderer and its symbols are loaded
+ * only when asked for.
+ *
+ * @param {object} proj - The project, as saved.
+ * @param {string} [proj.name] - Used for the filename.
+ * @returns {Promise<void>} Resolves once the download has been handed to the browser.
+ * @throws {Error} When the project cannot be compiled, or the diagram cannot be laid out.
+ * @sideEffect Loads the renderer, runs the layout and triggers a browser download.
+ */
+export async function exportCircuitSVG(proj) {
+  const [lib, skin] = await Promise.all([import('netlistsvg'), import('netlistsvg/lib/analog.svg?raw')])
+  const { project } = prepareProject(proj)
+  const sweep = (project.analyses || []).find((a) => a.type === 'ac') || { fmin: 10, fmax: 1000, npts: 512 }
+  const { netlist } = compileProject(project, sweep)
+  const svg = await netlistToSvg(netlist, { render: lib.render || lib.default.render, skin: skin.default })
+  download(`${proj.name || 'speakerspice-project'} circuit.svg`, svg, 'image/svg+xml')
 }
 
 /**

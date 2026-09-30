@@ -13,7 +13,7 @@ so this is the vocabulary they assume.
 
 Keys: `download`
 
-## EXPORTED (5)
+## EXPORTED (6)
 
 ### `exportProjectJSON(proj)`
 
@@ -34,6 +34,35 @@ Download a project as a formatted `.speakerspice.json` file.
 **Side effects**
 
 - Triggers a browser download.
+
+### `exportCircuitSVG(proj)`
+
+- **Reachability:** EXPORTED
+- **Obtain via:** import { exportCircuitSVG } from '../../src/utils/export.js'
+- **Async:** returns a Promise
+
+Download the circuit the frequency sweep solves, drawn as an SVG diagram.
+
+Every element of the netlist is drawn, laid out automatically — the raw
+circuit, not a tidied schematic. The renderer and its symbols are loaded
+only when asked for.
+
+**Parameters**
+
+- `proj` — `object` — The project, as saved.
+- `proj.name` — `string` _(optional)_ — Used for the filename.
+
+**Returns**
+
+- `Promise<void>` — Resolves once the download has been handed to the browser.
+
+**Throws**
+
+- `Error` — When the project cannot be compiled, or the diagram cannot be laid out.
+
+**Side effects**
+
+- Loads the renderer, runs the layout and triggers a browser download.
 
 ### `exportWorkspaceZip(ws)`
 
