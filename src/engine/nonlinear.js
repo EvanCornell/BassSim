@@ -326,6 +326,103 @@ export function parseCurveCSV(text) {
   return rows.sort((a, b) => a[0] - b[0])
 }
 
+// ---------- curves from published ratings ----------
+//
+// Datasheets rarely publish curves, but often publish two excursion ratings:
+// Xmax, and Xvar — the excursion at which the driver's output has varied by
+// 6 dB. Curves are built from them on two assumptions:
+//
+// - at Xmax, Bl has fallen to 70% of its rest value;
+// - the output varies as Bl² (force and back-EMF both scale with Bl) and as
+//   1/Kms, so in dB the variation is −20·log10(Bl ratio) + 10·log10(Kms
+//   ratio): 70% Bl is 3.1 dB, 200% Kms is 3.0 dB.
+//
+// Bl is a smooth bell, flat at rest and falling on past Xmax, whose loss in dB
+// grows as x². Whatever the 6 dB at Xvar still needs after Bl is given to the
+// suspension, as the classic quadratic stiffening Kms(x) = 1 + c·x², which
+// spreads it over the whole stroke rather than bunching it at one point.
+// Both are symmetric.
+
+/** Bl at Xmax, as a ratio of its rest value. */
+export const BL_AT_XMAX = 0.7
+
+/** The output variation that defines Xvar, dB. */
+export const XVAR_DB = 6
+
+/**
+ * The output variation from a Bl and a Kms ratio, dB.
+ *
+ * @param {number} bl - Bl, as a ratio of its rest value.
+ * @param {number} kms - Kms, as a ratio of its rest value.
+ * @returns {number} −20·log10(bl) + 10·log10(kms): positive as Bl falls or Kms rises.
+ * @pure
+ */
+export function variationDb(bl, kms) {
+  return -20 * Math.log10(bl) + 10 * Math.log10(kms)
+}
+
+/**
+ * Bl and Kms curves from a driver's Xmax and Xvar.
+ *
+ * Bl(x) = exp(−x²/c²), with c set so Bl(Xmax) = 70%. With an Xvar, the
+ * variation Bl leaves short of 6 dB there is made up by Kms(x) = 1 + k·x²;
+ * when Bl alone already reaches 6 dB before Xvar, the suspension is left
+ * linear and `info.blAlone` says so — the two ratings then disagree under
+ * these assumptions.
+ *
+ * Bl is a table sampled over the whole stroke the circuit uses, Kms an exact
+ * polynomial over the same range; both stay symmetric past Xmax.
+ *
+ * @param {number} xmax - Xmax, mm.
+ * @param {number} [xvar] - Xvar, mm; without it only Bl is built.
+ * @returns {{Bl: object, Kms: object, info: {blSixDbAt: number, blAtXvar: number|null, kmsAtXvar: number|null, blDb: number|null, kmsDb: number|null, blAlone: boolean}}} The two curves, and what they come to: where Bl alone reaches 6 dB, and at Xvar each ratio and its share of the variation.
+ * @throws {Error} When Xmax is not a positive number, or Xvar is given but is not.
+ * @pure
+ */
+export function curvesFromRatings(xmax, xvar) {
+  if (!(xmax > 0)) throw new Error('Xmax must be a positive number of mm.')
+  if (xvar != null && xvar !== '' && !(xvar > 0)) throw new Error('Xvar must be a positive number of mm.')
+  const c2 = (xmax * xmax) / Math.log(1 / BL_AT_XMAX)
+  /**
+   * Bl at an excursion.
+   *
+   * @param {number} x - Excursion, mm.
+   * @returns {number} The ratio.
+   * @pure
+   */
+  const bl = (x) => Math.exp((-x * x) / c2)
+  const span = Math.max(4 * xmax, xvar > 0 ? 2 * xvar : 0, 20)
+  const rows = 80
+  const table = []
+  for (let i = -rows; i <= rows; i++) {
+    const x = Number(((span * i) / rows).toFixed(4))
+    table.push([x, Number(bl(x).toPrecision(6))])
+  }
+  const Bl = { points: [], table, poly: null, sym: true, extrap: false }
+  let Kms = { points: [], table: null, poly: null, sym: true, extrap: false }
+  const info = {
+    blSixDbAt: Math.sqrt(c2 * Math.log(Math.pow(10, XVAR_DB / 20))),
+    blAtXvar: null, kmsAtXvar: null, blDb: null, kmsDb: null, blAlone: false,
+  }
+  if (xvar > 0) {
+    const blDb = variationDb(bl(xvar), 1)
+    const kmsDb = XVAR_DB - blDb
+    info.blAtXvar = bl(xvar)
+    info.blDb = blDb
+    if (kmsDb > 0) {
+      const K = Math.pow(10, kmsDb / 10)
+      Kms = { ...Kms, poly: { coeffs: [1, 0, (K - 1) / (xvar * xvar)], min: -span, max: span } }
+      info.kmsAtXvar = K
+      info.kmsDb = kmsDb
+    } else {
+      info.kmsAtXvar = 1
+      info.kmsDb = 0
+      info.blAlone = true
+    }
+  }
+  return { Bl, Kms, info }
+}
+
 // Module-private functions, exposed for the contract test suite only
 // (test/contract/*). Not part of this module's public API — application code
 // must not import from here, and nothing outside the tests does.

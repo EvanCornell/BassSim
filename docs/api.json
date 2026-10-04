@@ -25,8 +25,8 @@
   },
   "stats": {
     "modules": 105,
-    "methods": 1101,
-    "documented": 1101
+    "methods": 1110,
+    "documented": 1110
   },
   "modules": [
     {
@@ -9143,13 +9143,14 @@
       "constants": [
         {
           "name": "__internals",
-          "line": 708,
+          "line": 836,
           "shape": {
             "kind": "object",
             "keys": [
               "refValue",
               "fmtVal",
-              "niceTicks"
+              "niceTicks",
+              "catalogueXvar"
             ]
           },
           "summary": null,
@@ -9164,7 +9165,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 36,
+          "line": 40,
           "signature": [
             "param",
             "p"
@@ -9211,7 +9212,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 56,
+          "line": 60,
           "signature": [
             "v"
           ],
@@ -9250,7 +9251,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 75,
+          "line": 79,
           "signature": [
             "lo",
             "hi",
@@ -9305,7 +9306,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 112,
+          "line": 116,
           "signature": [
             "arg0"
           ],
@@ -9395,7 +9396,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 132,
+          "line": 136,
           "signature": [
             "x",
             "r"
@@ -9444,7 +9445,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 144,
+          "line": 148,
           "signature": [
             "px",
             "py"
@@ -9493,7 +9494,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 166,
+          "line": 170,
           "signature": [
             "patch"
           ],
@@ -9534,7 +9535,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 184,
+          "line": 188,
           "signature": [
             "px",
             "py",
@@ -9591,7 +9592,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 211,
+          "line": 215,
           "signature": [
             "e"
           ],
@@ -9632,7 +9633,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 241,
+          "line": 245,
           "signature": [
             "e"
           ],
@@ -9673,7 +9674,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 252,
+          "line": 256,
           "signature": [
             "ev"
           ],
@@ -9714,7 +9715,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 265,
+          "line": 269,
           "signature": [],
           "documented": true,
           "summary": "End the pan and remove its listeners.",
@@ -9745,7 +9746,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 283,
+          "line": 287,
           "signature": [
             "e"
           ],
@@ -9786,7 +9787,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 301,
+          "line": 305,
           "signature": [
             "e"
           ],
@@ -9827,7 +9828,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 319,
+          "line": 323,
           "signature": [
             "idx",
             "e"
@@ -9876,7 +9877,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 331,
+          "line": 335,
           "signature": [
             "ev"
           ],
@@ -9917,7 +9918,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 351,
+          "line": 355,
           "signature": [],
           "documented": true,
           "summary": "End the point drag and remove its listeners.",
@@ -9948,7 +9949,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 363,
+          "line": 367,
           "signature": [
             "idx"
           ],
@@ -9989,7 +9990,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 376,
+          "line": 380,
           "signature": [
             "e"
           ],
@@ -10030,7 +10031,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 505,
+          "line": 509,
           "signature": [
             "arg0"
           ],
@@ -10093,13 +10094,247 @@
           "other": []
         },
         {
+          "name": "catalogueXvar",
+          "qualified": "catalogueXvar",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 555,
+          "signature": [
+            "p"
+          ],
+          "documented": true,
+          "summary": "A driver's published Xvar, when it came from the built-in catalogue.",
+          "description": "A driver's published Xvar, when it came from the built-in catalogue.",
+          "params": [
+            {
+              "name": "p",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "The driver node's params."
+            }
+          ],
+          "returns": {
+            "type": "number|null",
+            "desc": "Xvar, mm, or `null` when the catalogue does not list one."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "RatingsButton",
+          "qualified": "RatingsButton",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 576,
+          "signature": [
+            "arg0"
+          ],
+          "documented": true,
+          "summary": "Build Bl(x) and Kms(x) from the driver's Xmax and Xvar, as a form behind a button.",
+          "description": "Build Bl(x) and Kms(x) from the driver's Xmax and Xvar, as a form behind a button.\n\nBl falls to 70% at Xmax; the suspension stiffens by whatever the 6 dB at\nXvar still needs (see `curvesFromRatings`). The form says what the curves\ncome to before they are applied, and applying replaces both curves — and\nany Cms(x), which Kms(x) would override — and sets the driver's Xmax.",
+          "params": [
+            {
+              "name": "props",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "Component props."
+            },
+            {
+              "name": "props.driver",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "The driver node."
+            },
+            {
+              "name": "props.nl",
+              "type": "object",
+              "optional": false,
+              "default": null,
+              "desc": "Its curve set."
+            }
+          ],
+          "returns": {
+            "type": "React.ReactElement",
+            "desc": "The button, and its form when open."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Holds the form's values in component state; applying updates the driver's params."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "show",
+          "qualified": "RatingsButton > show",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 588,
+          "signature": [],
+          "documented": true,
+          "summary": "Open the form, filled from what was used last, or the driver and the catalogue.",
+          "description": "Open the form, filled from what was used last, or the driver and the catalogue.",
+          "params": [],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Writes component state."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
+          "name": "pct",
+          "qualified": "RatingsButton > pct",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 606,
+          "signature": [
+            "r"
+          ],
+          "documented": true,
+          "summary": "A ratio as a percentage.",
+          "description": "A ratio as a percentage.",
+          "params": [
+            {
+              "name": "r",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "The ratio."
+            }
+          ],
+          "returns": {
+            "type": "string",
+            "desc": "e.g. `70%`."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "db",
+          "qualified": "RatingsButton > db",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 614,
+          "signature": [
+            "v"
+          ],
+          "documented": true,
+          "summary": "A level in dB.",
+          "description": "A level in dB.",
+          "params": [
+            {
+              "name": "v",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "dB."
+            }
+          ],
+          "returns": {
+            "type": "string",
+            "desc": "e.g. `3.1 dB`."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "apply",
+          "qualified": "RatingsButton > apply",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 621,
+          "signature": [],
+          "documented": true,
+          "summary": "Install the curves on the driver.",
+          "description": "Install the curves on the driver.",
+          "params": [],
+          "returns": {
+            "type": "void",
+            "desc": ""
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [
+              "Updates the driver's params, which triggers a resimulation."
+            ],
+            "reads": [],
+            "pure": false
+          },
+          "other": []
+        },
+        {
           "name": "NLLab",
           "qualified": "NLLab",
           "kind": "function",
           "exported": true,
           "async": false,
           "generator": false,
-          "line": 554,
+          "line": 681,
           "signature": [],
           "documented": true,
           "summary": "The driver curve editor: a driver's large-signal Bl, Kms/Cms and Le curves.",
@@ -10130,7 +10365,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 606,
+          "line": 733,
           "signature": [
             "patch"
           ],
@@ -10171,7 +10406,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 615,
+          "line": 742,
           "signature": [
             "e"
           ],
@@ -10212,7 +10447,7 @@
           "exported": false,
           "async": false,
           "generator": false,
-          "line": 628,
+          "line": 755,
           "signature": [],
           "documented": true,
           "summary": "Parse the loaded CSV and install it as this curve's table.",
@@ -23163,8 +23398,28 @@
           "description": "The nonlinear parameter names a driver may carry curves for.\n\n`Cms` and `Kms` are two descriptions of the same suspension, so a driver\nnormally has one or the other rather than both."
         },
         {
+          "name": "BL_AT_XMAX",
+          "line": 347,
+          "shape": {
+            "kind": "literal",
+            "value": 0.7
+          },
+          "summary": "Bl at Xmax, as a ratio of its rest value.",
+          "description": "Bl at Xmax, as a ratio of its rest value."
+        },
+        {
+          "name": "XVAR_DB",
+          "line": 350,
+          "shape": {
+            "kind": "literal",
+            "value": 6
+          },
+          "summary": "The output variation that defines Xvar, dB.",
+          "description": "The output variation that defines Xvar, dB."
+        },
+        {
           "name": "__internals",
-          "line": 332,
+          "line": 429,
           "shape": {
             "kind": "object",
             "keys": [
@@ -23759,6 +24014,144 @@
               "desc": "When fewer than two usable rows are found, since a single point defines no curve."
             }
           ],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "variationDb",
+          "qualified": "variationDb",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 360,
+          "signature": [
+            "bl",
+            "kms"
+          ],
+          "documented": true,
+          "summary": "The output variation from a Bl and a Kms ratio, dB.",
+          "description": "The output variation from a Bl and a Kms ratio, dB.",
+          "params": [
+            {
+              "name": "bl",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Bl, as a ratio of its rest value."
+            },
+            {
+              "name": "kms",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Kms, as a ratio of its rest value."
+            }
+          ],
+          "returns": {
+            "type": "number",
+            "desc": "−20·log10(bl) + 10·log10(kms): positive as Bl falls or Kms rises."
+          },
+          "throws": [],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "curvesFromRatings",
+          "qualified": "curvesFromRatings",
+          "kind": "function",
+          "exported": true,
+          "async": false,
+          "generator": false,
+          "line": 382,
+          "signature": [
+            "xmax",
+            "xvar"
+          ],
+          "documented": true,
+          "summary": "Bl and Kms curves from a driver's Xmax and Xvar.",
+          "description": "Bl and Kms curves from a driver's Xmax and Xvar.\n\nBl(x) = exp(−x²/c²), with c set so Bl(Xmax) = 70%. With an Xvar, the\nvariation Bl leaves short of 6 dB there is made up by Kms(x) = 1 + k·x²;\nwhen Bl alone already reaches 6 dB before Xvar, the suspension is left\nlinear and `info.blAlone` says so — the two ratings then disagree under\nthese assumptions.\n\nBl is a table sampled over the whole stroke the circuit uses, Kms an exact\npolynomial over the same range; both stay symmetric past Xmax.",
+          "params": [
+            {
+              "name": "xmax",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Xmax, mm."
+            },
+            {
+              "name": "xvar",
+              "type": "number",
+              "optional": true,
+              "default": null,
+              "desc": "Xvar, mm; without it only Bl is built."
+            }
+          ],
+          "returns": {
+            "type": "{Bl: object, Kms: object, info: {blSixDbAt: number, blAtXvar: number|null, kmsAtXvar: number|null, blDb: number|null, kmsDb: number|null, blAlone: boolean}}",
+            "desc": "The two curves, and what they come to: where Bl alone reaches 6 dB, and at Xvar each ratio and its share of the variation."
+          },
+          "throws": [
+            {
+              "type": "Error",
+              "desc": "When Xmax is not a positive number, or Xvar is given but is not."
+            }
+          ],
+          "contract": {
+            "pre": [],
+            "post": [],
+            "invariant": [],
+            "mutates": [],
+            "sideEffect": [],
+            "reads": [],
+            "pure": true
+          },
+          "other": []
+        },
+        {
+          "name": "bl",
+          "qualified": "curvesFromRatings > bl",
+          "kind": "function",
+          "exported": false,
+          "async": false,
+          "generator": false,
+          "line": 393,
+          "signature": [
+            "x"
+          ],
+          "documented": true,
+          "summary": "Bl at an excursion.",
+          "description": "Bl at an excursion.",
+          "params": [
+            {
+              "name": "x",
+              "type": "number",
+              "optional": false,
+              "default": null,
+              "desc": "Excursion, mm."
+            }
+          ],
+          "returns": {
+            "type": "number",
+            "desc": "The ratio."
+          },
+          "throws": [],
           "contract": {
             "pre": [],
             "post": [],

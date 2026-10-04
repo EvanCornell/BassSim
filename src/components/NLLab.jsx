@@ -1,6 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { useStore } from '../store'
-import { NL_PARAMS, defaultNL, evalCurve, derivedRatios, parseCurveCSV, normalizeTable, curveHasContent } from '../engine/nonlinear'
+import {
+  NL_PARAMS, defaultNL, evalCurve, derivedRatios, parseCurveCSV, normalizeTable, curveHasContent,
+  curvesFromRatings, emptyCurve, BL_AT_XMAX, XVAR_DB,
+} from '../engine/nonlinear'
+import { BUILTIN_DRIVERS } from '../data/drivers'
 
 // Driver curve editor — large-signal Bl(x), Kms(x)/Cms(x), Le(x).
 // Parametric-EQ style editor: click the curve to add a control point, drag it
@@ -542,6 +546,129 @@ function PolyButton({ curve, param, refv, setCurve }) {
 }
 
 /**
+ * A driver's published Xvar, when it came from the built-in catalogue.
+ *
+ * @param {object} p - The driver node's params.
+ * @returns {number|null} Xvar, mm, or `null` when the catalogue does not list one.
+ * @pure
+ */
+function catalogueXvar(p) {
+  const d = BUILTIN_DRIVERS.find((r) => r.model === p.label && Number(r.Xmax) === Number(p.Xmax))
+    || BUILTIN_DRIVERS.find((r) => r.model === p.label)
+  const v = Number(d?.ext?.Xvar)
+  return v > 0 ? v : null
+}
+
+/**
+ * Build Bl(x) and Kms(x) from the driver's Xmax and Xvar, as a form behind a button.
+ *
+ * Bl falls to 70% at Xmax; the suspension stiffens by whatever the 6 dB at
+ * Xvar still needs (see `curvesFromRatings`). The form says what the curves
+ * come to before they are applied, and applying replaces both curves — and
+ * any Cms(x), which Kms(x) would override — and sets the driver's Xmax.
+ *
+ * @param {object} props - Component props.
+ * @param {object} props.driver - The driver node.
+ * @param {object} props.nl - Its curve set.
+ * @returns {React.ReactElement} The button, and its form when open.
+ * @sideEffect Holds the form's values in component state; applying updates the driver's params.
+ */
+function RatingsButton({ driver, nl }) {
+  const updateParams = useStore((s) => s.updateParams)
+  const p = driver.data.params
+  const [open, setOpen] = useState(false)
+  const [xm, setXm] = useState('')
+  const [xv, setXv] = useState('')
+  /**
+   * Open the form, filled from what was used last, or the driver and the catalogue.
+   *
+   * @returns {void}
+   * @sideEffect Writes component state.
+   */
+  const show = () => {
+    setXm(String(nl.ratings?.xmax ?? p.Xmax ?? ''))
+    setXv(String(nl.ratings?.xvar ?? catalogueXvar(p) ?? ''))
+    setOpen(!open)
+  }
+  const xmax = parseFloat(xm)
+  const xvar = xv.trim() === '' ? null : parseFloat(xv)
+  let out = null
+  let error = null
+  try { out = curvesFromRatings(xmax, xvar) } catch (err) { error = err.message }
+  const i = out?.info
+  /**
+   * A ratio as a percentage.
+   *
+   * @param {number} r - The ratio.
+   * @returns {string} e.g. `70%`.
+   * @pure
+   */
+  const pct = (r) => `${(r * 100).toFixed(0)}%`
+  /**
+   * A level in dB.
+   *
+   * @param {number} v - dB.
+   * @returns {string} e.g. `3.1 dB`.
+   * @pure
+   */
+  const db = (v) => `${v.toFixed(1)} dB`
+  /**
+   * Install the curves on the driver.
+   *
+   * @returns {void}
+   * @sideEffect Updates the driver's params, which triggers a resimulation.
+   */
+  const apply = () => {
+    if (!out) return
+    const has = curveHasContent(nl.Bl) || curveHasContent(nl.Kms) || curveHasContent(nl.Cms)
+    if (has && !confirm('Replace this driver\'s Bl(x) and Kms(x) curves (and clear any Cms(x))?')) return
+    updateParams(driver.id, {
+      Xmax: xmax,
+      nl: { ...nl, Bl: out.Bl, Kms: out.Kms, Cms: emptyCurve(), ratings: { xmax, xvar } },
+    })
+    setOpen(false)
+  }
+  return (
+    <span style={{ position: 'relative' }}>
+      <button onClick={show} title="Build Bl(x) and Kms(x) from the published Xmax and Xvar">From Xmax &amp; Xvar…</button>
+      {open && (
+        <div className="poly-pop ratings-pop">
+          <div className="ratings-note">
+            Bl falls to {pct(BL_AT_XMAX)} at Xmax. Xvar is where the output has varied by {XVAR_DB} dB — Bl
+            counts as 20·log, Kms as 10·log — and the suspension stiffens by what Bl leaves short.
+            Both curves are smooth, symmetric and continue past Xmax.
+          </div>
+          <div className="ratings-fields">
+            <label>Xmax <input type="number" min="0" step="0.1" value={xm} onChange={(e) => setXm(e.target.value)} /> mm</label>
+            <label>Xvar <input type="number" min="0" step="0.1" value={xv} placeholder="optional" onChange={(e) => setXv(e.target.value)} /> mm</label>
+          </div>
+          {error && <div className="ratings-out bad">{error}</div>}
+          {i && (
+            <div className="ratings-out">
+              <div>Bl: {pct(BL_AT_XMAX)} at {xmax} mm ({db(-20 * Math.log10(BL_AT_XMAX))}); alone it reaches {XVAR_DB} dB at {i.blSixDbAt.toFixed(1)} mm.</div>
+              {xvar > 0 && !i.blAlone && (
+                <div>At Xvar {xvar} mm: Bl {pct(i.blAtXvar)} ({db(i.blDb)}) + Kms {pct(i.kmsAtXvar)} ({db(i.kmsDb)}) = {XVAR_DB} dB.</div>
+              )}
+              {xvar > 0 && i.blAlone && (
+                <div className="bad">
+                  Bl alone is already {db(i.blDb)} down at {xvar} mm, so these figures disagree under a 70%-at-Xmax Bl:
+                  the suspension is left linear, and the output varies by {XVAR_DB} dB at {i.blSixDbAt.toFixed(1)} mm instead.
+                </div>
+              )}
+              {!(xvar > 0) && <div>No Xvar: only Bl(x) is built; Kms(x) stays linear.</div>}
+            </div>
+          )}
+          <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
+            <button onClick={() => setOpen(false)}>Cancel</button>
+            <button className="primary" disabled={!out} onClick={apply}>Build curves</button>
+          </div>
+        </div>
+      )}
+    </span>
+  )
+}
+
+/**
  * The driver curve editor: a driver's large-signal Bl, Kms/Cms and Le curves.
  *
  * Curves describe how each parameter varies with excursion, as a ratio of
@@ -670,6 +797,7 @@ export default function NLLab() {
         <span style={{ flex: 1 }} />
         <button onClick={() => fileRef.current?.click()}>Import CSV…</button>
         <PolyButton curve={curve} param={param} refv={refv} setCurve={setCurve} />
+        <RatingsButton driver={driver} nl={nl} />
         <input ref={fileRef} type="file" accept=".csv,.txt" style={{ display: 'none' }} onChange={importCSV} />
         {curve.table && <button className="danger" onClick={() => setCurve({ table: null })}>Clear table</button>}
         {curve.poly && <button className="danger" onClick={() => setCurve({ poly: null })}>Clear polynomial</button>}
@@ -705,4 +833,4 @@ export default function NLLab() {
 // Module-private functions, exposed for the contract test suite only
 // (test/contract/*). Not part of this module's public API — application code
 // must not import from here, and nothing outside the tests does.
-export const __internals = { refValue, fmtVal, niceTicks }
+export const __internals = { refValue, fmtVal, niceTicks, catalogueXvar }

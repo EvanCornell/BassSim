@@ -159,3 +159,11 @@ test('niceTicks: target defaults to 8', () => {
 test('niceTicks: @pure — twice with equal inputs gives equal output', () => {
   assert.deepStrictEqual(__internals.niceTicks(1.7, 9.3, 5), __internals.niceTicks(1.7, 9.3, 5))
 })
+
+// CONTRACT (catalogueXvar): the catalogue's Xvar for a driver applied from
+// it, matched by model; nothing for a driver it does not list.
+test('catalogueXvar: from the built-in catalogue, by model', () => {
+  const { catalogueXvar } = __internals
+  assert.equal(catalogueXvar({ label: '10BG76-8', Xmax: 9.6 }), 12)
+  assert.equal(catalogueXvar({ label: 'my own driver', Xmax: 5 }), null)
+})

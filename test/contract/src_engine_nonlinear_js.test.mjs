@@ -1,6 +1,10 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import {
+  curvesFromRatings,
+  variationDb,
+  BL_AT_XMAX,
+  XVAR_DB,
   emptyCurve,
   defaultNL,
   curveHasContent,
@@ -762,4 +766,60 @@ test('rawEval: @pure — repeatable and does not modify its arguments', () => {
   const before = structuredClone(c)
   assert.equal(rawEval(c, 2.5), rawEval(c, 2.5))
   assert.deepEqual(c, before)
+})
+
+// ---------------------------------------------------------------------------
+// curvesFromRatings
+// ---------------------------------------------------------------------------
+
+// CONTRACT (variationDb): Bl counts as 20·log, Kms as 10·log — 70% Bl and
+// 200% Kms are each about 3 dB.
+test('variationDb: Bl squared, Kms linear', () => {
+  assert.ok(Math.abs(variationDb(0.7, 1) - 3.098) < 1e-3)
+  assert.ok(Math.abs(variationDb(1, 2) - 3.010) < 1e-3)
+  assert.equal(variationDb(1, 1), 0)
+})
+
+// CONTRACT: Bl is 70% at Xmax; the variation is exactly 6 dB at Xvar and
+// grows with excursion — smooth, symmetric, continuing past Xmax.
+test('curvesFromRatings: 70% Bl at Xmax, 6 dB at Xvar, smooth and symmetric', () => {
+  for (const [xmax, xvar] of [[8, 10], [9.6, 12], [10, 8], [5, 6.5]]) {
+    const { Bl, Kms, info } = curvesFromRatings(xmax, xvar)
+    const v = (x) => variationDb(evalCurve(Bl, x, xmax), evalCurve(Kms, x, xmax))
+    assert.ok(Math.abs(evalCurve(Bl, xmax, xmax) - BL_AT_XMAX) < 1e-3, `Bl at Xmax ${xmax}`)
+    assert.ok(Math.abs(v(xvar) - XVAR_DB) < 0.02, `${xmax}/${xvar}: ${v(xvar)} dB at Xvar`)
+    assert.equal(info.blAlone, false)
+    assert.ok(Math.abs(info.blDb + info.kmsDb - XVAR_DB) < 1e-9)
+    let last = -1
+    for (let x = 0; x <= 2 * xvar; x += 0.25) {
+      const now = v(x)
+      assert.ok(now >= last - 1e-9, `variation grows with excursion (${x} mm)`)
+      assert.ok(Math.abs(now - v(-x)) < 1e-6, 'symmetric')
+      last = now
+    }
+    assert.ok(evalCurve(Bl, 1.5 * xmax, xmax) < BL_AT_XMAX, 'Bl keeps falling past Xmax')
+    // smooth: no step in the slope anywhere over the stroke
+    const step = 0.25
+    let maxCurv = 0
+    for (let x = -2 * xvar; x <= 2 * xvar; x += step) {
+      const c = v(x + step) - 2 * v(x) + v(x - step)
+      maxCurv = Math.max(maxCurv, Math.abs(c))
+    }
+    assert.ok(maxCurv < 0.1, `smooth: second difference ${maxCurv}`)
+  }
+})
+
+// CONTRACT: without Xvar only Bl is built; when Bl alone passes 6 dB before
+// Xvar the suspension is left linear and the disagreement is reported.
+test('curvesFromRatings: no Xvar, and an Xvar Bl alone already exceeds', () => {
+  const noXvar = curvesFromRatings(8)
+  assert.equal(curveHasContent(noXvar.Kms), false)
+  assert.equal(noXvar.info.blAtXvar, null)
+  const far = curvesFromRatings(6, 12)
+  assert.equal(far.info.blAlone, true)
+  assert.equal(curveHasContent(far.Kms), false)
+  assert.ok(far.info.blSixDbAt < 12)
+  assert.ok(Math.abs(variationDb(evalCurve(far.Bl, far.info.blSixDbAt, 6), 1) - XVAR_DB) < 0.02)
+  assert.throws(() => curvesFromRatings(0, 5), /Xmax/)
+  assert.throws(() => curvesFromRatings(5, -1), /Xvar/)
 })

@@ -21,7 +21,7 @@ no implementation. This is the sole input to the blind contract test suite.
 | [`src/components/FlowCanvas.jsx`](src_components_FlowCanvas_jsx.spec.md) | 10 | 2 | 8 |
 | [`src/components/MenuBar.jsx`](src_components_MenuBar_jsx.spec.md) | 36 | 1 | 35 |
 | [`src/components/MenuItem.jsx`](src_components_MenuItem_jsx.spec.md) | 2 | 2 | 0 |
-| [`src/components/NLLab.jsx`](src_components_NLLab_jsx.spec.md) | 24 | 4 | 20 |
+| [`src/components/NLLab.jsx`](src_components_NLLab_jsx.spec.md) | 30 | 5 | 25 |
 | [`src/components/NodePalette.jsx`](src_components_NodePalette_jsx.spec.md) | 2 | 1 | 1 |
 | [`src/components/OutputPanel.jsx`](src_components_OutputPanel_jsx.spec.md) | 39 | 8 | 31 |
 | [`src/components/ParamPanel.jsx`](src_components_ParamPanel_jsx.spec.md) | 28 | 2 | 26 |
@@ -49,7 +49,7 @@ no implementation. This is the sole input to the blind contract test suite.
 | [`src/engine/complex.js`](src_engine_complex_js.spec.md) | 18 | 18 | 0 |
 | [`src/engine/geometry.js`](src_engine_geometry_js.spec.md) | 5 | 5 | 0 |
 | [`src/engine/metrics.js`](src_engine_metrics_js.spec.md) | 4 | 2 | 2 |
-| [`src/engine/nonlinear.js`](src_engine_nonlinear_js.spec.md) | 13 | 13 | 0 |
+| [`src/engine/nonlinear.js`](src_engine_nonlinear_js.spec.md) | 16 | 15 | 1 |
 | [`src/engine/pipeline.js`](src_engine_pipeline_js.spec.md) | 5 | 2 | 3 |
 | [`src/engine/pool.js`](src_engine_pool_js.spec.md) | 16 | 2 | 14 |
 | [`src/engine/poolHost.js`](src_engine_poolHost_js.spec.md) | 5 | 3 | 2 |
@@ -103,4 +103,4 @@ no implementation. This is the sole input to the blind contract test suite.
 | [`test/contracts.mjs`](test_contracts_mjs.spec.md) | 2 | 0 | 2 |
 | [`test/drivers.mjs`](test_drivers_mjs.spec.md) | 2 | 0 | 2 |
 | [`test/support/loader.mjs`](test_support_loader_mjs.spec.md) | 2 | 2 | 0 |
-| **Total** | **1101** | **576** | **525** |
+| **Total** | **1110** | **579** | **531** |

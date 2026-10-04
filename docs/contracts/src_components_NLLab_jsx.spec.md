@@ -11,7 +11,7 @@ so this is the vocabulary they assume.
 
 ### `__internals`
 
-Keys: `refValue`, `fmtVal`, `niceTicks`
+Keys: `refValue`, `fmtVal`, `niceTicks`, `catalogueXvar`
 
 ## EXPORTED (1)
 
@@ -34,7 +34,7 @@ frequency sweep does not, since it is the small-signal model.
 
 - Subscribes to the store; edits update the driver's params.
 
-## INTERNAL (3)
+## INTERNAL (4)
 
 ### `refValue(param, p)`
 
@@ -105,7 +105,24 @@ exactly on it.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
-## UNREACHABLE (20)
+### `catalogueXvar(p)`
+
+- **Reachability:** INTERNAL
+- **Obtain via:** import { __internals } from '../../src/components/NLLab.jsx'  →  __internals.catalogueXvar
+
+A driver's published Xvar, when it came from the built-in catalogue.
+
+**Parameters**
+
+- `p` — `object` — The driver node's params.
+
+**Returns**
+
+- `number|null` — Xvar, mm, or `null` when the catalogue does not list one.
+
+**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
+
+## UNREACHABLE (25)
 
 ### `CurveEditor(props)`
 
@@ -469,6 +486,96 @@ on. The curve becomes P(x)/P(0), held at its end values outside that range.
 **Side effects**
 
 - Holds the form's text in component state.
+
+### `RatingsButton(props)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+Build Bl(x) and Kms(x) from the driver's Xmax and Xvar, as a form behind a button.
+
+Bl falls to 70% at Xmax; the suspension stiffens by whatever the 6 dB at
+Xvar still needs (see `curvesFromRatings`). The form says what the curves
+come to before they are applied, and applying replaces both curves — and
+any Cms(x), which Kms(x) would override — and sets the driver's Xmax.
+
+**Parameters**
+
+- `props` — `object` — Component props.
+- `props.driver` — `object` — The driver node.
+- `props.nl` — `object` — Its curve set.
+
+**Returns**
+
+- `React.ReactElement` — The button, and its form when open.
+
+**Side effects**
+
+- Holds the form's values in component state; applying updates the driver's params.
+
+### `RatingsButton > show()`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+Open the form, filled from what was used last, or the driver and the catalogue.
+
+**Returns**
+
+- `void`
+
+**Side effects**
+
+- Writes component state.
+
+### `RatingsButton > pct(r)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+A ratio as a percentage.
+
+**Parameters**
+
+- `r` — `number` — The ratio.
+
+**Returns**
+
+- `string` — e.g. `70%`.
+
+**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
+
+### `RatingsButton > db(v)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+A level in dB.
+
+**Parameters**
+
+- `v` — `number` — dB.
+
+**Returns**
+
+- `string` — e.g. `3.1 dB`.
+
+**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
+
+### `RatingsButton > apply()`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+Install the curves on the driver.
+
+**Returns**
+
+- `void`
+
+**Side effects**
+
+- Updates the driver's params, which triggers a resimulation.
 
 ### `NLLab > setCurve(patch)`
 

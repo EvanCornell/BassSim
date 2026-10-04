@@ -32,11 +32,23 @@ normally has one or the other rather than both.
 
 Values: `Bl`, `Cms`, `Kms`, `Le`
 
+### `BL_AT_XMAX`
+
+Bl at Xmax, as a ratio of its rest value.
+
+Value: `0.7`
+
+### `XVAR_DB`
+
+The output variation that defines Xvar, dB.
+
+Value: `6`
+
 ### `__internals`
 
 Keys: `baseValue`, `rawEval`
 
-## EXPORTED (11)
+## EXPORTED (13)
 
 ### `emptyCurve()`
 
@@ -293,6 +305,55 @@ field — are skipped, so exports that carry a title row import without editing.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
+### `variationDb(bl, kms)`
+
+- **Reachability:** EXPORTED
+- **Obtain via:** import { variationDb } from '../../src/engine/nonlinear.js'
+
+The output variation from a Bl and a Kms ratio, dB.
+
+**Parameters**
+
+- `bl` — `number` — Bl, as a ratio of its rest value.
+- `kms` — `number` — Kms, as a ratio of its rest value.
+
+**Returns**
+
+- `number` — −20·log10(bl) + 10·log10(kms): positive as Bl falls or Kms rises.
+
+**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
+
+### `curvesFromRatings(xmax, xvar)`
+
+- **Reachability:** EXPORTED
+- **Obtain via:** import { curvesFromRatings } from '../../src/engine/nonlinear.js'
+
+Bl and Kms curves from a driver's Xmax and Xvar.
+
+Bl(x) = exp(−x²/c²), with c set so Bl(Xmax) = 70%. With an Xvar, the
+variation Bl leaves short of 6 dB there is made up by Kms(x) = 1 + k·x²;
+when Bl alone already reaches 6 dB before Xvar, the suspension is left
+linear and `info.blAlone` says so — the two ratings then disagree under
+these assumptions.
+
+Bl is a table sampled over the whole stroke the circuit uses, Kms an exact
+polynomial over the same range; both stay symmetric past Xmax.
+
+**Parameters**
+
+- `xmax` — `number` — Xmax, mm.
+- `xvar` — `number` _(optional)_ — Xvar, mm; without it only Bl is built.
+
+**Returns**
+
+- `{Bl: object, Kms: object, info: {blSixDbAt: number, blAtXvar: number|null, kmsAtXvar: number|null, blDb: number|null, kmsDb: number|null, blAlone: boolean}}` — The two curves, and what they come to: where Bl alone reaches 6 dB, and at Xvar each ratio and its share of the variation.
+
+**Throws**
+
+- `Error` — When Xmax is not a positive number, or Xvar is given but is not.
+
+**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
+
 ## INTERNAL (2)
 
 ### `baseValue(curve, x)`
@@ -345,5 +406,24 @@ to extrapolate beyond Xmax.
 **Returns**
 
 - `number` — Unclamped ratio at x, which may be zero or negative for an aggressive curve.
+
+**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
+
+## UNREACHABLE (1)
+
+### `curvesFromRatings > bl(x)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+Bl at an excursion.
+
+**Parameters**
+
+- `x` — `number` — Excursion, mm.
+
+**Returns**
+
+- `number` — The ratio.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
