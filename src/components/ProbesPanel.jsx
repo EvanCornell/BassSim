@@ -95,7 +95,7 @@ export default function ProbesPanel() {
               {along && (
                 <div className="param-row">
                   <label>Distance</label>
-                  <ExprInput value={p.at.position} min={0} onCommit={(v) => edit(i, { at: { node: p.at.node, position: v } }, true)} />
+                  <ExprInput value={p.at.position} min={0} onCommit={(v) => edit(i, { at: { node: p.at.node, position: v } })} />
                   <span className="unit">cm</span>
                 </div>
               )}

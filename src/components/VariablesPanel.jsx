@@ -1,9 +1,49 @@
 import React from 'react'
 import { useStore } from '../store'
 import ExprInput, { shortNum } from './ExprInput'
+import { useDraft } from './NumInput'
 import { useParamValues } from '../useResolved'
 import { isValidParamName } from '../schema/params'
 import { freshId } from '../schema/extras'
+
+/** Why a parameter name is refused. */
+const NAME_RULE = 'A name is letters, digits and _, starting with a letter, and not a function or constant name'
+
+/**
+ * Read typed text as a parameter name.
+ *
+ * @param {string} t - The text.
+ * @returns {{ok: boolean, value?: string, error?: string}} The trimmed name, or why it is refused.
+ * @pure
+ */
+const readName = (t) => (isValidParamName(t.trim()) ? { ok: true, value: t.trim() } : { ok: false, error: NAME_RULE })
+
+/**
+ * A parameter's name, applied on Enter or on leaving the box.
+ *
+ * @param {object} props - Component props.
+ * @param {string} props.name - The stored name.
+ * @param {boolean} props.stored - Whether the stored name is valid.
+ * @param {Function} props.onCommit - Called with a new valid name.
+ * @returns {React.ReactElement} The input.
+ * @sideEffect Holds the typed text in component state.
+ */
+function NameInput({ name, stored, onCommit }) {
+  const d = useDraft({ value: name, onCommit, read: readName })
+  const bad = d.editing ? d.error : (stored ? null : NAME_RULE)
+  return (
+    <input
+      className={`vars-name${bad ? ' invalid' : ''}`}
+      value={d.text}
+      spellCheck={false}
+      autoComplete="off"
+      title={bad || 'Name'}
+      onChange={d.onChange}
+      onBlur={d.onBlur}
+      onKeyDown={d.onKeyDown}
+    />
+  )
+}
 
 /**
  * The project's named parameters: values defined once and used by name.
@@ -45,15 +85,9 @@ export default function VariablesPanel() {
             const nameOk = isValidParamName(p.name)
             return (
               <div className="vars-row" key={i}>
-                <input
-                  className={`vars-name${nameOk ? '' : ' invalid'}`}
-                  value={p.name}
-                  spellCheck={false}
-                  title={nameOk ? 'Name' : 'A name is letters, digits and _, starting with a letter, and not a function or constant name'}
-                  onChange={(e) => edit(i, { name: e.target.value.trim() }, true)}
-                />
+                <NameInput name={p.name} stored={nameOk} onCommit={(name) => edit(i, { name })} />
                 <span className="vars-eq">=</span>
-                <ExprInput value={p.value} onCommit={(v) => edit(i, { value: v }, true)} />
+                <ExprInput value={p.value} onCommit={(v) => edit(i, { value: v })} />
                 <span className="vars-val" title="Resolved value">{p.name in values ? shortNum(values[p.name]) : '?'}</span>
                 <input className="vars-note" value={p.note || ''} placeholder="note" onChange={(e) => edit(i, { note: e.target.value || undefined }, true)} />
                 <button className="icon-btn" title="Remove" onClick={() => setExtra('params', params.filter((_, k) => k !== i))}>✕</button>

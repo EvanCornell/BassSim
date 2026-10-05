@@ -5,6 +5,7 @@ import {
 } from 'recharts'
 import { useStore } from '../store'
 import { readSnapshots } from '../workspace'
+import NumInput from './NumInput'
 
 /**
  * Trace colours, cycled per series — theme tokens, so a chart follows the
@@ -399,9 +400,13 @@ function useYScale(id, fitDomain) {
     <>
       {ys.mode === 'manual' && (
         <label title="Y-axis bounds">
-          <input type="number" placeholder="min" value={ys.min} onChange={(e) => setYs({ min: e.target.value })} />
+          <NumInput placeholder="min" value={ys.min} allowEmpty
+            validate={(v) => (ys.max === '' || v < parseFloat(ys.max) ? null : 'Must be below the maximum')}
+            onCommit={(v) => setYs({ min: v ?? '' })} />
           –
-          <input type="number" placeholder="max" value={ys.max} onChange={(e) => setYs({ max: e.target.value })} />
+          <NumInput placeholder="max" value={ys.max} allowEmpty
+            validate={(v) => (ys.min === '' || v > parseFloat(ys.min) ? null : 'Must be above the minimum')}
+            onCommit={(v) => setYs({ max: v ?? '' })} />
         </label>
       )}
       <div className="seg" role="radiogroup" aria-label="Y-axis scale"
@@ -825,7 +830,7 @@ function VelocityTab() {
     <>
       <div className="plot-controls">
         <label title="Approximate turbulence (chuffing) onset velocity">Threshold
-          <input type="number" value={vThreshold} onChange={(e) => { const v = parseFloat(e.target.value); if (v > 0) updateSettings({ vThreshold: v }) }} /> m/s
+          <NumInput value={vThreshold} above="0" onCommit={(v) => updateSettings({ vThreshold: v })} /> m/s
         </label>
         {yControl}
         <SolveTime />
@@ -1035,7 +1040,7 @@ function PhaseTab() {
     <>
       <div className="plot-controls">
         <label><input type="checkbox" checked={settings.unwrapPhase} onChange={(e) => updateSettings({ unwrapPhase: e.target.checked })} />unwrap</label>
-        <label>Delay offset <input type="number" step="0.5" value={off} onChange={(e) => { const v = parseFloat(e.target.value); if (!Number.isNaN(v)) updateSettings({ delayOffset: v }) }} /> ms</label>
+        <label>Delay offset <NumInput step="0.5" value={off} onCommit={(v) => updateSettings({ delayOffset: v })} /> ms</label>
         {yControl}
         <SolveTime />
       </div>

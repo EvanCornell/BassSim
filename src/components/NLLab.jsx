@@ -5,6 +5,7 @@ import {
   curvesFromRatings, emptyCurve, BL_AT_XMAX, XVAR_DB,
 } from '../engine/nonlinear'
 import { BUILTIN_DRIVERS } from '../data/drivers'
+import NumInput from './NumInput'
 
 // Driver curve editor — large-signal Bl(x), Kms(x)/Cms(x), Le(x).
 // Parametric-EQ style editor: click the curve to add a control point, drag it
@@ -474,10 +475,10 @@ function CurveEditor({ driverId, param, nl, xmax, width, height, refv }) {
         {sel ? (
           <>
             <span>Point {selected + 1}:</span>
-            <label>x <input type="number" step="0.5" value={sel.x} style={{ width: 64 }}
-              onChange={(e) => { const val = parseFloat(e.target.value); if (isFinite(val)) commit({ points: curve.points.map((p, k) => k === selected ? { ...p, x: val } : p) }) }} /> mm</label>
-            <label>gain <input type="number" step="0.05" value={sel.g} style={{ width: 64 }}
-              onChange={(e) => { const val = parseFloat(e.target.value); if (isFinite(val)) commit({ points: curve.points.map((p, k) => k === selected ? { ...p, g: val } : p) }) }} /></label>
+            <label>x <NumInput step="0.5" value={sel.x} style={{ width: 64 }}
+              onCommit={(val) => commit({ points: curve.points.map((p, k) => k === selected ? { ...p, x: val } : p) })} /> mm</label>
+            <label>gain <NumInput step="0.05" value={sel.g} style={{ width: 64 }}
+              onCommit={(val) => commit({ points: curve.points.map((p, k) => k === selected ? { ...p, g: val } : p) })} /></label>
             <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>width
               <input type="range" min="1" max={Math.ceil(xmax * 1.5)} step="0.5" value={sel.w} style={{ width: 160 }}
                 onChange={(e) => commit({ points: curve.points.map((p, k) => k === selected ? { ...p, w: parseFloat(e.target.value) } : p) })} />
@@ -524,8 +525,8 @@ function PolyButton({ curve, param, refv, setCurve }) {
           <textarea rows={3} value={text} spellCheck={false} placeholder="e.g. 15.2, -0.021, -0.0082, 0.00011"
             onChange={(e) => setText(e.target.value)} />
           <div style={{ display: 'flex', gap: 6, alignItems: 'center', fontSize: 12, margin: '6px 0' }}>
-            Valid from <input type="number" value={lo} style={{ width: 60 }} onChange={(e) => setLo(e.target.value)} />
-            to <input type="number" value={hi} style={{ width: 60 }} onChange={(e) => setHi(e.target.value)} /> mm
+            Valid from <NumInput value={lo} style={{ width: 60 }} validate={(v) => (v < hi ? null : 'Must be below the upper limit')} onCommit={setLo} />
+            to <NumInput value={hi} style={{ width: 60 }} above={lo} onCommit={setHi} /> mm
           </div>
           {coeffs.length > 0 && Number.isFinite(coeffs[0]) && (
             <div style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 6 }}>
@@ -639,8 +640,8 @@ function RatingsButton({ driver, nl }) {
             Both curves are smooth, symmetric and continue past Xmax.
           </div>
           <div className="ratings-fields">
-            <label>Xmax <input type="number" min="0" step="0.1" value={xm} onChange={(e) => setXm(e.target.value)} /> mm</label>
-            <label>Xvar <input type="number" min="0" step="0.1" value={xv} placeholder="optional" onChange={(e) => setXv(e.target.value)} /> mm</label>
+            <label>Xmax <input className={`num${xm.trim() && !(parseFloat(xm) > 0) ? ' invalid' : ''}`} inputMode="decimal" value={xm} onChange={(e) => setXm(e.target.value)} /> mm</label>
+            <label>Xvar <input className={`num${xv.trim() && !(parseFloat(xv) > 0) ? ' invalid' : ''}`} inputMode="decimal" value={xv} placeholder="optional" onChange={(e) => setXv(e.target.value)} /> mm</label>
           </div>
           {error && <div className="ratings-out bad">{error}</div>}
           {i && (
@@ -780,8 +781,8 @@ export default function NLLab() {
         </div>
         <label className="tb-group" title="Linear excursion limit — red markers on the chart; used by the extrapolation toggle and the excursion plot">
           Xmax
-          <input type="number" step="0.5" min="1" value={xmax} style={{ width: 60 }}
-            onChange={(e) => { const val = parseFloat(e.target.value); if (val > 0) updateParams(driver.id, { Xmax: val }) }} />
+          <NumInput step="0.5" above="0" value={xmax} style={{ width: 60 }}
+            onCommit={(val) => updateParams(driver.id, { Xmax: val })} />
           mm
         </label>
         <label style={{ display: 'flex', gap: 5, alignItems: 'center', fontSize: 12, cursor: 'pointer' }}

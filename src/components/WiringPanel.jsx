@@ -208,7 +208,7 @@ function ChannelCard({ ch, index, ctx }) {
       </div>
       <div className="param-row">
         <label title="The channel's output at master 0 dB. This is its gain: the master moves every channel together from here.">Volts @ 0 dB</label>
-        <ExprInput value={ch.volts} min={0} step={0.1} onCommit={(v) => patch({ volts: v }, true)} />
+        <ExprInput value={ch.volts} min={0} step={0.1} onCommit={(v) => patch({ volts: v })} />
         <span className="unit">V</span>
       </div>
       <div className="channel-readout">
@@ -218,7 +218,7 @@ function ChannelCard({ ch, index, ctx }) {
       </div>
       <div className="param-row">
         <label title="Amplifier output resistance plus cable, in series with the load">Output R</label>
-        <ExprInput value={ch.outputOhms ?? 0} min={0} step={0.01} onCommit={(v) => patch({ outputOhms: v }, true)} />
+        <ExprInput value={ch.outputOhms ?? 0} min={0} step={0.01} onCommit={(v) => patch({ outputOhms: v })} />
         <span className="unit">Ω</span>
       </div>
       <div className="param-row">
@@ -231,7 +231,7 @@ function ChannelCard({ ch, index, ctx }) {
       </div>
       <div className="param-row">
         <label>Delay</label>
-        <ExprInput value={dsp.delayMs ?? 0} min={0} step={0.1} onCommit={(v) => patch({ dsp: { ...dsp, delayMs: v } }, true)} />
+        <ExprInput value={dsp.delayMs ?? 0} min={0} step={0.1} onCommit={(v) => patch({ dsp: { ...dsp, delayMs: v } })} />
         <span className="unit">ms</span>
       </div>
       <div className="sub-section">
@@ -338,7 +338,7 @@ export default function WiringPanel() {
         <h4>Master</h4>
         <div className="param-row">
           <label title="Moves every channel together. The toolbar's voltage sets this too: it is the first channel's output at the master.">Level</label>
-          <ExprInput value={wiring.masterDb ?? 0} step={0.5} onCommit={(v) => setExtra('wiring', { ...wiring, masterDb: v }, false)} />
+          <ExprInput value={wiring.masterDb ?? 0} step={0.5} onCommit={(v) => setExtra('wiring', { ...wiring, masterDb: v })} />
           <span className="unit">dB</span>
         </div>
         {unwired.length > 0 && (

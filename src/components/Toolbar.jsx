@@ -9,6 +9,7 @@ import React from 'react'
 import { useStore, SNAPSHOT_LIMIT, isLocked } from '../store'
 import { readSnapshots } from '../workspace'
 import { TOOLBAR_ITEMS, metricValue } from '../toolbarItems'
+import NumInput from './NumInput'
 
 // ---------- individual controls ----------
 
@@ -48,10 +49,8 @@ function VoltageControl() {
   return (
     <div className="tb-pill tb-voltage" title="Amplifier drive voltage — power follows as V²/Z">
       <label>Drive</label>
-      <input
-        type="number" step="0.01" min="0" value={settings.voltage} disabled={locked}
-        onChange={(e) => { const x = parseFloat(e.target.value); if (x >= 0) setAmp('voltage', x) }}
-      />
+      <NumInput step="0.01" min="0" value={settings.voltage} disabled={locked}
+        onCommit={(x) => setAmp('voltage', x)} />
       <label>V</label>
       <span className="tb-derived">{settings.power >= 100 ? settings.power.toFixed(0) : settings.power.toFixed(1)} W</span>
     </div>
@@ -71,11 +70,12 @@ function SweepRange() {
   return (
     <div className="tb-pill tb-group" title="Frequency sweep range">
       <label>Sweep</label>
-      <input type="number" value={settings.fmin} min="1" disabled={locked}
-        onChange={(e) => { const v = parseFloat(e.target.value); if (v > 0) updateSettings({ fmin: v }) }} />
+      <NumInput value={settings.fmin} above="0" disabled={locked}
+        validate={(v) => (v < settings.fmax ? null : 'Must be below the end frequency')}
+        onCommit={(v) => updateSettings({ fmin: v })} />
       <label>–</label>
-      <input type="number" value={settings.fmax} disabled={locked}
-        onChange={(e) => { const v = parseFloat(e.target.value); if (v > settings.fmin) updateSettings({ fmax: v }) }} />
+      <NumInput value={settings.fmax} above={settings.fmin} disabled={locked}
+        onCommit={(v) => updateSettings({ fmax: v })} />
       <label>Hz</label>
     </div>
   )

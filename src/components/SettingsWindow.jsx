@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { THEMES } from '../theme'
 import { useStore } from '../store'
+import NumInput from './NumInput'
 import { TOOLBAR_ITEMS, TOOLBAR_GROUPS, ALL_ITEM_IDS } from '../toolbarItems'
 import { COMMANDS, COMMAND_GROUPS, DEFAULT_BINDINGS, comboFromEvent, formatCombo } from '../keymap'
 
@@ -68,16 +69,17 @@ function ApplicationSection() {
         </div>
         <label style={row}>
           Frequency sweep
-          <input
-            type="number" min="1" style={{ ...inputStyle, width: 80, marginBottom: 0 }}
+          <NumInput
+            above="0" style={{ ...inputStyle, width: 80, marginBottom: 0 }}
             value={settings.fmin}
-            onChange={(e) => { const v = parseFloat(e.target.value); if (v > 0) updateSettings({ fmin: v }) }}
+            validate={(v) => (v < settings.fmax ? null : 'Must be below the end frequency')}
+            onCommit={(v) => updateSettings({ fmin: v })}
           />
           to
-          <input
-            type="number" style={{ ...inputStyle, width: 80, marginBottom: 0 }}
-            value={settings.fmax}
-            onChange={(e) => { const v = parseFloat(e.target.value); if (v > settings.fmin) updateSettings({ fmax: v }) }}
+          <NumInput
+            style={{ ...inputStyle, width: 80, marginBottom: 0 }}
+            value={settings.fmax} above={settings.fmin}
+            onCommit={(v) => updateSettings({ fmax: v })}
           /> Hz
         </label>
         <label style={{ ...row, cursor: 'pointer', marginBottom: 0 }}>
@@ -94,10 +96,10 @@ function ApplicationSection() {
         <h4 style={h}>Charts</h4>
         <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, marginBottom: 8 }}>
           Port velocity warning threshold
-          <input
-            type="number" style={{ ...inputStyle, width: 80, marginBottom: 0 }}
-            value={settings.vThreshold}
-            onChange={(e) => { const v = parseFloat(e.target.value); if (v > 0) updateSettings({ vThreshold: v }) }}
+          <NumInput
+            style={{ ...inputStyle, width: 80, marginBottom: 0 }}
+            value={settings.vThreshold} above="0"
+            onCommit={(v) => updateSettings({ vThreshold: v })}
           /> m/s
         </label>
         <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, cursor: 'pointer' }}>

@@ -7,6 +7,7 @@ import { LockNote } from './Records'
 import { decimate, rfft } from '../spice/dsp'
 import { splOf, levels, CEA2010_LIMITS } from '../spice/timedomain'
 import NLLab from './NLLab'
+import NumInput, { ListInput } from './NumInput'
 
 /** Trace colours, shared with the frequency charts. */
 const SERIES = ['var(--c1)', 'var(--c2)', 'var(--c3)', 'var(--c4)', 'var(--c5)', 'var(--c6)']
@@ -184,8 +185,7 @@ function Num({ label, value, onChange, unit, min, step, title }) {
   return (
     <div className="param-row">
       <label title={title || ''}>{label}</label>
-      <input type="number" value={value} step={step || 'any'} min={min}
-        onChange={(e) => { const v = parseFloat(e.target.value); if (Number.isFinite(v) && (min == null || v >= min)) onChange(v) }} />
+      <NumInput value={value} step={step} min={min} onCommit={onChange} />
       <span className="unit">{unit || ''}</span>
     </div>
   )
@@ -572,14 +572,6 @@ const MODES = [
   ['maxspl', 'Maximum SPL (CEA-2010 style)'],
 ]
 
-/**
- * Parse a comma-separated list of numbers.
- *
- * @param {string} text - The list.
- * @returns {number[]} The finite numbers in it.
- * @pure
- */
-const numList = (text) => String(text).split(/[\s,;]+/).map(Number).filter(Number.isFinite)
 
 /**
  * Controls for the distortion analyses.
@@ -615,7 +607,7 @@ function DistortionControls({ cfg, set }) {
         {m === 'compression' && (
           <div className="param-row">
             <label title="Levels over every channel's level, dB">Levels</label>
-            <input defaultValue={cfg.levels.join(', ')} onBlur={(e) => { const l = numList(e.target.value); if (l.length) set({ levels: l }) }} />
+            <ListInput value={cfg.levels} onCommit={(l) => set({ levels: l })} />
             <span className="unit">dB</span>
           </div>
         )}
@@ -623,7 +615,7 @@ function DistortionControls({ cfg, set }) {
           <>
             <div className="param-row">
               <label title="Burst frequencies, Hz — CEA-2010 uses the third-octave centres from 20 Hz">Bands</label>
-              <input defaultValue={cfg.bands.join(', ')} onBlur={(e) => { const l = numList(e.target.value); if (l.length) set({ bands: l }) }} />
+              <ListInput value={cfg.bands} above="0" onCommit={(l) => set({ bands: l })} />
               <span className="unit">Hz</span>
             </div>
             <Num label="Excursion limit" value={cfg.xLimit} unit="×Xmax" min={0} step={0.1} onChange={(v) => set({ xLimit: v })}
@@ -1023,8 +1015,8 @@ function ExitLosses() {
           {['throatK', 'mouthK'].map((k) => (
             <div className="param-row" key={k}>
               <label>{k === 'throatK' ? 'Throat K' : 'Mouth K'}</label>
-              <input type="number" step="0.1" min="0" value={n.data.params[k] ?? 0}
-                onChange={(e) => { const v = parseFloat(e.target.value); if (v >= 0) updateParams(n.id, { [k]: v }) }} />
+              <NumInput step="0.1" min="0" value={n.data.params[k] ?? 0}
+                onCommit={(v) => updateParams(n.id, { [k]: v })} />
               <span className="unit" />
             </div>
           ))}

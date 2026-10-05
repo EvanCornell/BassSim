@@ -1,9 +1,7 @@
-import React, { useState } from 'react'
+import React from 'react'
+import { NUMBER, useDraft } from './NumInput'
 import { evaluateExpression, isExpression } from '../schema/params'
 import { useParamValues } from '../useResolved'
-
-/** A plain number as typed: sign, digits, one point, optional exponent. */
-const NUMBER = /^[-+]?(\d+\.?\d*|\.\d+)(e[-+]?\d+)?$/i
 
 /**
  * Round a value for display without trailing noise.
@@ -35,65 +33,64 @@ export function readTyped(text, values) {
  * A numeric input that also takes an expression over the named params.
  *
  * Typing a number stores a number; typing anything else stores it as an
- * expression once it resolves, and shows what it resolves to. Text that does
- * not resolve yet — half an expression, a misspelt name — is held in the box,
- * outlined, and never written, so a half-typed edit cannot break the run.
- * Arrow keys step a plain number.
+ * expression, and shows what it resolves to. Anything can be typed: text that
+ * is not a value the field takes — half an expression, a misspelt name, a
+ * number under the minimum — turns the box red and is not applied. Enter or
+ * leaving the box applies valid text; leaving with invalid text puts the
+ * stored value back. Arrow keys step a plain number.
  *
  * @param {object} props - Component props.
  * @param {number|string|null|undefined} props.value - The stored value.
  * @param {Function} props.onCommit - Called with a number or an expression string.
  * @param {number} [props.step] - Arrow-key step for a plain number.
  * @param {number} [props.min] - Smallest number accepted.
+ * @param {number} [props.above] - A number must be greater than this.
  * @param {string} [props.placeholder] - Shown when empty.
  * @param {boolean} [props.disabled] - Disable the input.
  * @param {string} [props.title] - Tooltip.
  * @returns {React.ReactElement} The input, with the resolved value beside an expression.
  * @sideEffect Subscribes to the store for the named params.
  */
-export default function ExprInput({ value, onCommit, step, min, placeholder, disabled, title }) {
+export default function ExprInput({ value, onCommit, step, min, above, placeholder, disabled, title }) {
   const { values } = useParamValues()
-  const [text, setText] = useState(null)
-  const [bad, setBad] = useState(null)
-  const shown = text ?? (value == null ? '' : String(value))
-  const expr = isExpression(value)
-  const resolved = expr ? evaluateExpression(value, values) : null
   /**
-   * Store what was typed if it can be stored.
+   * Read typed text as a value this field takes.
    *
    * @param {string} t - The text.
-   * @returns {void}
-   * @sideEffect Calls `onCommit` when the text is a usable value.
+   * @returns {{ok: boolean, value?: number|string, error?: string}} The value, or why it is refused.
+   * @pure
    */
-  const commit = (t) => {
+  const read = (t) => {
     const r = readTyped(t, values)
-    if (r.ok && typeof r.value === 'number' && min != null && r.value < Number(min)) {
-      setBad(`must be at least ${min}`)
-      return
-    }
-    setBad(r.ok ? null : r.error)
-    if (r.ok) onCommit(r.value)
+    if (r.ok && typeof r.value === 'number' && min != null && r.value < Number(min)) return { ok: false, error: `Must be at least ${min}` }
+    if (r.ok && typeof r.value === 'number' && above != null && !(r.value > Number(above))) return { ok: false, error: `Must be more than ${above}` }
+    return r.error === 'empty' ? { ok: false, error: 'Enter a number or an expression' } : r
   }
+  const d = useDraft({ value, read, onCommit })
+  const expr = isExpression(value)
+  const resolved = expr ? evaluateExpression(value, values) : null
   return (
     <span className="expr-input">
       <input
         type="text"
         inputMode="decimal"
         spellCheck={false}
-        className={bad && bad !== 'empty' ? 'invalid' : ''}
-        value={shown}
+        autoComplete="off"
+        className={d.error ? 'invalid' : ''}
+        value={d.text}
         placeholder={placeholder}
         disabled={disabled}
-        title={bad && bad !== 'empty' ? bad : (title || 'A number, or an expression over the project parameters, e.g. Vb / 2')}
-        onChange={(e) => { setText(e.target.value); commit(e.target.value) }}
-        onBlur={() => { setText(null); setBad(null) }}
+        aria-invalid={d.error ? true : undefined}
+        title={d.error || title || 'A number, or an expression over the project parameters, e.g. Vb / 2'}
+        onChange={d.onChange}
+        onBlur={d.onBlur}
         onKeyDown={(e) => {
-          if ((e.key !== 'ArrowUp' && e.key !== 'ArrowDown') || isExpression(value)) return
+          if ((e.key !== 'ArrowUp' && e.key !== 'ArrowDown') || isExpression(value)) { d.onKeyDown(e); return }
           e.preventDefault()
-          const d = (Number(step) || 1) * (e.key === 'ArrowUp' ? 1 : -1) * (e.shiftKey ? 10 : 1)
-          const next = Number((Number(value || 0) + d).toPrecision(12))
-          if (min != null && next < Number(min)) return
-          setText(null)
+          const delta = (Number(step) || 1) * (e.key === 'ArrowUp' ? 1 : -1) * (e.shiftKey ? 10 : 1)
+          const next = Number((Number(value || 0) + delta).toPrecision(12))
+          if ((min != null && next < Number(min)) || (above != null && !(next > Number(above)))) return
+          d.setText(null)
           onCommit(next)
         }}
       />
@@ -101,4 +98,3 @@ export default function ExprInput({ value, onCommit, step, min, placeholder, dis
     </span>
   )
 }
-

@@ -383,7 +383,7 @@ button.tb-pill:hover { background: var(--active); }
 
 /* drive-voltage widget */
 .tb-voltage { padding: 0 8px 0 14px; font-size: 12px; color: var(--text-3); }
-.tb-voltage input[type="number"] {
+.tb-voltage input[type="number"], .tb-voltage input.num {
   width: 72px; font-size: 13px; padding: 6px 8px; border-radius: 8px;
 }
 .tb-derived {
@@ -410,7 +410,7 @@ input, select, textarea {
   padding: 5px 8px; font-size: 12px; font-family: inherit;
   width: 100%;
 }
-input[type="number"] { font-family: var(--mono-font); font-variant-numeric: tabular-nums; }
+input[type="number"], input.num { font-family: var(--mono-font); font-variant-numeric: tabular-nums; }
 input:focus, select:focus, textarea:focus { outline: none; box-shadow: inset 0 0 0 1px oklch(from var(--accent) l c h / 0.6); }
 input[type="checkbox"] { width: auto; accent-color: var(--accent); }
 select { cursor: pointer; }
@@ -733,7 +733,7 @@ svg.ws-chevron.open { transform: rotate(90deg); }
 
 /* A numeric field that may hold an expression */
 .expr-input input { flex: 1; min-width: 0; font-variant-numeric: tabular-nums; }
-.expr-input input.invalid, input.invalid { color: var(--red); }
+.expr-input input.invalid, input.invalid { color: var(--red); box-shadow: inset 0 0 0 1px var(--red); }
 .param-row:has(input.invalid) { box-shadow: inset 0 0 0 1px var(--red); }
 .expr-value {
   flex: 0 0 auto; font-size: 10.5px; color: var(--text-3);
@@ -872,7 +872,7 @@ svg.ws-chevron.open { transform: rotate(90deg); }
   font-size: 12px; color: var(--text-2); padding: 0 0 4px 8px; flex: none; min-height: 32px;
 }
 .plot-controls label { display: flex; gap: 6px; align-items: center; color: var(--text-2); cursor: pointer; }
-.plot-controls input[type="number"] { width: 58px; }
+.plot-controls input[type="number"], .plot-controls input.num { width: 58px; }
 .plot-controls select { width: auto; }
 .plot-solved { font-family: var(--mono-font); font-size: 12px; color: var(--text-3); padding: 0 6px; white-space: nowrap; }
 .plot-body { flex: 1; min-height: 0; position: relative; }

@@ -3,6 +3,7 @@ import { useStore } from '../store'
 import { waveguideVolume } from '../engine/geometry'
 import { basisOf, baselineOf, matchesBaseline, BASIS_SIZE } from '../driverParams'
 import ExprInput from './ExprInput'
+import NumInput from './NumInput'
 import { useResolvedParams } from '../useResolved'
 import { freshId } from '../schema/extras'
 import { driverNominal } from '../schema/nominal'
@@ -184,11 +185,12 @@ function LockIcon({ closed }) {
  * @param {string} [props.label] - Display label; defaults to the field name.
  * @param {string|number} [props.step] - Input step.
  * @param {number} [props.min] - Minimum accepted value.
+ * @param {number} [props.above] - Values must be greater than this.
  * @param {Function} [props.onCommit] - Called instead of the default update, for fields needing derived changes.
  * @returns {React.ReactElement} The input row.
  * @sideEffect Subscribes to the store. Editing updates the node's params, which triggers a resimulation.
  */
-function NumField({ id, field, value, unit, label, step, min, onCommit }) {
+function NumField({ id, field, value, unit, label, step, min, above, onCommit }) {
   const updateParams = useStore((s) => s.updateParams)
   return (
     <div className="param-row">
@@ -197,6 +199,7 @@ function NumField({ id, field, value, unit, label, step, min, onCommit }) {
         value={value}
         step={step}
         min={min}
+        above={above}
         onCommit={(v) => (onCommit ? onCommit(v) : updateParams(id, { [field]: v }))}
       />
       <span className="unit">{unit || ''}</span>
@@ -249,15 +252,12 @@ function LeakSection({ id, p }) {
     <>
       <div className="param-row wide">
         <label title={TIPS.leakQL}>Leakage QL</label>
-        <input
-          type="number" step="1" min="1"
-          value={sealed ? '' : p.leakQL}
+        <NumInput
+          step="1" min="1"
+          value={sealed ? null : p.leakQL}
           placeholder="sealed"
           disabled={sealed}
-          onChange={(e) => {
-            const v = parseFloat(e.target.value)
-            if (!Number.isNaN(v)) updateParams(id, { leakQL: Math.max(1, v) })
-          }}
+          onCommit={(v) => updateParams(id, { leakQL: v })}
         />
         <span className="unit">
           <label style={{ display: 'flex', gap: 4, alignItems: 'center', fontSize: 11, cursor: 'pointer' }}>
@@ -318,13 +318,11 @@ function AmpSolver() {
   const f = (field, label, unit) => (
     <div className="param-row">
       <label title="Voltage, impedance and power are linked by P = V²/Z — edit any one.">{label}</label>
-      <input
-        type="number" step="any" min="0"
-        value={round3(settings[field])}
-        onChange={(e) => {
-          const v = parseFloat(e.target.value)
-          if (!Number.isNaN(v) && v > 0) setAmp(field, v)
-        }}
+      <NumInput
+        above="0"
+        value={settings[field]}
+        format={(v) => String(round3(v))}
+        onCommit={(v) => setAmp(field, v)}
       />
       <span className="unit">{unit}</span>
     </div>
@@ -342,8 +340,8 @@ function AmpSolver() {
         {f('power', 'Power', 'W')}
         <div className="param-row">
           <label title="The first channel's output resistance — amplifier output plus cable — in series with its load.">Rg</label>
-          <input type="number" step="any" min="0" value={settings.rg}
-            onChange={(e) => { const v = parseFloat(e.target.value); if (!Number.isNaN(v)) updateSettings({ rg: v }) }} />
+          <NumInput step="0.01" min="0" value={settings.rg}
+            onCommit={(v) => updateSettings({ rg: v })} />
           <span className="unit">Ω</span>
         </div>
       </div>
@@ -365,20 +363,21 @@ function SweepSection() {
       <div className="param-grid">
         <div className="param-row">
           <label title="Lowest frequency of the sweep">From</label>
-          <input type="number" min="1" value={settings.fmin}
-            onChange={(e) => { const v = parseFloat(e.target.value); if (v > 0 && v < settings.fmax) updateSettings({ fmin: v }) }} />
+          <NumInput above="0" value={settings.fmin}
+            validate={(v) => (v < settings.fmax ? null : 'Must be below the end frequency')}
+            onCommit={(v) => updateSettings({ fmin: v })} />
           <span className="unit">Hz</span>
         </div>
         <div className="param-row">
           <label title="Highest frequency of the sweep">To</label>
-          <input type="number" value={settings.fmax}
-            onChange={(e) => { const v = parseFloat(e.target.value); if (v > settings.fmin) updateSettings({ fmax: v }) }} />
+          <NumInput above={settings.fmin} value={settings.fmax}
+            onCommit={(v) => updateSettings({ fmax: v })} />
           <span className="unit">Hz</span>
         </div>
         <div className="param-row">
           <label title="Frequencies solved across the sweep, spaced logarithmically">Points</label>
-          <input type="number" min="16" step="16" value={settings.npts}
-            onChange={(e) => { const v = parseInt(e.target.value, 10); if (v >= 16) updateSettings({ npts: v }) }} />
+          <NumInput min="16" step="16" integer value={settings.npts}
+            onCommit={(v) => updateSettings({ npts: v })} />
           <span className="unit" />
         </div>
         <label className="param-row" style={{ cursor: 'pointer' }}
@@ -435,18 +434,14 @@ function TSField({ id, field, value, held, unit, step }) {
         onClick={() => setDriverLock(id, field, !held)}
       ><LockIcon closed={held} /></button>
       <label title={TIPS[field] || ''}>{field}</label>
-      <input
-        type="number"
-        step={step || 'any'}
-        value={value ?? ''}
+      <NumInput
+        step={step}
+        above="0"
+        value={value}
         readOnly={!held}
         tabIndex={held ? undefined : -1}
         title={held ? '' : 'Derived from the held parameters — click the padlock to set it yourself'}
-        onChange={(e) => {
-          const v = e.target.value === '' ? '' : parseFloat(e.target.value)
-          if (v === '' || Number.isNaN(v)) return
-          setDriverParam(id, field, v)
-        }}
+        onCommit={(v) => setDriverParam(id, field, v)}
       />
       <span className="unit">{unit || ''}</span>
     </div>
@@ -511,13 +506,13 @@ function DriverForm({ node }) {
         {ts('Vas', 'L')}
         {ts('Sd', 'cm²')}
         {ts('Bl', 'T·m')}
-        <NumField id={id} field="Xmax" value={p.Xmax} unit="mm" />
+        <NumField id={id} field="Xmax" value={p.Xmax} unit="mm" above="0" />
       </div>
       <Sub id="driver.electrical" title="Electrical" summary={`Re ${short(p.Re)} Ω · Le ${short(p.Le)} mH`}>
         <div className="param-grid">
           {ts('Re', 'Ω')}
           {ts('Qes', '', '0.01')}
-          <NumField id={id} field="Le" value={p.Le} unit="mH" step="0.1" />
+          <NumField id={id} field="Le" value={p.Le} unit="mH" step="0.1" min="0" />
           <NumField id={id} field="LeExp" value={p.LeExp} label="Le exp." step="0.05" min="0.3" />
         </div>
       </Sub>
@@ -704,7 +699,7 @@ function ThroatCalc({ id }) {
   const row = (label, v, set, unit) => (
     <div className="param-row">
       <label>{label}</label>
-      <input type="number" value={v} min="0" onChange={(e) => set(parseFloat(e.target.value) || 0)} />
+      <NumInput value={v} min="0" onCommit={set} />
       <span className="unit">{unit}</span>
     </div>
   )
@@ -750,8 +745,8 @@ function ChamberForm({ node }) {
       summary={`${short(r.volume)} L · ${short(r.length)} cm`}>
       <div className="param-grid">
         <LabelField id={id} p={p} />
-        <NumField id={id} field="volume" value={p.volume} label="Volume" unit="L" />
-        <NumField id={id} field="length" value={p.length} label="Length" unit="cm" />
+        <NumField id={id} field="volume" value={p.volume} label="Volume" unit="L" above="0" />
+        <NumField id={id} field="length" value={p.length} label="Length" unit="cm" above="0" />
         <SelectField id={id} field="shape" value={p.shape} options={[['rectangular', 'Rectangular'], ['cylindrical', 'Cylindrical']]} />
         <NumField id={id} field="stuffing" value={p.stuffing} label="Stuffing" unit="g/L" min="0" />
         <LeakSection id={id} p={p} />
@@ -839,9 +834,9 @@ function WaveguideForm({ node }) {
       summary={`${short(r.S1)}→${short(r.S2)} cm² · ${short(r.length)} cm`}>
       <div className="param-grid">
         <LabelField id={id} p={p} />
-        <NumField id={id} field="S1" value={p.S1} label="S1 throat" unit="cm²" />
-        <NumField id={id} field="S2" value={p.S2} label="S2 mouth" unit="cm²" />
-        <NumField id={id} field="length" value={p.length} label="Length" unit="cm" />
+        <NumField id={id} field="S1" value={p.S1} label="S1 throat" unit="cm²" above="0" />
+        <NumField id={id} field="S2" value={p.S2} label="S2 mouth" unit="cm²" above="0" />
+        <NumField id={id} field="length" value={p.length} label="Length" unit="cm" above="0" />
         <NumField id={id} field="loss" value={p.loss} label="Wall loss ×" step="0.1" min="0" />
         <SelectField id={id} field="flare" value={p.flare} label="Flare" options={[
           ['conical', 'Conical'], ['exponential', 'Exponential'], ['parabolic', 'Parabolic'],
@@ -890,12 +885,12 @@ function PRForm({ node }) {
       summary={`Fs ${fs.toFixed(1)} Hz · ${short(r.count)}×`}>
       <div className="param-grid">
         <LabelField id={id} p={p} />
-        <NumField id={id} field="Mmd" value={p.Mmd} unit="g" />
+        <NumField id={id} field="Mmd" value={p.Mmd} unit="g" above="0" />
         <div onDoubleClick={() => setCalcOpen(!calcOpen)} title="Double-click to derive Cms from a target Fs" style={{ display: 'contents' }}>
-          <NumField id={id} field="Cms" value={p.Cms} unit="mm/N" step="0.01" />
+          <NumField id={id} field="Cms" value={p.Cms} unit="mm/N" step="0.01" above="0" />
         </div>
-        <NumField id={id} field="Rms" value={p.Rms} unit="kg/s" step="0.1" />
-        <NumField id={id} field="Sd" value={p.Sd} unit="cm²" />
+        <NumField id={id} field="Rms" value={p.Rms} unit="kg/s" step="0.1" min="0" />
+        <NumField id={id} field="Sd" value={p.Sd} unit="cm²" above="0" />
         <NumField id={id} field="addedMass" value={p.addedMass} label="Added mass" unit="g" min="0" />
         <NumField id={id} field="count" value={p.count} label="Units" step="1" min="1" />
       </div>
@@ -903,7 +898,7 @@ function PRForm({ node }) {
         <div className="param-grid">
           <div className="param-row">
             <label>Target Fs</label>
-            <input type="number" value={calcFs} onChange={(e) => setCalcFs(parseFloat(e.target.value) || 0)} />
+            <NumInput value={calcFs} above="0" onCommit={setCalcFs} />
             <span className="unit">Hz</span>
           </div>
           <button onClick={() => {
