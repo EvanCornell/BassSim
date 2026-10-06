@@ -87,7 +87,7 @@ export function newBoard(name, template = 'blank') {
 /**
  * The boards a project file carries, checked.
  *
- * @param {*} raw - The file's `tdBoards` field.
+ * @param {*} raw - The stored boards (the workspace's boards file).
  * @returns {Array<object>} Usable boards; none when the field is missing or malformed.
  * @pure
  */

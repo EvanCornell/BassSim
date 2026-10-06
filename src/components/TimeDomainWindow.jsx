@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react'
 import {
   ResponsiveContainer, BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip,
 } from 'recharts'
-import { useStore, tdSettingsOf, isLocked } from '../store'
+import { useStore, tdSettingsOf, isLocked, boardsOf } from '../store'
 import { LockNote } from './Records'
 import { decimate, rfft } from '../spice/dsp'
 import { splOf, levels } from '../spice/timedomain'
@@ -953,7 +953,7 @@ export default function TimeDomainWindow() {
   const error = useStore((s) => s.tdError)
   const sig = useStore((s) => s.tdSignature())
   const hasNodes = useStore((s) => s.nodes.length > 0)
-  const boards = useStore((s) => s.tdBoards)
+  const boards = useStore((s) => boardsOf(s.workspace))
   const drawer = useStore((s) => s.tdDrawer)
   const setDrawer = useStore((s) => s.setTdDrawer)
   const cfg = tdSettingsOf(extras)
@@ -988,7 +988,7 @@ export default function TimeDomainWindow() {
         </div>
         <JobStatus />
         <span style={{ flex: 1 }} />
-        {board && <span className="td-saved">Board saved with the project</span>}
+        {board && <span className="td-saved">Board saved with the workspace</span>}
         {board && <AddComparison board={board} />}
         <button className={drawer && onBoardSide ? 'td-newrun on' : 'primary'} disabled={!hasNodes} onClick={() => {
           // the drawer opens over the boards, so it brings them up

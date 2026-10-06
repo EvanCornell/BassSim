@@ -1,7 +1,7 @@
 // Contract tests for the pure parts of src/components/TdBoards.jsx.
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { dayLabel, libraryGroups, mergeTraces, cardPoints, defaultValues, effectiveQuantity } from '../../src/components/TdBoards.jsx'
+import { dayLabel, libraryGroups, mergeTraces, cardPoints, defaultValues, effectiveQuantity, NO_FILTERS, filterRuns, filterChoices } from '../../src/components/TdBoards.jsx'
 
 const day = 86400000
 const noon = new Date(2026, 9, 6, 12).getTime()
@@ -48,4 +48,28 @@ test('effectiveQuantity: falls back to what the runs have', () => {
   const compression = { analysis: 'compression', points: [{ vars: { hz: 20 }, m: { cmp: -1 } }, { vars: { hz: 40 }, m: { cmp: -2 } }] }
   assert.equal(effectiveQuantity({ kind: 'overlay', quantity: 'pressure' }, [compression]), 'm:cmp')
   assert.equal(effectiveQuantity({ kind: 'overlay', quantity: 'excursion' }, [{ analysis: 'transient' }]), 'excursion')
+})
+
+// CONTRACT: the open project by default; every query word must match; kind, project, record and model narrow it.
+test('filterRuns and filterChoices', () => {
+  const runs = [
+    { id: 'a', path: 'p.json', project: 'Ported', open: true, record: 0, analysis: 'transient', nonlinear: true, title: 'Burst 40 Hz', note: 'baseline' },
+    { id: 'b', path: 'p.json', project: 'Ported', open: true, record: 1, analysis: 'thd', nonlinear: false, title: 'THD sweep' },
+    { id: 'c', path: 's.json', project: 'Sealed', open: false, record: 0, analysis: 'transient', nonlinear: true, title: 'Burst 30 Hz' },
+  ]
+  const ids = (f) => filterRuns(runs, { ...NO_FILTERS, ...f }).map((r) => r.id)
+  assert.deepEqual(ids({}), ['a', 'b'])
+  assert.deepEqual(ids({ project: '*' }), ['a', 'b', 'c'])
+  assert.deepEqual(ids({ project: 's.json' }), ['c'])
+  assert.deepEqual(ids({ project: '*', kind: 'transient' }), ['a', 'c'])
+  assert.deepEqual(ids({ model: 'linear' }), ['b'])
+  assert.deepEqual(ids({ record: 'p.json#1' }), ['b'])
+  assert.deepEqual(ids({ query: 'burst baseline' }), ['a'])
+  assert.deepEqual(ids({ project: '*', query: 'sealed' }), ['c'])
+  const c = filterChoices(runs, { ...NO_FILTERS, kind: 'transient' })
+  assert.equal(c.project[0].label, 'Ported (open)')
+  assert.equal(c.project[0].count, 1)
+  assert.deepEqual(c.project.map((x) => x.value), ['', '*', 's.json'])
+  assert.deepEqual(c.record.map((x) => x.label), ['Any record', 'R1'])
+  assert.equal(c.kind.find((x) => x.value === 'thd').count, 1)
 })

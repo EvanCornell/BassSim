@@ -6,7 +6,7 @@
 // summary (figures) or, for waveforms, from its results, read on demand.
 
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { useStore, runIndex, runDataOf, tdSettingsOf, isLocked } from '../store'
+import { useStore, runIndex, runDataOf, tdSettingsOf, isLocked, boardsOf } from '../store'
 import {
   ANALYSES, QUANTITIES, METRICS, analysisLabel, runTraces, hasQuantity, quantityUnit, differenceOf,
   varyChoices, varLabel, varText, runTitle, optsOf, drivePreview, dbText,
@@ -160,6 +160,156 @@ export function libraryGroups(runs) {
 
 // ------------------------------------------------------------ library ---
 
+/** What the library shows before any filter is touched: the open project's runs, every kind and model. */
+export const NO_FILTERS = { query: '', kind: '', project: '', record: '', model: '' }
+
+/**
+ * A run's record, as the library's record filter names it.
+ *
+ * @param {object} r - A `runIndex` entry.
+ * @returns {string} `path#index`; `path#-1` for a deleted record.
+ * @pure
+ */
+const recordKey = (r) => `${r.path}#${r.record}`
+
+/**
+ * The text a run is searched by: its title, project, series, note, what it varied and its headline.
+ *
+ * @param {object} r - A `runIndex` entry.
+ * @returns {string} Lower-case text.
+ * @pure
+ */
+function searchText(r) {
+  const vars = r.vars ? Object.entries(r.vars).map(([k, v]) => `${varLabel(k).label} ${varText(k, v)}`).join(' ') : ''
+  const rec = r.record >= 0 ? `R${r.record + 1}` : 'deleted record'
+  return `${r.title} ${r.project} ${r.seriesTitle || ''} ${r.note || ''} ${vars} ${r.headline?.text || ''} ${analysisLabel(r.analysis)} ${rec} ${r.nonlinear ? 'NL nonlinear' : 'linear'}`.toLowerCase()
+}
+
+/**
+ * The runs the library's search and filters let through.
+ *
+ * Project `''` is the open project, `*` every project, otherwise a file path.
+ * Every word of the query has to match somewhere.
+ *
+ * @param {Array<object>} runs - `runIndex` entries.
+ * @param {object} f - The filters, shaped like `NO_FILTERS`.
+ * @param {string} [skip] - A filter to ignore, for counting that filter's own options.
+ * @returns {Array<object>} The runs shown.
+ * @pure
+ */
+export function filterRuns(runs, f, skip) {
+  const words = f.query.toLowerCase().split(/\s+/).filter(Boolean)
+  return runs.filter((r) => (skip === 'project' || (f.project === '*' || (f.project ? r.path === f.project : r.open)))
+    && (skip === 'kind' || !f.kind || r.analysis === f.kind)
+    && (skip === 'record' || !f.record || recordKey(r) === f.record)
+    && (skip === 'model' || !f.model || (f.model === 'nl') === !!r.nonlinear)
+    && (!words.length || words.every((w) => searchText(r).includes(w))))
+}
+
+/**
+ * Each filter's choices, with how many runs each would show given the other filters.
+ *
+ * @param {Array<object>} runs - `runIndex` entries.
+ * @param {object} f - The filters.
+ * @returns {Object<string, Array<{value: string, label: string, count: number}>>} Choices per filter, the "any" choice first.
+ * @pure
+ */
+export function filterChoices(runs, f) {
+  /**
+   * One filter's choices.
+   *
+   * @param {string} key - The filter.
+   * @param {Array<[string, string]>} values - `[value, label]` beyond the "any" choice, in order.
+   * @param {Function} has - `(run, value) => boolean`.
+   * @param {string} anyLabel - The "any" choice's label.
+   * @param {string} [anyValue] - The "any" choice's value.
+   * @returns {Array<{value: string, label: string, count: number}>} The choices.
+   * @pure
+   */
+  const choices = (key, values, has, anyLabel, anyValue = '') => {
+    const pool = filterRuns(runs, f, key)
+    return [{ value: anyValue, label: anyLabel, count: pool.length },
+      ...values.map(([value, label]) => ({ value, label, count: pool.filter((r) => has(r, value)).length }))]
+  }
+  const projects = []
+  for (const r of runs) if (!projects.some((p) => p[0] === r.path)) projects.push([r.path, r.project + (r.open ? ' (open)' : '')])
+  const recordPool = filterRuns(runs, f, 'record')
+  const records = []
+  for (const r of recordPool) {
+    const key = recordKey(r)
+    if (records.some((x) => x[0] === key)) continue
+    const rec = r.record >= 0 ? `R${r.record + 1}` : 'Deleted record'
+    records.push([key, f.project === '*' ? `${r.project} · ${rec}` : rec])
+  }
+  records.sort((a, b) => a[1].localeCompare(b[1], undefined, { numeric: true }))
+  const project = choices('project', projects, (r, v) => r.path === v, 'All projects', '*')
+  const open = runs.find((r) => r.open)
+  return {
+    kind: choices('kind', ANALYSES.map(([id, label]) => [id, label]), (r, v) => r.analysis === v, 'Any kind'),
+    // the open project is the default, so it leads; "All projects" follows it
+    project: [{ value: '', label: open ? `${open.project} (open)` : 'This project', count: filterRuns(runs, f, 'project').filter((r) => r.open).length },
+      project[0], ...project.slice(1).filter((c) => !open || c.value !== open.path)],
+    record: choices('record', records, (r, v) => recordKey(r) === v, 'Any record'),
+    model: choices('model', [['nl', 'Nonlinear'], ['linear', 'Linear']], (r, v) => (v === 'nl') === !!r.nonlinear, 'Any model'),
+  }
+}
+
+/**
+ * Magnifying glass for the search field.
+ *
+ * @returns {React.ReactElement} The icon.
+ * @pure
+ */
+const SearchIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true">
+    <circle cx="7" cy="7" r="4.6" fill="none" stroke="currentColor" strokeWidth="1.6" />
+    <path d="M10.4 10.4 14 14" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+  </svg>
+)
+
+/**
+ * One filter as a chip: its name until set, then its value with a ✕ to clear it; a click opens its choices.
+ *
+ * @param {object} props - Component props.
+ * @param {string} props.name - The filter's name, e.g. "Kind".
+ * @param {Array<{value: string, label: string, count: number}>} props.choices - Its choices, the default first.
+ * @param {string} props.value - The chosen value.
+ * @param {Function} props.onChange - Called with a value.
+ * @returns {React.ReactElement} The chip.
+ * @sideEffect Holds whether its menu is open.
+ */
+function FilterChip({ name, choices, value, onChange }) {
+  const [open, setOpen] = useState(false)
+  const set = value !== choices[0].value
+  const chosen = choices.find((c) => c.value === value)
+  return (
+    <span className="lib-chip-wrap">
+      <button className={`lib-chip${set ? ' set' : ''}${open ? ' open' : ''}`} onClick={() => setOpen(!open)} title={`Filter by ${name.toLowerCase()}`}>
+        <span className="lib-chip-name">{name}</span>
+        {set && <span className="lib-chip-value">{chosen?.label ?? value}</span>}
+        {set
+          ? <span className="lib-chip-x" title="Clear" onClick={(e) => { e.stopPropagation(); onChange(choices[0].value) }}>✕</span>
+          : <span className="lib-chip-caret">▾</span>}
+      </button>
+      {open && (
+        <>
+          <div className="menu-veil" onClick={() => setOpen(false)} />
+          <div className="lib-menu lib-chip-menu">
+            {choices.map((c, i) => (
+              <button key={c.value} className={`${c.value === value ? 'on' : ''}${i === 0 ? ' any' : ''}`} disabled={!c.count && c.value !== value}
+                onClick={() => { onChange(c.value); setOpen(false) }}>
+                <span className="lib-chip-check">{c.value === value ? '✓' : ''}</span>
+                <span className="lib-chip-label">{c.label}</span>
+                <span className="lib-count">{c.count}</span>
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </span>
+  )
+}
+
 /**
  * One run in the library.
  *
@@ -284,10 +434,9 @@ export function RunLibrary({ board }) {
   const queue = useStore((s) => s.tdQueue)
   const [pinned, setPinned] = useState(() => { try { return localStorage.getItem(PIN_KEY) !== '0' } catch { return true } })
   const [hover, setHover] = useState(false)
-  const [query, setQuery] = useState('')
-  const [kind, setKind] = useState('')
-  const [scope, setScope] = useState('project')
+  const [filters, setFilters] = useState(NO_FILTERS)
   const [open, setOpen] = useState({})
+  const searchRef = useRef(null)
   const [menu, setMenu] = useState(null)
   const keys = useMemo(() => (board ? boardKeys(board, runs) : new Map()), [board, runs])
   /**
@@ -301,9 +450,17 @@ export function RunLibrary({ board }) {
     setPinned(on)
     try { localStorage.setItem(PIN_KEY, on ? '1' : '0') } catch { /* not remembered */ }
   }
-  const shown = runs.filter((r) => (scope === 'all' || r.open)
-    && (!kind || r.analysis === kind)
-    && (!query || `${r.title} ${r.project} ${r.seriesTitle || ''} ${r.note || ''}`.toLowerCase().includes(query.toLowerCase())))
+  /**
+   * Set some filters; a new project drops a record filter that belonged to another.
+   *
+   * @param {object} patch - Filters to set.
+   * @returns {void}
+   * @sideEffect Writes component state.
+   */
+  const filter = (patch) => setFilters((f) => ({ ...f, ...patch, ...('project' in patch && patch.project !== f.project ? { record: '' } : {}) }))
+  const shown = filterRuns(runs, filters)
+  const choices = filterChoices(runs, filters)
+  const filtered = Object.keys(NO_FILTERS).some((k) => filters[k] !== NO_FILTERS[k])
   const groups = libraryGroups(shown)
   /**
    * A run was clicked: with the drawer open, start from it; otherwise put it on the selected card, or on every card.
@@ -335,24 +492,27 @@ export function RunLibrary({ board }) {
         <span className="lib-heading">Runs</span>
         <span className="lib-count">{shown.length}</span>
         <span style={{ flex: 1 }} />
-        <div className="seg small">
-          <button className={scope === 'project' ? 'on' : ''} onClick={() => setScope('project')} title="Runs of the open project">This project</button>
-          <button className={scope === 'all' ? 'on' : ''} onClick={() => setScope('all')} title="Runs of every project in the workspace">All</button>
-        </div>
+        {filtered && <button className="lib-clear" onClick={() => setFilters(NO_FILTERS)} title="Show the open project's runs, unfiltered">Clear</button>}
         <button className="icon-btn" title={pinned ? 'Collapse to a strip' : 'Pin open'} onClick={() => pin(!pinned)}>{pinned ? '◂' : '📌'}</button>
       </div>
-      <div className="lib-filters">
-        <input placeholder="Search runs…" value={query} onChange={(e) => setQuery(e.target.value)} />
-        <select value={kind} onChange={(e) => setKind(e.target.value)}>
-          <option value="">All kinds</option>
-          {ANALYSES.map(([id, label]) => <option key={id} value={id}>{label}</option>)}
-        </select>
+      <label className={`lib-search${filters.query ? ' set' : ''}`}>
+        <SearchIcon />
+        <input ref={searchRef} placeholder="Search runs, notes, values…" value={filters.query} spellCheck={false}
+          onChange={(e) => filter({ query: e.target.value })}
+          onKeyDown={(e) => { if (e.key === 'Escape' && filters.query) { e.stopPropagation(); filter({ query: '' }) } }} />
+        {filters.query && <button className="lib-search-x" title="Clear the search" onClick={() => { filter({ query: '' }); searchRef.current?.focus() }}>✕</button>}
+      </label>
+      <div className="lib-chips">
+        <FilterChip name="Kind" choices={choices.kind} value={filters.kind} onChange={(kind) => filter({ kind })} />
+        <FilterChip name="Project" choices={choices.project} value={filters.project} onChange={(project) => filter({ project })} />
+        <FilterChip name="Record" choices={choices.record} value={filters.record} onChange={(record) => filter({ record })} />
+        <FilterChip name="Model" choices={choices.model} value={filters.model} onChange={(model) => filter({ model })} />
       </div>
       <div className="lib-body">
         <QueueList />
         {!groups.length && (
           <div className="lib-empty">
-            {runs.length ? 'No runs match.' : 'No runs yet. Press New run: every run is kept here, with the project as it was run.'}
+            {runs.length ? <>No runs match. <button className="lib-clear" onClick={() => setFilters(NO_FILTERS)}>Clear filters</button></> : 'No runs yet. Press New run: every run is kept here, with the project as it was run.'}
           </div>
         )}
         {groups.map((g) => (
@@ -947,7 +1107,7 @@ export function BoardStart() {
         const ids = draggedRuns(e)
         if (!ids.length) return
         const id = add('overlay')
-        const card = useStore.getState().tdBoards.find((b) => b.id === id).cards[0]
+        const card = boardsOf(useStore.getState().workspace).find((b) => b.id === id).cards[0]
         updateCard(id, card.id, { runs: ids })
       }}>
       <div className="start-box">
@@ -967,7 +1127,7 @@ export function BoardStart() {
         </div>
         <button className="start-blank" onClick={() => add('blank')}>
           <span>Blank board</span>
-          <span className="lib-meta">Boards are saved with the project; runs stay in the library either way.</span>
+          <span className="lib-meta">Boards are saved with the workspace and can compare runs from any project; runs stay in the library either way.</span>
         </button>
       </div>
     </div>
@@ -1214,7 +1374,7 @@ export function NewRunDrawer() {
   const draft = useStore((s) => s.tdDraft)
   const setDraft = useStore((s) => s.setTdDraft)
   const extras = useStore((s) => s.projectExtras)
-  const boards = useStore((s) => s.tdBoards)
+  const boards = useStore((s) => boardsOf(s.workspace))
   const queue = useStore((s) => s.tdQueue)
   const voltage = useStore((s) => s.settings.voltage)
   const hasNodes = useStore((s) => s.nodes.length > 0)

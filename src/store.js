@@ -195,6 +195,23 @@ export function runDataOf(id) {
  */
 const projectNameOf = (path, data) => data?.name || W.baseName(path).replace(/\.speakerspice$/, '')
 
+/** Checked boards per stored list, so a selector sees the same array until the boards change. */
+const boardsCache = new WeakMap()
+
+/**
+ * The workspace's time-domain boards, checked.
+ *
+ * @param {object} ws - The workspace.
+ * @returns {Array<object>} The boards; the same array for as long as the stored list is unchanged.
+ * @sideEffect Caches the checked boards against the stored list.
+ */
+export function boardsOf(ws) {
+  const raw = W.readBoardList(ws)
+  let boards = boardsCache.get(raw)
+  if (!boards) { boards = readBoards(raw); boardsCache.set(raw, boards) }
+  return boards
+}
+
 /**
  * Every stored run in the workspace, newest first.
  *
@@ -362,7 +379,7 @@ function loadWorkspace() {
  * the file opened from it cannot disagree about which workspace they came
  * from.
  */
-const INITIAL_WORKSPACE = loadWorkspace()
+const INITIAL_WORKSPACE = W.liftBoards(loadWorkspace())
 
 /**
  * Load the persisted dock layout, falling back to the default.
@@ -710,7 +727,6 @@ export const useStore = create((rawSet, get) => {
   // Stored runs are branches in the project's records (see src/runs.js and
   // src/records.js). Boards — saved sets of comparison cards — are kept in
   // the project file beside the records, outside any one record.
-  tdBoards: [],
   // Runs waiting or solving, each with the project as it was when queued;
   // one solves at a time, in order. Lost on reload: a run is stored only
   // once it has finished.
@@ -2182,9 +2198,10 @@ export const useStore = create((rawSet, get) => {
     if (addTo === 'new') {
       const template = !vary.length ? 'report' : vary[0].key === 'level' ? 'level' : 'overlay'
       const b = newBoard(seriesTitle || RUNS.runTitle(analysis, base), template)
-      set({ tdBoards: [...get().tdBoards, b], tdTab: b.id })
+      get()._setBoards([...boardsOf(get().workspace), b])
+      set({ tdTab: b.id })
       addTo = b.id
-    } else if (!get().tdBoards.some((b) => b.id === addTo)) addTo = null
+    } else if (!boardsOf(get().workspace).some((b) => b.id === addTo)) addTo = null
     const bp = await inRecordsQueue(async () => {
       const out = await R.branchPoint(get().records, project)
       set({ records: out.records, recordNav: recordNavOf(out.records, get().recordNav.editing, get().recordNav.busy) })
@@ -2283,39 +2300,36 @@ export const useStore = create((rawSet, get) => {
       vars: job.vars, seriesId: job.seriesId, seriesTitle: job.seriesTitle, note: job.note, sig: job.sig,
       info, points, headline: RUNS.headline(job.analysis, points), ...(warnings?.length ? { warnings } : {}),
     }
-    await get()._updateProject(job.path, async ({ records, tdBoards }) => {
+    await get()._updateProject(job.path, async ({ records }) => {
       if (!records) throw new Error('The project this run belongs to has no records.')
-      const next = await R.addRun(records, { id: job.id, parent: job.parent, recordId: job.recordId, content: job.content, data, meta })
-      const onBoard = job.addTo && tdBoards.some((b) => b.id === job.addTo)
-      return { records: next, ...(onBoard ? { tdBoards: addRunsToBoard(tdBoards, job.addTo, [job.id]) } : {}) }
+      return { records: await R.addRun(records, { id: job.id, parent: job.parent, recordId: job.recordId, content: job.content, data, meta }) }
     })
+    const boards = boardsOf(get().workspace)
+    if (job.addTo && boards.some((b) => b.id === job.addTo)) get()._setBoards(addRunsToBoard(boards, job.addTo, [job.id]))
     runCache.set(job.id, { data, content: job.content })
     set({ tdDataTick: get().tdDataTick + 1 })
   },
   /**
-   * Change a project's records or boards, whether it is the open project or another file.
+   * Change a project's records, whether it is the open project or another file.
    *
    * @param {string} path - The project file.
-   * @param {Function} fn - `async ({records, tdBoards, project}) → {records?, tdBoards?}`: the changes.
+   * @param {Function} fn - `async ({records, project}) → {records?}`: the changes.
    * @returns {Promise<void>} Resolves once written.
    * @throws {Error} When the file is gone.
    * @sideEffect Writes store state or the workspace file; saves the open file.
    */
   _updateProject: (path, fn) => inRecordsQueue(async () => {
     if (path === get().activeFile) {
-      const out = await fn({ records: get().records, tdBoards: get().tdBoards, project: get().serialize() })
+      const out = await fn({ records: get().records, project: get().serialize() })
       const nav = get().recordNav
-      set({
-        ...(out.records ? { records: out.records, recordNav: recordNavOf(out.records, nav.editing, nav.busy) } : {}),
-        ...(out.tdBoards ? { tdBoards: out.tdBoards } : {}),
-      })
+      if (out.records) set({ records: out.records, recordNav: recordNavOf(out.records, nav.editing, nav.busy) })
       get().saveActiveFile()
       return
     }
     const entry = get().workspace.files[path]
     if (!entry || entry.kind !== 'project') throw new Error('The project this run belongs to is no longer in the workspace.')
-    const out = await fn({ records: R.readRecords(entry.data?.records), tdBoards: readBoards(entry.data?.tdBoards), project: entry.data })
-    const data = { ...entry.data, ...(out.records ? { records: out.records } : {}), ...(out.tdBoards ? { tdBoards: out.tdBoards } : {}) }
+    const out = await fn({ records: R.readRecords(entry.data?.records), project: entry.data })
+    const data = { ...entry.data, ...(out.records ? { records: out.records } : {}) }
     get()._commitWorkspace(W.writeFile(get().workspace, path, { kind: 'project', data }))
   }),
   /**
@@ -2371,22 +2385,18 @@ export const useStore = create((rawSet, get) => {
    *
    * @param {Array<object>} entries - The runs, as `runIndex` lists them.
    * @returns {Promise<void>} Resolves once deleted.
-   * @sideEffect Writes each project's records and boards, and the open project's boards.
+   * @sideEffect Writes each project's records, and the workspace's boards.
    */
   deleteRuns: async (entries) => {
     const byPath = new Map()
     for (const e of entries) byPath.set(e.path, [...(byPath.get(e.path) || []), e.id])
     for (const [path, ids] of byPath) {
-      await get()._updateProject(path, async ({ records, tdBoards }) => ({
-        records: records ? await R.deleteRuns(records, ids) : null, tdBoards: dropRuns(tdBoards, ids),
-      }))
+      await get()._updateProject(path, async ({ records }) => ({ records: records ? await R.deleteRuns(records, ids) : null }))
       for (const id of ids) runCache.delete(id)
     }
     const all = entries.map((e) => e.id)
-    if (get().tdBoards.some((b) => b.cards.some((c) => c.runs.some((r) => all.includes(r))))) {
-      set({ tdBoards: dropRuns(get().tdBoards, all) })
-      get().saveActiveFile()
-    }
+    const boards = boardsOf(get().workspace)
+    if (boards.some((b) => b.cards.some((c) => c.runs.some((r) => all.includes(r))))) get()._setBoards(dropRuns(boards, all))
   },
   /**
    * Rename a stored run.
@@ -2425,28 +2435,25 @@ export const useStore = create((rawSet, get) => {
 
   // ---- boards ----
   /**
-   * Replace the project's boards.
+   * Replace the workspace's boards.
    *
    * @param {Array<object>} boards - The boards.
    * @returns {void}
-   * @sideEffect Writes store state and saves the open file.
+   * @sideEffect Writes the workspace.
    */
-  _setBoards: (boards) => {
-    set({ tdBoards: boards })
-    get().saveActiveFile()
-  },
+  _setBoards: (boards) => get()._commitWorkspace(W.writeBoards(get().workspace, boards)),
   /**
    * Add a board and show it.
    *
    * @param {string} [template] - What it starts with; see `templateCards`.
    * @param {string} [name] - Its name.
    * @returns {string} The board's id.
-   * @sideEffect Writes the boards and the tab; saves the open file.
+   * @sideEffect Writes the boards and the tab; writes the workspace.
    */
   addTdBoard: (template = 'blank', name) => {
-    const n = get().tdBoards.length + 1
+    const n = boardsOf(get().workspace).length + 1
     const b = newBoard(name || `Board ${n}`, template)
-    get()._setBoards([...get().tdBoards, b])
+    get()._setBoards([...boardsOf(get().workspace), b])
     set({ tdTab: b.id })
     return b.id
   },
@@ -2458,7 +2465,7 @@ export const useStore = create((rawSet, get) => {
    * @returns {void}
    * @sideEffect Writes the boards; saves the open file.
    */
-  renameTdBoard: (id, name) => get()._setBoards(get().tdBoards.map((b) => (b.id === id ? { ...b, name } : b))),
+  renameTdBoard: (id, name) => get()._setBoards(boardsOf(get().workspace).map((b) => (b.id === id ? { ...b, name } : b))),
   /**
    * Delete a board. Its runs stay in the library.
    *
@@ -2467,7 +2474,7 @@ export const useStore = create((rawSet, get) => {
    * @sideEffect Writes the boards and, when it was shown, the tab; saves the open file.
    */
   deleteTdBoard: (id) => {
-    const boards = get().tdBoards.filter((b) => b.id !== id)
+    const boards = boardsOf(get().workspace).filter((b) => b.id !== id)
     get()._setBoards(boards)
     if (get().tdTab === id) set({ tdTab: boards.length ? boards[boards.length - 1].id : 'new' })
   },
@@ -2480,7 +2487,7 @@ export const useStore = create((rawSet, get) => {
    * @returns {void}
    * @sideEffect Writes the boards; saves the open file.
    */
-  updateTdCard: (boardId, cardId, patch) => get()._setBoards(get().tdBoards.map((b) => {
+  updateTdCard: (boardId, cardId, patch) => get()._setBoards(boardsOf(get().workspace).map((b) => {
     if (b.id !== boardId) return b
     if (!cardId) return { ...b, cards: [...b.cards, newCard(patch.kind, patch)] }
     if (!patch) return { ...b, cards: b.cards.filter((c) => c.id !== cardId) }
@@ -2495,7 +2502,7 @@ export const useStore = create((rawSet, get) => {
    * @returns {void}
    * @sideEffect Writes the boards; saves the open file.
    */
-  addRunsToCard: (boardId, runIds, cardId) => get()._setBoards(addRunsToBoard(get().tdBoards, boardId, runIds, cardId)),
+  addRunsToCard: (boardId, runIds, cardId) => get()._setBoards(addRunsToBoard(boardsOf(get().workspace), boardId, runIds, cardId)),
 
   // ---- compute pipeline (debounced 150 ms) ----
   // Simulation runs in a Web Worker: the engine ships with the app, but off
@@ -2585,7 +2592,7 @@ export const useStore = create((rawSet, get) => {
    * @sideEffect Replaces the project in the store, saves the open file and schedules a resimulation.
    */
   _showRecord: (records, content) => {
-    get().loadSerialized({ ...content, name: get().projectName, records, tdBoards: get().tdBoards })
+    get().loadSerialized({ ...content, name: get().projectName, records })
     get().saveActiveFile()
   },
   /**
@@ -2658,9 +2665,9 @@ export const useStore = create((rawSet, get) => {
    * @sideEffect Reads the current time for the `modified` stamp.
    */
   serialize: () => {
-    const { nodes, edges, projectName, settings, projectExtras, records, tdBoards } = get()
+    const { nodes, edges, projectName, settings, projectExtras, records } = get()
     const proj = fromEditor({ name: projectName, nodes, edges, settings, extras: projectExtras })
-    return { ...proj, modified: new Date().toISOString(), ...(records ? { records } : {}), ...(tdBoards.length ? { tdBoards } : {}) }
+    return { ...proj, modified: new Date().toISOString(), ...(records ? { records } : {}) }
   },
   /**
    * Replace the current project with a deserialized one.
@@ -2695,7 +2702,6 @@ export const useStore = create((rawSet, get) => {
       records: R.readRecords(proj.records),
       recordNav: recordNavOf(R.readRecords(proj.records), false, false),
       recordError: null,
-      tdBoards: readBoards(proj.tdBoards),
       // time-domain results describe the project being replaced
       tdResults: { linear: null, transient: null, distortion: {} }, tdError: null,
     })
@@ -2759,9 +2765,12 @@ export const useStore = create((rawSet, get) => {
    *
    * @param {object} ws - The new workspace.
    * @returns {void}
+   * Boards an older build saved inside a project file are moved into the
+   * workspace's boards on the way in.
+   *
    * @sideEffect Writes store state, which the module-level subscription then persists to LocalStorage.
    */
-  _commitWorkspace: (ws) => set({ workspace: ws }),
+  _commitWorkspace: (ws) => set({ workspace: W.liftBoards(ws) }),
 
   /**
    * Rename the workspace itself.
