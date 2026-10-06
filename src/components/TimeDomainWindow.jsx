@@ -1,16 +1,18 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import {
-  ResponsiveContainer, LineChart, Line, BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ReferenceLine,
+  ResponsiveContainer, BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip,
 } from 'recharts'
 import { useStore, tdSettingsOf, isLocked } from '../store'
 import { LockNote } from './Records'
 import { decimate, rfft } from '../spice/dsp'
-import { splOf, levels, CEA2010_LIMITS } from '../spice/timedomain'
-import NLLab from './NLLab'
-import NumInput, { ListInput } from './NumInput'
+import { splOf, levels } from '../spice/timedomain'
+import NLLab, { NLRail } from './NLLab'
+import { RunLibrary, Board, BoardStart, AddComparison, NewRunDrawer } from './TdBoards'
+import NumInput from './NumInput'
+import PlotChart from './PlotChart'
 
 /** Trace colours, shared with the frequency charts. */
-const SERIES = ['var(--c1)', 'var(--c2)', 'var(--c3)', 'var(--c4)', 'var(--c5)', 'var(--c6)']
+export const SERIES = ['var(--c1)', 'var(--c2)', 'var(--c3)', 'var(--c4)', 'var(--c5)', 'var(--c6)']
 const GRID = 'var(--grid)'
 const TICK = { fill: 'var(--text-3)', fontSize: 10.5 }
 /** Most points drawn per trace; longer series are thinned keeping their peaks. */
@@ -118,51 +120,33 @@ export function logTicks(lo, hi) {
  * @param {Array} [props.yDomain] - Left axis domain.
  * @param {Array<object>} [props.refs] - `{y, label, color}` horizontal reference lines on the left axis.
  * @param {number} [props.height] - Height, px.
+ * @param {number[]} [props.yTicks] - Left axis ticks, in place of the automatic ones.
+ * @param {Function} [props.yTickLabel] - `(value) → text` for the left axis ticks.
+ * @param {boolean} [props.legend] - Show the legend; on by default.
+ * @param {boolean} [props.bare] - Leave out the card background and title, for a chart inside a card of its own.
  * @returns {React.ReactElement} The chart.
  * @pure
  */
-function TdChart({ title, data, lines, xKey = 'ms', xLabel = 'ms', logX = false, logY = false, yLabel, y2Label, yDomain, refs = [], height = 230 }) {
-  const right = lines.some((l) => l.right)
-  const xs = data.length ? [data[0][xKey], data[data.length - 1][xKey]] : [0, 1]
-  const ticks = logX ? logTicks(xs[0], xs[1]) : linearTicks(xs[0], xs[1])
+export function TdChart({ title, data, lines, xKey = 'ms', xLabel = 'ms', logX = false, logY = false, yLabel, y2Label, yDomain, refs = [], height = 230, yTicks, yTickLabel, legend = true, bare = false }) {
+  const series = useMemo(() => {
+    const xs = data.map((r) => r[xKey])
+    return lines.map((l, i) => {
+      // rows hold every trace; a trace's own points are the rows it has a value in
+      const x = []
+      const y = []
+      for (let k = 0; k < data.length; k++) {
+        const v = data[k][l.key]
+        if (v != null && Number.isFinite(v)) { x.push(xs[k]); y.push(v) }
+      }
+      return { key: l.key, name: l.name, color: l.color || SERIES[i % SERIES.length], dash: l.dash, width: l.width, legend: l.legend, right: l.right, marker: l.marker, x, y }
+    })
+  }, [data, lines, xKey])
+  const ticks = useMemo(() => (yTicks ? yTicks.map((y) => ({ y, label: yTickLabel ? yTickLabel(y) : String(y) })) : undefined), [yTicks, yTickLabel])
   return (
-    <div className="td-chart">
-      <div className="td-chart-title">{title}<span className="td-xunit">{xKey === 'ms' ? 'time, ms' : xLabel}</span></div>
-      <ResponsiveContainer width="100%" height={height}>
-        <LineChart data={data} margin={{ top: 6, right: right ? 8 : 18, bottom: 4, left: 4 }}>
-          <CartesianGrid stroke={GRID} strokeDasharray="2 4" />
-          <XAxis
-            dataKey={xKey} type="number" scale={logX ? 'log' : 'linear'} domain={xs} ticks={ticks} interval={0}
-            allowDataOverflow tick={TICK} stroke={GRID}
-            tickFormatter={(v) => (Math.abs(v) >= 1000 ? `${Number((v / 1000).toPrecision(3))}k` : Number(v.toPrecision(3)))}
-          />
-          <YAxis yAxisId="left" domain={yDomain || ['auto', 'auto']} tick={TICK} stroke={GRID} width={50}
-            scale={logY ? 'log' : 'auto'} allowDataOverflow={logY}
-            tickFormatter={(v) => Number(Number(v).toPrecision(3))}
-            label={{ value: yLabel, angle: -90, position: 'insideLeft', fill: 'var(--text-3)', fontSize: 10 }} />
-          {right && (
-            <YAxis yAxisId="right" orientation="right" tick={TICK} stroke={GRID} width={50}
-              tickFormatter={(v) => Number(Number(v).toPrecision(3))}
-              label={{ value: y2Label, angle: 90, position: 'insideRight', fill: 'var(--text-3)', fontSize: 10 }} />
-          )}
-          <Tooltip
-            contentStyle={{ background: 'var(--raised)', border: '1px solid var(--line-2)', borderRadius: 10, fontSize: 11.5 }}
-            labelFormatter={(v) => `${Number(Number(v).toPrecision(5))} ${xLabel}`}
-            formatter={(v) => (typeof v === 'number' ? Number(v.toPrecision(4)) : v)}
-          />
-          <Legend wrapperStyle={{ fontSize: 11 }} />
-          {refs.map((r, i) => (
-            <ReferenceLine key={i} yAxisId="left" y={r.y} stroke={r.color || 'var(--red)'} strokeDasharray="5 4"
-              label={r.label ? { value: r.label, fill: r.color || 'var(--red)', fontSize: 10, position: 'insideTopRight' } : undefined} />
-          ))}
-          {lines.map((l, i) => (
-            <Line key={l.key} yAxisId={l.right ? 'right' : 'left'} dataKey={l.key} name={l.name}
-              stroke={l.color || SERIES[i % SERIES.length]} strokeWidth={l.width || 1.5} strokeDasharray={l.dash}
-              legendType={l.legend === false ? 'none' : 'line'}
-              dot={false} isAnimationActive={false} connectNulls />
-          ))}
-        </LineChart>
-      </ResponsiveContainer>
+    <div className={bare ? 'td-chart bare' : 'td-chart'} style={bare ? { height: '100%' } : undefined}>
+      <PlotChart title={bare ? undefined : title} xunit={xKey === 'ms' || xLabel === 'ms' ? 'time, ms' : xLabel} ylabel={yLabel} y2label={y2Label}
+        series={series} logX={logX} logY={logY} yDomain={yDomain} refs={refs} yTicks={ticks} legend={legend}
+        height={bare ? undefined : height + 34} />
     </div>
   )
 }
@@ -395,76 +379,21 @@ function LinearView({ res, view }) {
 
 // --------------------------------------------------------- transient ---
 
-/** Signal types offered, `[value, label]`. */
-const SIGNALS = [['sine', 'Sine (steady)'], ['burst', 'Tone burst'], ['sweep', 'Log sweep'], ['noise', 'Pink noise']]
-
-/**
- * Controls for a transient run.
- *
- * @param {object} props - Component props.
- * @param {object} props.cfg - The transient settings.
- * @param {Function} props.set - Writes a patch to them.
- * @returns {React.ReactElement} The controls.
- * @sideEffect Subscribes to the store.
- */
-function TransientControls({ cfg, set }) {
-  const voltage = useStore((s) => s.settings.voltage)
-  const sig = cfg.signal
-  /**
-   * Write a patch to the signal.
-   *
-   * @param {object} patch - Fields to merge.
-   * @returns {void}
-   * @sideEffect Writes the settings.
-   */
-  const setSig = (patch) => set({ signal: { ...sig, ...patch } })
-  return (
-    <>
-      <div className="td-section">
-        <h4>Signal</h4>
-        <Pick label="Type" value={sig.type} options={SIGNALS} onChange={(v) => setSig({ type: v })} />
-        {(sig.type === 'sine' || sig.type === 'burst') && <Num label="Frequency" value={sig.hz} unit="Hz" min={1} onChange={(v) => setSig({ hz: v })} />}
-        {sig.type === 'burst' && <Num label="Cycles" value={sig.cycles} min={1} step={0.5} onChange={(v) => setSig({ cycles: v })} />}
-        {(sig.type === 'sweep' || sig.type === 'noise') && (
-          <>
-            <Num label="From" value={sig.f1} unit="Hz" min={1} onChange={(v) => setSig({ f1: v })} />
-            <Num label="To" value={sig.f2} unit="Hz" min={1} onChange={(v) => setSig({ f2: v })} />
-            <Num label="Length" value={sig.length} unit="s" min={0.05} onChange={(v) => setSig({ length: v })} />
-          </>
-        )}
-        <Num label="Level" value={cfg.levelDb} unit="dB" step={1} onChange={(v) => set({ levelDb: v })}
-          title="Over every channel's level. Tones peak at √2 × the channel's volts; noise has them as its RMS." />
-        <div className="td-hint">Channel 1 plays {f(voltage * Math.pow(10, cfg.levelDb / 20), 2)} V RMS.</div>
-      </div>
-      <div className="td-section">
-        <h4>Run</h4>
-        <Num label="Duration" value={cfg.duration} unit="s" min={0.01} onChange={(v) => set({ duration: v })} />
-        <Pick label="Sample rate" value={cfg.fs} onChange={(v) => set({ fs: v })}
-          title="Samples per second in the result. The solver steps at least this finely, so higher rates cost proportionally more; 8 kHz covers a 1 kHz model band."
-          options={[[4000, '4 kHz'], [8000, '8 kHz'], [16000, '16 kHz'], [24000, '24 kHz'], [48000, '48 kHz']]} />
-        <Num label="Model band" value={cfg.bandwidth} unit="Hz" min={100} onChange={(v) => set({ bandwidth: v })}
-          title="Highest frequency the model represents. Ducts are sliced for it; a lower band runs faster." />
-        <Check label="Nonlinear" checked={cfg.nonlinear} onChange={(v) => set({ nonlinear: v })}
-          title="Use the driver curves (Bl, Kms, Le) and the duct exit losses" />
-        <Check label="Compare with linear" checked={cfg.compareLinear} onChange={(v) => set({ compareLinear: v })}
-          title="Also run with the nonlinear parts off, and overlay it" />
-      </div>
-    </>
-  )
-}
-
 /**
  * The transient result: waveforms, summary and output spectrum.
  *
  * @param {object} props - Component props.
  * @param {object|null} props.res - The transient result.
  * @param {Function} props.onRun - Starts a run.
+ * @param {Array<object>} [props.nodes] - The nodes the run was made with, for names and Xmax; the open project's when omitted.
  * @returns {React.ReactElement} The view.
  * @sideEffect Subscribes to the store.
  */
-function TransientView({ res, onRun }) {
-  const nodes = useStore((s) => s.nodes)
-  const stale = useStale(res)
+export function TransientView({ res, onRun, nodes: given }) {
+  const storeNodes = useStore((s) => s.nodes)
+  const nodes = given || storeNodes
+  const live = useStale(res)
+  const stale = !given && live
   const charts = useMemo(() => {
     if (!res) return null
     const { run, linear } = res
@@ -564,80 +493,6 @@ function TransientView({ res, onRun }) {
 
 // -------------------------------------------------------- distortion ---
 
-/** Distortion analyses, `[value, label]`. */
-const MODES = [
-  ['harmonics', 'Harmonics at one frequency'],
-  ['thd', 'THD across frequency'],
-  ['compression', 'Compression across level'],
-  ['maxspl', 'Maximum SPL (CEA-2010 style)'],
-]
-
-
-/**
- * Controls for the distortion analyses.
- *
- * @param {object} props - Component props.
- * @param {object} props.cfg - The distortion settings.
- * @param {Function} props.set - Writes a patch to them.
- * @returns {React.ReactElement} The controls.
- * @pure
- */
-function DistortionControls({ cfg, set }) {
-  const m = cfg.mode
-  return (
-    <>
-      <div className="td-section">
-        <h4>Analysis</h4>
-        <Pick label="Measure" value={m} options={MODES} onChange={(v) => set({ mode: v })} />
-      </div>
-      <div className="td-section">
-        <h4>Settings</h4>
-        {m === 'harmonics' && <Num label="Frequency" value={cfg.hz} unit="Hz" min={1} onChange={(v) => set({ hz: v })} />}
-        {(m === 'thd' || m === 'compression') && (
-          <>
-            <Num label="From" value={cfg.f1} unit="Hz" min={1} onChange={(v) => set({ f1: v })} />
-            <Num label="To" value={cfg.f2} unit="Hz" min={1} onChange={(v) => set({ f2: v })} />
-            <Num label="Points" value={cfg.points} min={2} step={1} onChange={(v) => set({ points: Math.round(v) })} />
-          </>
-        )}
-        {m !== 'compression' && m !== 'maxspl' && (
-          <Num label="Level" value={cfg.levelDb} unit="dB" step={1} onChange={(v) => set({ levelDb: v })}
-            title="Over every channel's level" />
-        )}
-        {m === 'compression' && (
-          <div className="param-row">
-            <label title="Levels over every channel's level, dB">Levels</label>
-            <ListInput value={cfg.levels} onCommit={(l) => set({ levels: l })} />
-            <span className="unit">dB</span>
-          </div>
-        )}
-        {m === 'maxspl' && (
-          <>
-            <div className="param-row">
-              <label title="Burst frequencies, Hz — CEA-2010 uses the third-octave centres from 20 Hz">Bands</label>
-              <ListInput value={cfg.bands} above="0" onCommit={(l) => set({ bands: l })} />
-              <span className="unit">Hz</span>
-            </div>
-            <Num label="Excursion limit" value={cfg.xLimit} unit="×Xmax" min={0} step={0.1} onChange={(v) => set({ xLimit: v })}
-              title="Stop where a cone passes this multiple of its Xmax. 0 for no limit." />
-            <Num label="Start level" value={cfg.levelDb} unit="dB" step={1} onChange={(v) => set({ levelDb: v })} />
-          </>
-        )}
-        {m !== 'maxspl' && <Num label="Harmonics" value={cfg.harmonics} min={2} step={1} onChange={(v) => set({ harmonics: Math.round(v) })} />}
-        <Num label="Model band" value={cfg.bandwidth} unit="Hz" min={100} onChange={(v) => set({ bandwidth: v })} />
-        <Check label="Nonlinear" checked={cfg.nonlinear} onChange={(v) => set({ nonlinear: v })}
-          title="Off measures the numerical floor of the linear model" />
-      </div>
-      <div className="td-note">
-        {m === 'harmonics' && 'One steady tone: settles, then whole periods are analysed, so the harmonics are exact.'}
-        {m === 'thd' && 'A steady tone at each frequency — about a second of computing each.'}
-        {m === 'compression' && 'Each frequency at each level, against the linear model at the same level: output, excursion, port velocity, impedance, electrical power and efficiency. Levels × points runs.'}
-        {m === 'maxspl' && `A 6.5-cycle Hann burst per band, raised 3 dB at a time and then narrowed to 0.25 dB, until the harmonics pass the CEA-2010 limits (H2 ${CEA2010_LIMITS[2]} dB, H3 ${CEA2010_LIMITS[3]} dB, H4–5 −20 dB, H6–7 −30 dB, H8–10 −40 dB) or a cone passes its excursion limit.`}
-      </div>
-    </>
-  )
-}
-
 /**
  * Convert a level re the fundamental to a percentage.
  *
@@ -654,13 +509,16 @@ const pct = (db) => 100 * Math.pow(10, db / 20)
  * @param {string} props.mode - The analysis.
  * @param {object|null} props.res - Its result.
  * @param {Function} props.onRun - Starts a run.
+ * @param {Array<object>} [props.nodes] - The nodes the run was made with; the open project's when omitted.
  * @returns {React.ReactElement} The view.
  * @sideEffect Subscribes to the store.
  */
-function DistortionView({ mode, res, onRun }) {
-  const nodes = useStore((s) => s.nodes)
+export function DistortionView({ mode, res, onRun, nodes: given }) {
+  const storeNodes = useStore((s) => s.nodes)
+  const nodes = given || storeNodes
   const voltage = useStore((s) => s.settings.voltage)
-  const stale = useStale(res)
+  const live = useStale(res)
+  const stale = !given && live
   if (!res) {
     return (
       <div className="td-empty">
@@ -721,7 +579,7 @@ function DistortionView({ mode, res, onRun }) {
       </>
     )
   }
-  if (mode === 'compression') return <CompressionView res={res} stale={stale} onRun={onRun} />
+  if (mode === 'compression') return <CompressionView res={res} stale={stale} onRun={onRun} nodes={nodes} />
 
   return (
     <>
@@ -817,11 +675,11 @@ function logDomain(rows) {
  * @param {object} props.res - The compression result.
  * @param {boolean} props.stale - Whether the project has changed since.
  * @param {Function} props.onRun - Runs again.
+ * @param {Array<object>} props.nodes - The nodes the run was made with.
  * @returns {React.ReactElement} The view.
- * @sideEffect Subscribes to the store; keeps the linear-trace toggle and the table's frequency as local state.
+ * @sideEffect Keeps the linear-trace toggle and the table's frequency as local state.
  */
-function CompressionView({ res, stale, onRun }) {
-  const nodes = useStore((s) => s.nodes)
+function CompressionView({ res, stale, onRun, nodes }) {
   const [showLinear, setShowLinear] = useState(true)
   const [at, setAt] = useState(0)
   const first = res.rows.find((r) => r.at) || res.rows[0]
@@ -1029,31 +887,56 @@ function ExitLosses() {
 // ------------------------------------------------------------ window ---
 
 /**
- * The running job's progress, with a cancel button.
+ * The running job's progress, with a cancel button and how many wait behind it.
  *
  * @returns {React.ReactElement|null} The indicator, or nothing when idle.
  * @sideEffect Subscribes to the store.
  */
 function JobStatus() {
   const job = useStore((s) => s.tdJob)
+  const waiting = useStore((s) => s.tdQueue.filter((j) => j.status === 'queued').length)
   const cancel = useStore((s) => s.cancelTimeDomain)
   if (!job) return null
   return (
     <div className="td-job">
       <div className="td-bar"><div style={{ width: `${Math.round(job.fraction * 100)}%` }} /></div>
-      <span>{job.message}</span>
-      <button onClick={cancel}>Cancel</button>
+      <span>{job.message}{waiting ? ` · ${waiting} queued` : ''}</span>
+      <button onClick={cancel} title={job.runId ? 'Cancel this run; the queue carries on' : 'Cancel'}>Cancel</button>
     </div>
+  )
+}
+
+/**
+ * A board's tab: click to show, double-click to rename, ✕ to delete.
+ *
+ * @param {object} props - Component props.
+ * @param {object} props.board - The board.
+ * @param {boolean} props.active - Whether it is shown.
+ * @returns {React.ReactElement} The tab.
+ * @sideEffect Subscribes to the store; renames or deletes the board.
+ */
+function BoardTab({ board, active }) {
+  const st = useStore.getState
+  return (
+    <button className={`td-board-tab${active ? ' active' : ''}`} onClick={() => st().setTdTab(board.id)}
+      onDoubleClick={() => { const n = prompt('Rename the board', board.name); if (n && n.trim()) st().renameTdBoard(board.id, n.trim()) }}
+      title="Double-click to rename">
+      {board.name}
+      {active && (
+        <span className="td-tab-x" title="Delete this board; its runs stay in the library"
+          onClick={(e) => { e.stopPropagation(); if (confirm(`Delete the board "${board.name}"? Its runs stay in the library.`)) st().deleteTdBoard(board.id) }}>✕</span>
+      )}
+    </button>
   )
 }
 
 /**
  * The time-domain workspace: its own full-screen view under the menu and quick bar.
  *
- * Four tabs — the linear time responses, which follow the project by
- * themselves; transient runs; distortion measurements; and the driver curve
- * editor. Transient and distortion run only when asked, since they take
- * seconds to minutes, and a result says when the project has changed since.
+ * Boards of comparisons over stored runs, each a tab; the live linear
+ * responses; and the driver curve editor. Runs are queued from the New run
+ * drawer, solve one after another in the background, and are kept in the
+ * library — each a branch off the record it was run from.
  *
  * @returns {React.ReactElement} The window.
  * @sideEffect Subscribes to the store, and starts the linear responses when they are out of date.
@@ -1065,14 +948,18 @@ export default function TimeDomainWindow() {
   const extras = useStore((s) => s.projectExtras)
   const setTd = useStore((s) => s.setTdSettings)
   const locked = useStore(isLocked)
-  const run = useStore((s) => s.runTimeDomain)
   const results = useStore((s) => s.tdResults)
   const job = useStore((s) => s.tdJob)
   const error = useStore((s) => s.tdError)
   const sig = useStore((s) => s.tdSignature())
   const hasNodes = useStore((s) => s.nodes.length > 0)
+  const boards = useStore((s) => s.tdBoards)
+  const drawer = useStore((s) => s.tdDrawer)
+  const setDrawer = useStore((s) => s.setTdDrawer)
   const cfg = tdSettingsOf(extras)
   const [view, setView] = useState({ windowMs: 200, driver: false })
+  const board = boards.find((b) => b.id === tab) || null
+  const onBoardSide = tab !== 'linear' && tab !== 'nonlinear'
 
   // The linear responses follow the project while their tab is open.
   const lin = results.linear
@@ -1084,47 +971,55 @@ export default function TimeDomainWindow() {
     return () => clearTimeout(t)
   }, [tab, sig, linKey, lin, job, hasNodes])
 
-  const dmode = cfg.distortion.mode
-  const running = job && (job.kind === tab)
   return (
     <div className="td-window">
       <div className="td-head">
         <span className="td-title">Time domain</span>
         <div className="td-tabs">
-          {TABS.map(([id, label]) => (
-            <button key={id} className={tab === id ? 'active' : ''} onClick={() => setTab(id)}>{label}</button>
-          ))}
+          {boards.map((b) => <BoardTab key={b.id} board={b} active={tab === b.id} />)}
+          {tab === 'new' && <button className="active">Untitled board</button>}
+          <button className={tab === 'new' ? '' : 'td-plus'} onClick={() => setTab('new')} title="A new board">+</button>
+        </div>
+        <span className="td-sep" />
+        <div className="td-tabs">
+          <button className={tab === 'linear' ? 'active' : ''} onClick={() => setTab('linear')}
+            title="Impulse, step, tone burst and decay of the linear model, following the project as it is edited">Linear response</button>
+          <button className={tab === 'nonlinear' ? 'active' : ''} onClick={() => setTab('nonlinear')}>Driver nonlinearity</button>
         </div>
         <JobStatus />
         <span style={{ flex: 1 }} />
-        {(tab === 'transient' || tab === 'distortion') && (
-          <button className="primary" disabled={!hasNodes || !!running} onClick={() => run(tab)}>
-            {running ? 'Running…' : 'Run'}
-          </button>
-        )}
+        {board && <span className="td-saved">Board saved with the project</span>}
+        {board && <AddComparison board={board} />}
+        <button className={drawer && onBoardSide ? 'td-newrun on' : 'primary'} disabled={!hasNodes} onClick={() => {
+          // the drawer opens over the boards, so it brings them up
+          if (!onBoardSide) { setTab(boards.length ? boards[boards.length - 1].id : 'new'); setDrawer(true) } else setDrawer(!drawer)
+        }}>New run</button>
         <button onClick={close} title="Back to the editor (Alt+T)">Close ✕</button>
       </div>
       {error && <div className="err-banner">{error}</div>}
-      {tab === 'nonlinear' ? (
+      {tab === 'nonlinear' && (
         <div className="td-body">
-          <aside className="td-side"><LockNote /><fieldset className="rec-fieldset" disabled={locked}><ExitLosses /></fieldset></aside>
-          <main className="td-main td-main-nl"><fieldset className="rec-fieldset" disabled={locked}><NLLab /></fieldset></main>
+          <main className="td-main td-main-nl"><LockNote /><fieldset className="rec-fieldset" disabled={locked}><NLLab /></fieldset></main>
+          <aside className="td-side td-rail"><fieldset className="rec-fieldset" disabled={locked}><NLRail /><ExitLosses /></fieldset></aside>
         </div>
-      ) : (
+      )}
+      {tab === 'linear' && (
         <div className="td-body">
           <aside className="td-side">
             <LockNote />
             <fieldset className="rec-fieldset" disabled={locked}>
-            {tab === 'linear' && <LinearControls cfg={cfg.linear} set={(p) => setTd('linear', p)} view={view} setView={setView} />}
-            {tab === 'transient' && <TransientControls cfg={cfg.transient} set={(p) => setTd('transient', p)} />}
-            {tab === 'distortion' && <DistortionControls cfg={cfg.distortion} set={(p) => setTd('distortion', p)} />}
+              <LinearControls cfg={cfg.linear} set={(p) => setTd('linear', p)} view={view} setView={setView} />
             </fieldset>
           </aside>
-          <main className="td-main">
-            {tab === 'linear' && <LinearView res={lin} view={view} />}
-            {tab === 'transient' && <TransientView res={results.transient} onRun={() => run('transient')} />}
-            {tab === 'distortion' && <DistortionView mode={dmode} res={results.distortion[dmode] || null} onRun={() => run('distortion')} />}
-          </main>
+          <main className="td-main"><LinearView res={lin} view={view} /></main>
+        </div>
+      )}
+      {onBoardSide && (
+        <div className="td-stage">
+          {board ? <Board board={board} /> : <BoardStart />}
+          <RunLibrary board={board} />
+          {drawer && <div className="drawer-veil" onClick={() => setDrawer(false)} />}
+          {drawer && <NewRunDrawer />}
         </div>
       )}
     </div>

@@ -29,7 +29,7 @@
 import { test, beforeEach } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { useStore, nextId, __internals, isLocked } from '../../src/store.js'
+import { useStore, nextId, __internals, isLocked, runIndex, runDataOf } from '../../src/store.js'
 import { readSnapshots, writeSnapshots } from '../../src/workspace.js'
 import {
   stack, split, defaultLayout, findNode, findPanelStack, openPanels, isOpen,
@@ -1964,4 +1964,51 @@ test('records: add, go back, lock, edit, delete', async () => {
   assert.equal(st().records, null)
   st().loadSerialized(saved)
   assert.equal(st().records.list.length, 1)
+})
+
+// CONTRACT (runs): a finished run is kept as a branch off the record it was
+// queued from, holding the project as queued; the project can change and the
+// run keeps its state, which can be restored as a new record at the end.
+test('runs: stored as a branch, listed, put on a board, restored as a record, deleted', async () => {
+  const id = st().addNode('chamber', { x: 0, y: 0 })
+  st().updateParams(id, { volume: 10 })
+  // queue-time snapshot, as queueRuns takes it
+  const R = await import('../../src/records.js')
+  const bp = await R.branchPoint(st().records, st().serialize())
+  useStore.setState({ records: bp.records })
+  const board = st().addTdBoard('report', 'Mine')
+  const job = {
+    id: 'run-1', analysis: 'harmonics', opts: { hz: 40, levelDb: 0, nonlinear: true }, vars: {}, content: bp.content,
+    parent: bp.parent, recordId: bp.recordId, path: st().activeFile, sig: 's', title: 'Harmonics 40 Hz · 0 dB', addTo: board,
+  }
+  const result = { hz: 40, levelDb: 0, harmonics: [{ n: 1, db: 0 }, { n: 2, db: -40 }], thd: 0.01, spl: 90, xPeak: {}, vPeak: {}, z: {}, pe: 1, pa: 0.01, efficiency: 0.01, currentPeak: 1, waveform: { fs: 1000, t: [0, 0.001], pressure: new Float64Array([0, 1]) } }
+  // the project changes while the run solves
+  st().updateParams(id, { volume: 30 })
+  await st()._storeRun(job, result)
+
+  const runs = runIndex(st())
+  assert.equal(runs.length, 1)
+  assert.deepEqual([runs[0].title, runs[0].open, runs[0].record], ['Harmonics 40 Hz · 0 dB', true, 0])
+  assert.equal(runs[0].headline.text, '1.0 %')
+  assert.deepEqual(st().tdBoards.find((b) => b.id === board).cards[0].runs, ['run-1'], 'sent to its board')
+  assert.deepEqual(runDataOf('run-1').data.result.waveform.pressure, [0, 1], 'results cached, packed')
+
+  // boards and runs travel in the file
+  const saved = st().serialize()
+  assert.equal(saved.tdBoards.length, 1)
+  st().loadSerialized(blank())
+  assert.equal(st().tdBoards.length, 0)
+  st().loadSerialized(saved)
+  assert.equal(runIndex(st()).length, 1)
+
+  await st().restoreRunAsRecord(runIndex(st())[0])
+  assert.deepEqual([st().recordNav.count, st().recordNav.selected], [2, 1])
+  assert.equal(paramsOf(id).volume, 10, 'the run\'s project, as it was queued')
+  assert.equal(st().tdBoards.length, 1, 'boards stay with the project across records')
+  await st().recordStep(-1)
+  assert.equal(paramsOf(id).volume, 30, 'the record it came from kept its edit')
+
+  await st().deleteRuns(runIndex(st()))
+  assert.equal(runIndex(st()).length, 0)
+  assert.deepEqual(st().tdBoards[0].cards[0].runs, [])
 })

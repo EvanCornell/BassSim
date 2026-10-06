@@ -7,9 +7,16 @@
 // once. The objects travel inside the project file, deflated as git keeps
 // them, so a project's records go wherever the project goes.
 //
-// There is no branching or merging. The records are a numbered list; the
-// project's own content is the working copy of the selected one, written
-// into it when another record is selected, added or the list is changed.
+// There is no merging. The records are a numbered list; the project's own
+// content is the working copy of the selected one, written into it when
+// another record is selected, added or the list is changed. Each record also
+// has an id that stays with it while its commit changes, so a time-domain run
+// can say which record it came from.
+//
+// A time-domain run is a branch: a commit whose parent is the record it was
+// run from and whose tree holds the project exactly as it was run, beside the
+// run's results. The record can go on changing; the run keeps its own state,
+// and that state can be restored as a new record.
 //
 // Nothing here touches the store or the DOM: each function takes the records
 // and returns new ones.
@@ -25,11 +32,28 @@ const GITDIR = '/records'
 /** The one file in each record's tree. */
 const FILE = 'project.json'
 
+/** The results file in a run's tree, beside the project. */
+const RUN_FILE = 'run.json'
+
 /** Who a record's commit is recorded as made by. */
 const AUTHOR = 'SpeakerSpice'
 
-/** Project fields that are not part of a record: the file's name, its save stamp and the records themselves. */
-const NOT_RECORDED = ['name', 'modified', 'records']
+/** Project fields that are not part of a record: the file's name, its save stamp, the records themselves and the time-domain boards. */
+const NOT_RECORDED = ['name', 'modified', 'records', 'tdBoards']
+
+/** A git object's name. */
+const OID = /^[0-9a-f]{40}$/
+
+/**
+ * A fresh id for a record or a run.
+ *
+ * @param {string} prefix - `r` for a record, `run` for a run.
+ * @returns {string} e.g. `r-k3j9x2`.
+ * @sideEffect Reads the random number generator and the clock.
+ */
+export function newId(prefix) {
+  return `${prefix}-${Date.now().toString(36).slice(-4)}${Math.random().toString(36).slice(2, 8)}`
+}
 
 let gitModule = null
 
@@ -254,10 +278,17 @@ export function recordContent(project) {
  */
 export function readRecords(raw) {
   if (!raw || typeof raw !== 'object' || !Array.isArray(raw.list) || !raw.list.length) return null
-  const list = raw.list.filter((oid) => typeof oid === 'string' && /^[0-9a-f]{40}$/.test(oid))
+  const keep = raw.list.map((oid) => typeof oid === 'string' && OID.test(oid))
+  const list = raw.list.filter((_, i) => keep[i])
   if (!list.length || !raw.objects || typeof raw.objects !== 'object') return null
   const selected = Math.min(Math.max(Math.round(Number(raw.selected) || 0), 0), list.length - 1)
-  return { list, selected, objects: { ...raw.objects } }
+  // ids: kept when there is one per record, otherwise made from the commits, which is stable until the next save writes them
+  const given = Array.isArray(raw.ids) && raw.ids.length === raw.list.length ? raw.ids.filter((_, i) => keep[i]) : null
+  const ids = given && given.every((x) => typeof x === 'string' && x) && new Set(given).size === given.length
+    ? given : list.map((oid, i) => `r-${oid.slice(0, 8)}${i}`)
+  const runs = (Array.isArray(raw.runs) ? raw.runs : [])
+    .filter((r) => r && typeof r === 'object' && typeof r.id === 'string' && typeof r.oid === 'string' && OID.test(r.oid) && raw.objects[r.oid])
+  return { list, ids, selected, objects: { ...raw.objects }, runs }
 }
 
 /**
@@ -295,18 +326,32 @@ async function recordParts(repo, oid) {
 }
 
 /**
- * Drop every object no record reaches.
+ * Drop every object no record or run reaches.
  *
  * @param {object} repo - From `memoryRepo`.
  * @param {string[]} list - The records.
+ * @param {Array<{oid: string}>} [runs] - The runs, whose commits, trees and parent records are kept too.
  * @returns {Promise<void>} Resolves once done.
  * @sideEffect Loads the library; removes objects from the repository.
  */
-async function collect(repo, list) {
+async function collect(repo, list, runs = []) {
   const keep = new Set()
   for (const oid of list) {
     const p = await recordParts(repo, oid)
     keep.add(oid).add(p.tree).add(p.blob)
+  }
+  const g = await git()
+  for (const run of runs) {
+    // the run's commit, everything in its tree, and the record commit it branched from
+    const { commit } = await g.readCommit({ fs: repo.fs, gitdir: GITDIR, oid: run.oid })
+    keep.add(run.oid).add(commit.tree)
+    const { tree } = await g.readTree({ fs: repo.fs, gitdir: GITDIR, oid: commit.tree })
+    for (const e of tree) keep.add(e.oid)
+    for (const parent of commit.parent) {
+      if (!repo.files.has(`${GITDIR}/objects/${parent.slice(0, 2)}/${parent.slice(2)}`)) continue
+      const p = await recordParts(repo, parent)
+      keep.add(parent).add(p.tree).add(p.blob)
+    }
   }
   for (const oid of Object.keys(objectsOf(repo.files))) {
     if (!keep.has(oid)) repo.files.delete(`${GITDIR}/objects/${oid.slice(0, 2)}/${oid.slice(2)}`)
@@ -363,7 +408,7 @@ export async function saveRecord(records, project, now = Date.now()) {
   if (!records) {
     const repo = memoryRepo({})
     const oid = await writeRecord(repo, content, now)
-    return { list: [oid], selected: 0, objects: objectsOf(repo.files) }
+    return { list: [oid], ids: [newId('r')], selected: 0, objects: objectsOf(repo.files), runs: [] }
   }
   const repo = memoryRepo(records.objects)
   const g = await git()
@@ -373,7 +418,7 @@ export async function saveRecord(records, project, now = Date.now()) {
   const oid = await writeRecord(repo, content, now)
   const list = records.list.slice()
   list[records.selected] = oid
-  await collect(repo, list)
+  await collect(repo, list, records.runs)
   return { ...records, list, objects: objectsOf(repo.files) }
 }
 
@@ -395,7 +440,7 @@ export async function addRecord(records, project, now = Date.now()) {
   // one second on, so the new record's commit is its own even when nothing has changed yet
   const oid = await writeRecord(repo, recordContent(project), now + 1000)
   const list = [...saved.list, oid]
-  return { list, selected: list.length - 1, objects: objectsOf(repo.files) }
+  return { ...saved, list, ids: [...saved.ids, newId('r')], selected: list.length - 1, objects: objectsOf(repo.files) }
 }
 
 /**
@@ -409,9 +454,10 @@ export async function addRecord(records, project, now = Date.now()) {
 export async function deleteRecord(records) {
   if (records.list.length <= 1) throw new Error('A project keeps at least one record.')
   const list = records.list.filter((_, i) => i !== records.selected)
+  const ids = records.ids.filter((_, i) => i !== records.selected)
   const repo = memoryRepo(records.objects)
-  await collect(repo, list)
-  return { list, selected: Math.max(0, records.selected - 1), objects: objectsOf(repo.files) }
+  await collect(repo, list, records.runs)
+  return { ...records, list, ids, selected: Math.max(0, records.selected - 1), objects: objectsOf(repo.files) }
 }
 
 /**
@@ -430,4 +476,137 @@ export async function selectRecord(records, project, index, now = Date.now()) {
   if (index < 0 || index >= saved.list.length) throw new Error(`There is no record ${index + 1}.`)
   const next = { ...saved, selected: index }
   return { records: next, content: await readRecord(next, index) }
+}
+
+/**
+ * The record a run branches from: the selected one, saved with the project first.
+ *
+ * Called when a run is queued, so the branch point is the record as it was
+ * then, whatever is edited while the run waits.
+ *
+ * @param {object|null} records - The project's records; `null` starts them.
+ * @param {object} project - The serialized project.
+ * @param {number} [now] - The time, ms since the epoch.
+ * @returns {Promise<{records: object, parent: string, recordId: string, content: object}>} The records, the record's commit, its id, and the content a run of it holds.
+ * @sideEffect Loads the library.
+ */
+export async function branchPoint(records, project, now = Date.now()) {
+  const saved = await saveRecord(records, project, now)
+  return { records: saved, parent: saved.list[saved.selected], recordId: saved.ids[saved.selected], content: recordContent(project) }
+}
+
+/**
+ * Store a finished run as a branch off its record.
+ *
+ * The commit's tree holds the project as it was run and the run's results;
+ * its parent is the record commit the run was queued from, or, when that has
+ * since been replaced by a later save, the record's commit now.
+ *
+ * @param {object} records - The project's records.
+ * @param {object} run - The run.
+ * @param {string} run.id - Its id.
+ * @param {string} [run.parent] - The record commit it was queued from.
+ * @param {string} [run.recordId] - The id of the record it was queued from.
+ * @param {object} run.content - The project content it ran.
+ * @param {object} run.data - Its settings and results, as `run.json` holds them.
+ * @param {object} [run.meta] - What the run list shows of it: title, kind, figures.
+ * @param {number} [now] - The time, ms since the epoch.
+ * @returns {Promise<object>} The records, the run at the end of `runs`.
+ * @sideEffect Loads the library.
+ */
+export async function addRun(records, run, now = Date.now()) {
+  const repo = memoryRepo(records.objects)
+  const g = await git()
+  /**
+   * Write a JSON file's blob.
+   *
+   * @param {object} value - The content.
+   * @returns {Promise<string>} The blob's hash.
+   * @sideEffect Writes the repository.
+   */
+  const blobOf = (value) => g.writeBlob({ fs: repo.fs, gitdir: GITDIR, blob: new Uint8Array(Buffer.from(JSON.stringify(value))) })
+  const tree = await g.writeTree({
+    fs: repo.fs, gitdir: GITDIR,
+    tree: [
+      { mode: '100644', path: FILE, oid: await blobOf(run.content), type: 'blob' },
+      { mode: '100644', path: RUN_FILE, oid: await blobOf(run.data), type: 'blob' },
+    ],
+  })
+  /**
+   * Whether the repository holds an object.
+   *
+   * @param {string} [oid] - Its hash.
+   * @returns {boolean} True when present.
+   * @reads the repository's files.
+   */
+  const has = (oid) => !!oid && repo.files.has(`${GITDIR}/objects/${oid.slice(0, 2)}/${oid.slice(2)}`)
+  const byId = records.ids.indexOf(run.recordId)
+  const parent = has(run.parent) ? run.parent : byId >= 0 ? records.list[byId] : null
+  const who = { name: AUTHOR, email: '', timestamp: Math.floor(now / 1000), timezoneOffset: 0 }
+  const oid = await g.writeCommit({
+    fs: repo.fs, gitdir: GITDIR,
+    commit: { message: `Run ${run.meta?.title || run.id}\n`, tree, parent: parent ? [parent] : [], author: who, committer: who },
+  })
+  const entry = { ...(run.meta || {}), id: run.id, oid, recordId: run.recordId || null, at: now }
+  return { ...records, runs: [...(records.runs || []), entry], objects: objectsOf(repo.files) }
+}
+
+/**
+ * Read a run's project and results.
+ *
+ * @param {object} records - The records holding the run.
+ * @param {string} oid - The run's commit.
+ * @returns {Promise<{content: object, data: object}>} The project as it was run, and `run.json`.
+ * @throws {Error} When the run is missing or unreadable.
+ * @sideEffect Loads the library.
+ */
+export async function readRun(records, oid) {
+  const repo = memoryRepo(records.objects)
+  const g = await git()
+  const { commit } = await g.readCommit({ fs: repo.fs, gitdir: GITDIR, oid })
+  const { tree } = await g.readTree({ fs: repo.fs, gitdir: GITDIR, oid: commit.tree })
+  const out = {}
+  for (const [key, path] of [['content', FILE], ['data', RUN_FILE]]) {
+    const entry = tree.find((e) => e.path === path)
+    if (!entry) throw new Error('A run is missing its files.')
+    const { blob } = await g.readBlob({ fs: repo.fs, gitdir: GITDIR, oid: entry.oid })
+    out[key] = JSON.parse(Buffer.from(blob).toString('utf8'))
+  }
+  return out
+}
+
+/**
+ * Delete runs, dropping whatever only they reached.
+ *
+ * @param {object} records - The project's records.
+ * @param {string[]} ids - The runs.
+ * @returns {Promise<object>} The records.
+ * @sideEffect Loads the library.
+ */
+export async function deleteRuns(records, ids) {
+  const runs = (records.runs || []).filter((r) => !ids.includes(r.id))
+  const repo = memoryRepo(records.objects)
+  await collect(repo, records.list, runs)
+  return { ...records, runs, objects: objectsOf(repo.files) }
+}
+
+/**
+ * Add a record at the end holding given content — a run's project — and select it.
+ *
+ * The selected record is saved with the working copy first, as when adding
+ * any record.
+ *
+ * @param {object|null} records - The project's records.
+ * @param {object} project - The serialized project, the selected record's working copy.
+ * @param {object} content - The new record's content.
+ * @param {number} [now] - The time, ms since the epoch.
+ * @returns {Promise<object>} The records, the new one selected.
+ * @sideEffect Loads the library.
+ */
+export async function addRecordFrom(records, project, content, now = Date.now()) {
+  const saved = await saveRecord(records, project, now)
+  const repo = memoryRepo(saved.objects)
+  const oid = await writeRecord(repo, recordContent(content), now + 1000)
+  const list = [...saved.list, oid]
+  return { ...saved, list, ids: [...saved.ids, newId('r')], selected: list.length - 1, objects: objectsOf(repo.files) }
 }

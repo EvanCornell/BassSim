@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { useStore } from '../store'
+import { readRecord } from '../records'
 import {
   NL_PARAMS, defaultNL, evalCurve, derivedRatios, parseCurveCSV, normalizeTable, curveHasContent,
   curvesFromRatings, emptyCurve, BL_AT_XMAX, XVAR_DB,
@@ -111,10 +112,11 @@ function niceTicks(lo, hi, target = 8) {
  * @param {number} props.width - Available width, px.
  * @param {number} props.height - Available height, px.
  * @param {{v: number, unit: string}} props.refv - Small-signal reference for the absolute-value axis.
+ * @param {Array<{label: string, color: string, curve: object, xmax: number}>} [props.overlays] - Curves drawn dashed for comparison.
  * @returns {React.ReactElement} The editor.
  * @sideEffect Subscribes to the store; edits update the driver's params, which triggers a resimulation. Registers a non-passive wheel listener and a window keydown listener.
  */
-function CurveEditor({ driverId, param, nl, xmax, width, height, refv }) {
+function CurveEditor({ driverId, param, nl, xmax, width, height, refv, overlays = [] }) {
   const updateParams = useStore((s) => s.updateParams)
   const [selected, setSelected] = useState(-1)
   const [hover, setHover] = useState(null) // data-space x under cursor
@@ -442,6 +444,16 @@ function CurveEditor({ driverId, param, nl, xmax, width, height, refv }) {
               </text>
             </g>
           )}
+          {overlays.map((o) => {
+            const n = 160
+            let d = ''
+            for (let i = 0; i <= n; i++) {
+              const x = v.x0 + ((v.x1 - v.x0) * i) / n
+              const [px, py] = toPx(x, evalCurve(o.curve, x, o.xmax))
+              d += `${i ? 'L' : 'M'}${px.toFixed(1)} ${py.toFixed(1)}`
+            }
+            return <path key={o.label} d={d} stroke={o.color} strokeWidth="1.6" strokeDasharray="6 4" fill="none" />
+          })}
           <path d={path} stroke="var(--c1)" strokeWidth="2.5" fill="none" />
           {(curve.points || []).map((p, k) => {
             const [px, py] = toPx(p.x, evalCurve(curve, p.x, xmax))
@@ -669,34 +681,195 @@ function RatingsButton({ driver, nl }) {
   )
 }
 
+/** Colours for overlay curves, after the edited curve's own. */
+const OVERLAY_COLORS = ['var(--text-2)', 'var(--c2)', 'var(--c3)', 'var(--c5)']
+
+/**
+ * The driver being edited, and its curves with defaults filled in.
+ *
+ * @returns {{drivers: Array<object>, driver: object|undefined, nl: object|null, param: string}} Every driver, the chosen one, its curves, and the chosen curve.
+ * @sideEffect Subscribes to the store.
+ */
+function useNlDriver() {
+  const nodes = useStore((s) => s.nodes)
+  const chosen = useStore((s) => s.nlDriver)
+  const param = useStore((s) => s.nlParam)
+  const drivers = nodes.filter((n) => n.type === 'driver')
+  const driver = drivers.find((d) => d.id === chosen) || drivers[0]
+  return { drivers, driver, nl: driver ? { ...defaultNL(), ...(driver.data.params.nl || {}) } : null, param }
+}
+
+/**
+ * What a curve holds, in a few words.
+ *
+ * @param {object} curve - A curve.
+ * @returns {string} e.g. `2 points, symmetric`, `Imported table`, `Flat`.
+ * @pure
+ */
+export function curveSummary(curve) {
+  if (!curveHasContent(curve)) return 'Flat'
+  const parts = []
+  if (curve.poly) parts.push('Polynomial')
+  else if (curve.table) parts.push('Imported table')
+  const n = curve.points?.length || 0
+  if (n) parts.push(`${n} point${n === 1 ? '' : 's'}`)
+  if (curve.sym) parts.push('symmetric')
+  return parts.join(', ').replace(/^./, (c) => c.toUpperCase())
+}
+
+/**
+ * The curve list and readouts beside the editor: the driver, what each curve holds, and the parameters at the current drive.
+ *
+ * @returns {React.ReactElement} The rail's sections.
+ * @sideEffect Subscribes to the store; picks the driver and curve.
+ */
+export function NLRail() {
+  const { drivers, driver, nl, param } = useNlDriver()
+  const results = useStore((s) => s.results)
+  const setNl = useStore((s) => s.setNl)
+  if (!driver) return <div className="td-hint">Add a Driver node to the circuit first.</div>
+  const p = driver.data.params
+  const xmax = p.Xmax || 10
+  const arr = results?.excursionByDriver?.[driver.id]
+  const xPk = arr && arr.length ? Math.max(...arr) : null
+  const der = xPk != null ? derivedRatios(nl, xPk, xmax) : null
+  const both = curveHasContent(nl.Cms) && curveHasContent(nl.Kms)
+  const readouts = der ? [
+    ['X̂', `${xPk.toFixed(1)} mm`], ['Bl', `${(der.Bl * 100).toFixed(0)}%`], ['Cms', `${(der.Cms * 100).toFixed(0)}%`],
+    ['Le', `${(der.Le * 100).toFixed(0)}%`], ['Fs', `${(p.Fs * der.Fs).toFixed(1)} Hz`], ['Qes', `${(der.Qes * 100).toFixed(0)}%`],
+    ['Vas', `${(der.Vas * 100).toFixed(0)}%`],
+  ] : []
+  return (
+    <>
+      <div className="td-section">
+        <div className="nl-rail-row">
+          <h4>Driver</h4>
+          <select value={driver.id} onChange={(e) => setNl({ nlDriver: e.target.value, nlOverlays: [] })}>
+            {drivers.map((d) => <option key={d.id} value={d.id}>{d.data.params.label || d.id}</option>)}
+          </select>
+        </div>
+      </div>
+      <div className="td-section">
+        <h4>Curves</h4>
+        {NL_PARAMS.map((k) => (
+          <button key={k} className={`nl-curve${param === k ? ' on' : ''}`} onClick={() => setNl({ nlParam: k })}>
+            <span>{k}(x)</span>
+            <span className={curveHasContent(nl[k]) ? '' : 'dim'}>{curveSummary(nl[k])}</span>
+          </button>
+        ))}
+        {curveHasContent(nl.Kms) && <div className="td-hint">Kms(x) has content, so it takes precedence over Cms(x).{both ? ' Reset one of them.' : ''}</div>}
+      </div>
+      <div className="td-section">
+        <h4>At current drive</h4>
+        {der ? (
+          <>
+            <div className="nl-readouts">{readouts.map(([l, v]) => <span key={l}>{l}<b>{v}</b></span>)}</div>
+            <div className="td-hint">Cycle averages at the sweep&apos;s peak excursion — a guide only; transient runs use the curves themselves.</div>
+          </>
+        ) : <div className="td-hint">Run a simulation to see effective large-signal parameters.</div>}
+      </div>
+    </>
+  )
+}
+
+/**
+ * The "+ Add overlay" menu: the same driver's curves in another record, a driver in another project, or a fit to the driver's ratings.
+ *
+ * @param {object} props - Component props.
+ * @param {object} props.driver - The driver being edited.
+ * @returns {React.ReactElement} The button and, when open, its menu.
+ * @sideEffect Subscribes to the store; reads records; adds overlays.
+ */
+function AddOverlay({ driver }) {
+  const [open, setOpen] = useState(false)
+  const records = useStore((s) => s.records)
+  const workspace = useStore((s) => s.workspace)
+  const activeFile = useStore((s) => s.activeFile)
+  const overlays = useStore((s) => s.nlOverlays)
+  const setNl = useStore((s) => s.setNl)
+  const p = driver.data.params
+  /**
+   * Lay a curve set over the editor.
+   *
+   * @param {string} id - What it is, so it is added once.
+   * @param {string} label - Its name.
+   * @param {object|null} nl - Its curves; none is the linear driver, every curve flat.
+   * @param {number} xmax - Its driver's Xmax.
+   * @returns {void}
+   * @sideEffect Writes the overlays; closes the menu.
+   */
+  const add = (id, label, nl, xmax) => {
+    setOpen(false)
+    if (overlays.some((o) => o.id === id)) return
+    setNl({ nlOverlays: [...overlays, { id, label, nl: { ...defaultNL(), ...(nl || {}) }, xmax: xmax || p.Xmax || 10 }] })
+  }
+  /**
+   * Overlay this driver as another record holds it.
+   *
+   * @param {number} i - The record.
+   * @returns {Promise<void>} Resolves once added.
+   * @sideEffect Reads the record; writes the overlays.
+   */
+  const fromRecord = async (i) => {
+    try {
+      const content = await readRecord(records, i)
+      const d = (content.nodes || []).find((n) => n.id === driver.id) || (content.nodes || []).find((n) => n.type === 'driver')
+      add(`rec:${i}`, `Record ${i + 1}`, d?.params?.nl || null, d?.params?.Xmax)
+    } catch (err) { alert(err.message) }
+  }
+  const others = Object.entries(workspace.files)
+    .filter(([path, f]) => f.kind === 'project' && path !== activeFile)
+    .flatMap(([path, f]) => (f.data?.nodes || []).filter((n) => n.type === 'driver' && n.params?.nl)
+      .map((n) => ({ id: `proj:${path}:${n.id}`, label: `${f.data?.name || path.split('/').pop().replace(/\.speakerspice$/, '')} · ${n.params.label || n.id}`, nl: n.params.nl, xmax: n.params.Xmax })))
+  const xvar = p.nl?.ratings?.xvar ?? catalogueXvar(p)
+  let fit = null
+  try { if (p.Xmax > 0) { const c = curvesFromRatings(Number(p.Xmax), xvar || null); fit = { Bl: c.Bl, Kms: c.Kms } } } catch { fit = null }
+  return (
+    <span style={{ position: 'relative' }}>
+      <button className="nl-chip add" onClick={() => setOpen(!open)}>+ Add overlay</button>
+      {open && (
+        <>
+          <div className="menu-veil" onClick={() => setOpen(false)} />
+          <div className="lib-menu" style={{ left: 0, top: 'calc(100% + 6px)' }}>
+            {records && records.list.map((_, i) => (i === records.selected ? null : (
+              <button key={i} onClick={() => fromRecord(i)}>Record {i + 1}</button>
+            )))}
+            {fit && <button onClick={() => add('fit', `Xmax ${p.Xmax}${xvar ? ` & Xvar ${xvar}` : ''} fit`, fit, p.Xmax)}>Fit to Xmax{xvar ? ' & Xvar' : ''}</button>}
+            {others.map((o) => <button key={o.id} onClick={() => add(o.id, o.label, o.nl, o.xmax)}>{o.label}</button>)}
+            {!(records?.list.length > 1) && !fit && !others.length && <span className="lib-meta">Other records, other projects&apos; drivers and a fit to Xmax appear here.</span>}
+          </div>
+        </>
+      )}
+    </span>
+  )
+}
+
 /**
  * The driver curve editor: a driver's large-signal Bl, Kms/Cms and Le curves.
  *
  * Curves describe how each parameter varies with excursion, as a ratio of
  * its small-signal value. Nonlinear time-domain runs use them directly; the
- * frequency sweep does not, since it is the small-signal model.
+ * frequency sweep does not, since it is the small-signal model. The driver
+ * and curve are picked in the rail beside it (`NLRail`).
  *
  * @returns {React.ReactElement} The editor.
  * @sideEffect Subscribes to the store; edits update the driver's params.
  */
 export default function NLLab() {
-  const nodes = useStore((s) => s.nodes)
   const closeTimeDomain = useStore((s) => s.closeTimeDomain)
   const updateParams = useStore((s) => s.updateParams)
-  const results = useStore((s) => s.results)
-  const drivers = nodes.filter((n) => n.type === 'driver')
-  const [driverId, setDriverId] = useState(drivers[0]?.id || null)
-  const [param, setParam] = useState('Bl')
+  const overlays = useStore((s) => s.nlOverlays)
+  const setNl = useStore((s) => s.setNl)
+  const { driver, nl, param } = useNlDriver()
   const fileRef = useRef(null)
   const wrapRef = useRef(null)
   const [size, setSize] = useState({ w: 900, h: 420 })
-  const driver = drivers.find((d) => d.id === driverId) || drivers[0]
 
   useEffect(() => {
     if (!wrapRef.current) return
     const ro = new ResizeObserver((entries) => {
       const r = entries[0].contentRect
-      setSize({ w: r.width, h: Math.max(r.height - 210, 260) })
+      setSize({ w: r.width, h: Math.max(r.height - 170, 260) })
     })
     ro.observe(wrapRef.current)
     return () => ro.disconnect()
@@ -705,24 +878,16 @@ export default function NLLab() {
   if (!driver) {
     return (
       <div style={{ padding: 30 }}>
-        <h3>Nonlinear Lab</h3>
+        <h3>Driver nonlinearity</h3>
         <p style={{ color: 'var(--text-3)' }}>Add a Driver node to the circuit first.</p>
         <button onClick={closeTimeDomain}>← Back to editor</button>
       </div>
     )
   }
   const p = driver.data.params
-  const nl = { ...defaultNL(), ...(p.nl || {}) }
   const xmax = p.Xmax || 10
   const curve = nl[param]
   const refv = refValue(param, p)
-  const suspConflict = curveHasContent(nl.Cms) && curveHasContent(nl.Kms)
-
-  const xPk = (() => {
-    const arr = results?.excursionByDriver?.[driver.id]
-    return arr && arr.length ? Math.max(...arr) : null
-  })()
-  const der = xPk != null ? derivedRatios(nl, xPk, xmax) : null
 
   /**
    * Write a change to the selected curve back to the driver node.
@@ -767,31 +932,22 @@ export default function NLLab() {
     e.target.value = ''
   }
 
+  const shown = overlays.map((o, i) => ({ label: o.label, color: OVERLAY_COLORS[i % OVERLAY_COLORS.length], curve: { ...defaultNL()[param], ...(o.nl[param] || {}) }, xmax: o.xmax }))
   return (
-    <div ref={wrapRef} style={{ padding: '12px 20px', height: '100%', display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'hidden' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6, flexWrap: 'wrap' }}>
-        <h3 style={{ margin: 0 }}>Driver nonlinearity</h3>
-        <select value={driver.id} onChange={(e) => setDriverId(e.target.value)} style={{ width: 170 }}>
-          {drivers.map((d) => <option key={d.id} value={d.id}>{d.data.params.label || d.id}</option>)}
-        </select>
-        <div style={{ display: 'flex', gap: 2 }}>
-          {NL_PARAMS.map((k) => (
-            <button key={k} className={param === k ? 'primary' : ''} onClick={() => setParam(k)}>{k}(x)</button>
-          ))}
-        </div>
+    <div ref={wrapRef} className="nl-main">
+      <div className="nl-toolbar">
+        <span className="nl-param">{param}(x)</span>
         <label className="tb-group" title="Linear excursion limit — red markers on the chart; used by the extrapolation toggle and the excursion plot">
           Xmax
           <NumInput step="0.5" above="0" value={xmax} style={{ width: 60 }}
             onCommit={(val) => updateParams(driver.id, { Xmax: val })} />
           mm
         </label>
-        <label style={{ display: 'flex', gap: 5, alignItems: 'center', fontSize: 12, cursor: 'pointer' }}
-          title="Mirror every control point onto both stroke directions">
+        <label className="td-check" title="Mirror every control point onto both stroke directions">
           <input type="checkbox" checked={!!curve.sym} onChange={(e) => setCurve({ sym: e.target.checked })} />
           Symmetric
         </label>
-        <label style={{ display: 'flex', gap: 5, alignItems: 'center', fontSize: 12, cursor: 'pointer' }}
-          title="Past ±Xmax, continue the curve along its slope at Xmax instead of letting it relax back toward 1.0">
+        <label className="td-check" title="Past ±Xmax, continue the curve along its slope at Xmax instead of letting it relax back toward 1.0">
           <input type="checkbox" checked={!!curve.extrap} onChange={(e) => setCurve({ extrap: e.target.checked })} />
           Extrapolate past Xmax
         </label>
@@ -804,29 +960,23 @@ export default function NLLab() {
         {curve.poly && <button className="danger" onClick={() => setCurve({ poly: null })}>Clear polynomial</button>}
         <button onClick={() => setCurve({ points: [], table: null, poly: null })}>Reset {param}(x)</button>
       </div>
-      <div style={{ fontSize: 11.5, color: 'var(--text-3)', marginBottom: 6 }}>
+      <div className="nl-hint">
         {PARAM_INFO[param].hint}{' '}
-        Reference (flat line) = small-signal {param} = <b style={{ color: 'var(--text-2)' }}>{fmtVal(refv.v)} {refv.unit}</b>; a flat curve reproduces the linear engine.
+        Reference (flat line) = small-signal {param} = <b>{fmtVal(refv.v)} {refv.unit}</b>; a flat curve reproduces the linear engine.
         {curve.table && !curve.poly && <b> Imported table active as baseline; points deform it.</b>}
         {curve.poly && <b> Polynomial active as baseline (x from {curve.poly.min} to {curve.poly.max} mm, held beyond); points deform it.</b>}
-        {suspConflict && <b style={{ color: 'var(--amber)' }}> Both Cms(x) and Kms(x) have content — Kms(x) takes precedence; reset one of them.</b>}
       </div>
-      <CurveEditor key={driver.id + param} driverId={driver.id} param={param} nl={nl} xmax={xmax} width={size.w - 40} height={size.h} refv={refv} />
-      <div style={{ display: 'flex', gap: 22, fontSize: 12, flexWrap: 'wrap', padding: '8px 2px 0', borderTop: '1px solid var(--border)', marginTop: 8 }}>
-        {der ? (
-          <>
-            <span style={{ color: 'var(--text-3)' }}>At current drive:</span>
-            <span>X̂ ≈ <b>{xPk.toFixed(1)} mm</b></span>
-            <span>Bl → <b>{(der.Bl * 100).toFixed(0)}%</b></span>
-            <span>Cms → <b>{(der.Cms * 100).toFixed(0)}%</b></span>
-            <span>Le → <b>{(der.Le * 100).toFixed(0)}%</b></span>
-            <span>Fs → <b>{(p.Fs * der.Fs).toFixed(1)} Hz</b></span>
-            <span>Qes → <b>{(der.Qes * 100).toFixed(0)}%</b></span>
-            <span>Vas → <b>{(der.Vas * 100).toFixed(0)}%</b></span>
-            <span style={{ color: 'var(--text-3)', fontSize: 10.5 }}>Cycle averages at the sweep's peak excursion — a guide only; transient runs use the curves themselves.</span>
-          </>
-        ) : <span style={{ color: 'var(--text-3)' }}>Run a simulation to see effective large-signal parameters.</span>}
+      <div className="nl-overlays">
+        <span className="lib-meta">Overlay</span>
+        {shown.map((o, i) => (
+          <span key={o.label} className="nl-chip">
+            <span className="nl-dash" style={{ borderColor: o.color }} />{o.label}
+            <button onClick={() => setNl({ nlOverlays: overlays.filter((_, j) => j !== i) })} title="Remove this overlay">✕</button>
+          </span>
+        ))}
+        <AddOverlay driver={driver} />
       </div>
+      <CurveEditor key={driver.id + param} driverId={driver.id} param={param} nl={nl} xmax={xmax} width={size.w} height={size.h} refv={refv} overlays={shown} />
     </div>
   )
 }
@@ -834,4 +984,4 @@ export default function NLLab() {
 // Module-private functions, exposed for the contract test suite only
 // (test/contract/*). Not part of this module's public API — application code
 // must not import from here, and nothing outside the tests does.
-export const __internals = { refValue, fmtVal, niceTicks, catalogueXvar }
+export const __internals = { refValue, fmtVal, niceTicks, catalogueXvar, curveSummary }

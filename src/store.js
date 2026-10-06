@@ -42,6 +42,9 @@ import { stripLegacySuffix } from './legacy'
 import * as R from './records'
 import * as Z from './utils/zip'
 import * as F from './utils/folder'
+import { preloadedWorkspace } from './bootWorkspace'
+import * as RUNS from './runs'
+import { readBoards, newBoard, newCard, addRunsToBoard, dropRuns } from './boards'
 import { DEFAULT_TOOLBAR, sanitizeToolbar } from './toolbarItems'
 import { channel, isPopout, openPanelWindow, openPanelGroupWindow, popoutPanelId, popoutPanelIds, SHARED_KEYS, SIM_INPUT_KEYS } from './popout'
 import { loadBindings, saveBindings, DEFAULT_BINDINGS, COMMAND_IDS, findConflict } from './keymap'
@@ -139,6 +142,82 @@ function stopTdWorker() {
   if (tdWorker) tdWorker.terminate()
   tdWorker = null
   cancelLane('td')
+}
+
+// ---- stored runs ----
+
+let recordsQueue = Promise.resolve()
+
+/**
+ * Run a change to a project's records after every change already waiting.
+ *
+ * Records change asynchronously — git objects are hashed and deflated — so
+ * two changes started together (a run finishing while a record is added)
+ * would otherwise each start from the records as they were and one would be
+ * lost.
+ *
+ * @param {Function} fn - `async () → *`, the change.
+ * @returns {Promise<*>} What `fn` returns.
+ * @sideEffect Chains onto the module's queue of record changes.
+ */
+function inRecordsQueue(fn) {
+  const p = recordsQueue.then(fn)
+  recordsQueue = p.catch(() => {})
+  return p
+}
+
+/**
+ * Results of stored runs read so far, by run id: `{data, content}`, `{error}` or `{loading}`.
+ *
+ * Results live in the project file as git objects and are read only when a
+ * view needs them; once read they are kept for the session.
+ */
+const runCache = new Map()
+
+/**
+ * A stored run's results, if they have been read.
+ *
+ * @param {string} id - The run's id.
+ * @returns {{data?: object, content?: object, error?: string, loading?: boolean}|null} What is known, or `null` before it is asked for.
+ * @reads the module's run cache.
+ */
+export function runDataOf(id) {
+  return runCache.get(id) || null
+}
+
+/**
+ * The project name a workspace file shows.
+ *
+ * @param {string} path - The file's path.
+ * @param {object} [data] - Its project data.
+ * @returns {string} Its name.
+ * @pure
+ */
+const projectNameOf = (path, data) => data?.name || W.baseName(path).replace(/\.speakerspice$/, '')
+
+/**
+ * Every stored run in the workspace, newest first.
+ *
+ * Runs of the open project come from the store; the rest from their files.
+ * Each carries where it lives (`path`), its project's name, whether that is
+ * the open project, and the number of the record it was run from (`-1` once
+ * that record is deleted).
+ *
+ * @param {object} st - Store state.
+ * @returns {Array<object>} The runs.
+ * @pure
+ */
+export function runIndex(st) {
+  const out = []
+  for (const [path, f] of Object.entries(st.workspace.files)) {
+    if (f.kind !== 'project') continue
+    const open = path === st.activeFile
+    const recs = open ? st.records : f.data?.records
+    const runs = Array.isArray(recs?.runs) ? recs.runs : []
+    const project = open ? st.projectName || projectNameOf(path, null) : projectNameOf(path, f.data)
+    for (const r of runs) out.push({ ...r, path, project, open, record: Array.isArray(recs.ids) ? recs.ids.indexOf(r.recordId) : -1 })
+  }
+  return out.sort((a, b) => (b.at || 0) - (a.at || 0))
 }
 
 /** The time-domain settings a new project starts with, per section. */
@@ -256,11 +335,12 @@ let workspaceRestored = false
  * appear when something writes to it, not when the app starts.
  *
  * @returns {object} A usable workspace.
- * @sideEffect Reads LocalStorage and the current time.
+ * @sideEffect Reads the preloaded IndexedDB copy, LocalStorage and the current time.
  */
 function loadWorkspace() {
   try {
-    const raw = localStorage.getItem(WORKSPACE_KEY)
+    // the browser's database first; LocalStorage held it before, and is read once more to carry it over
+    const raw = preloadedWorkspace() || localStorage.getItem(WORKSPACE_KEY)
     if (raw) {
       const parsed = W.parseWorkspace(raw)
       if (parsed.ok) { workspaceRestored = true; return parsed.workspace }
@@ -627,6 +707,27 @@ export const useStore = create((rawSet, get) => {
   tdJob: null,
   tdError: null,
   tdResults: { linear: null, transient: null, distortion: {} },
+  // Stored runs are branches in the project's records (see src/runs.js and
+  // src/records.js). Boards — saved sets of comparison cards — are kept in
+  // the project file beside the records, outside any one record.
+  tdBoards: [],
+  // Runs waiting or solving, each with the project as it was when queued;
+  // one solves at a time, in order. Lost on reload: a run is stored only
+  // once it has finished.
+  tdQueue: [],
+  // The New run drawer: whether it is open, and what it will run.
+  tdDrawer: false,
+  // The card a click in the library adds runs to.
+  tdCard: null,
+  tdDraft: { analysis: 'transient', vary: [], note: '', addTo: 'new' },
+  // Bumped as run results finish loading, so views reading the cache redraw.
+  tdDataTick: 0,
+  // The driver curve editor's choices: which driver and curve, and curves
+  // laid over it for comparison (`{id, label, nl}` — a whole curve set, so
+  // switching curve keeps them). Window state, not saved.
+  nlDriver: null,
+  nlParam: 'Bl',
+  nlOverlays: [],
   // ---- dockable workspace ----
   // `layout` is the tree from src/layout.js; every mutation goes through
   // layoutOps so persistence happens in exactly one place.
@@ -1983,6 +2084,8 @@ export const useStore = create((rawSet, get) => {
   runTimeDomain: (kind, mode) => {
     const st = get()
     if (!st.nodes.length) return
+    // a queued run has the worker; the live responses wait for it
+    if (st.tdQueue.some((j) => j.status === 'running')) return
     if (st.tdJob) stopTdWorker()
     const cfg = tdSettingsOf(st.projectExtras)
     const m = kind === 'distortion' ? (mode || cfg.distortion.mode) : undefined
@@ -2017,8 +2120,382 @@ export const useStore = create((rawSet, get) => {
    */
   cancelTimeDomain: () => {
     stopTdWorker()
-    set({ tdJob: null })
+    const q = get().tdQueue
+    set({ tdJob: null, tdQueue: q.filter((j) => j.status !== 'running') })
+    get()._pumpTdQueue()
   },
+
+  // ---- stored runs and the queue ----
+  /**
+   * Open or close the New run drawer. Closing it leaves queued runs running.
+   *
+   * @param {boolean} open - Whether it is open.
+   * @returns {void}
+   * @sideEffect Writes store state.
+   */
+  setTdDrawer: (open) => set({ tdDrawer: !!open }),
+  /**
+   * Select the card a click in the run library adds to.
+   *
+   * @param {string|null} id - The card.
+   * @returns {void}
+   * @sideEffect Writes store state.
+   */
+  setTdCard: (id) => set({ tdCard: id }),
+  /**
+   * Change what the New run drawer will run: the analysis, what varies, the note and where the runs go.
+   *
+   * The signal and solver settings are the project's own, set through `setTdSettings`.
+   *
+   * @param {object} patch - Fields to merge.
+   * @returns {void}
+   * @sideEffect Writes store state.
+   */
+  setTdDraft: (patch) => set({ tdDraft: { ...get().tdDraft, ...patch } }),
+  /**
+   * Queue runs of the drawer's analysis: one, or a series over what it varies.
+   *
+   * Each run takes the project as it is now — a copy, with the series'
+   * values applied — so the project can be edited and more runs queued while
+   * these wait. The record they branch from is saved first. Runs solve one
+   * at a time, in the order queued.
+   *
+   * @returns {Promise<string[]>} The queued runs' ids; none when there is nothing to run.
+   * @sideEffect Saves the selected record; may add a board and show it; queues jobs and starts the next.
+   */
+  queueRuns: async () => {
+    const st = get()
+    if (!st.nodes.length || POPOUT) return []
+    const draft = st.tdDraft
+    const analysis = draft.analysis
+    const base = RUNS.optsOf(analysis, tdSettingsOf(st.projectExtras))
+    const project = st.serialize()
+    const sig = st.tdSignature()
+    const path = st.activeFile
+    const vary = (draft.vary || []).filter((v) => v.key && v.values?.length && !(v.key === 'level' && analysis === 'compression'))
+    const sets = RUNS.expandVary(vary)
+    const { names } = RUNS.projectInfo(project)
+    const seriesTitle = vary.length
+      ? `${RUNS.runTitle(analysis, base, vary.map((v) => v.key))} ${vary.map((v) => RUNS.varLabel(v.key, names).label.toLowerCase()).join(' × ')} series`
+      : null
+    let addTo = draft.addTo
+    if (addTo === 'new') {
+      const template = !vary.length ? 'report' : vary[0].key === 'level' ? 'level' : 'overlay'
+      const b = newBoard(seriesTitle || RUNS.runTitle(analysis, base), template)
+      set({ tdBoards: [...get().tdBoards, b], tdTab: b.id })
+      addTo = b.id
+    } else if (!get().tdBoards.some((b) => b.id === addTo)) addTo = null
+    const bp = await inRecordsQueue(async () => {
+      const out = await R.branchPoint(get().records, project)
+      set({ records: out.records, recordNav: recordNavOf(out.records, get().recordNav.editing, get().recordNav.busy) })
+      get().saveActiveFile()
+      return out
+    })
+    const seriesId = vary.length ? R.newId('series') : null
+    const jobs = sets.map((vars) => {
+      const v = RUNS.applyVars(project, base, analysis, vars)
+      return {
+        id: R.newId('run'), analysis, opts: v.opts, vars, content: R.recordContent(v.project), name: project.name,
+        parent: bp.parent, recordId: bp.recordId, path, sig, seriesId, seriesTitle,
+        title: RUNS.runTitle(analysis, v.opts), note: draft.note || '', addTo,
+        status: 'queued', fraction: 0, message: 'Queued',
+      }
+    })
+    set({ tdQueue: [...get().tdQueue, ...jobs] })
+    get()._pumpTdQueue()
+    return jobs.map((j) => j.id)
+  },
+  /**
+   * Start the next queued run, if none is solving.
+   *
+   * A live linear response in progress gives way: it is redone when its tab
+   * next asks.
+   *
+   * @returns {void}
+   * @sideEffect Starts a worker job; writes progress into the queue; stores the run when it finishes.
+   */
+  _pumpTdQueue: () => {
+    const q = get().tdQueue
+    if (q.some((j) => j.status === 'running')) return
+    const job = q.find((j) => j.status === 'queued')
+    if (!job) return
+    if (get().tdJob) stopTdWorker()
+    const { kind, mode } = RUNS.jobOf(job.analysis)
+    /**
+     * Write a change to this job in the queue.
+     *
+     * @param {object} patch - Fields to merge.
+     * @returns {void}
+     * @sideEffect Writes store state.
+     */
+    const update = (patch) => set({ tdQueue: get().tdQueue.map((j) => (j.id === job.id ? { ...j, ...patch } : j)) })
+    /**
+     * Take this job off the queue and start the next.
+     *
+     * @param {object} [failed] - `{error}` to keep it listed as failed instead.
+     * @returns {void}
+     * @sideEffect Writes store state; starts the next job.
+     */
+    const finish = (failed) => {
+      set({
+        tdJob: null,
+        tdQueue: failed
+          ? get().tdQueue.map((j) => (j.id === job.id ? { ...j, status: 'failed', error: failed.error } : j))
+          : get().tdQueue.filter((j) => j.id !== job.id),
+      })
+      get()._pumpTdQueue()
+    }
+    update({ status: 'running', message: 'Starting' })
+    set({ tdJob: { kind, mode, fraction: 0, message: 'Starting', runId: job.id } })
+    startTdJob({ kind, project: { ...job.content, name: job.name }, opts: job.opts, mode }, (msg) => {
+      if (msg.type === 'progress') {
+        update({ fraction: msg.fraction, message: msg.message })
+        set({ tdJob: { kind, mode, fraction: msg.fraction, message: msg.message, runId: job.id } })
+        return
+      }
+      if (msg.type === 'error') {
+        finish({ error: msg.projectErrors?.length ? msg.projectErrors.join('; ') : msg.error })
+        return
+      }
+      update({ fraction: 1, message: 'Storing' })
+      get()._storeRun(job, msg.result, msg.warnings).then(() => finish(), (err) => finish({ error: err.message }))
+    })
+  },
+  /**
+   * Keep a finished run: a branch off its record in its project, and on the board it was sent to.
+   *
+   * The project is the one the run was queued from, whether or not it is
+   * still the open one.
+   *
+   * @param {object} job - The queue entry.
+   * @param {object} result - The analysis's result.
+   * @param {string[]} [warnings] - The engine's warnings.
+   * @returns {Promise<void>} Resolves once stored.
+   * @throws {Error} When the project is no longer in the workspace.
+   * @sideEffect Writes the project's records and boards; caches the results.
+   */
+  _storeRun: async (job, result, warnings) => {
+    const info = RUNS.projectInfo(job.content)
+    const points = RUNS.packResult(RUNS.runPoints(job.analysis, job.opts, result, info, job.vars))
+    const data = { analysis: job.analysis, opts: job.opts, vars: job.vars, result: RUNS.packResult(result) }
+    const meta = {
+      title: job.title, analysis: job.analysis, opts: job.opts, nonlinear: job.opts.nonlinear !== false,
+      vars: job.vars, seriesId: job.seriesId, seriesTitle: job.seriesTitle, note: job.note, sig: job.sig,
+      info, points, headline: RUNS.headline(job.analysis, points), ...(warnings?.length ? { warnings } : {}),
+    }
+    await get()._updateProject(job.path, async ({ records, tdBoards }) => {
+      if (!records) throw new Error('The project this run belongs to has no records.')
+      const next = await R.addRun(records, { id: job.id, parent: job.parent, recordId: job.recordId, content: job.content, data, meta })
+      const onBoard = job.addTo && tdBoards.some((b) => b.id === job.addTo)
+      return { records: next, ...(onBoard ? { tdBoards: addRunsToBoard(tdBoards, job.addTo, [job.id]) } : {}) }
+    })
+    runCache.set(job.id, { data, content: job.content })
+    set({ tdDataTick: get().tdDataTick + 1 })
+  },
+  /**
+   * Change a project's records or boards, whether it is the open project or another file.
+   *
+   * @param {string} path - The project file.
+   * @param {Function} fn - `async ({records, tdBoards, project}) → {records?, tdBoards?}`: the changes.
+   * @returns {Promise<void>} Resolves once written.
+   * @throws {Error} When the file is gone.
+   * @sideEffect Writes store state or the workspace file; saves the open file.
+   */
+  _updateProject: (path, fn) => inRecordsQueue(async () => {
+    if (path === get().activeFile) {
+      const out = await fn({ records: get().records, tdBoards: get().tdBoards, project: get().serialize() })
+      const nav = get().recordNav
+      set({
+        ...(out.records ? { records: out.records, recordNav: recordNavOf(out.records, nav.editing, nav.busy) } : {}),
+        ...(out.tdBoards ? { tdBoards: out.tdBoards } : {}),
+      })
+      get().saveActiveFile()
+      return
+    }
+    const entry = get().workspace.files[path]
+    if (!entry || entry.kind !== 'project') throw new Error('The project this run belongs to is no longer in the workspace.')
+    const out = await fn({ records: R.readRecords(entry.data?.records), tdBoards: readBoards(entry.data?.tdBoards), project: entry.data })
+    const data = { ...entry.data, ...(out.records ? { records: out.records } : {}), ...(out.tdBoards ? { tdBoards: out.tdBoards } : {}) }
+    get()._commitWorkspace(W.writeFile(get().workspace, path, { kind: 'project', data }))
+  }),
+  /**
+   * Take a run off the queue: a queued one before it starts, or a failed one's notice.
+   *
+   * @param {string} id - The job's id.
+   * @returns {void}
+   * @sideEffect Writes store state; cancels it when it is the one solving.
+   */
+  removeQueued: (id) => {
+    const job = get().tdQueue.find((j) => j.id === id)
+    if (job?.status === 'running') { get().cancelTimeDomain(); return }
+    set({ tdQueue: get().tdQueue.filter((j) => j.id !== id) })
+  },
+  /**
+   * Read a stored run's results, for the views that need them.
+   *
+   * @param {object} entry - The run, as `runIndex` lists it.
+   * @returns {void}
+   * @sideEffect Reads the run from its project's records into the cache; bumps `tdDataTick` once read.
+   */
+  loadRunData: (entry) => {
+    if (!entry || runCache.has(entry.id)) return
+    runCache.set(entry.id, { loading: true })
+    const recs = entry.path === get().activeFile ? get().records : R.readRecords(get().workspace.files[entry.path]?.data?.records)
+    Promise.resolve()
+      .then(() => {
+        if (!recs) throw new Error('Its project has no records.')
+        return R.readRun(recs, entry.oid)
+      })
+      .then((r) => runCache.set(entry.id, { data: r.data, content: r.content }), (err) => runCache.set(entry.id, { error: err.message }))
+      .then(() => set({ tdDataTick: get().tdDataTick + 1 }))
+  },
+  /**
+   * Add a stored run's project as a new record at the end of the open project, and show it.
+   *
+   * The run can come from any project in the workspace; the open project's
+   * selected record is saved first, as when adding any record.
+   *
+   * @param {object} entry - The run, as `runIndex` lists it.
+   * @returns {Promise<void>} Resolves once shown.
+   * @sideEffect Replaces the project on the canvas and saves the open file.
+   */
+  restoreRunAsRecord: (entry) => get()._recordOp(async () => {
+    const src = entry.path === get().activeFile ? get().records : R.readRecords(get().workspace.files[entry.path]?.data?.records)
+    if (!src) throw new Error('The run\'s project has no records.')
+    const { content } = await R.readRun(src, entry.oid)
+    const records = await R.addRecordFrom(get().records, get().serialize(), content)
+    get()._showRecord(records, content)
+  }),
+  /**
+   * Delete stored runs, wherever they live.
+   *
+   * @param {Array<object>} entries - The runs, as `runIndex` lists them.
+   * @returns {Promise<void>} Resolves once deleted.
+   * @sideEffect Writes each project's records and boards, and the open project's boards.
+   */
+  deleteRuns: async (entries) => {
+    const byPath = new Map()
+    for (const e of entries) byPath.set(e.path, [...(byPath.get(e.path) || []), e.id])
+    for (const [path, ids] of byPath) {
+      await get()._updateProject(path, async ({ records, tdBoards }) => ({
+        records: records ? await R.deleteRuns(records, ids) : null, tdBoards: dropRuns(tdBoards, ids),
+      }))
+      for (const id of ids) runCache.delete(id)
+    }
+    const all = entries.map((e) => e.id)
+    if (get().tdBoards.some((b) => b.cards.some((c) => c.runs.some((r) => all.includes(r))))) {
+      set({ tdBoards: dropRuns(get().tdBoards, all) })
+      get().saveActiveFile()
+    }
+  },
+  /**
+   * Rename a stored run.
+   *
+   * @param {object} entry - The run, as `runIndex` lists it.
+   * @param {string} title - Its new title.
+   * @returns {Promise<void>} Resolves once written.
+   * @sideEffect Writes its project's run list.
+   */
+  renameRun: (entry, title) => get()._updateProject(entry.path, async ({ records }) => ({
+    records: records ? { ...records, runs: records.runs.map((r) => (r.id === entry.id ? { ...r, title } : r)) } : null,
+  })),
+  /**
+   * Set the drawer to a stored run's analysis and settings, to run it again.
+   *
+   * @param {object} entry - The run, as `runIndex` lists it.
+   * @returns {void}
+   * @sideEffect Writes the drawer and, when the project is editable, its time-domain settings.
+   */
+  startFromRun: (entry) => {
+    if (!entry?.opts) return
+    const { mode, ...opts } = entry.opts
+    set({ tdDraft: { ...get().tdDraft, analysis: entry.analysis }, tdDrawer: true })
+    if (entry.analysis === 'transient') get().setTdSettings('transient', opts)
+    else get().setTdSettings('distortion', { ...opts, mode: entry.analysis })
+  },
+
+  /**
+   * Change the driver curve editor's choices.
+   *
+   * @param {object} patch - Any of `nlDriver`, `nlParam`, `nlOverlays`.
+   * @returns {void}
+   * @sideEffect Writes store state.
+   */
+  setNl: (patch) => set(patch),
+
+  // ---- boards ----
+  /**
+   * Replace the project's boards.
+   *
+   * @param {Array<object>} boards - The boards.
+   * @returns {void}
+   * @sideEffect Writes store state and saves the open file.
+   */
+  _setBoards: (boards) => {
+    set({ tdBoards: boards })
+    get().saveActiveFile()
+  },
+  /**
+   * Add a board and show it.
+   *
+   * @param {string} [template] - What it starts with; see `templateCards`.
+   * @param {string} [name] - Its name.
+   * @returns {string} The board's id.
+   * @sideEffect Writes the boards and the tab; saves the open file.
+   */
+  addTdBoard: (template = 'blank', name) => {
+    const n = get().tdBoards.length + 1
+    const b = newBoard(name || `Board ${n}`, template)
+    get()._setBoards([...get().tdBoards, b])
+    set({ tdTab: b.id })
+    return b.id
+  },
+  /**
+   * Rename a board.
+   *
+   * @param {string} id - The board.
+   * @param {string} name - Its new name.
+   * @returns {void}
+   * @sideEffect Writes the boards; saves the open file.
+   */
+  renameTdBoard: (id, name) => get()._setBoards(get().tdBoards.map((b) => (b.id === id ? { ...b, name } : b))),
+  /**
+   * Delete a board. Its runs stay in the library.
+   *
+   * @param {string} id - The board.
+   * @returns {void}
+   * @sideEffect Writes the boards and, when it was shown, the tab; saves the open file.
+   */
+  deleteTdBoard: (id) => {
+    const boards = get().tdBoards.filter((b) => b.id !== id)
+    get()._setBoards(boards)
+    if (get().tdTab === id) set({ tdTab: boards.length ? boards[boards.length - 1].id : 'new' })
+  },
+  /**
+   * Change one card, or add one.
+   *
+   * @param {string} boardId - The board.
+   * @param {string|null} cardId - The card; `null` adds `patch` as a new card of `patch.kind`.
+   * @param {object|null} patch - Fields to merge; `null` removes the card.
+   * @returns {void}
+   * @sideEffect Writes the boards; saves the open file.
+   */
+  updateTdCard: (boardId, cardId, patch) => get()._setBoards(get().tdBoards.map((b) => {
+    if (b.id !== boardId) return b
+    if (!cardId) return { ...b, cards: [...b.cards, newCard(patch.kind, patch)] }
+    if (!patch) return { ...b, cards: b.cards.filter((c) => c.id !== cardId) }
+    return { ...b, cards: b.cards.map((c) => (c.id === cardId ? { ...c, ...patch } : c)) }
+  })),
+  /**
+   * Put runs on a board: one card, or every card.
+   *
+   * @param {string} boardId - The board.
+   * @param {string[]} runIds - The runs.
+   * @param {string} [cardId] - The card; every card when omitted.
+   * @returns {void}
+   * @sideEffect Writes the boards; saves the open file.
+   */
+  addRunsToCard: (boardId, runIds, cardId) => get()._setBoards(addRunsToBoard(get().tdBoards, boardId, runIds, cardId)),
 
   // ---- compute pipeline (debounced 150 ms) ----
   // Simulation runs in a Web Worker: the engine ships with the app, but off
@@ -2092,7 +2569,7 @@ export const useStore = create((rawSet, get) => {
     if (get().recordNav.busy || POPOUT) return
     set({ recordNav: { ...get().recordNav, busy: true }, recordError: null })
     try {
-      await op()
+      await inRecordsQueue(op)
     } catch (err) {
       set({ recordError: err.message })
     } finally {
@@ -2108,7 +2585,7 @@ export const useStore = create((rawSet, get) => {
    * @sideEffect Replaces the project in the store, saves the open file and schedules a resimulation.
    */
   _showRecord: (records, content) => {
-    get().loadSerialized({ ...content, name: get().projectName, records })
+    get().loadSerialized({ ...content, name: get().projectName, records, tdBoards: get().tdBoards })
     get().saveActiveFile()
   },
   /**
@@ -2181,9 +2658,9 @@ export const useStore = create((rawSet, get) => {
    * @sideEffect Reads the current time for the `modified` stamp.
    */
   serialize: () => {
-    const { nodes, edges, projectName, settings, projectExtras, records } = get()
+    const { nodes, edges, projectName, settings, projectExtras, records, tdBoards } = get()
     const proj = fromEditor({ name: projectName, nodes, edges, settings, extras: projectExtras })
-    return { ...proj, modified: new Date().toISOString(), ...(records ? { records } : {}) }
+    return { ...proj, modified: new Date().toISOString(), ...(records ? { records } : {}), ...(tdBoards.length ? { tdBoards } : {}) }
   },
   /**
    * Replace the current project with a deserialized one.
@@ -2218,6 +2695,7 @@ export const useStore = create((rawSet, get) => {
       records: R.readRecords(proj.records),
       recordNav: recordNavOf(R.readRecords(proj.records), false, false),
       recordError: null,
+      tdBoards: readBoards(proj.tdBoards),
       // time-domain results describe the project being replaced
       tdResults: { linear: null, transient: null, distortion: {} }, tdError: null,
     })
@@ -3147,6 +3625,41 @@ export const useStore = create((rawSet, get) => {
 })
 
 // ---------- workspace persistence ----------
+
+let persisting = false
+let pendingWorkspace = null
+
+/**
+ * Store the workspace in the browser, one write at a time, the latest winning.
+ *
+ * IndexedDB, since projects that keep their time-domain runs outgrow
+ * LocalStorage. Where IndexedDB is missing (tests), LocalStorage stands in.
+ * Once IndexedDB holds it, the old LocalStorage copy is removed, so it is not
+ * read in its place.
+ *
+ * @param {object} ws - The workspace.
+ * @returns {Promise<void>} Resolves once this and any queued write are done.
+ * @sideEffect Writes IndexedDB or LocalStorage.
+ */
+async function persistWorkspace(ws) {
+  pendingWorkspace = ws
+  if (persisting) return
+  persisting = true
+  try {
+    while (pendingWorkspace) {
+      const next = pendingWorkspace
+      pendingWorkspace = null
+      const text = JSON.stringify(next)
+      if (await F.storeWorkspace(text)) {
+        try { localStorage.removeItem(WORKSPACE_KEY) } catch { /* nothing to remove */ }
+      } else {
+        try { localStorage.setItem(WORKSPACE_KEY, text) } catch { /* quota */ }
+      }
+    }
+  } finally {
+    persisting = false
+  }
+}
 //
 // Subscribed rather than written inline at each mutation, because the
 // workspace also changes when a popped-out file browser edits it and that
@@ -3161,7 +3674,7 @@ if (!POPOUT) {
   useStore.subscribe((st) => {
     if (st.workspace === last) return
     last = st.workspace
-    try { localStorage.setItem(WORKSPACE_KEY, JSON.stringify(st.workspace)) } catch { /* quota */ }
+    persistWorkspace(st.workspace)
     scheduleFolderSync()
   })
 

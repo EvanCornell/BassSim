@@ -167,3 +167,11 @@ test('catalogueXvar: from the built-in catalogue, by model', () => {
   assert.equal(catalogueXvar({ label: '10BG76-8', Xmax: 9.6 }), 12)
   assert.equal(catalogueXvar({ label: 'my own driver', Xmax: 5 }), null)
 })
+
+// CONTRACT (curveSummary): what a curve holds, in a few words.
+test('curveSummary', () => {
+  const { curveSummary } = __internals
+  assert.equal(curveSummary({ points: [], table: null, poly: null }), 'Flat')
+  assert.equal(curveSummary({ points: [{ x: 1, g: -0.1, w: 3 }, { x: 4, g: -0.2, w: 3 }], sym: true }), '2 points, symmetric')
+  assert.equal(curveSummary({ points: [], table: [[0, 1], [5, 0.8]] }), 'Imported table')
+})

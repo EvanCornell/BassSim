@@ -39,15 +39,19 @@ const DB_STORE = 'handles'
 /** Key the workspace folder's handle is stored under. */
 const DB_KEY = 'workspace-folder'
 
+/** Key the browser's own copy of the workspace is stored under. */
+const WORKSPACE_DB_KEY = 'workspace'
+
 /**
  * Largest file read back from a connected folder.
  *
- * Everything the app writes is a small JSON document. A folder may hold other
+ * Everything the app writes is JSON — a project with stored time-domain runs
+ * can run to tens of megabytes. A folder may hold other
  * things — an unrelated archive, an image someone dropped in — and reading a
  * hundred megabytes only to fail to parse it as JSON would stall startup for
  * no possible gain.
  */
-const MAX_READ_BYTES = 8 * 1024 * 1024
+const MAX_READ_BYTES = 96 * 1024 * 1024
 
 /**
  * Most entries read back from a connected folder.
@@ -258,6 +262,42 @@ export async function recallFolder() {
     return old || null
   } catch {
     return null
+  }
+}
+
+/**
+ * The browser's own copy of the workspace, as last stored.
+ *
+ * @returns {Promise<string|null>} The workspace JSON, or `null` when none is stored or IndexedDB is unavailable.
+ * @sideEffect Reads IndexedDB.
+ */
+export async function readStoredWorkspace() {
+  try {
+    if (typeof indexedDB === 'undefined') return null
+    const text = await withStore('readonly', (store) => store.get(WORKSPACE_DB_KEY))
+    return typeof text === 'string' ? text : null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Store the browser's own copy of the workspace.
+ *
+ * IndexedDB rather than LocalStorage: a workspace whose projects keep their
+ * time-domain runs is far past LocalStorage's few megabytes.
+ *
+ * @param {string} text - The workspace JSON.
+ * @returns {Promise<boolean>} True once stored; false when IndexedDB is unavailable or refused.
+ * @sideEffect Writes IndexedDB.
+ */
+export async function storeWorkspace(text) {
+  try {
+    if (typeof indexedDB === 'undefined') return false
+    await withStore('readwrite', (store) => store.put(text, WORKSPACE_DB_KEY))
+    return true
+  } catch {
+    return false
   }
 }
 
