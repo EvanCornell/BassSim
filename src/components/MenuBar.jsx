@@ -83,6 +83,34 @@ function ProjectTitle() {
 }
 
 /**
+ * The way into the time-domain workspace and back, on the menu bar beside Simulate.
+ *
+ * A switch rather than a menu: it shows which of the two views is up, and
+ * while a queued run solves it carries the run's progress and how many wait.
+ *
+ * @param {object} props - Component props.
+ * @param {Function} props.onHover - Called when the pointer enters it, to close an open menu.
+ * @returns {React.ReactElement} The button.
+ * @sideEffect Subscribes to the store; opens or closes the workspace.
+ */
+function TimeDomainTab({ onHover }) {
+  const open = useStore((s) => s.tdOpen)
+  const job = useStore((s) => s.tdJob)
+  const waiting = useStore((s) => s.tdQueue.filter((j) => j.status === 'queued').length)
+  return (
+    <button
+      className={`menu-title mb-td${open ? ' on' : ''}`}
+      onClick={(e) => { e.stopPropagation(); const st = useStore.getState(); if (open) st.closeTimeDomain(); else st.openTimeDomain() }}
+      onMouseEnter={onHover}
+      title={open ? 'Back to the editor (Alt+T)' : 'Time-domain runs, distortion and driver nonlinearity (Alt+T)'}
+    >
+      Time Domain
+      {job?.runId && <span className="mb-td-progress">{Math.round(job.fraction * 100)}%{waiting ? ` +${waiting}` : ''}</span>}
+    </button>
+  )
+}
+
+/**
  * The application menu bar.
  *
  * Follows the native pattern: click a title to open, then hover any other
@@ -579,14 +607,18 @@ export default function MenuBar() {
       <span className="logo">Speaker<span>Spice</span></span>
       <ProjectTitle />
       {MENUS.map(([title, items]) => (
-        <Menu
-          key={title}
-          title={title}
-          items={items}
-          open={open === title}
-          onOpen={() => setOpen(open === title ? null : title)}
-          onHover={() => { if (open) setOpen(title) }}
-        />
+        <React.Fragment key={title}>
+          <Menu
+            title={title}
+            items={items}
+            open={open === title}
+            onOpen={() => setOpen(open === title ? null : title)}
+            onHover={() => { if (open) setOpen(title) }}
+          />
+          {/* The time-domain workspace is a place, not a command: one click
+              goes there and back, beside the menu of what gets simulated. */}
+          {title === 'Simulate' && <TimeDomainTab onHover={() => { if (open) setOpen(null) }} />}
+        </React.Fragment>
       ))}
       {/* Settings is a section of its own rather than an item buried in a
           menu: one click opens the window, no dropdown in between. */}

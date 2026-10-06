@@ -1156,8 +1156,6 @@ svg.ws-chevron.open { transform: rotate(90deg); }
    The same frame and cards: a header pill with the tabs and the run, then
    a controls card beside a results card. */
 .dock-host { display: flex; flex: 1; min-height: 0; min-width: 0; }
-.td-toggle.active { background: var(--primary-bg); color: var(--primary-fg); border-color: transparent; }
-.td-toggle.active:hover { background: var(--primary-bg); filter: brightness(0.94); }
 .td-window { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: var(--gap); }
 .td-head {
   display: flex; align-items: center; gap: 10px; padding: 0 8px 0 16px; height: 48px; flex: none;
@@ -1537,3 +1535,8 @@ button.nl-chip.add { background: var(--field); }
 .pc-body { grid-template-columns: 44px minmax(0, 1fr) 14px; }
 .pc-body.two { grid-template-columns: 44px minmax(0, 1fr) 44px; }
 .card.report { grid-row: span 2; }
+
+/* the Time Domain switch on the menu bar */
+.menu-title.mb-td { display: inline-flex; align-items: center; gap: 6px; }
+.menu-title.mb-td.on { background: var(--active); color: var(--text); box-shadow: inset 0 0 0 1px oklch(from var(--accent) l c h / 0.6); }
+.mb-td-progress { font-size: 11px; font-family: var(--mono-font); color: var(--accent-strong); }

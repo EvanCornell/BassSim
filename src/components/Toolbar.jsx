@@ -197,31 +197,6 @@ function MetricPill({ ids }) {
   return <div className="tb-pill">{shown.map((id) => <Metric key={id} id={id} />)}</div>
 }
 
-/**
- * The switch between the editor and the time-domain workspace.
- *
- * Always on the bar rather than one of its configurable items: it changes
- * the whole window, so it should always be where the user left it.
- *
- * @returns {React.ReactElement} The button.
- * @sideEffect Subscribes to the store.
- */
-function TimeDomainButton() {
-  const open = useStore((s) => s.tdOpen)
-  const job = useStore((s) => s.tdJob)
-  const openTd = useStore((s) => s.openTimeDomain)
-  const close = useStore((s) => s.closeTimeDomain)
-  return (
-    <button
-      className={`tb-pill td-toggle${open ? ' active' : ''}`}
-      onClick={() => (open ? close() : openTd())}
-      title={open ? 'Back to the editor (Alt+T)' : 'Time-domain responses, transient runs and distortion (Alt+T)'}
-    >
-      {open ? '← Editor' : 'Time Domain'}{job && !open ? ` · ${Math.round(job.fraction * 100)}%` : ''}
-    </button>
-  )
-}
-
 // ---------- the bar ----------
 
 /**
@@ -249,7 +224,6 @@ export default function Toolbar() {
 
   return (
     <div className="toolbar">
-      <TimeDomainButton />
       {runs.map((run) => (
         run.group === 'metrics' ? (
           <div className="tb-metrics" key={run.ids[0]}>
