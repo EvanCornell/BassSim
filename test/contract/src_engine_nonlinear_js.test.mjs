@@ -2,6 +2,11 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import {
   curvesFromRatings,
+  curvesFromGeometry,
+  blFromGeometry,
+  excursionAt,
+  DEFAULT_FRINGE_SHARE,
+  FRINGE_LEVEL,
   variationDb,
   BL_AT_XMAX,
   XVAR_DB,
@@ -59,7 +64,7 @@ test('NL_PARAMS: content in any name from NL_PARAMS is enough for hasNL', () => 
 
 // CONTRACT (exported constants): "### `__internals`  Keys: `baseValue`, `rawEval`"
 test('__internals: publishes exactly the documented keys', () => {
-  assert.deepEqual(Object.keys(__internals).sort(), ['baseValue', 'rawEval'])
+  assert.deepEqual(Object.keys(__internals).sort(), ['baseValue', 'logCosh', 'rawEval'])
   for (const k of Object.keys(__internals)) {
     assert.equal(typeof __internals[k], 'function', `${k} should be callable`)
   }
@@ -822,4 +827,70 @@ test('curvesFromRatings: no Xvar, and an Xvar Bl alone already exceeds', () => {
   assert.ok(Math.abs(variationDb(evalCurve(far.Bl, far.info.blSixDbAt, 6), 1) - XVAR_DB) < 0.02)
   assert.throws(() => curvesFromRatings(0, 5), /Xmax/)
   assert.throws(() => curvesFromRatings(5, -1), /Xvar/)
+})
+
+
+// ---------------------------------------------------------------------------
+// Bl from the motor's geometry
+// ---------------------------------------------------------------------------
+
+// CONTRACT: with a hard-edged field, Bl is the share of the gap the coil covers.
+test('blFromGeometry: hard edge — flat to the overhang, then linear to zero', () => {
+  const over = blFromGeometry({ coil: 20, gap: 8, fringe: 0 })
+  assert.equal(over(0), 1)
+  assert.ok(Math.abs(over(6) - 1) < 1e-12, 'flat while the coil covers the gap')
+  assert.ok(Math.abs(over(8) - 0.75) < 1e-12)
+  assert.ok(Math.abs(over(10) - 0.5) < 1e-12)
+  assert.ok(Math.abs(over(14)) < 1e-12, 'gone once the coil leaves the gap')
+  const under = blFromGeometry({ coil: 6, gap: 12, fringe: 0 })
+  assert.ok(Math.abs(under(3) - 1) < 1e-12, 'underhung: flat while the coil stays in the gap')
+  assert.ok(Math.abs(under(6) - 0.5) < 1e-12)
+  assert.ok(Math.abs(over(-10) - over(10)) < 1e-12, 'symmetric')
+})
+
+// CONTRACT: the fringe rounds the knee and spreads the fall, but takes no flux from the gap.
+test('blFromGeometry: fringe rounds the knee and reaches further', () => {
+  const hard = blFromGeometry({ coil: 20, gap: 8, fringe: 0 })
+  const soft = blFromGeometry({ coil: 20, gap: 8, fringe: 2 })
+  assert.ok(soft(6) < 1 && soft(6) > 0.85, 'below full Bl where the coil end meets the plate')
+  assert.ok(soft(14) > 0.05, 'some Bl left past the hard-edge limit')
+  assert.ok(Math.abs(soft(10) - hard(10)) < 0.02, 'about the same halfway across the gap')
+  const auto = blFromGeometry({ coil: 20, gap: 8 })
+  const quarter = blFromGeometry({ coil: 20, gap: 8, fringe: DEFAULT_FRINGE_SHARE * 8 })
+  assert.equal(auto(9), quarter(9), 'the fringe defaults to a quarter of the gap')
+  // the field past a plate face falls to FRINGE_LEVEL at the fringe height: a 1 mm-long coil reads the field
+  const probe = blFromGeometry({ coil: 1e-3, gap: 8, fringe: 2 })
+  assert.ok(Math.abs(probe(4 + 2) - FRINGE_LEVEL) < 5e-3, 'down to the fringe level at the fringe height')
+  assert.ok(Math.abs(probe(4) - 0.5) < 0.02, 'half strength at the face')
+  assert.throws(() => blFromGeometry({ coil: 0, gap: 8 }), /Coil/)
+  assert.throws(() => blFromGeometry({ coil: 10, gap: -1 }), /Gap/)
+  assert.throws(() => blFromGeometry({ coil: 10, gap: 8, fringe: -1 }), /Fringe/)
+})
+
+test('excursionAt: where a falling ratio reaches a level', () => {
+  const lin = (x) => 1 - Math.abs(x) / 10
+  assert.ok(Math.abs(excursionAt(lin, 0.7, 20) - 3) < 1e-9)
+  assert.equal(excursionAt(lin, 0.7, 2), null)
+})
+
+// CONTRACT: Bl from the motor, not Xmax; Xmax only reported; Kms takes what Xvar still needs.
+test('curvesFromGeometry: Bl from coil and gap, Kms from Xvar', () => {
+  const a = curvesFromGeometry({ coil: 11, gap: 7, xmax: 3.8 })
+  const b = curvesFromGeometry({ coil: 11, gap: 7, xmax: 6 })
+  for (const x of [0, 2, 3.8, 5, 8]) assert.ok(Math.abs(evalCurve(a.Bl, x) - evalCurve(b.Bl, x)) < 1e-3, 'Xmax does not shape Bl')
+  assert.ok(a.info.blAtXmax > b.info.blAtXmax)
+  assert.equal(a.info.flat, 2)
+  assert.equal(a.info.overhung, true)
+  assert.equal(a.info.fringe, 1.75)
+  const bl = blFromGeometry({ coil: 11, gap: 7 })
+  assert.ok(Math.abs(evalCurve(a.Bl, 3.8, 3.8) - bl(3.8)) < 2e-3, 'the table follows the model')
+  assert.ok(Math.abs(bl(a.info.bl70At) - BL_AT_XMAX) < 1e-6)
+  assert.ok(Math.abs(variationDb(bl(a.info.blSixDbAt), 1) - XVAR_DB) < 1e-6)
+  assert.equal(curveHasContent(a.Kms), false, 'no Xvar, no Kms(x)')
+  // a long Xvar: Bl leaves some of the 6 dB to the suspension
+  const v = curvesFromGeometry({ coil: 30, gap: 10, xvar: 12 })
+  assert.equal(v.info.blAlone, false)
+  assert.ok(Math.abs(variationDb(v.info.blAtXvar, evalCurve(v.Kms, 12)) - XVAR_DB) < 1e-6)
+  assert.equal(curvesFromGeometry({ coil: 11, gap: 7, xvar: 5.7 }).info.blAlone, true)
+  assert.throws(() => curvesFromGeometry({ coil: 11, gap: 7, xvar: -2 }), /Xvar/)
 })

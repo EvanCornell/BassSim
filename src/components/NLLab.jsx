@@ -3,8 +3,9 @@ import { useStore } from '../store'
 import { readRecord } from '../records'
 import {
   NL_PARAMS, defaultNL, evalCurve, derivedRatios, parseCurveCSV, normalizeTable, curveHasContent,
-  curvesFromRatings, emptyCurve, BL_AT_XMAX, XVAR_DB,
+  curvesFromRatings, curvesFromGeometry, emptyCurve, BL_AT_XMAX, XVAR_DB, FRINGE_LEVEL, DEFAULT_FRINGE_SHARE,
 } from '../engine/nonlinear'
+import { readDrivers } from '../workspace'
 import { BUILTIN_DRIVERS } from '../data/drivers'
 import NumInput from './NumInput'
 
@@ -559,26 +560,150 @@ function PolyButton({ curve, param, refv, setCurve }) {
 }
 
 /**
+ * A driver's catalogue entry, from the built-in catalogue or the workspace's own drivers.
+ *
+ * Driver nodes keep only what the solver reads, so construction figures such
+ * as coil and gap heights are looked up again by model.
+ *
+ * @param {object} p - The driver node's params.
+ * @param {Array<object>} [custom] - The workspace's custom drivers.
+ * @returns {object|null} The entry, or `null` when no driver of that model is listed.
+ * @pure
+ */
+function catalogueEntry(p, custom = []) {
+  const all = [...custom, ...BUILTIN_DRIVERS]
+  return all.find((r) => r.model === p.label && Number(r.Xmax) === Number(p.Xmax)) || all.find((r) => r.model === p.label) || null
+}
+
+/**
  * A driver's published Xvar, when it came from the built-in catalogue.
  *
  * @param {object} p - The driver node's params.
+ * @param {Array<object>} [custom] - The workspace's custom drivers.
  * @returns {number|null} Xvar, mm, or `null` when the catalogue does not list one.
  * @pure
  */
-function catalogueXvar(p) {
-  const d = BUILTIN_DRIVERS.find((r) => r.model === p.label && Number(r.Xmax) === Number(p.Xmax))
-    || BUILTIN_DRIVERS.find((r) => r.model === p.label)
-  const v = Number(d?.ext?.Xvar)
+function catalogueXvar(p, custom) {
+  const v = Number(catalogueEntry(p, custom)?.ext?.Xvar)
   return v > 0 ? v : null
 }
 
 /**
- * Build Bl(x) and Kms(x) from the driver's Xmax and Xvar, as a form behind a button.
+ * A driver's coil (winding) and magnetic gap heights, when its catalogue entry lists them.
  *
- * Bl falls to 70% at Xmax; the suspension stiffens by whatever the 6 dB at
- * Xvar still needs (see `curvesFromRatings`). The form says what the curves
- * come to before they are applied, and applying replaces both curves — and
- * any Cms(x), which Kms(x) would override — and sets the driver's Xmax.
+ * @param {object} p - The driver node's params.
+ * @param {Array<object>} [custom] - The workspace's custom drivers.
+ * @returns {{coil: number, gap: number}|null} Heights, mm, or `null` without both.
+ * @pure
+ */
+function catalogueGeometry(p, custom) {
+  const ext = catalogueEntry(p, custom)?.ext
+  const coil = Number(ext?.vcDepth)
+  const gap = Number(ext?.gapDepth)
+  return coil > 0 && gap > 0 ? { coil, gap } : null
+}
+
+/**
+ * How a driver's curves are built: as last built, else from the motor when its geometry is known.
+ *
+ * Builds saved before the motor model carry no method and were made from Xmax.
+ *
+ * @param {object|undefined} r - The saved build settings (`nl.ratings`).
+ * @param {object|null} geo - The catalogue's coil and gap heights.
+ * @returns {'geometry'|'xmax'} The method.
+ * @pure
+ */
+function buildMethod(r, geo) {
+  if (r?.method) return r.method
+  if (r?.xmax != null) return 'xmax'
+  return geo ? 'geometry' : 'xmax'
+}
+
+/**
+ * The curves a driver's saved build settings, or its catalogue entry, give: from the motor when its geometry is known, else from Xmax.
+ *
+ * @param {object} p - The driver node's params.
+ * @param {Array<object>} [custom] - The workspace's custom drivers.
+ * @returns {{Bl: object, Kms: object, label: string}|null} The curves and what they were built from; `null` when there is nothing to build from.
+ * @pure
+ */
+function fitFor(p, custom) {
+  const r = p.nl?.ratings
+  const xvar = r?.xvar ?? catalogueXvar(p, custom)
+  const method = buildMethod(r, catalogueGeometry(p, custom))
+  const geo = method === 'geometry' ? (r?.method === 'geometry' ? r : catalogueGeometry(p, custom)) : null
+  try {
+    if (geo) {
+      const c = curvesFromGeometry({ coil: geo.coil, gap: geo.gap, fringe: geo.fringe, xvar })
+      return { Bl: c.Bl, Kms: c.Kms, label: `Motor ${geo.coil}/${geo.gap} mm${xvar ? ` & Xvar ${xvar}` : ''} fit` }
+    }
+    const xmax = Number(r?.xmax ?? p.Xmax)
+    if (xmax > 0) {
+      const c = curvesFromRatings(xmax, xvar || null)
+      return { Bl: c.Bl, Kms: c.Kms, label: `Xmax ${xmax}${xvar ? ` & Xvar ${xvar}` : ''} fit` }
+    }
+  } catch { /* nothing usable */ }
+  return null
+}
+
+/**
+ * A ratio as a percentage.
+ *
+ * @param {number} r - The ratio.
+ * @returns {string} e.g. `70%`.
+ * @pure
+ */
+const pct = (r) => `${(r * 100).toFixed(0)}%`
+
+/**
+ * A level in dB.
+ *
+ * @param {number} v - dB.
+ * @returns {string} e.g. `3.1 dB`.
+ * @pure
+ */
+const dbText = (v) => `${v.toFixed(1)} dB`
+
+/**
+ * An excursion in mm, or a dash when there is none.
+ *
+ * @param {number|null} v - mm.
+ * @returns {string} e.g. `4.1 mm`.
+ * @pure
+ */
+const mmText = (v) => (v == null ? '—' : `${v.toFixed(1)} mm`)
+
+/**
+ * A number field for the builder: free text, red while it does not read as a number.
+ *
+ * @param {object} props - Component props.
+ * @param {string} props.label - Its label.
+ * @param {string} props.value - The text.
+ * @param {Function} props.onChange - Called with the new text.
+ * @param {string} [props.placeholder] - Shown when empty.
+ * @param {boolean} [props.zero] - Whether 0 is allowed.
+ * @param {string} [props.title] - Its tooltip.
+ * @returns {React.ReactElement} The field.
+ * @pure
+ */
+function MmField({ label, value, onChange, placeholder, zero, title }) {
+  const v = parseFloat(value)
+  const bad = value.trim() !== '' && !(zero ? v >= 0 : v > 0)
+  return (
+    <label title={title}>{label} <input className={`num${bad ? ' invalid' : ''}`} inputMode="decimal" value={value} placeholder={placeholder}
+      onChange={(e) => onChange(e.target.value)} /> mm</label>
+  )
+}
+
+/**
+ * Build Bl(x) and Kms(x) for a driver, as a form behind a button.
+ *
+ * From the motor: Bl(x) follows the coil and gap heights and the fringe
+ * past each plate face (see `blFromGeometry`); the driver's Xmax is not used
+ * for it and is left as it is. From Xmax, for drivers whose geometry is not
+ * published: Bl falls to 70% at Xmax (see `curvesFromRatings`). Either way the
+ * suspension stiffens by whatever the 6 dB at Xvar still needs. Applying
+ * replaces Bl(x), Kms(x) and any Cms(x).
  *
  * @param {object} props - Component props.
  * @param {object} props.driver - The driver node.
@@ -588,43 +713,64 @@ function catalogueXvar(p) {
  */
 function RatingsButton({ driver, nl }) {
   const updateParams = useStore((s) => s.updateParams)
+  const custom = useStore((s) => readDrivers(s.workspace))
   const p = driver.data.params
   const [open, setOpen] = useState(false)
-  const [xm, setXm] = useState('')
-  const [xv, setXv] = useState('')
+  const [method, setMethod] = useState('geometry')
+  const [f, setF] = useState({ coil: '', gap: '', fringe: '', xmax: '', xvar: '' })
   /**
-   * Open the form, filled from what was used last, or the driver and the catalogue.
+   * Open the form, filled from the last build, or the driver and its catalogue entry.
    *
    * @returns {void}
    * @sideEffect Writes component state.
    */
   const show = () => {
-    setXm(String(nl.ratings?.xmax ?? p.Xmax ?? ''))
-    setXv(String(nl.ratings?.xvar ?? catalogueXvar(p) ?? ''))
+    const r = nl.ratings || {}
+    const geo = catalogueGeometry(p, custom)
+    /**
+     * A stored number as field text.
+     *
+     * @param {*} v - The number, or nothing.
+     * @returns {string} Its text; empty for nothing.
+     * @pure
+     */
+    const str = (v) => (v == null || v === '' ? '' : String(v))
+    setMethod(buildMethod(nl.ratings, geo))
+    setF({
+      coil: str(r.coil ?? geo?.coil), gap: str(r.gap ?? geo?.gap), fringe: str(r.fringe),
+      xmax: str(r.xmax ?? p.Xmax), xvar: str(r.xvar ?? catalogueXvar(p, custom)),
+    })
     setOpen(!open)
   }
-  const xmax = parseFloat(xm)
-  const xvar = xv.trim() === '' ? null : parseFloat(xv)
+  /**
+   * Set one field.
+   *
+   * @param {string} k - The field.
+   * @returns {Function} Its change handler.
+   * @pure
+   */
+  const field = (k) => (v) => setF((x) => ({ ...x, [k]: v }))
+  /**
+   * A field's number.
+   *
+   * @param {string} t - Its text.
+   * @returns {number|null} The number; `null` when empty, NaN when unreadable.
+   * @pure
+   */
+  const num = (t) => (t.trim() === '' ? null : parseFloat(t))
+  const coil = num(f.coil)
+  const gap = num(f.gap)
+  const fringe = num(f.fringe)
+  const xmax = num(f.xmax)
+  const xvar = num(f.xvar)
   let out = null
   let error = null
-  try { out = curvesFromRatings(xmax, xvar) } catch (err) { error = err.message }
+  try {
+    out = method === 'geometry'
+      ? curvesFromGeometry({ coil, gap, fringe, xvar, xmax: Number(p.Xmax) || null })
+      : curvesFromRatings(xmax, xvar)
+  } catch (err) { error = err.message }
   const i = out?.info
-  /**
-   * A ratio as a percentage.
-   *
-   * @param {number} r - The ratio.
-   * @returns {string} e.g. `70%`.
-   * @pure
-   */
-  const pct = (r) => `${(r * 100).toFixed(0)}%`
-  /**
-   * A level in dB.
-   *
-   * @param {number} v - dB.
-   * @returns {string} e.g. `3.1 dB`.
-   * @pure
-   */
-  const db = (v) => `${v.toFixed(1)} dB`
   /**
    * Install the curves on the driver.
    *
@@ -635,37 +781,74 @@ function RatingsButton({ driver, nl }) {
     if (!out) return
     const has = curveHasContent(nl.Bl) || curveHasContent(nl.Kms) || curveHasContent(nl.Cms)
     if (has && !confirm('Replace this driver\'s Bl(x) and Kms(x) curves (and clear any Cms(x))?')) return
+    const ratings = method === 'geometry' ? { method, coil, gap, fringe, xvar } : { method, xmax, xvar }
     updateParams(driver.id, {
-      Xmax: xmax,
-      nl: { ...nl, Bl: out.Bl, Kms: out.Kms, Cms: emptyCurve(), ratings: { xmax, xvar } },
+      ...(method === 'xmax' ? { Xmax: xmax } : {}),
+      nl: { ...nl, Bl: out.Bl, Kms: out.Kms, Cms: emptyCurve(), ratings },
     })
     setOpen(false)
   }
+  const autoFringe = gap > 0 ? (DEFAULT_FRINGE_SHARE * gap).toFixed(2).replace(/\.?0+$/, '') : 'auto'
   return (
     <span style={{ position: 'relative' }}>
-      <button onClick={show} title="Build Bl(x) and Kms(x) from the published Xmax and Xvar">From Xmax &amp; Xvar…</button>
+      <button onClick={show} title="Build Bl(x) and Kms(x) from the motor's coil and gap heights, or from Xmax, and Xvar">Build Bl &amp; Kms…</button>
       {open && (
         <div className="poly-pop ratings-pop">
-          <div className="ratings-note">
-            Bl falls to {pct(BL_AT_XMAX)} at Xmax. Xvar is where the output has varied by {XVAR_DB} dB — Bl
-            counts as 20·log, Kms as 10·log — and the suspension stiffens by what Bl leaves short.
-            Both curves are smooth, symmetric and continue past Xmax.
+          <div className="seg small">
+            <button className={method === 'geometry' ? 'on' : ''} onClick={() => setMethod('geometry')}>From the motor</button>
+            <button className={method === 'xmax' ? 'on' : ''} onClick={() => setMethod('xmax')}>From Xmax</button>
           </div>
+          {method === 'geometry'
+            ? (
+              <div className="ratings-note">
+                Bl(x) is the field the coil&apos;s turns sit in: flat across the gap height, falling away past each plate face
+                over the fringe height (where it is down to {pct(FRINGE_LEVEL)}). It holds full strength until an end of the
+                coil reaches a plate face, then falls as that end crosses the gap. An empty fringe is a quarter of the gap
+                height. Xmax is not used and stays as it is.
+              </div>
+            )
+            : (
+              <div className="ratings-note">
+                For drivers whose coil and gap are not published: Bl falls to {pct(BL_AT_XMAX)} at Xmax, smoothly and symmetrically.
+              </div>
+            )}
           <div className="ratings-fields">
-            <label>Xmax <input className={`num${xm.trim() && !(parseFloat(xm) > 0) ? ' invalid' : ''}`} inputMode="decimal" value={xm} onChange={(e) => setXm(e.target.value)} /> mm</label>
-            <label>Xvar <input className={`num${xv.trim() && !(parseFloat(xv) > 0) ? ' invalid' : ''}`} inputMode="decimal" value={xv} placeholder="optional" onChange={(e) => setXv(e.target.value)} /> mm</label>
+            {method === 'geometry' && (
+              <>
+                <MmField label="Coil height" value={f.coil} onChange={field('coil')} title="Voice coil winding height (winding depth)" />
+                <MmField label="Gap height" value={f.gap} onChange={field('gap')} title="Magnetic gap height: the top plate's thickness" />
+                <MmField label="Fringe" value={f.fringe} onChange={field('fringe')} zero placeholder={autoFringe}
+                  title={`How far past each plate face the field reaches before it is down to ${pct(FRINGE_LEVEL)}; 0 is a hard edge. Empty uses a quarter of the gap height.`} />
+              </>
+            )}
+            {method === 'xmax' && <MmField label="Xmax" value={f.xmax} onChange={field('xmax')} />}
+            <MmField label="Xvar" value={f.xvar} onChange={field('xvar')} placeholder="optional"
+              title={`Where the output has varied by ${XVAR_DB} dB; the suspension stiffens by what Bl leaves short`} />
           </div>
           {error && <div className="ratings-out bad">{error}</div>}
+          {i && method === 'geometry' && (
+            <div className="ratings-out">
+              <div>
+                {i.overhung ? 'Overhung' : 'Underhung'} by {(Math.abs(coil - gap) / 2).toFixed(2).replace(/\.?0+$/, '')} mm each way, fringe {i.fringe.toFixed(2).replace(/\.?0+$/, '')} mm.
+              </div>
+              <div>Bl is 82% at {mmText(i.bl82At)}, {pct(BL_AT_XMAX)} at {mmText(i.bl70At)}, and {XVAR_DB} dB down at {mmText(i.blSixDbAt)}.</div>
+              {i.blAtXmax != null && <div>At the listed Xmax ({p.Xmax} mm), Bl is {pct(i.blAtXmax)}.</div>}
+            </div>
+          )}
+          {i && method === 'xmax' && (
+            <div className="ratings-out">
+              <div>Bl: {pct(BL_AT_XMAX)} at {xmax} mm ({dbText(-20 * Math.log10(BL_AT_XMAX))}); alone it reaches {XVAR_DB} dB at {mmText(i.blSixDbAt)}.</div>
+            </div>
+          )}
           {i && (
             <div className="ratings-out">
-              <div>Bl: {pct(BL_AT_XMAX)} at {xmax} mm ({db(-20 * Math.log10(BL_AT_XMAX))}); alone it reaches {XVAR_DB} dB at {i.blSixDbAt.toFixed(1)} mm.</div>
               {xvar > 0 && !i.blAlone && (
-                <div>At Xvar {xvar} mm: Bl {pct(i.blAtXvar)} ({db(i.blDb)}) + Kms {pct(i.kmsAtXvar)} ({db(i.kmsDb)}) = {XVAR_DB} dB.</div>
+                <div>At Xvar {xvar} mm: Bl {pct(i.blAtXvar)} ({dbText(i.blDb)}) + Kms {pct(i.kmsAtXvar)} ({dbText(i.kmsDb)}) = {XVAR_DB} dB.</div>
               )}
               {xvar > 0 && i.blAlone && (
                 <div className="bad">
-                  Bl alone is already {db(i.blDb)} down at {xvar} mm, so these figures disagree under a 70%-at-Xmax Bl:
-                  the suspension is left linear, and the output varies by {XVAR_DB} dB at {i.blSixDbAt.toFixed(1)} mm instead.
+                  Bl alone is already {dbText(i.blDb)} down at Xvar ({xvar} mm), so the suspension is left linear; the output varies
+                  by {XVAR_DB} dB at {mmText(i.blSixDbAt)} instead.
                 </div>
               )}
               {!(xvar > 0) && <div>No Xvar: only Bl(x) is built; Kms(x) stays linear.</div>}
@@ -821,9 +1004,7 @@ function AddOverlay({ driver }) {
     .filter(([path, f]) => f.kind === 'project' && path !== activeFile)
     .flatMap(([path, f]) => (f.data?.nodes || []).filter((n) => n.type === 'driver' && n.params?.nl)
       .map((n) => ({ id: `proj:${path}:${n.id}`, label: `${f.data?.name || path.split('/').pop().replace(/\.speakerspice$/, '')} · ${n.params.label || n.id}`, nl: n.params.nl, xmax: n.params.Xmax })))
-  const xvar = p.nl?.ratings?.xvar ?? catalogueXvar(p)
-  let fit = null
-  try { if (p.Xmax > 0) { const c = curvesFromRatings(Number(p.Xmax), xvar || null); fit = { Bl: c.Bl, Kms: c.Kms } } } catch { fit = null }
+  const fit = fitFor(p, readDrivers(workspace))
   return (
     <span style={{ position: 'relative' }}>
       <button className="nl-chip add" onClick={() => setOpen(!open)}>+ Add overlay</button>
@@ -834,9 +1015,9 @@ function AddOverlay({ driver }) {
             {records && records.list.map((_, i) => (i === records.selected ? null : (
               <button key={i} onClick={() => fromRecord(i)}>Record {i + 1}</button>
             )))}
-            {fit && <button onClick={() => add('fit', `Xmax ${p.Xmax}${xvar ? ` & Xvar ${xvar}` : ''} fit`, fit, p.Xmax)}>Fit to Xmax{xvar ? ' & Xvar' : ''}</button>}
+            {fit && <button onClick={() => add('fit', fit.label, { Bl: fit.Bl, Kms: fit.Kms }, p.Xmax)}>{fit.label.replace(/ fit$/, '')}</button>}
             {others.map((o) => <button key={o.id} onClick={() => add(o.id, o.label, o.nl, o.xmax)}>{o.label}</button>)}
-            {!(records?.list.length > 1) && !fit && !others.length && <span className="lib-meta">Other records, other projects&apos; drivers and a fit to Xmax appear here.</span>}
+            {!(records?.list.length > 1) && !fit && !others.length && <span className="lib-meta">Other records, other projects&apos; drivers and a fit to the motor or Xmax appear here.</span>}
           </div>
         </>
       )}
@@ -984,4 +1165,4 @@ export default function NLLab() {
 // Module-private functions, exposed for the contract test suite only
 // (test/contract/*). Not part of this module's public API — application code
 // must not import from here, and nothing outside the tests does.
-export const __internals = { refValue, fmtVal, niceTicks, catalogueXvar, curveSummary }
+export const __internals = { refValue, fmtVal, niceTicks, catalogueXvar, catalogueGeometry, fitFor, curveSummary }

@@ -381,7 +381,7 @@ export function variationDb(bl, kms) {
  */
 export function curvesFromRatings(xmax, xvar) {
   if (!(xmax > 0)) throw new Error('Xmax must be a positive number of mm.')
-  if (xvar != null && xvar !== '' && !(xvar > 0)) throw new Error('Xvar must be a positive number of mm.')
+  checkXvar(xvar)
   const c2 = (xmax * xmax) / Math.log(1 / BL_AT_XMAX)
   /**
    * Bl at an excursion.
@@ -392,18 +392,46 @@ export function curvesFromRatings(xmax, xvar) {
    */
   const bl = (x) => Math.exp((-x * x) / c2)
   const span = Math.max(4 * xmax, xvar > 0 ? 2 * xvar : 0, 20)
-  const rows = 80
+  const out = withSuspension(bl, span, xvar)
+  out.info.blSixDbAt = Math.sqrt(c2 * Math.log(Math.pow(10, XVAR_DB / 20)))
+  return out
+}
+
+/**
+ * Throw unless an optional Xvar is missing or a positive number.
+ *
+ * @param {*} xvar - Xvar, mm, or nothing.
+ * @returns {void}
+ * @throws {Error} When it is given but not positive.
+ * @pure
+ */
+function checkXvar(xvar) {
+  if (xvar != null && xvar !== '' && !(xvar > 0)) throw new Error('Xvar must be a positive number of mm.')
+}
+
+/**
+ * A Bl function sampled into a symmetric table, with the Kms(x) an Xvar calls for.
+ *
+ * Whatever the 6 dB at Xvar still needs after Bl is given to the suspension
+ * as Kms(x) = 1 + k·x²; when Bl alone is already past 6 dB there, the
+ * suspension stays linear and `info.blAlone` says so.
+ *
+ * @param {Function} bl - Bl ratio at an excursion in mm, 1 at rest, even in x.
+ * @param {number} span - Half the stroke to tabulate, mm.
+ * @param {number|null} [xvar] - Xvar, mm.
+ * @returns {{Bl: object, Kms: object, info: object}} The curves, and at Xvar each ratio and its share of the variation.
+ * @pure
+ */
+function withSuspension(bl, span, xvar) {
+  const rows = 120
   const table = []
   for (let i = -rows; i <= rows; i++) {
     const x = Number(((span * i) / rows).toFixed(4))
-    table.push([x, Number(bl(x).toPrecision(6))])
+    table.push([x, Number(Math.max(bl(x), 1e-4).toPrecision(6))])
   }
   const Bl = { points: [], table, poly: null, sym: true, extrap: false }
   let Kms = { points: [], table: null, poly: null, sym: true, extrap: false }
-  const info = {
-    blSixDbAt: Math.sqrt(c2 * Math.log(Math.pow(10, XVAR_DB / 20))),
-    blAtXvar: null, kmsAtXvar: null, blDb: null, kmsDb: null, blAlone: false,
-  }
+  const info = { blSixDbAt: null, blAtXvar: null, kmsAtXvar: null, blDb: null, kmsDb: null, blAlone: false }
   if (xvar > 0) {
     const blDb = variationDb(bl(xvar), 1)
     const kmsDb = XVAR_DB - blDb
@@ -423,7 +451,135 @@ export function curvesFromRatings(xmax, xvar) {
   return { Bl, Kms, info }
 }
 
+// ---------- Bl from the motor's geometry ----------
+//
+// Bl(x) is the flux density the coil's turns sit in, summed along the coil:
+// with N/Hvc turns per mm of winding, Bl(x) ∝ ∫ B(z) dz over the coil's
+// height Hvc, centred on x. So its shape comes from where the coil is and
+// where the field is, not from a rated excursion.
+//
+// The field along the gap is flat across the gap height Hg and falls away past
+// each plate face over a fringe. The edge is modelled as a tanh step,
+//
+//   B(z) = ½·[tanh((z + Hg/2)/f) − tanh((z − Hg/2)/f)],
+//
+// which is half strength at each face: the field the edge loses inside the
+// gap is the field it spills outside, so the total flux the gap carries does
+// not depend on the fringe. The fringe height is where the spill has fallen to
+// 10% of the gap's field; f = 2·h / ln 9. Its integral is closed-form
+// (f·ln cosh), so Bl(x) is too.
+//
+// An overhung coil (Hvc > Hg) holds full Bl until an end reaches a plate face,
+// at (Hvc − Hg)/2, and loses it as that end crosses the gap. An underhung coil
+// (Hvc < Hg) holds it until it starts to leave the gap, at (Hg − Hvc)/2.
+
+/** The field at the fringe height, as a share of the gap's. */
+export const FRINGE_LEVEL = 0.1
+
+/** The fringe height assumed when none is given, as a share of the gap height. */
+export const DEFAULT_FRINGE_SHARE = 0.25
+
+/**
+ * ln cosh(t), without overflow for large |t|.
+ *
+ * @param {number} t - Any number.
+ * @returns {number} ln cosh t.
+ * @pure
+ */
+function logCosh(t) {
+  const a = Math.abs(t)
+  return a + Math.log1p(Math.exp(-2 * a)) - Math.LN2
+}
+
+/**
+ * Bl(x) from the coil height, gap height and fringe height.
+ *
+ * @param {{coil: number, gap: number, fringe?: number}} g - Coil (winding) height, magnetic gap height and fringe height, mm. The fringe defaults to a quarter of the gap; 0 is a hard-edged field.
+ * @returns {Function} `x ↦ Bl(x)/Bl(0)`, x in mm: even, 1 at rest, falling towards 0.
+ * @throws {Error} When the coil or gap height is not positive, or the fringe is negative.
+ * @pure
+ */
+export function blFromGeometry({ coil, gap, fringe }) {
+  if (!(coil > 0)) throw new Error('Coil height must be a positive number of mm.')
+  if (!(gap > 0)) throw new Error('Gap height must be a positive number of mm.')
+  const h = fringe == null || fringe === '' ? DEFAULT_FRINGE_SHARE * gap : Number(fringe)
+  if (!(h >= 0)) throw new Error('Fringe height must be 0 or more mm.')
+  const f = (2 * h) / Math.log((1 - FRINGE_LEVEL) / FRINGE_LEVEL)
+  /**
+   * ∫ B(z) dz from −∞ to z, up to a constant, in mm of full-strength field.
+   *
+   * @param {number} z - Position along the gap, mm from its centre.
+   * @returns {number} The running integral.
+   * @pure
+   */
+  const F = f > 1e-9
+    ? (z) => (f / 2) * (logCosh((z + gap / 2) / f) - logCosh((z - gap / 2) / f))
+    : (z) => (Math.min(Math.max(z, -gap / 2), gap / 2))
+  /**
+   * The field the coil sits in when centred at x, unnormalized.
+   *
+   * @param {number} x - Coil centre, mm.
+   * @returns {number} ∫ B over the coil.
+   * @pure
+   */
+  const linked = (x) => F(x + coil / 2) - F(x - coil / 2)
+  const rest = linked(0)
+  return (x) => linked(x) / rest
+}
+
+/**
+ * The excursion at which a falling, even ratio function first reaches a level.
+ *
+ * @param {Function} fn - The ratio at an excursion, mm; 1 at rest and falling.
+ * @param {number} level - The level, below 1.
+ * @param {number} limit - The furthest excursion to look, mm.
+ * @returns {number|null} The excursion, mm, or `null` when it does not get there within `limit`.
+ * @pure
+ */
+export function excursionAt(fn, level, limit) {
+  if (fn(limit) > level) return null
+  let lo = 0
+  let hi = limit
+  for (let i = 0; i < 60; i++) {
+    const mid = (lo + hi) / 2
+    if (fn(mid) > level) lo = mid
+    else hi = mid
+  }
+  return (lo + hi) / 2
+}
+
+/**
+ * Bl and Kms curves from the motor's geometry, and Xvar.
+ *
+ * Bl follows `blFromGeometry`; Kms takes what the 6 dB at Xvar still needs,
+ * as with `curvesFromRatings`. Xmax plays no part in the curves: when given,
+ * `info.blAtXmax` reports what Bl comes to at the rated Xmax, as a check.
+ *
+ * @param {{coil: number, gap: number, fringe?: number, xvar?: number|null, xmax?: number|null}} g - Coil and gap heights, fringe height, Xvar and Xmax, mm.
+ * @returns {{Bl: object, Kms: object, info: object}} The curves, and what they come to: the fringe used, where full Bl ends (`flat`), where Bl reaches 82% (`bl82At`), 70% (`bl70At`) and 6 dB (`blSixDbAt`), Bl at Xmax, and the Xvar split.
+ * @throws {Error} When a height is not usable, or Xvar is given but not positive.
+ * @pure
+ */
+export function curvesFromGeometry({ coil, gap, fringe, xvar, xmax }) {
+  checkXvar(xvar)
+  const bl = blFromGeometry({ coil, gap, fringe })
+  const h = fringe == null || fringe === '' ? DEFAULT_FRINGE_SHARE * gap : Number(fringe)
+  const reach = (coil + gap) / 2 + 4 * h
+  const span = Math.max(reach + 2, xvar > 0 ? 2 * xvar : 0, xmax > 0 ? 4 * xmax : 0, 20)
+  const out = withSuspension(bl, span, xvar)
+  Object.assign(out.info, {
+    fringe: h,
+    flat: Math.abs(coil - gap) / 2,
+    overhung: coil >= gap,
+    bl82At: excursionAt(bl, 0.82, span),
+    bl70At: excursionAt(bl, BL_AT_XMAX, span),
+    blSixDbAt: excursionAt(bl, Math.pow(10, -XVAR_DB / 20), span),
+    blAtXmax: xmax > 0 ? bl(xmax) : null,
+  })
+  return out
+}
+
 // Module-private functions, exposed for the contract test suite only
 // (test/contract/*). Not part of this module's public API — application code
 // must not import from here, and nothing outside the tests does.
-export const __internals = { baseValue, rawEval }
+export const __internals = { baseValue, rawEval, logCosh }

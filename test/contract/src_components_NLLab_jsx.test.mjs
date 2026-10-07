@@ -175,3 +175,17 @@ test('curveSummary', () => {
   assert.equal(curveSummary({ points: [{ x: 1, g: -0.1, w: 3 }, { x: 4, g: -0.2, w: 3 }], sym: true }), '2 points, symmetric')
   assert.equal(curveSummary({ points: [], table: [[0, 1], [5, 0.8]] }), 'Imported table')
 })
+
+
+// CONTRACT (catalogueGeometry, fitFor): coil and gap heights come from the catalogue by model; the
+// overlay fit uses the motor when they are known, a saved build's own method otherwise.
+test('catalogueGeometry and fitFor', () => {
+  const { catalogueGeometry, fitFor } = __internals
+  assert.deepEqual(catalogueGeometry({ label: '4NDF34-8', Xmax: 3.8 }), { coil: 11, gap: 7 })
+  assert.equal(catalogueGeometry({ label: 'my own driver', Xmax: 5 }), null)
+  assert.deepEqual(catalogueGeometry({ label: 'mine', Xmax: 5 }, [{ model: 'mine', Xmax: 5, ext: { vcDepth: 20, gapDepth: 8 } }]), { coil: 20, gap: 8 })
+  assert.match(fitFor({ label: '4NDF34-8', Xmax: 3.8 }).label, /^Motor 11\/7 mm & Xvar 5.7/)
+  assert.match(fitFor({ label: 'my own driver', Xmax: 5 }).label, /^Xmax 5/)
+  assert.match(fitFor({ label: '4NDF34-8', Xmax: 3.8, nl: { ratings: { xmax: 3.8, xvar: 5.7 } } }).label, /^Xmax 3.8/, 'an older build was from Xmax')
+  assert.equal(fitFor({ label: 'x', Xmax: 0 }), null)
+})
