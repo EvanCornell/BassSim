@@ -678,8 +678,7 @@ export function NewRunDrawer() {
         </div>
         <div className="drawer-field run-meta">
           Each run measures a steady tone at every frequency — output and compression against the linear model, THD and
-          harmonics, excursion, port velocity, impedance, power and each tone&apos;s start-up — then raises the level tone by
-          tone until THD reaches 10%, for the Max SPL. Runs of the same project state share that search.
+          harmonics, excursion, port velocity, impedance, power and each tone&apos;s start-up.
         </div>
       </div>
       <div className="drawer-foot">

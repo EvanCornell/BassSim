@@ -867,14 +867,15 @@ export async function thdLimitAt(project, hz, first, o) {
  * A steady tone at each frequency across the range is measured once —
  * output, harmonics and THD, excursion, port velocity, impedance, power and
  * efficiency, and how it started up — beside the linear model at the same
- * drive, which gives the compression. Then, unless a `maxSpl` from the same
+ * drive, which gives the compression. Then, when `searchMaxSpl` is set (it
+ * is off by default) and unless a `maxSpl` from the same
  * project state is passed in, each frequency's level is raised until THD
  * reaches `thdLimit` (10%): the Max SPL.
  *
  * @param {object} project - A resolved, validated project.
- * @param {object} opts - `{levelDb, f1, f2, points, harmonics, bandwidth, thdLimit, maxBoostDb, resolutionDb, maxSpl}`; see `LEVEL_DEFAULTS`.
+ * @param {object} opts - `{levelDb, f1, f2, points, harmonics, bandwidth, thdLimit, maxBoostDb, resolutionDb, searchMaxSpl, maxSpl}`; see `LEVEL_DEFAULTS`.
  * @param {Function} [onProgress] - `(fraction, message)`.
- * @returns {Promise<object>} `{levelDb, freqs, rows, start, maxSpl, failed, thdLimit}`: per frequency a row of figures (`spl`, `linSpl`, `cmp`, `thd`, `h` harmonic levels in dB re the fundamental from H2, `xPeak`, `vPeak`, `z`, `pe`, `pa`, `efficiency`, `effLoss`, `powerChange`, `currentPeak`, `voltagePeak`) or `null` where it could not be solved, the start-ups, and the Max SPL per frequency.
+ * @returns {Promise<object>} `{levelDb, freqs, rows, start, maxSpl, failed, thdLimit}`: per frequency a row of figures (`spl`, `linSpl`, `cmp`, `thd`, `h` harmonic levels in dB re the fundamental from H2, `xPeak`, `vPeak`, `z`, `pe`, `pa`, `efficiency`, `effLoss`, `powerChange`, `currentPeak`, `voltagePeak`) or `null` where it could not be solved, the start-ups, and the Max SPL per frequency when it was searched for or passed in.
  * @throws {Error} When no frequency could be solved, or the run is cancelled.
  * @sideEffect Runs the engine.
  */
@@ -883,7 +884,9 @@ export async function levelRun(project, opts = {}, onProgress = () => {}) {
   const L = Number(o.levelDb) || 0
   const freqs = logFreqs(o.f1, o.f2, o.points)
   const failed = []
-  const searching = !Array.isArray(o.maxSpl)
+  // The 10% THD Max SPL search is switched off for now: it takes several
+  // times the tones the run itself does. `searchMaxSpl: true` turns it on.
+  const searching = o.searchMaxSpl === true && !Array.isArray(o.maxSpl)
   let done = 0
   let searched = 0
   /**
@@ -934,7 +937,7 @@ export async function levelRun(project, opts = {}, onProgress = () => {}) {
       report()
       return r
     }))
-    : o.maxSpl
+    : (Array.isArray(o.maxSpl) ? o.maxSpl : undefined)
   onProgress(1, 'Done')
   return { levelDb: L, freqs, rows, start, maxSpl, failed, thdLimit: o.thdLimit }
 }
