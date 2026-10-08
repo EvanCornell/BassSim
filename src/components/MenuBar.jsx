@@ -550,7 +550,7 @@ export default function MenuBar() {
       },
       { label: '-' },
       {
-        label: 'Time Domain & Distortion',
+        label: 'Time Domain Runs',
         hint: key('view.timedomain'),
         /**
          * Open the time-domain workspace.

@@ -525,7 +525,48 @@ export async function measureTone(project, hz, levelDb, o) {
     currentPeak: firstCh ? peakOf(run.current[firstCh]) : 0,
     voltagePeak: firstCh ? peakOf(run.voltage[firstCh]) : 0,
     waveform: { fs, t: Array.prototype.slice.call(run.t, run.t.length - tail), pressure: Array.prototype.slice.call(run.pressure, run.pressure.length - tail) },
+    ...(o.startup ? { start: startupOf(run, fs, hz) } : {}),
   }
+}
+
+/** Most samples kept of a tone's start-up, per quantity. */
+export const STARTUP_SAMPLES = 400
+
+/**
+ * A tone's start-up: the first quarter second, or six periods if longer, from the moment it is switched on.
+ *
+ * Kept at no more than `STARTUP_SAMPLES` samples, picked evenly.
+ *
+ * @param {object} run - From `transientRun`.
+ * @param {number} fs - Its sample rate, Hz.
+ * @param {number} hz - The tone, Hz.
+ * @returns {{dt: number, pressure: number[], excursion: object, velocity: object}} The sample step, s; pressure in Pa at 1 m, excursion in mm per driver, port velocity in m/s per waveguide.
+ * @pure
+ */
+export function startupOf(run, fs, hz) {
+  const n = Math.min(run.t.length, Math.round(Math.max(0.25, 6 / hz) * fs))
+  const step = Math.max(1, Math.ceil(n / STARTUP_SAMPLES))
+  /**
+   * Every `step`-th sample of the start-up.
+   *
+   * @param {ArrayLike<number>} x - Samples.
+   * @returns {number[]} The kept ones.
+   * @pure
+   */
+  const pick = (x) => {
+    const out = []
+    for (let i = 0; i < n; i += step) out.push(x[i])
+    return out
+  }
+  /**
+   * Pick from every series of a map.
+   *
+   * @param {object} m - `{id: samples}`.
+   * @returns {object} `{id: number[]}`.
+   * @pure
+   */
+  const each = (m) => Object.fromEntries(Object.entries(m).map(([k, v]) => [k, pick(v)]))
+  return { dt: step / fs, pressure: pick(run.pressure), excursion: each(run.excursion), velocity: each(run.velocity) }
 }
 
 /**
@@ -763,6 +804,139 @@ export async function maxLevel(s) {
     }
   }
   return { ...bracket(), tried: tried.length }
+}
+
+/** Defaults for a level run. */
+export const LEVEL_DEFAULTS = { f1: 15, f2: 200, points: 24, harmonics: 10, bandwidth: 1000, thdLimit: 0.1, maxBoostDb: 40, resolutionDb: 0.25 }
+
+/**
+ * Where THD reaches a limit at one frequency, by raising or lowering the level.
+ *
+ * Steps 6 dB at a time from the first level until the limit is crossed, then
+ * halves the step until the bracket is no wider than `resolutionDb`. The
+ * result is the highest level tested that stays within the limit. A level the
+ * circuit cannot be solved at counts as past it.
+ *
+ * @param {object} project - A resolved project.
+ * @param {number} hz - Frequency, Hz.
+ * @param {{L: number, m: object|null}} first - A tone already measured, to start from.
+ * @param {object} o - Level-run options.
+ * @returns {Promise<{hz: number, levelDb: number|null, spl: number|null, thd: number|null, tones: number}>} The level and the fundamental's SPL there, with its THD; nulls when no level within the range stays under the limit. `tones` counts the tones it took.
+ * @throws {Error} A cancellation, passed straight on.
+ * @sideEffect Runs the engine.
+ */
+export async function thdLimitAt(project, hz, first, o) {
+  let tones = 0
+  /**
+   * Measure one level.
+   *
+   * @param {number} L - Level offset, dB.
+   * @returns {Promise<{L: number, m: object|null, over: boolean}>} The tone, and whether it is past the limit.
+   * @sideEffect Runs the engine.
+   */
+  const test = async (L) => {
+    tones++
+    try {
+      const m = await measureTone(project, hz, L, o)
+      return { L, m, over: !(m.thd < o.thdLimit) }
+    } catch (err) {
+      if (err.name === 'Cancelled') throw err
+      return { L, m: null, over: true }
+    }
+  }
+  const top = first.L + o.maxBoostDb
+  const bottom = first.L - 48
+  let at = { L: first.L, m: first.m, over: !first.m || !(first.m.thd < o.thdLimit) }
+  let lo = at.over ? null : at
+  let hi = at.over ? at : null
+  while (!hi && at.L < top) { at = await test(Math.min(at.L + 6, top)); if (at.over) hi = at; else lo = at }
+  while (!lo && at.L > bottom) { at = await test(Math.max(at.L - 6, bottom)); if (at.over) hi = at; else lo = at }
+  if (!lo) return { hz, levelDb: null, spl: null, thd: null, tones }
+  if (!hi) return { hz, levelDb: lo.L, spl: lo.m.spl, thd: lo.m.thd, tones, unreached: true }
+  while (hi.L - lo.L > o.resolutionDb) {
+    const mid = await test((lo.L + hi.L) / 2)
+    if (mid.over) hi = mid
+    else lo = mid
+  }
+  return { hz, levelDb: lo.L, spl: lo.m.spl, thd: lo.m.thd, tones }
+}
+
+/**
+ * One run at one drive level: every figure the time-domain views show, from stepped tones.
+ *
+ * A steady tone at each frequency across the range is measured once —
+ * output, harmonics and THD, excursion, port velocity, impedance, power and
+ * efficiency, and how it started up — beside the linear model at the same
+ * drive, which gives the compression. Then, unless a `maxSpl` from the same
+ * project state is passed in, each frequency's level is raised until THD
+ * reaches `thdLimit` (10%): the Max SPL.
+ *
+ * @param {object} project - A resolved, validated project.
+ * @param {object} opts - `{levelDb, f1, f2, points, harmonics, bandwidth, thdLimit, maxBoostDb, resolutionDb, maxSpl}`; see `LEVEL_DEFAULTS`.
+ * @param {Function} [onProgress] - `(fraction, message)`.
+ * @returns {Promise<object>} `{levelDb, freqs, rows, start, maxSpl, failed, thdLimit}`: per frequency a row of figures (`spl`, `linSpl`, `cmp`, `thd`, `h` harmonic levels in dB re the fundamental from H2, `xPeak`, `vPeak`, `z`, `pe`, `pa`, `efficiency`, `effLoss`, `powerChange`, `currentPeak`, `voltagePeak`) or `null` where it could not be solved, the start-ups, and the Max SPL per frequency.
+ * @throws {Error} When no frequency could be solved, or the run is cancelled.
+ * @sideEffect Runs the engine.
+ */
+export async function levelRun(project, opts = {}, onProgress = () => {}) {
+  const o = { ...LEVEL_DEFAULTS, ...opts, nonlinear: true }
+  const L = Number(o.levelDb) || 0
+  const freqs = logFreqs(o.f1, o.f2, o.points)
+  const failed = []
+  const searching = !Array.isArray(o.maxSpl)
+  let done = 0
+  let searched = 0
+  /**
+   * Report how far along the run is.
+   *
+   * @returns {void}
+   * @sideEffect Calls `onProgress`.
+   */
+  const report = () => onProgress(
+    searching ? (done + searched * 3) / (freqs.length * 4) : done / freqs.length,
+    done < freqs.length ? `${done} of ${freqs.length} tones` : `10% THD search: ${searched} of ${freqs.length} frequencies`,
+  )
+  report()
+  const tones = await Promise.all(freqs.map(async (hz) => {
+    const [m, lin] = await Promise.all([
+      measureTone(project, hz, L, { ...o, startup: true }).catch((err) => { if (err.name === 'Cancelled') throw err; failed.push({ label: `${hz} Hz`, error: err.message }); return null }),
+      linearPoint(project, hz, L).catch((err) => { if (err.name === 'Cancelled') throw err; return null }),
+    ])
+    done++
+    report()
+    return { hz, m, lin }
+  }))
+  if (tones.every((x) => !x.m)) throw new Error(`No frequency could be solved. ${failed[0]?.label}: ${failed[0]?.error}`)
+  const rows = tones.map(({ hz, m, lin }) => (m ? {
+    hz,
+    spl: m.spl,
+    linSpl: lin ? lin.spl : null,
+    cmp: lin ? m.spl - lin.spl : null,
+    thd: m.thd,
+    h: m.harmonics.slice(1).map((x) => x.db),
+    xPeak: m.xPeak,
+    vPeak: m.vPeak,
+    z: m.z,
+    pe: m.pe,
+    pa: m.pa,
+    efficiency: m.efficiency,
+    effLoss: ratioDb(m.efficiency, lin?.efficiency),
+    powerChange: ratioDb(m.pe, lin?.pe),
+    currentPeak: m.currentPeak,
+    voltagePeak: m.voltagePeak,
+    linear: lin ? { spl: lin.spl, xPeak: lin.xPeak, vPeak: lin.vPeak } : null,
+  } : { hz, failed: true }))
+  const start = tones.map(({ hz, m }) => (m ? { hz, ...m.start } : { hz, failed: true }))
+  const maxSpl = searching
+    ? await Promise.all(tones.map(async ({ hz, m }) => {
+      const r = await thdLimitAt(project, hz, { L, m }, o)
+      searched++
+      report()
+      return r
+    }))
+    : o.maxSpl
+  onProgress(1, 'Done')
+  return { levelDb: L, freqs, rows, start, maxSpl, failed, thdLimit: o.thdLimit }
 }
 
 /**

@@ -1,30 +1,16 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import {
-  ResponsiveContainer, BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip,
-} from 'recharts'
-import { useStore, tdSettingsOf, isLocked, boardsOf } from '../store'
+import { useStore, tdSettingsOf, isLocked } from '../store'
 import { LockNote } from './Records'
-import { decimate, rfft } from '../spice/dsp'
-import { splOf, levels } from '../spice/timedomain'
+import { decimate } from '../spice/dsp'
 import NLLab, { NLRail } from './NLLab'
-import { RunLibrary, Board, BoardStart, AddComparison, NewRunDrawer } from './TdBoards'
+import { RunLibrary, RunViewer, NewRunDrawer } from './TdRuns'
 import NumInput from './NumInput'
 import PlotChart from './PlotChart'
 
 /** Trace colours, shared with the frequency charts. */
 export const SERIES = ['var(--c1)', 'var(--c2)', 'var(--c3)', 'var(--c4)', 'var(--c5)', 'var(--c6)']
-const GRID = 'var(--grid)'
-const TICK = { fill: 'var(--text-3)', fontSize: 10.5 }
 /** Most points drawn per trace; longer series are thinned keeping their peaks. */
 const MAX_POINTS = 1600
-
-/** The workspace's tabs, as `[id, label]`. */
-const TABS = [
-  ['linear', 'Linear response'],
-  ['transient', 'Transient'],
-  ['distortion', 'Distortion'],
-  ['nonlinear', 'Driver nonlinearity'],
-]
 
 /**
  * Format a number for a readout.
@@ -380,474 +366,6 @@ function LinearView({ res, view }) {
 // --------------------------------------------------------- transient ---
 
 /**
- * The transient result: waveforms, summary and output spectrum.
- *
- * @param {object} props - Component props.
- * @param {object|null} props.res - The transient result.
- * @param {Function} props.onRun - Starts a run.
- * @param {Array<object>} [props.nodes] - The nodes the run was made with, for names and Xmax; the open project's when omitted.
- * @returns {React.ReactElement} The view.
- * @sideEffect Subscribes to the store.
- */
-export function TransientView({ res, onRun, nodes: given }) {
-  const storeNodes = useStore((s) => s.nodes)
-  const nodes = given || storeNodes
-  const live = useStale(res)
-  const stale = !given && live
-  const charts = useMemo(() => {
-    if (!res) return null
-    const { run, linear } = res
-    const drivers = Object.keys(run.excursion)
-    const ch = Object.keys(run.current)
-    const wgs = Object.keys(run.velocity)
-    const probes = Object.keys(run.probes)
-    const p = timeRows(run.t, { nl: run.pressure, ...(linear ? { lin: linear.pressure } : {}) })
-    const xs = {}
-    drivers.forEach((id) => { xs[`x_${id}`] = run.excursion[id]; if (linear) xs[`xl_${id}`] = linear.excursion[id] })
-    const x = timeRows(run.t, xs)
-    const iv = {}
-    ch.forEach((id) => { iv[`i_${id}`] = run.current[id]; iv[`v_${id}`] = run.voltage[id] })
-    const cur = timeRows(run.t, iv)
-    const vel = timeRows(run.t, Object.fromEntries(wgs.map((id) => [`w_${id}`, run.velocity[id]])))
-    const prb = timeRows(run.t, Object.fromEntries(probes.map((id) => [`p_${id}`, run.probes[id].values])))
-    // output spectrum: of the whole run, Hann-windowed
-    /**
-     * dB spectrum of a pressure waveform.
-     *
-     * @param {ArrayLike<number>} y - Samples.
-     * @returns {Float64Array} dB SPL per bin.
-     * @pure
-     */
-    const spec = (y) => {
-      const n = y.length
-      const w = Array.from(y, (v, i) => v * (0.5 - 0.5 * Math.cos((2 * Math.PI * i) / (n - 1))))
-      const S = rfft(w)
-      return Float64Array.from(S.re, (re, k) => splOf((Math.hypot(re, S.im[k]) * 2 * 2) / n / Math.SQRT2))
-    }
-    const sN = spec(run.pressure)
-    const sL = linear ? spec(linear.pressure) : null
-    const bins = sN.length
-    const df = res.fs / ((bins - 1) * 2)
-    const spRows = []
-    const top = Math.min(res.fs / 2, 2000)
-    for (let k = 1; k < bins && k * df <= top; k++) spRows.push({ hz: k * df, nl: sN[k], ...(sL ? { lin: sL[k] } : {}) })
-    const thinned = spRows.length > MAX_POINTS ? spRows.filter((_, i) => i % Math.ceil(spRows.length / MAX_POINTS) === 0) : spRows
-    const xmax = Object.fromEntries(drivers.map((id) => [id, Number(nodes.find((n) => n.id === id)?.data.params.Xmax) || 0]))
-    return { p, x, cur, vel, prb, drivers, ch, wgs, probes, spRows: thinned, xmax }
-  }, [res, nodes])
-  if (!res) {
-    return (
-      <div className="td-empty">
-        Choose a signal and press <b>Run</b>. A transient run solves the circuit
-        step by step in time, so it takes seconds rather than milliseconds —
-        and with <b>Nonlinear</b> on, the driver curves and duct exit losses
-        shape the result.
-        <div style={{ marginTop: 10 }}><button className="primary" onClick={onRun}>Run</button></div>
-      </div>
-    )
-  }
-  const { run, linear } = res
-  const pk = levels(run.pressure).peak
-  const cmpNote = res.opts.nonlinear && !linear && res.opts.compareLinear ? ' (nothing nonlinear in this project, so no separate linear run)' : ''
-  return (
-    <>
-      <StaleBanner stale={stale} onRun={onRun} />
-      <div className="td-summary">
-        <span>Peak pressure <b>{f(pk, 2)} Pa</b> = <b>{f(splOf(pk / Math.SQRT2))} dB</b> RMS-equivalent at 1 m</span>
-        {charts.drivers.map((id) => {
-          const x = levels(run.excursion[id]).peak
-          const over = charts.xmax[id] > 0 && x > charts.xmax[id]
-          return <span key={id}>{nameOf(nodes, id)} peak excursion <b className={over ? 'bad' : ''}>{f(x, 2)} mm</b>{charts.xmax[id] ? ` of ${charts.xmax[id]} Xmax` : ''}</span>
-        })}
-        {charts.ch.map((id) => <span key={id}>Peak current <b>{f(levels(run.current[id]).peak, 2)} A</b></span>)}
-        <span className="dim">{res.opts.nonlinear ? `Nonlinear${linear ? ', linear dashed' : ''}${cmpNote}` : 'Linear'}</span>
-      </div>
-      <div className="td-grid">
-        <TdChart title="Pressure at 1 m" data={charts.p} yLabel="Pa"
-          lines={[{ key: 'nl', name: res.opts.nonlinear ? 'Nonlinear' : 'Linear', width: 2 }, ...(linear ? [{ key: 'lin', name: 'Linear', dash: '5 3', color: 'var(--text-2)' }] : [])]} />
-        <TdChart title="Cone excursion" data={charts.x} yLabel="mm"
-          refs={charts.drivers.flatMap((id) => (charts.xmax[id] ? [{ y: charts.xmax[id], label: 'Xmax' }, { y: -charts.xmax[id] }] : []))}
-          lines={charts.drivers.flatMap((id, i) => [
-            { key: `x_${id}`, name: nameOf(nodes, id), width: 2, color: SERIES[i % SERIES.length] },
-            ...(linear ? [{ key: `xl_${id}`, name: `${nameOf(nodes, id)} linear`, dash: '5 3', color: 'var(--text-2)' }] : []),
-          ])} />
-        <TdChart title="Amplifier current and voltage" data={charts.cur} yLabel="A" y2Label="V"
-          lines={charts.ch.flatMap((id, i) => [
-            { key: `i_${id}`, name: `Current ${id}`, color: SERIES[i % SERIES.length], width: 2 },
-            { key: `v_${id}`, name: `Voltage ${id}`, right: true, dash: '4 3', color: SERIES[(i + 3) % SERIES.length] },
-          ])} />
-        {charts.wgs.length > 0 && (
-          <TdChart title="Duct air velocity" data={charts.vel} yLabel="m/s"
-            lines={charts.wgs.map((id, i) => ({ key: `w_${id}`, name: nameOf(nodes, id), color: SERIES[i % SERIES.length] }))} />
-        )}
-        <TdChart title="Output spectrum" data={charts.spRows} xKey="hz" xLabel="Hz" logX yLabel="dB SPL" yDomain={['dataMax - 90', 'dataMax + 5']}
-          lines={[{ key: 'nl', name: res.opts.nonlinear ? 'Nonlinear' : 'Linear', width: 1.5 }, ...(linear ? [{ key: 'lin', name: 'Linear', dash: '5 3', color: 'var(--text-2)' }] : [])]} />
-        {charts.probes.length > 0 && (
-          <TdChart title="Probes" data={charts.prb} yLabel="Pa · m³/s · m/s"
-            lines={charts.probes.map((id, i) => ({ key: `p_${id}`, name: `${id} (${run.probes[id].kind})`, color: SERIES[i % SERIES.length] }))} />
-        )}
-      </div>
-    </>
-  )
-}
-
-// -------------------------------------------------------- distortion ---
-
-/**
- * Convert a level re the fundamental to a percentage.
- *
- * @param {number} db - dB relative to the fundamental.
- * @returns {number} Percent.
- * @pure
- */
-const pct = (db) => 100 * Math.pow(10, db / 20)
-
-/**
- * The distortion result for the selected analysis.
- *
- * @param {object} props - Component props.
- * @param {string} props.mode - The analysis.
- * @param {object|null} props.res - Its result.
- * @param {Function} props.onRun - Starts a run.
- * @param {Array<object>} [props.nodes] - The nodes the run was made with; the open project's when omitted.
- * @returns {React.ReactElement} The view.
- * @sideEffect Subscribes to the store.
- */
-export function DistortionView({ mode, res, onRun, nodes: given }) {
-  const storeNodes = useStore((s) => s.nodes)
-  const nodes = given || storeNodes
-  const voltage = useStore((s) => s.settings.voltage)
-  const live = useStale(res)
-  const stale = !given && live
-  if (!res) {
-    return (
-      <div className="td-empty">
-        Press <b>Run</b> to measure. Distortion needs the circuit solved in time
-        at every frequency and level asked for, so a sweep takes a while; the
-        frequency response stays live meanwhile.
-        <div style={{ marginTop: 10 }}><button className="primary" onClick={onRun}>Run</button></div>
-      </div>
-    )
-  }
-  if (mode === 'harmonics') {
-    // Bars rise from a −120 dB floor, so a taller bar is a louder harmonic.
-    const FLOOR = -120
-    const bars = res.harmonics.slice(1).map((h) => ({ name: `H${h.n}`, n: h.n, db: h.db, up: Math.max(h.db, FLOOR) - FLOOR, hz: h.hz }))
-    const wave = res.waveform.t.map((t, i) => ({ ms: (t - res.waveform.t[0]) * 1000, p: res.waveform.pressure[i] }))
-    return (
-      <>
-        <StaleBanner stale={stale} onRun={onRun} />
-        <div className="td-summary">
-          <span>{res.hz} Hz at {res.levelDb >= 0 ? '+' : ''}{res.levelDb} dB</span>
-          <span>Fundamental <b>{f(res.spl)} dB SPL</b></span>
-          <span>THD <b>{f(res.thd * 100, 2)} %</b></span>
-          {Object.entries(res.xPeak).map(([id, x]) => <span key={id}>{nameOf(nodes, id)} <b>{f(x, 2)} mm</b> peak</span>)}
-          <span>Peak current <b>{f(res.currentPeak, 2)} A</b></span>
-        </div>
-        <div className="td-grid">
-          <div className="td-chart">
-            <div className="td-chart-title">Harmonics, dB relative to the fundamental — <span style={{ color: SERIES[1] }}>even</span>, <span style={{ color: SERIES[0] }}>odd</span></div>
-            <ResponsiveContainer width="100%" height={230}>
-              <BarChart data={bars} margin={{ top: 6, right: 18, bottom: 6, left: 4 }}>
-                <CartesianGrid stroke={GRID} strokeDasharray="2 4" />
-                <XAxis dataKey="name" tick={TICK} stroke={GRID} />
-                <YAxis tick={TICK} stroke={GRID} width={50} domain={[0, -FLOOR]} ticks={[0, 20, 40, 60, 80, 100, 120]} tickFormatter={(v) => v + FLOOR} />
-                <Tooltip contentStyle={{ background: 'var(--raised)', border: '1px solid var(--line-2)', borderRadius: 10, fontSize: 11.5 }}
-                  formatter={(_v, _n, p) => [`${f(p.payload.db)} dB (${f(pct(p.payload.db), 3)} %)`, `${p.payload.hz} Hz`]} />
-                <Bar dataKey="up" isAnimationActive={false}>
-                  {bars.map((b) => <Cell key={b.n} fill={b.n % 2 ? SERIES[0] : SERIES[1]} />)}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-          <TdChart title="Waveform, steady state" data={wave} yLabel="Pa" lines={[{ key: 'p', name: 'Pressure at 1 m', width: 2 }]} />
-        </div>
-      </>
-    )
-  }
-  if (mode === 'thd') {
-    const rows = res.rows.map((r) => ({ hz: r.hz, thd: r.thd != null ? r.thd * 100 : null, h2: r.h2 != null ? pct(r.h2) : null, h3: r.h3 != null ? pct(r.h3) : null }))
-    return (
-      <>
-        <StaleBanner stale={stale} onRun={onRun} />
-        <FailedPoints failed={res.failed} />
-        <div className="td-grid one">
-          <TdChart title={`Distortion at ${res.levelDb >= 0 ? '+' : ''}${res.levelDb} dB`} data={rows} xKey="hz" xLabel="Hz" logX yLabel="%" height={340}
-            lines={[{ key: 'thd', name: 'THD', width: 2.5 }, { key: 'h2', name: 'H2' }, { key: 'h3', name: 'H3' }]} />
-          <TdChart title="Fundamental" data={res.rows} xKey="hz" xLabel="Hz" logX yLabel="dB SPL" lines={[{ key: 'spl', name: 'SPL at 1 m', width: 2 }]} />
-        </div>
-      </>
-    )
-  }
-  if (mode === 'compression') return <CompressionView res={res} stale={stale} onRun={onRun} nodes={nodes} />
-
-  return (
-    <>
-      <StaleBanner stale={stale} onRun={onRun} />
-      <FailedPoints failed={res.failed} />
-      <div className="td-grid one">
-        <TdChart title="Maximum SPL, burst peak as RMS-equivalent at 1 m" data={res.rows.filter((r) => r.spl != null)} xKey="hz" xLabel="Hz" logX yLabel="dB SPL" height={300}
-          lines={[{ key: 'spl', name: 'Max SPL', width: 2.5 }]} />
-        <table className="td-table">
-          <thead><tr><th>Band</th><th>Max SPL</th><th>Level</th><th>Channel 1</th><th>Limited by</th><th>Peak excursion</th></tr></thead>
-          <tbody>
-            {res.rows.map((r) => (
-              <tr key={r.hz}>
-                <td>{r.hz} Hz</td>
-                <td>{r.spl != null ? `${f(r.spl)} dB` : '—'}</td>
-                <td>{r.levelDb != null ? `${r.levelDb >= 0 ? '+' : ''}${f(r.levelDb, 2)} dB` : '—'}</td>
-                <td>{r.levelDb != null ? `${f(voltage * Math.pow(10, r.levelDb / 20), 1)} V RMS` : '—'}</td>
-                <td>{r.limit}</td>
-                <td>{r.xPeak ? Object.entries(r.xPeak).map(([id, x]) => `${nameOf(nodes, id)} ${f(x, 1)} mm`).join(', ') : '—'}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </>
-  )
-}
-
-/**
- * A level offset, written for a legend or a table.
- *
- * @param {number} L - dB.
- * @returns {string} `+6 dB`, `-3 dB`.
- * @pure
- */
-const dBText = (L) => `${L >= 0 ? '+' : ''}${L} dB`
-
-/**
- * A dB change for a table cell, with rounding noise shown as zero.
- *
- * @param {number|null} v - dB.
- * @returns {number|null} The value; 0 when it would print as ±0.00.
- * @pure
- */
-const dbCell = (v) => (v != null && Math.abs(v) < 0.005 ? 0 : v)
-
-/**
- * Chart rows of one figure of a compression result, against frequency.
- *
- * Each level `i` gives two keys: `n<i>`, the nonlinear run's value, and
- * `l<i>`, the linear model's at the same level.
- *
- * @param {object} res - A compression result.
- * @param {Function} pick - `(figures) → number|null`: the figure, from a point's measured or linear figures.
- * @returns {Array<object>} `{hz, n0, l0, n1, l1, …}` per frequency.
- * @pure
- */
-export function compressionRows(res, pick) {
-  return res.rows.map((r) => {
-    const row = { hz: r.hz }
-    res.levels.forEach((L, i) => {
-      const n = r.at?.[L]
-      const l = r.linear?.[L]
-      row[`n${i}`] = n ? pick(n) ?? null : null
-      row[`l${i}`] = l ? pick(l) ?? null : null
-    })
-    return row
-  })
-}
-
-/**
- * A log axis's domain around the positive values of some rows.
- *
- * @param {Array<object>} rows - Chart rows.
- * @returns {number[]} `[lo, hi]`, a little outside the values; `[1e-3, 1]` when there are none.
- * @pure
- */
-function logDomain(rows) {
-  let lo = Infinity
-  let hi = 0
-  for (const r of rows) {
-    for (const [k, v] of Object.entries(r)) {
-      if (k !== 'hz' && v > 0) { lo = Math.min(lo, v); hi = Math.max(hi, v) }
-    }
-  }
-  return hi > 0 ? [lo / 1.3, hi * 1.3] : [1e-3, 1]
-}
-
-/**
- * Compression across level: every measured figure against frequency, one trace per level, with the linear model's beside it.
- *
- * @param {object} props - Component props.
- * @param {object} props.res - The compression result.
- * @param {boolean} props.stale - Whether the project has changed since.
- * @param {Function} props.onRun - Runs again.
- * @param {Array<object>} props.nodes - The nodes the run was made with.
- * @returns {React.ReactElement} The view.
- * @sideEffect Keeps the linear-trace toggle and the table's frequency as local state.
- */
-function CompressionView({ res, stale, onRun, nodes }) {
-  const [showLinear, setShowLinear] = useState(true)
-  const [at, setAt] = useState(0)
-  const first = res.rows.find((r) => r.at) || res.rows[0]
-  const drivers = Object.keys(Object.values(first?.linear || {}).find(Boolean)?.xPeak || {})
-  const ports = Object.keys(Object.values(first?.linear || {}).find(Boolean)?.vPeak || {})
-  const channels = Object.keys(Object.values(first?.linear || {}).find(Boolean)?.z || {})
-  /**
-   * A driver's Xmax.
-   *
-   * @param {string} id - Driver node id.
-   * @returns {number} mm; 0 when unknown.
-   * @reads the graph nodes.
-   */
-  const xmax = (id) => Number(nodes.find((n) => n.id === id)?.data.params.Xmax) || 0
-  /**
-   * Traces for a figure: each level solid, and its linear value dashed in the same colour.
-   *
-   * @param {boolean} [linear] - Whether the figure has a linear counterpart worth drawing.
-   * @returns {Array<object>} TdChart lines.
-   * @pure
-   */
-  const traces = (linear = true) => res.levels.flatMap((L, i) => [
-    { key: `n${i}`, name: dBText(L), color: SERIES[i % SERIES.length], width: 2 },
-    ...(linear && showLinear ? [{ key: `l${i}`, name: `${dBText(L)} linear`, color: SERIES[i % SERIES.length], dash: '4 3', width: 1, legend: false }] : []),
-  ])
-  /**
-   * One figure's chart.
-   *
-   * @param {string} title - Heading.
-   * @param {Function} pick - `(figures) → number|null`.
-   * @param {string} yLabel - Axis unit.
-   * @param {object} [extra] - `{linear, logY, refs}`: whether to draw the linear traces, a log axis, reference lines.
-   * @returns {React.ReactElement} The chart.
-   * @pure
-   */
-  const chart = (title, pick, yLabel, extra = {}) => {
-    const data = compressionRows(res, pick)
-    return (
-      <TdChart key={title} title={title} data={data} xKey="hz" xLabel="Hz" logX yLabel={yLabel}
-        {...(extra.logY ? { logY: true, yDomain: logDomain(data) } : {})}
-        refs={extra.refs} lines={traces(extra.linear !== false)} />
-    )
-  }
-  /**
-   * A name to add to a heading, when there is more than one of its kind.
-   *
-   * @param {Array} list - The drivers, ports or channels.
-   * @param {string} name - This one's name.
-   * @returns {string} ` — name`, or nothing.
-   * @pure
-   */
-  const multi = (list, name) => (list.length > 1 ? ` — ${name}` : '')
-  const row = res.rows[Math.min(at, res.rows.length - 1)]
-  // efficiency loss, keyed `e<i>` to sit beside the compression's `n<i>`
-  const lossRows = compressionRows(res, (m) => m.effLoss).map((r) => Object.fromEntries(res.levels.map((_, i) => [`e${i}`, r[`n${i}`]])))
-  /**
-   * A table cell's value, with the linear model's after it.
-   *
-   * @param {number} n - Nonlinear value.
-   * @param {number|null} l - Linear value.
-   * @param {number} d - Decimals.
-   * @param {string} [unit] - Unit.
-   * @returns {React.ReactElement} The cell's content.
-   * @pure
-   */
-  const pair = (n, l, d, unit = '') => (
-    <>{f(n, d)}{unit}{l != null && <span className="dim"> ({f(l, d)})</span>}</>
-  )
-  return (
-    <>
-      <StaleBanner stale={stale} onRun={onRun} />
-      <FailedPoints failed={res.failed} />
-      <div className="td-summary">
-        <label className="td-check" title="Draw the linear model at each level, dashed, beside the nonlinear result">
-          <input type="checkbox" checked={showLinear} onChange={(e) => setShowLinear(e.target.checked)} />Linear model at each level, dashed in the same colour
-        </label>
-      </div>
-      <div className="td-grid">
-        <TdChart title="Compression, solid; efficiency loss, dashed" xKey="hz" xLabel="Hz" logX yLabel="dB"
-          data={compressionRows(res, (m) => m.cmp).map((r, i) => ({ ...r, ...lossRows[i] }))}
-          refs={[{ y: 0, color: 'var(--text-3)' }]}
-          lines={res.levels.flatMap((L, i) => [
-            { key: `n${i}`, name: dBText(L), color: SERIES[i % SERIES.length], width: 2 },
-            { key: `e${i}`, name: `${dBText(L)} efficiency`, color: SERIES[i % SERIES.length], dash: '4 3', width: 1.5, legend: false },
-          ])} />
-        {chart('Output level at 1 m', (m) => m.spl, 'dB SPL')}
-        {drivers.map((id) => chart(`Peak excursion${multi(drivers, nameOf(nodes, id))}`, (m) => m.xPeak?.[id], 'mm', {
-          refs: xmax(id) ? [{ y: xmax(id), label: 'Xmax' }] : [],
-        }))}
-        {ports.map((id) => chart(`Peak port velocity${multi(ports, nameOf(nodes, id))}`, (m) => m.vPeak?.[id], 'm/s'))}
-        {channels.map((id) => chart(`Impedance at the fundamental${multi(channels, id)}`, (m) => m.z?.[id]?.mag, 'Ω'))}
-        {chart('Electrical power', (m) => m.pe, 'W', { logY: true })}
-        {chart('Efficiency', (m) => (m.efficiency != null ? m.efficiency * 100 : null), '%')}
-        {chart('THD', (m) => (m.thd != null ? m.thd * 100 : null), '%', { linear: false })}
-      </div>
-      <div className="td-table-head">
-        <span>At</span>
-        <select value={at} onChange={(e) => setAt(Number(e.target.value))}>
-          {res.rows.map((r, i) => <option key={r.hz} value={i}>{r.hz} Hz</option>)}
-        </select>
-        <span className="dim">nonlinear, with the linear model in brackets</span>
-      </div>
-      <table className="td-table">
-        <thead>
-          <tr>
-            <th>Level</th><th>SPL</th><th>Compression</th>
-            <th title="10·log10 of the efficiency over the linear model's: output lost as the power drawn is turned into sound less well">Efficiency loss</th>
-            <th title="10·log10 of the electrical power over the linear model's: output lost, or gained, because the load draws a different power">Power drawn</th>
-            <th>THD</th>
-            {drivers.map((id) => <th key={id}>Excursion{multi(drivers, nameOf(nodes, id))}</th>)}
-            {ports.map((id) => <th key={id}>Port velocity{multi(ports, nameOf(nodes, id))}</th>)}
-            {channels.map((id) => <th key={id}>|Z|{multi(channels, id)}</th>)}
-            <th>Electrical power</th><th>Acoustic power</th><th>Efficiency</th>
-          </tr>
-        </thead>
-        <tbody>
-          {res.levels.map((L) => {
-            const n = row?.at?.[L]
-            const l = row?.linear?.[L]
-            return (
-              <tr key={L}>
-                <td>{dBText(L)}</td>
-                {!n ? <td colSpan={8 + drivers.length + ports.length + channels.length} className="dim">not solved</td> : (
-                  <>
-                    <td>{pair(n.spl, l?.spl, 1, ' dB')}</td>
-                    <td>{f(dbCell(n.cmp), 2)} dB</td>
-                    <td>{f(dbCell(n.effLoss), 2)} dB</td>
-                    <td>{f(dbCell(n.powerChange), 2)} dB</td>
-                    <td>{f(n.thd * 100, 2)} %</td>
-                    {drivers.map((id) => <td key={id}>{pair(n.xPeak?.[id], l?.xPeak?.[id], 2, ' mm')}</td>)}
-                    {ports.map((id) => <td key={id}>{pair(n.vPeak?.[id], l?.vPeak?.[id], 1, ' m/s')}</td>)}
-                    {channels.map((id) => <td key={id}>{pair(n.z?.[id]?.mag, l?.z?.[id]?.mag, 2, ' Ω')}</td>)}
-                    <td>{pair(n.pe, l?.pe, 2, ' W')}</td>
-                    <td>{pair(n.pa * 1000, l ? l.pa * 1000 : null, 2, ' mW')}</td>
-                    <td>{pair(n.efficiency != null ? n.efficiency * 100 : null, l?.efficiency != null ? l.efficiency * 100 : null, 2, ' %')}</td>
-                  </>
-                )}
-              </tr>
-            )
-          })}
-        </tbody>
-      </table>
-    </>
-  )
-}
-
-/**
- * Points of a distortion analysis that could not be solved, and why.
- *
- * @param {object} props - Props.
- * @param {Array<{label: string, error: string}>} [props.failed] - The points.
- * @returns {React.ReactElement|null} A notice, or nothing when every point solved.
- * @pure
- */
-function FailedPoints({ failed }) {
-  if (!failed?.length) return null
-  return (
-    <div className="td-failed">
-      <b>{failed.length === 1 ? 'One point' : `${failed.length} points`} could not be solved</b> and {failed.length === 1 ? 'is' : 'are'} left out:
-      <ul>{failed.slice(0, 6).map((x) => <li key={x.label}>{x.label} — {x.error}</li>)}</ul>
-      {failed.length > 6 && <div>…and {failed.length - 6} more.</div>}
-    </div>
-  )
-}
-
-// -------------------------------------------------------- nonlinear ---
-
-/**
  * Duct exit losses, listed for every waveguide.
  *
  * @returns {React.ReactElement} The section.
@@ -907,36 +425,13 @@ function JobStatus() {
 }
 
 /**
- * A board's tab: click to show, double-click to rename, ✕ to delete.
- *
- * @param {object} props - Component props.
- * @param {object} props.board - The board.
- * @param {boolean} props.active - Whether it is shown.
- * @returns {React.ReactElement} The tab.
- * @sideEffect Subscribes to the store; renames or deletes the board.
- */
-function BoardTab({ board, active }) {
-  const st = useStore.getState
-  return (
-    <button className={`td-board-tab${active ? ' active' : ''}`} onClick={() => st().setTdTab(board.id)}
-      onDoubleClick={() => { const n = prompt('Rename the board', board.name); if (n && n.trim()) st().renameTdBoard(board.id, n.trim()) }}
-      title="Double-click to rename">
-      {board.name}
-      {active && (
-        <span className="td-tab-x" title="Delete this board; its runs stay in the library"
-          onClick={(e) => { e.stopPropagation(); if (confirm(`Delete the board "${board.name}"? Its runs stay in the library.`)) st().deleteTdBoard(board.id) }}>✕</span>
-      )}
-    </button>
-  )
-}
-
-/**
  * The time-domain workspace: its own full-screen view under the menu and quick bar.
  *
- * Boards of comparisons over stored runs, each a tab; the live linear
- * responses; and the driver curve editor. Runs are queued from the New run
- * drawer, solve one after another in the background, and are kept in the
- * library — each a branch off the record it was run from.
+ * Runs: the library of stored runs beside a viewer that shows one run, or
+ * several overlaid, a tab per category of figure; runs are queued from the
+ * New run drawer, solve one after another in the background, and each is
+ * kept as a branch off the record it was run from. Beside them, the live
+ * linear responses and the driver curve editor.
  *
  * @returns {React.ReactElement} The window.
  * @sideEffect Subscribes to the store, and starts the linear responses when they are out of date.
@@ -953,13 +448,11 @@ export default function TimeDomainWindow() {
   const error = useStore((s) => s.tdError)
   const sig = useStore((s) => s.tdSignature())
   const hasNodes = useStore((s) => s.nodes.length > 0)
-  const boards = useStore((s) => boardsOf(s.workspace))
   const drawer = useStore((s) => s.tdDrawer)
   const setDrawer = useStore((s) => s.setTdDrawer)
   const cfg = tdSettingsOf(extras)
   const [view, setView] = useState({ windowMs: 200, driver: false })
-  const board = boards.find((b) => b.id === tab) || null
-  const onBoardSide = tab !== 'linear' && tab !== 'nonlinear'
+  const onRuns = tab !== 'linear' && tab !== 'nonlinear'
 
   // The linear responses follow the project while their tab is open.
   const lin = results.linear
@@ -976,23 +469,16 @@ export default function TimeDomainWindow() {
       <div className="td-head">
         <span className="td-title">Time domain</span>
         <div className="td-tabs">
-          {boards.map((b) => <BoardTab key={b.id} board={b} active={tab === b.id} />)}
-          {tab === 'new' && <button className="active">Untitled board</button>}
-          <button className={tab === 'new' ? '' : 'td-plus'} onClick={() => setTab('new')} title="A new board">+</button>
-        </div>
-        <span className="td-sep" />
-        <div className="td-tabs">
+          <button className={onRuns ? 'active' : ''} onClick={() => setTab('runs')}>Runs</button>
           <button className={tab === 'linear' ? 'active' : ''} onClick={() => setTab('linear')}
             title="Impulse, step, tone burst and decay of the linear model, following the project as it is edited">Linear response</button>
           <button className={tab === 'nonlinear' ? 'active' : ''} onClick={() => setTab('nonlinear')}>Driver nonlinearity</button>
         </div>
         <JobStatus />
         <span style={{ flex: 1 }} />
-        {board && <span className="td-saved">Board saved with the workspace</span>}
-        {board && <AddComparison board={board} />}
-        <button className={drawer && onBoardSide ? 'td-newrun on' : 'primary'} disabled={!hasNodes} onClick={() => {
-          // the drawer opens over the boards, so it brings them up
-          if (!onBoardSide) { setTab(boards.length ? boards[boards.length - 1].id : 'new'); setDrawer(true) } else setDrawer(!drawer)
+        <button className={drawer && onRuns ? 'td-newrun on' : 'primary'} disabled={!hasNodes} onClick={() => {
+          // the drawer opens over the runs, so it brings them up
+          if (!onRuns) { setTab('runs'); setDrawer(true) } else setDrawer(!drawer)
         }}>New run</button>
         <button onClick={close} title="Back to the editor (Alt+T)">Close ✕</button>
       </div>
@@ -1014,10 +500,10 @@ export default function TimeDomainWindow() {
           <main className="td-main"><LinearView res={lin} view={view} /></main>
         </div>
       )}
-      {onBoardSide && (
-        <div className="td-stage">
-          {board ? <Board board={board} /> : <BoardStart />}
-          <RunLibrary board={board} />
+      {onRuns && (
+        <div className="td-runs">
+          <RunLibrary />
+          <RunViewer />
           {drawer && <div className="drawer-veil" onClick={() => setDrawer(false)} />}
           {drawer && <NewRunDrawer />}
         </div>

@@ -44,7 +44,6 @@ import * as Z from './utils/zip'
 import * as F from './utils/folder'
 import { preloadedWorkspace } from './bootWorkspace'
 import * as RUNS from './runs'
-import { readBoards, newBoard, newCard, addRunsToBoard, dropRuns } from './boards'
 import { DEFAULT_TOOLBAR, sanitizeToolbar } from './toolbarItems'
 import { channel, isPopout, openPanelWindow, openPanelGroupWindow, popoutPanelId, popoutPanelIds, SHARED_KEYS, SIM_INPUT_KEYS } from './popout'
 import { loadBindings, saveBindings, DEFAULT_BINDINGS, COMMAND_IDS, findConflict } from './keymap'
@@ -175,6 +174,24 @@ function inRecordsQueue(fn) {
 const runCache = new Map()
 
 /**
+ * Max SPL searches already done this session, by project state and range.
+ *
+ * The 10% THD Max SPL does not depend on the level a run is made at, so the
+ * runs of several levels queued together search once, and so does a run
+ * queued again of an unchanged project.
+ */
+const maxSplCache = new Map()
+
+/**
+ * What a run's Max SPL depends on: the project as it was run, and the range.
+ *
+ * @param {object} job - A queue entry.
+ * @returns {string} The cache key.
+ * @pure
+ */
+const maxSplKey = (job) => `${job.path}|${job.sig}|${job.opts.f1}|${job.opts.f2}|${job.opts.points}`
+
+/**
  * A stored run's results, if they have been read.
  *
  * @param {string} id - The run's id.
@@ -195,30 +212,14 @@ export function runDataOf(id) {
  */
 const projectNameOf = (path, data) => data?.name || W.baseName(path).replace(/\.speakerspice$/, '')
 
-/** Checked boards per stored list, so a selector sees the same array until the boards change. */
-const boardsCache = new WeakMap()
-
-/**
- * The workspace's time-domain boards, checked.
- *
- * @param {object} ws - The workspace.
- * @returns {Array<object>} The boards; the same array for as long as the stored list is unchanged.
- * @sideEffect Caches the checked boards against the stored list.
- */
-export function boardsOf(ws) {
-  const raw = W.readBoardList(ws)
-  let boards = boardsCache.get(raw)
-  if (!boards) { boards = readBoards(raw); boardsCache.set(raw, boards) }
-  return boards
-}
-
 /**
  * Every stored run in the workspace, newest first.
  *
  * Runs of the open project come from the store; the rest from their files.
  * Each carries where it lives (`path`), its project's name, whether that is
  * the open project, and the number of the record it was run from (`-1` once
- * that record is deleted).
+ * that record is deleted) and how that record is named. Runs of kinds
+ * older builds made are left out.
  *
  * @param {object} st - Store state.
  * @returns {Array<object>} The runs.
@@ -232,7 +233,11 @@ export function runIndex(st) {
     const recs = open ? st.records : f.data?.records
     const runs = Array.isArray(recs?.runs) ? recs.runs : []
     const project = open ? st.projectName || projectNameOf(path, null) : projectNameOf(path, f.data)
-    for (const r of runs) out.push({ ...r, path, project, open, record: Array.isArray(recs.ids) ? recs.ids.indexOf(r.recordId) : -1 })
+    for (const r of runs) {
+      if (!RUNS.isLevelRun(r)) continue
+      const record = Array.isArray(recs.ids) ? recs.ids.indexOf(r.recordId) : -1
+      out.push({ ...r, path, project, open, record, recordName: record >= 0 ? RUNS.recordLabel(R.recordName(recs, record)) : 'Deleted record' })
+    }
   }
   return out.sort((a, b) => (b.at || 0) - (a.at || 0))
 }
@@ -379,7 +384,7 @@ function loadWorkspace() {
  * the file opened from it cannot disagree about which workspace they came
  * from.
  */
-const INITIAL_WORKSPACE = W.liftBoards(loadWorkspace())
+const INITIAL_WORKSPACE = W.dropBoards(loadWorkspace())
 
 /**
  * Load the persisted dock layout, falling back to the default.
@@ -720,22 +725,22 @@ export const useStore = create((rawSet, get) => {
   // Results belong to this window and this project; each records the graph
   // signature it was run from, so the view can say when it is out of date.
   tdOpen: false,
-  tdTab: 'linear',
+  tdTab: 'runs',
   tdJob: null,
   tdError: null,
   tdResults: { linear: null, transient: null, distortion: {} },
   // Stored runs are branches in the project's records (see src/runs.js and
-  // src/records.js). Boards — saved sets of comparison cards — are kept in
-  // the project file beside the records, outside any one record.
-  // Runs waiting or solving, each with the project as it was when queued;
-  // one solves at a time, in order. Lost on reload: a run is stored only
-  // once it has finished.
+  // src/records.js). Runs waiting or solving, each with the project as it
+  // was when queued; one solves at a time, in order. Lost on reload: a run is
+  // stored only once it has finished.
   tdQueue: [],
-  // The New run drawer: whether it is open, and what it will run.
+  // The New run drawer: whether it is open, and what it will run — a name
+  // (empty for the project's and record's), the levels, one run each, and
+  // the range.
   tdDrawer: false,
-  // The card a click in the library adds runs to.
-  tdCard: null,
-  tdDraft: { analysis: 'transient', vary: [], note: '', addTo: 'new' },
+  tdDraft: { name: '', levels: [0], ...RUNS.RUN_DEFAULTS },
+  // The run viewer: the runs open in it, overlaid, and the tab shown.
+  tdView: { runs: [], tab: 'output' },
   // Bumped as run results finish loading, so views reading the cache redraw.
   tdDataTick: 0,
   // The driver curve editor's choices: which driver and curve, and curves
@@ -2151,17 +2156,7 @@ export const useStore = create((rawSet, get) => {
    */
   setTdDrawer: (open) => set({ tdDrawer: !!open }),
   /**
-   * Select the card a click in the run library adds to.
-   *
-   * @param {string|null} id - The card.
-   * @returns {void}
-   * @sideEffect Writes store state.
-   */
-  setTdCard: (id) => set({ tdCard: id }),
-  /**
-   * Change what the New run drawer will run: the analysis, what varies, the note and where the runs go.
-   *
-   * The signal and solver settings are the project's own, set through `setTdSettings`.
+   * Change what the New run drawer will run: its name, levels and range.
    *
    * @param {object} patch - Fields to merge.
    * @returns {void}
@@ -2169,55 +2164,38 @@ export const useStore = create((rawSet, get) => {
    */
   setTdDraft: (patch) => set({ tdDraft: { ...get().tdDraft, ...patch } }),
   /**
-   * Queue runs of the drawer's analysis: one, or a series over what it varies.
+   * Queue the drawer's runs: one per level.
    *
-   * Each run takes the project as it is now — a copy, with the series'
-   * values applied — so the project can be edited and more runs queued while
-   * these wait. The record they branch from is saved first. Runs solve one
-   * at a time, in the order queued.
+   * Each takes the project as it is now, so the project can be edited and
+   * more runs queued while these wait. The record they branch from is saved
+   * first. Runs solve one at a time, in the order queued. Unnamed runs take
+   * the project's name and the record's.
    *
    * @returns {Promise<string[]>} The queued runs' ids; none when there is nothing to run.
-   * @sideEffect Saves the selected record; may add a board and show it; queues jobs and starts the next.
+   * @sideEffect Saves the selected record; queues jobs and starts the next.
    */
   queueRuns: async () => {
     const st = get()
     if (!st.nodes.length || POPOUT) return []
     const draft = st.tdDraft
-    const analysis = draft.analysis
-    const base = RUNS.optsOf(analysis, tdSettingsOf(st.projectExtras))
+    const levels = RUNS.cleanLevels(draft.levels)
+    if (!levels.length) return []
     const project = st.serialize()
     const sig = st.tdSignature()
     const path = st.activeFile
-    const vary = (draft.vary || []).filter((v) => v.key && v.values?.length && !(v.key === 'level' && analysis === 'compression'))
-    const sets = RUNS.expandVary(vary)
-    const { names } = RUNS.projectInfo(project)
-    const seriesTitle = vary.length
-      ? `${RUNS.runTitle(analysis, base, vary.map((v) => v.key))} ${vary.map((v) => RUNS.varLabel(v.key, names).label.toLowerCase()).join(' × ')} series`
-      : null
-    let addTo = draft.addTo
-    if (addTo === 'new') {
-      const template = !vary.length ? 'report' : vary[0].key === 'level' ? 'level' : 'overlay'
-      const b = newBoard(seriesTitle || RUNS.runTitle(analysis, base), template)
-      get()._setBoards([...boardsOf(get().workspace), b])
-      set({ tdTab: b.id })
-      addTo = b.id
-    } else if (!boardsOf(get().workspace).some((b) => b.id === addTo)) addTo = null
     const bp = await inRecordsQueue(async () => {
       const out = await R.branchPoint(get().records, project)
       set({ records: out.records, recordNav: recordNavOf(out.records, get().recordNav.editing, get().recordNav.busy) })
       get().saveActiveFile()
       return out
     })
-    const seriesId = vary.length ? R.newId('series') : null
-    const jobs = sets.map((vars) => {
-      const v = RUNS.applyVars(project, base, analysis, vars)
-      return {
-        id: R.newId('run'), analysis, opts: v.opts, vars, content: R.recordContent(v.project), name: project.name,
-        parent: bp.parent, recordId: bp.recordId, path, sig, seriesId, seriesTitle,
-        title: RUNS.runTitle(analysis, v.opts), note: draft.note || '', addTo,
-        status: 'queued', fraction: 0, message: 'Queued',
-      }
-    })
+    const title = (draft.name || '').trim() || RUNS.defaultRunName(project.name, R.recordName(bp.records, bp.records.selected))
+    const range = { f1: Number(draft.f1) || RUNS.RUN_DEFAULTS.f1, f2: Number(draft.f2) || RUNS.RUN_DEFAULTS.f2, points: Math.round(Number(draft.points)) || RUNS.RUN_DEFAULTS.points }
+    const jobs = levels.map((levelDb) => ({
+      id: R.newId('run'), analysis: 'level', opts: { ...range, levelDb }, levelDb, content: bp.content, name: project.name,
+      parent: bp.parent, recordId: bp.recordId, path, sig, title,
+      status: 'queued', fraction: 0, message: 'Queued',
+    }))
     set({ tdQueue: [...get().tdQueue, ...jobs] })
     get()._pumpTdQueue()
     return jobs.map((j) => j.id)
@@ -2237,7 +2215,10 @@ export const useStore = create((rawSet, get) => {
     const job = q.find((j) => j.status === 'queued')
     if (!job) return
     if (get().tdJob) stopTdWorker()
-    const { kind, mode } = RUNS.jobOf(job.analysis)
+    const kind = 'level'
+    const mode = undefined
+    // the Max SPL does not depend on the run's level: runs of the same project state and range share one search
+    const maxSpl = maxSplCache.get(maxSplKey(job))
     /**
      * Write a change to this job in the queue.
      *
@@ -2264,7 +2245,7 @@ export const useStore = create((rawSet, get) => {
     }
     update({ status: 'running', message: 'Starting' })
     set({ tdJob: { kind, mode, fraction: 0, message: 'Starting', runId: job.id } })
-    startTdJob({ kind, project: { ...job.content, name: job.name }, opts: job.opts, mode }, (msg) => {
+    startTdJob({ kind, project: { ...job.content, name: job.name }, opts: { ...job.opts, ...(maxSpl ? { maxSpl } : {}) }, mode }, (msg) => {
       if (msg.type === 'progress') {
         update({ fraction: msg.fraction, message: msg.message })
         set({ tdJob: { kind, mode, fraction: msg.fraction, message: msg.message, runId: job.id } })
@@ -2279,33 +2260,31 @@ export const useStore = create((rawSet, get) => {
     })
   },
   /**
-   * Keep a finished run: a branch off its record in its project, and on the board it was sent to.
+   * Keep a finished run: a branch off its record in its project.
    *
    * The project is the one the run was queued from, whether or not it is
-   * still the open one.
+   * still the open one. Its Max SPL is kept for the runs of other levels
+   * still to solve.
    *
    * @param {object} job - The queue entry.
-   * @param {object} result - The analysis's result.
+   * @param {object} result - From `levelRun`.
    * @param {string[]} [warnings] - The engine's warnings.
    * @returns {Promise<void>} Resolves once stored.
    * @throws {Error} When the project is no longer in the workspace.
-   * @sideEffect Writes the project's records and boards; caches the results.
+   * @sideEffect Writes the project's records; caches the results and the Max SPL.
    */
   _storeRun: async (job, result, warnings) => {
+    maxSplCache.set(maxSplKey(job), result.maxSpl)
     const info = RUNS.projectInfo(job.content)
-    const points = RUNS.packResult(RUNS.runPoints(job.analysis, job.opts, result, info, job.vars))
-    const data = { analysis: job.analysis, opts: job.opts, vars: job.vars, result: RUNS.packResult(result) }
+    const data = { analysis: 'level', opts: job.opts, result: RUNS.packResult(result) }
     const meta = {
-      title: job.title, analysis: job.analysis, opts: job.opts, nonlinear: job.opts.nonlinear !== false,
-      vars: job.vars, seriesId: job.seriesId, seriesTitle: job.seriesTitle, note: job.note, sig: job.sig,
-      info, points, headline: RUNS.headline(job.analysis, points), ...(warnings?.length ? { warnings } : {}),
+      title: job.title, analysis: 'level', levelDb: job.levelDb, opts: job.opts, sig: job.sig, info,
+      ...(warnings?.length ? { warnings } : {}),
     }
     await get()._updateProject(job.path, async ({ records }) => {
       if (!records) throw new Error('The project this run belongs to has no records.')
       return { records: await R.addRun(records, { id: job.id, parent: job.parent, recordId: job.recordId, content: job.content, data, meta }) }
     })
-    const boards = boardsOf(get().workspace)
-    if (job.addTo && boards.some((b) => b.id === job.addTo)) get()._setBoards(addRunsToBoard(boards, job.addTo, [job.id]))
     runCache.set(job.id, { data, content: job.content })
     set({ tdDataTick: get().tdDataTick + 1 })
   },
@@ -2385,7 +2364,7 @@ export const useStore = create((rawSet, get) => {
    *
    * @param {Array<object>} entries - The runs, as `runIndex` lists them.
    * @returns {Promise<void>} Resolves once deleted.
-   * @sideEffect Writes each project's records, and the workspace's boards.
+   * @sideEffect Writes each project's records, and closes the runs in the viewer.
    */
   deleteRuns: async (entries) => {
     const byPath = new Map()
@@ -2395,8 +2374,8 @@ export const useStore = create((rawSet, get) => {
       for (const id of ids) runCache.delete(id)
     }
     const all = entries.map((e) => e.id)
-    const boards = boardsOf(get().workspace)
-    if (boards.some((b) => b.cards.some((c) => c.runs.some((r) => all.includes(r))))) get()._setBoards(dropRuns(boards, all))
+    const v = get().tdView
+    if (v.runs.some((r) => all.includes(r))) set({ tdView: { ...v, runs: v.runs.filter((r) => !all.includes(r)) } })
   },
   /**
    * Rename a stored run.
@@ -2410,21 +2389,6 @@ export const useStore = create((rawSet, get) => {
     records: records ? { ...records, runs: records.runs.map((r) => (r.id === entry.id ? { ...r, title } : r)) } : null,
   })),
   /**
-   * Set the drawer to a stored run's analysis and settings, to run it again.
-   *
-   * @param {object} entry - The run, as `runIndex` lists it.
-   * @returns {void}
-   * @sideEffect Writes the drawer and, when the project is editable, its time-domain settings.
-   */
-  startFromRun: (entry) => {
-    if (!entry?.opts) return
-    const { mode, ...opts } = entry.opts
-    set({ tdDraft: { ...get().tdDraft, analysis: entry.analysis }, tdDrawer: true })
-    if (entry.analysis === 'transient') get().setTdSettings('transient', opts)
-    else get().setTdSettings('distortion', { ...opts, mode: entry.analysis })
-  },
-
-  /**
    * Change the driver curve editor's choices.
    *
    * @param {object} patch - Any of `nlDriver`, `nlParam`, `nlOverlays`.
@@ -2433,76 +2397,39 @@ export const useStore = create((rawSet, get) => {
    */
   setNl: (patch) => set(patch),
 
-  // ---- boards ----
+  // ---- the run viewer ----
   /**
-   * Replace the workspace's boards.
+   * Open runs in the viewer: alone, or over those already open.
    *
-   * @param {Array<object>} boards - The boards.
+   * @param {string[]} ids - The runs.
+   * @param {boolean} [overlay] - Add them to those open rather than replace them.
    * @returns {void}
-   * @sideEffect Writes the workspace.
+   * @sideEffect Writes the viewer and shows the runs tab.
    */
-  _setBoards: (boards) => get()._commitWorkspace(W.writeBoards(get().workspace, boards)),
-  /**
-   * Add a board and show it.
-   *
-   * @param {string} [template] - What it starts with; see `templateCards`.
-   * @param {string} [name] - Its name.
-   * @returns {string} The board's id.
-   * @sideEffect Writes the boards and the tab; writes the workspace.
-   */
-  addTdBoard: (template = 'blank', name) => {
-    const n = boardsOf(get().workspace).length + 1
-    const b = newBoard(name || `Board ${n}`, template)
-    get()._setBoards([...boardsOf(get().workspace), b])
-    set({ tdTab: b.id })
-    return b.id
+  viewRuns: (ids, overlay = false) => {
+    const v = get().tdView
+    const runs = overlay ? [...v.runs, ...ids.filter((id) => !v.runs.includes(id))] : [...new Set(ids)]
+    set({ tdView: { ...v, runs }, tdTab: 'runs' })
   },
   /**
-   * Rename a board.
+   * Close one run in the viewer, or all of them.
    *
-   * @param {string} id - The board.
-   * @param {string} name - Its new name.
+   * @param {string} [id] - The run; every run when omitted.
    * @returns {void}
-   * @sideEffect Writes the boards; saves the open file.
+   * @sideEffect Writes the viewer.
    */
-  renameTdBoard: (id, name) => get()._setBoards(boardsOf(get().workspace).map((b) => (b.id === id ? { ...b, name } : b))),
-  /**
-   * Delete a board. Its runs stay in the library.
-   *
-   * @param {string} id - The board.
-   * @returns {void}
-   * @sideEffect Writes the boards and, when it was shown, the tab; saves the open file.
-   */
-  deleteTdBoard: (id) => {
-    const boards = boardsOf(get().workspace).filter((b) => b.id !== id)
-    get()._setBoards(boards)
-    if (get().tdTab === id) set({ tdTab: boards.length ? boards[boards.length - 1].id : 'new' })
+  closeRun: (id) => {
+    const v = get().tdView
+    set({ tdView: { ...v, runs: id ? v.runs.filter((r) => r !== id) : [] } })
   },
   /**
-   * Change one card, or add one.
+   * Show a tab of the viewer.
    *
-   * @param {string} boardId - The board.
-   * @param {string|null} cardId - The card; `null` adds `patch` as a new card of `patch.kind`.
-   * @param {object|null} patch - Fields to merge; `null` removes the card.
+   * @param {string} tab - A `TABS` id.
    * @returns {void}
-   * @sideEffect Writes the boards; saves the open file.
+   * @sideEffect Writes the viewer.
    */
-  updateTdCard: (boardId, cardId, patch) => get()._setBoards(boardsOf(get().workspace).map((b) => {
-    if (b.id !== boardId) return b
-    if (!cardId) return { ...b, cards: [...b.cards, newCard(patch.kind, patch)] }
-    if (!patch) return { ...b, cards: b.cards.filter((c) => c.id !== cardId) }
-    return { ...b, cards: b.cards.map((c) => (c.id === cardId ? { ...c, ...patch } : c)) }
-  })),
-  /**
-   * Put runs on a board: one card, or every card.
-   *
-   * @param {string} boardId - The board.
-   * @param {string[]} runIds - The runs.
-   * @param {string} [cardId] - The card; every card when omitted.
-   * @returns {void}
-   * @sideEffect Writes the boards; saves the open file.
-   */
-  addRunsToCard: (boardId, runIds, cardId) => get()._setBoards(addRunsToBoard(boardsOf(get().workspace), boardId, runIds, cardId)),
+  setViewTab: (tab) => set({ tdView: { ...get().tdView, tab } }),
 
   // ---- compute pipeline (debounced 150 ms) ----
   // Simulation runs in a Web Worker: the engine ships with the app, but off
@@ -2652,6 +2579,23 @@ export const useStore = create((rawSet, get) => {
    * @sideEffect Writes store state.
    */
   setRecordEditing: (on) => set({ recordNav: { ...get().recordNav, editing: !!on } }),
+  /**
+   * Name the selected record, or clear its name so it goes by its number.
+   *
+   * A name is not part of the record's content, so naming an earlier,
+   * read-only record does not need it unlocked.
+   *
+   * @param {string} name - The name; empty clears it.
+   * @returns {Promise<void>} Resolves once saved.
+   * @sideEffect Writes the records (saving the first one when there are none yet) and saves the open file.
+   */
+  recordRename: (name) => inRecordsQueue(async () => {
+    if (POPOUT || !get().activeFile) return
+    let records = get().records
+    if (!records) records = await R.saveRecord(null, get().serialize())
+    set({ records: R.renameRecord(records, records.selected, name), recordNav: recordNavOf(records, get().recordNav.editing, get().recordNav.busy) })
+    get().saveActiveFile()
+  }),
 
   // ---- persistence ----
   /**
@@ -2765,12 +2709,13 @@ export const useStore = create((rawSet, get) => {
    *
    * @param {object} ws - The new workspace.
    * @returns {void}
-   * Boards an older build saved inside a project file are moved into the
-   * workspace's boards on the way in.
+   * Comparison boards an older build saved, in the workspace or inside a
+   * project file, are dropped on the way in: runs are compared in the run
+   * viewer now.
    *
    * @sideEffect Writes store state, which the module-level subscription then persists to LocalStorage.
    */
-  _commitWorkspace: (ws) => set({ workspace: W.liftBoards(ws) }),
+  _commitWorkspace: (ws) => set({ workspace: W.dropBoards(ws) }),
 
   /**
    * Rename the workspace itself.

@@ -29,7 +29,7 @@
 import { test, beforeEach } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { useStore, nextId, __internals, isLocked, runIndex, runDataOf, boardsOf } from '../../src/store.js'
+import { useStore, nextId, __internals, isLocked, runIndex, runDataOf } from '../../src/store.js'
 import { readSnapshots, writeSnapshots } from '../../src/workspace.js'
 import {
   stack, split, defaultLayout, findNode, findPanelStack, openPanels, isOpen,
@@ -1969,47 +1969,52 @@ test('records: add, go back, lock, edit, delete', async () => {
 // CONTRACT (runs): a finished run is kept as a branch off the record it was
 // queued from, holding the project as queued; the project can change and the
 // run keeps its state, which can be restored as a new record at the end.
-test('runs: stored as a branch, listed, put on a board, restored as a record, deleted', async () => {
+test('runs: stored as a branch, listed with its level and record, viewed, restored as a record, deleted', async () => {
   const id = st().addNode('chamber', { x: 0, y: 0 })
   st().updateParams(id, { volume: 10 })
   // queue-time snapshot, as queueRuns takes it
   const R = await import('../../src/records.js')
   const bp = await R.branchPoint(st().records, st().serialize())
   useStore.setState({ records: bp.records })
-  const board = st().addTdBoard('report', 'Mine')
+  await st().recordRename('Small box')
+  assert.equal(R.recordName(st().records, 0), 'Small box')
   const job = {
-    id: 'run-1', analysis: 'harmonics', opts: { hz: 40, levelDb: 0, nonlinear: true }, vars: {}, content: bp.content,
-    parent: bp.parent, recordId: bp.recordId, path: st().activeFile, sig: 's', title: 'Harmonics 40 Hz · 0 dB', addTo: board,
+    id: 'run-1', analysis: 'level', opts: { f1: 20, f2: 80, points: 2, levelDb: 6 }, levelDb: 6, content: bp.content,
+    parent: bp.parent, recordId: bp.recordId, path: st().activeFile, sig: 's', title: 'Mine',
   }
-  const result = { hz: 40, levelDb: 0, harmonics: [{ n: 1, db: 0 }, { n: 2, db: -40 }], thd: 0.01, spl: 90, xPeak: {}, vPeak: {}, z: {}, pe: 1, pa: 0.01, efficiency: 0.01, currentPeak: 1, waveform: { fs: 1000, t: [0, 0.001], pressure: new Float64Array([0, 1]) } }
+  const result = {
+    levelDb: 6, freqs: [20, 80], rows: [{ hz: 20, spl: 90, linSpl: 91, cmp: -1, thd: 0.01, h: [-40], xPeak: {}, vPeak: {}, z: {} }, { hz: 80, failed: true }],
+    start: [{ hz: 20, dt: 0.001, pressure: new Float64Array([0, 1]), excursion: {}, velocity: {} }], maxSpl: [{ hz: 20, levelDb: 12, spl: 101, thd: 0.099 }], failed: [],
+  }
   // the project changes while the run solves
   st().updateParams(id, { volume: 30 })
   await st()._storeRun(job, result)
 
   const runs = runIndex(st())
   assert.equal(runs.length, 1)
-  assert.deepEqual([runs[0].title, runs[0].open, runs[0].record], ['Harmonics 40 Hz · 0 dB', true, 0])
-  assert.equal(runs[0].headline.text, '1.0 %')
-  const boards = () => boardsOf(st().workspace)
-  assert.deepEqual(boards().find((b) => b.id === board).cards[0].runs, ['run-1'], 'sent to its board')
-  assert.deepEqual(runDataOf('run-1').data.result.waveform.pressure, [0, 1], 'results cached, packed')
+  assert.deepEqual([runs[0].title, runs[0].levelDb, runs[0].open, runs[0].record, runs[0].recordName], ['Mine', 6, true, 0, 'Small box'])
+  assert.deepEqual(runDataOf('run-1').data.result.start[0].pressure, [0, 1], 'results cached, packed')
 
-  // runs travel in the project file; boards stay in the workspace whatever project is open
+  st().viewRuns(['run-1'])
+  assert.deepEqual(st().tdView.runs, ['run-1'])
+  st().viewRuns(['run-1', 'run-x'], true)
+  assert.deepEqual(st().tdView.runs, ['run-1', 'run-x'], 'overlaid, each once')
+  st().closeRun('run-x')
+  assert.deepEqual(st().tdView.runs, ['run-1'])
+
+  // runs travel in the project file
   const saved = st().serialize()
-  assert.equal(saved.tdBoards, undefined)
   st().loadSerialized(blank())
-  assert.equal(boards().length, 1)
   st().loadSerialized(saved)
   assert.equal(runIndex(st()).length, 1)
 
   await st().restoreRunAsRecord(runIndex(st())[0])
   assert.deepEqual([st().recordNav.count, st().recordNav.selected], [2, 1])
   assert.equal(paramsOf(id).volume, 10, 'the run\'s project, as it was queued')
-  assert.equal(boards().length, 1, 'boards stay across records')
   await st().recordStep(-1)
   assert.equal(paramsOf(id).volume, 30, 'the record it came from kept its edit')
 
   await st().deleteRuns(runIndex(st()))
   assert.equal(runIndex(st()).length, 0)
-  assert.deepEqual(boards()[0].cards[0].runs, [])
+  assert.deepEqual(st().tdView.runs, [], 'closed in the viewer')
 })

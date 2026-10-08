@@ -3,7 +3,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import {
   recordContent, readRecords, saveRecord, addRecord, deleteRecord, selectRecord, readRecord, recordTimes,
-  branchPoint, addRun, readRun, deleteRuns, addRecordFrom,
+  branchPoint, addRun, readRun, deleteRuns, addRecordFrom, recordName, renameRecord,
 } from '../../src/records.js'
 
 const proj = (v) => ({ name: 'box', modified: 'x', schemaVersion: 3, nodes: [{ id: 'd', type: 'driver', params: { Re: v } }], edges: [] })
@@ -20,11 +20,28 @@ test('readRecords', () => {
   assert.equal(readRecords({ list: ['nothex'], objects: {} }), null)
   const oid = 'a'.repeat(40)
   const r = readRecords({ list: [oid, oid], selected: 9, objects: { [oid]: 'x' } })
-  assert.deepEqual({ ...r, ids: undefined }, { list: [oid, oid], ids: undefined, selected: 1, objects: { [oid]: 'x' }, runs: [] })
+  assert.deepEqual({ ...r, ids: undefined }, { list: [oid, oid], ids: undefined, selected: 1, objects: { [oid]: 'x' }, runs: [], names: {} })
   assert.equal(new Set(r.ids).size, 2, 'an id per record, made up when the file has none')
   assert.deepEqual(readRecords({ list: [oid], ids: ['r-a'], objects: { [oid]: 'x' } }).ids, ['r-a'])
   // runs whose commit is not in the file are dropped
-  assert.deepEqual(readRecords({ list: [oid], objects: { [oid]: 'x' }, runs: [{ id: 'run-1', oid }, { id: 'run-2', oid: 'b'.repeat(40) }] }).runs.map((x) => x.id), ['run-1'])
+  assert.deepEqual(readRecords({ list: [oid], objects: { [oid]: 'x' }, runs: [{ id: 'run-1', oid, analysis: 'level' }, { id: 'run-2', oid: 'b'.repeat(40), analysis: 'level' }] }).runs.map((x) => x.id), ['run-1'])
+  // runs of the kinds older builds made are dropped
+  assert.deepEqual(readRecords({ list: [oid], objects: { [oid]: 'x' }, runs: [{ id: 'run-1', oid, analysis: 'transient' }, { id: 'run-2', oid, analysis: 'level' }] }).runs.map((x) => x.id), ['run-2'])
+  // names belong to records that exist, and are trimmed
+  assert.deepEqual(readRecords({ list: [oid], ids: ['r-a'], objects: { [oid]: 'x' }, names: { 'r-a': ' Sealed ', 'r-gone': 'x' } }).names, { 'r-a': 'Sealed' })
+})
+
+// CONTRACT: a record goes by its number until named; naming it its number, or nothing, clears the name.
+test('recordName and renameRecord', () => {
+  const oid = 'a'.repeat(40)
+  const r = readRecords({ list: [oid, oid], ids: ['r-a', 'r-b'], objects: { [oid]: 'x' } })
+  assert.equal(recordName(r, 1), '2')
+  const named = renameRecord(r, 1, '  Tuned  ')
+  assert.equal(recordName(named, 1), 'Tuned')
+  assert.equal(recordName(named, 0), '1')
+  assert.deepEqual(renameRecord(named, 1, '').names, {})
+  assert.deepEqual(renameRecord(named, 1, '2').names, {})
+  assert.equal(recordName(null, 0), '1')
 })
 
 // CONTRACT: records are content-addressed — the same design is stored once;
@@ -79,7 +96,7 @@ test('runs: branch, survive edits, restore as a record, delete', async () => {
   assert.equal(bp.recordId, bp.records.ids[0])
   // the record is edited while the run is queued
   let r = await saveRecord(bp.records, proj(2), 2e12)
-  r = await addRun(r, { id: 'run-a', parent: bp.parent, recordId: bp.recordId, content: bp.content, data: { result: [1, 2] }, meta: { title: 'Burst' } }, 3e12)
+  r = await addRun(r, { id: 'run-a', parent: bp.parent, recordId: bp.recordId, content: bp.content, data: { result: [1, 2] }, meta: { title: 'Burst', analysis: 'level' } }, 3e12)
   assert.deepEqual(r.runs.map((x) => [x.id, x.title, x.recordId, x.at]), [['run-a', 'Burst', bp.recordId, 3e12]])
   assert.deepEqual(await readRun(r, r.runs[0].oid), { content: recordContent(proj(1)), data: { result: [1, 2] } })
   // later saves keep everything the run reaches

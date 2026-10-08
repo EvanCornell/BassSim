@@ -1,271 +1,87 @@
-// Time-domain runs: what a run is, how it is named, what can be varied
-// across a series, and what can be drawn or tabulated from it.
+// Stored time-domain runs.
 //
-// A run is stored as a branch off its record (see records.js): the project
-// as it was run, and `run.json` holding the run's settings and results. The
-// project's run list carries a summary of each — title, kind, its figures —
-// so the library, tables and metric charts never need to open the results;
-// only waveform charts do.
+// There is one kind of run: stepped tones across a frequency range at one
+// drive level (see `levelRun` in src/spice/timedomain.js). Every figure the
+// time-domain views show — output, compression, distortion, excursion, port
+// velocity, impedance, power, the 10% THD Max SPL and each tone's start-up —
+// comes from it. Queuing several levels makes one run per level.
+//
+// Each run is a branch off the record it was queued from (see
+// src/records.js): its commit holds the project as it was run and the
+// result. The run list in the project file carries a summary of each, so the
+// library lists runs without reading any result.
 //
 // Everything here is pure.
 
-import { derive, DEFAULT_BASIS, COUPLED } from './driverParams'
-import { normalizeSignal, signalFunction, signalLength, rfft } from './spice/dsp'
-import { splOf, levels } from './spice/timedomain'
+/** The range a new run covers, and how many tones across it. */
+export const RUN_DEFAULTS = { f1: 15, f2: 200, points: 24 }
 
-/** The analyses a run can be, `[id, label, long label]`. */
-export const ANALYSES = [
-  ['transient', 'Transient', 'Transient'],
-  ['harmonics', 'Harmonics', 'Harmonics at one frequency'],
-  ['thd', 'THD sweep', 'THD across frequency'],
-  ['compression', 'Compression', 'Compression across level'],
-  ['maxspl', 'Max SPL', 'Maximum SPL (CEA-2010 style)'],
-]
+/** The THD that defines the Max SPL. */
+export const MAX_SPL_THD = 0.1
 
 /**
- * The worker job an analysis runs as.
+ * Whether a stored run is of the current kind.
  *
- * @param {string} analysis - An `ANALYSES` id.
- * @returns {{kind: 'transient'|'distortion', mode?: string}} The job's kind, and the distortion mode.
+ * Runs stored before there was one kind of run are not; they are deleted
+ * when their project is read.
+ *
+ * @param {object} r - A run's summary.
+ * @returns {boolean} Whether it can be shown.
  * @pure
  */
-export function jobOf(analysis) {
-  return analysis === 'transient' ? { kind: 'transient' } : { kind: 'distortion', mode: analysis }
-}
+export const isLevelRun = (r) => r?.analysis === 'level'
 
 /**
- * The label of an analysis.
- *
- * @param {string} analysis - An `ANALYSES` id.
- * @returns {string} Its short label.
- * @pure
- */
-export const analysisLabel = (analysis) => (ANALYSES.find((a) => a[0] === analysis) || [, analysis])[1]
-
-/**
- * A level offset as text.
+ * A level offset as text, with a true minus sign.
  *
  * @param {number} L - dB.
- * @returns {string} `0 dB`, `+6 dB`, `−3 dB`.
+ * @returns {string} `+6 dB`, `0 dB`, `−3 dB`.
  * @pure
  */
-export const dbText = (L) => `${L > 0 ? '+' : L < 0 ? '−' : ''}${Math.abs(Number(L.toFixed(2)))} dB`
+export const dbText = (L) => `${L > 0 ? '+' : L < 0 ? '−' : ''}${Math.abs(Number(Number(L).toFixed(2)))} dB`
 
 /**
- * A number for a title: short, no trailing zeros.
+ * How a record is named in run names and the library: its name, or "Record n" when it goes by its number.
  *
- * @param {number} v - The value.
- * @returns {string} Up to four significant figures.
+ * @param {string} name - From `recordName`.
+ * @returns {string} e.g. `Tuned`, `Record 3`.
  * @pure
  */
-const num = (v) => String(Number(Number(v).toPrecision(4)))
+export const recordLabel = (name) => (/^\d+$/.test(String(name)) ? `Record ${name}` : String(name))
 
 /**
- * The settings one run of an analysis uses, from the project's time-domain settings.
+ * A new run's name when none is typed: the project's name and the record's.
  *
- * @param {string} analysis - An `ANALYSES` id.
- * @param {{transient: object, distortion: object}} settings - The project's time-domain settings.
- * @returns {object} The job's options.
+ * @param {string} project - The project's name.
+ * @param {string} record - The record's name or number, from `recordName`.
+ * @returns {string} e.g. `Ported 60 L · Record 3`.
  * @pure
  */
-export function optsOf(analysis, settings) {
-  return analysis === 'transient' ? { ...settings.transient, signal: { ...settings.transient.signal } } : { ...settings.distortion, mode: analysis }
+export function defaultRunName(project, record) {
+  return `${project || 'Untitled'} · ${recordLabel(record)}`
 }
 
 /**
- * A run's title from its analysis and options.
+ * The levels a run list asks for: numbers, each once, in the order given.
  *
- * @param {string} analysis - An `ANALYSES` id.
- * @param {object} o - The run's options.
- * @param {string[]} [varied] - Vary keys to leave out of the title, for a series.
- * @returns {string} e.g. `Burst 40 Hz × 6.5 · +6 dB`.
+ * @param {Array<number|string>} levels - As typed.
+ * @returns {number[]} The levels, dB.
  * @pure
  */
-export function runTitle(analysis, o, varied = []) {
-  const lv = varied.includes('level') ? '' : ` · ${dbText(o.levelDb || 0)}`
-  /**
-   * A frequency for the title, unless the series varies it.
-   *
-   * @param {number} hz - Frequency.
-   * @returns {string} ` 40 Hz`, or nothing.
-   * @pure
-   */
-  const hzOf = (hz) => (varied.includes('hz') ? '' : ` ${num(hz)} Hz`)
-  if (analysis === 'transient') {
-    const s = o.signal || {}
-    if (s.type === 'burst') return `Burst${hzOf(s.hz)} × ${num(s.cycles)}${lv}`
-    if (s.type === 'sine') return `Sine${hzOf(s.hz)}${lv}`
-    if (s.type === 'sweep') return `Log sweep ${num(s.f1)}–${num(s.f2)} Hz${lv}`
-    return `Pink noise ${num(s.f1)}–${num(s.f2)} Hz${lv}`
-  }
-  if (analysis === 'harmonics') return `Harmonics${hzOf(o.hz)}${lv}`
-  if (analysis === 'thd') return `THD ${num(o.f1)}–${num(o.f2)} Hz${lv}`
-  if (analysis === 'compression') {
-    const ls = o.levels || []
-    return `Compression ${dbText(Math.min(...ls))} … ${dbText(Math.max(...ls))}`.replace(/ dB …/, ' …')
-  }
-  return 'Maximum SPL (CEA-2010)'
-}
-
-// ------------------------------------------------------------- vary ---
-
-/**
- * What a series can vary, for a project and analysis.
- *
- * Level and frequency where the analysis has them, every named project
- * parameter, and every number on every node — for a driver, the parameters it
- * is set by rather than those derived from them.
- *
- * @param {object} project - A serialized project.
- * @param {string} analysis - An `ANALYSES` id.
- * @param {object} [opts] - The analysis's options, to tell whether a frequency applies.
- * @returns {Array<{key: string, label: string, unit: string, value: number|null}>} The choices, with the current value.
- * @pure
- */
-export function varyChoices(project, analysis, opts = {}) {
+export function cleanLevels(levels) {
   const out = []
-  if (analysis !== 'compression') out.push({ key: 'level', label: 'Level', unit: 'dB', value: Number(opts.levelDb) || 0 })
-  const tone = analysis === 'transient' ? ['sine', 'burst'].includes(opts.signal?.type) : analysis === 'harmonics'
-  if (tone) out.push({ key: 'hz', label: 'Frequency', unit: 'Hz', value: Number(analysis === 'transient' ? opts.signal.hz : opts.hz) || null })
-  for (const p of project.params || []) {
-    if (p?.name) out.push({ key: `param:${p.name}`, label: p.name, unit: '', value: typeof p.value === 'number' ? p.value : null })
-  }
-  for (const n of project.nodes || []) {
-    const label = n.params?.label || n.id
-    for (const [field, v] of Object.entries(n.params || {})) {
-      if (typeof v !== 'number' || field === 'probePos') continue
-      if (n.type === 'driver' && COUPLED.includes(field) && !DEFAULT_BASIS.includes(field)) continue
-      out.push({ key: `node:${n.id}:${field}`, label: `${label} · ${field}`, unit: '', value: v })
-    }
+  for (const v of levels || []) {
+    const n = typeof v === 'number' ? v : parseFloat(String(v).replace('−', '-'))
+    if (Number.isFinite(n) && !out.includes(n)) out.push(n)
   }
   return out
 }
-
-/**
- * Every combination of the values of each varied setting.
- *
- * @param {Array<{key: string, values: number[]}>} vary - What varies; an empty list is one run.
- * @returns {Array<Object<string, number>>} One assignment per run, the first setting varying slowest.
- * @pure
- */
-export function expandVary(vary = []) {
-  let out = [{}]
-  for (const v of vary) {
-    if (!v?.key || !v.values?.length) continue
-    out = out.flatMap((a) => v.values.map((x) => ({ ...a, [v.key]: x })))
-  }
-  return out
-}
-
-/**
- * Apply one run's varied values to a project and its options.
- *
- * A driver's own T/S parameter keeps the driver consistent: the parameters
- * derived from it follow, as they do when it is typed in.
- *
- * @param {object} project - A serialized project; not changed.
- * @param {object} opts - The run's options; not changed.
- * @param {string} analysis - An `ANALYSES` id.
- * @param {Object<string, number>} vars - Key → value.
- * @returns {{project: object, opts: object}} The project and options to run.
- * @pure
- */
-export function applyVars(project, opts, analysis, vars) {
-  let p = project
-  const o = { ...opts, ...(opts.signal ? { signal: { ...opts.signal } } : {}) }
-  for (const [key, value] of Object.entries(vars || {})) {
-    if (key === 'level') o.levelDb = value
-    else if (key === 'hz') { if (analysis === 'transient') o.signal.hz = value; else o.hz = value }
-    else if (key.startsWith('param:')) {
-      const name = key.slice(6)
-      p = { ...p, params: (p.params || []).map((x) => (x.name === name ? { ...x, value } : x)) }
-    } else if (key.startsWith('node:')) {
-      const [, id, field] = key.split(':')
-      p = {
-        ...p,
-        nodes: (p.nodes || []).map((n) => {
-          if (n.id !== id) return n
-          let params = { ...n.params, [field]: value }
-          if (n.type === 'driver' && COUPLED.includes(field)) {
-            const d = derive(params, DEFAULT_BASIS)
-            if (d.ok) params = { ...params, ...d.values, [field]: value }
-          }
-          return { ...n, params }
-        }),
-      }
-    }
-  }
-  return { project: p, opts: o }
-}
-
-/**
- * A varied setting's label and unit.
- *
- * @param {string} key - A vary key.
- * @param {Object<string, string>} [names] - Node labels by id.
- * @returns {{label: string, unit: string}} How to show it.
- * @pure
- */
-export function varLabel(key, names = {}) {
-  if (key === 'level') return { label: 'Level', unit: 'dB' }
-  if (key === 'hz') return { label: 'Frequency', unit: 'Hz' }
-  if (key.startsWith('param:')) return { label: key.slice(6), unit: '' }
-  if (key.startsWith('node:')) {
-    const [, id, field] = key.split(':')
-    return { label: `${names[id] || id} · ${field}`, unit: '' }
-  }
-  return { label: key, unit: '' }
-}
-
-/**
- * A varied value as text.
- *
- * @param {string} key - A vary key.
- * @param {number} v - Its value.
- * @returns {string} e.g. `+6 dB`, `40 Hz`, `12.5`.
- * @pure
- */
-export function varText(key, v) {
-  if (key === 'level') return dbText(v)
-  if (key === 'hz') return `${num(v)} Hz`
-  return num(v)
-}
-
-/**
- * The drive signal of a transient run, for a preview: the first channel's voltage against time.
- *
- * @param {object} opts - The run's options.
- * @param {number} volts - The first channel's RMS voltage at 0 dB.
- * @param {number} [points] - Samples to return.
- * @returns {{ms: number[], v: number[]}} Time, ms, and volts.
- * @pure
- */
-export function drivePreview(opts, volts, points = 400) {
-  const sig = normalizeSignal(opts.signal)
-  const len = Math.min(Number.isFinite(signalLength(sig)) ? signalLength(sig) * 1.2 : 8 / sig.hz, opts.duration || 1)
-  const fs = Math.max(points / len, 1000)
-  const fn = signalFunction(sig, fs)
-  const amp = volts * Math.pow(10, (opts.levelDb || 0) / 20) * (sig.type === 'noise' ? 1 : Math.SQRT2)
-  const ms = []
-  const v = []
-  for (let i = 0; i < points; i++) {
-    const t = (i / (points - 1)) * len
-    ms.push(t * 1000)
-    v.push(amp * fn(t))
-  }
-  return { ms, v }
-}
-
-// --------------------------------------------------------- results ---
 
 /** Significant figures a stored result keeps. */
-const DIGITS = 6
+const DIGITS = 5
 
 /**
- * A result made ready to store: typed arrays become plain arrays, and every number is cut to six significant figures.
- *
- * Six figures keep a spectrum's floor far below anything charted while
- * halving the size of what is stored.
+ * A result made ready to store: typed arrays become plain arrays, and every number is cut to five significant figures.
  *
  * @param {*} v - A result, or part of one.
  * @returns {*} The same shape, JSON-safe and compact.
@@ -296,305 +112,194 @@ export function projectInfo(project) {
   return { names, xmax }
 }
 
-/**
- * The largest of an object's values.
- *
- * @param {Object<string, number>|null} o - Values by id.
- * @returns {number|null} The largest, or null when there are none.
- * @pure
- */
-const maxOf = (o) => {
-  const v = Object.values(o || {}).filter(Number.isFinite)
-  return v.length ? Math.max(...v) : null
-}
+// ---------------------------------------------------------- the views ---
 
 /**
- * How far past Xmax a set of excursions goes: the largest ratio.
+ * The viewer's tabs, `[id, label]`, in order.
  *
- * @param {Object<string, number>|null} x - Peak excursion by driver, mm.
- * @param {Object<string, number>} xmax - Xmax by driver, mm.
- * @returns {number|null} The largest excursion over its Xmax.
- * @pure
+ * Each shows one category of figure across frequency, except Waveforms,
+ * which shows each tone's start-up in time.
  */
-const overOf = (x, xmax) => {
-  let r = null
-  for (const [id, v] of Object.entries(x || {})) if (xmax[id] > 0 && Number.isFinite(v)) r = Math.max(r ?? 0, v / xmax[id])
-  return r
-}
-
-/** The figures a point can carry, `key → {label, unit, scale?, digits}`. */
-export const METRICS = {
-  spl: { label: 'SPL', unit: 'dB', digits: 1 },
-  peakPressure: { label: 'Peak pressure', unit: 'Pa', digits: 2 },
-  cmp: { label: 'Compression', unit: 'dB', digits: 2 },
-  effLoss: { label: 'Efficiency loss', unit: 'dB', digits: 2 },
-  powerChange: { label: 'Power drawn', unit: 'dB', digits: 2 },
-  thd: { label: 'THD', unit: '%', digits: 2 },
-  h2: { label: 'H2', unit: 'dB', digits: 1 },
-  h3: { label: 'H3', unit: 'dB', digits: 1 },
-  xPeak: { label: 'Excursion', unit: 'mm', digits: 2 },
-  vPeak: { label: 'Port velocity', unit: 'm/s', digits: 1 },
-  iPeak: { label: 'Current', unit: 'A', digits: 2 },
-  zMag: { label: '|Z|', unit: 'Ω', digits: 2 },
-  pe: { label: 'Electrical power', unit: 'W', digits: 2 },
-  pa: { label: 'Acoustic power', unit: 'mW', digits: 2 },
-  efficiency: { label: 'Efficiency', unit: '%', digits: 2 },
-  levelDb: { label: 'Level reached', unit: 'dB', digits: 2 },
-}
-
-/**
- * The figures of one tone measurement.
- *
- * @param {object} m - A tone measurement or a compression point.
- * @param {Object<string, number>} xmax - Xmax by driver.
- * @returns {object} Figures, in `METRICS` units.
- * @pure
- */
-function toneFigures(m, xmax) {
-  const z = Object.values(m.z || {})[0]
-  return {
-    spl: m.spl, thd: m.thd != null ? m.thd * 100 : null,
-    h2: m.harmonics?.[1]?.db ?? m.h2 ?? null, h3: m.harmonics?.[2]?.db ?? m.h3 ?? null,
-    xPeak: maxOf(m.xPeak), xOver: overOf(m.xPeak, xmax), vPeak: maxOf(m.vPeak),
-    iPeak: m.currentPeak ?? null, zMag: z ? z.mag : null,
-    pe: m.pe ?? null, pa: m.pa != null ? m.pa * 1000 : null, efficiency: m.efficiency != null ? m.efficiency * 100 : null,
-  }
-}
-
-/**
- * The points a run measured: each its settings and its figures.
- *
- * A transient run or a single tone is one point; a sweep is a point per
- * frequency, compression a point per frequency and level. The series'
- * varied values are added to every point, so a table or a metric chart can
- * read across runs.
- *
- * @param {string} analysis - An `ANALYSES` id.
- * @param {object} opts - The run's options.
- * @param {object} result - The run's result, as the analysis returned it.
- * @param {object} info - From `projectInfo`.
- * @param {Object<string, number>} [vars] - The series' values for this run.
- * @returns {Array<{vars: Object<string, number>, m: object}>} The points.
- * @pure
- */
-export function runPoints(analysis, opts, result, info, vars = {}) {
-  const xmax = info.xmax || {}
-  if (analysis === 'transient') {
-    const { run, linear } = result
-    const pk = levels(run.pressure).peak
-    const xPeak = Object.fromEntries(Object.entries(run.excursion).map(([id, x]) => [id, levels(x).peak]))
-    const lin = linear ? levels(linear.pressure).peak : null
-    const s = opts.signal || {}
-    return [{
-      vars: { level: opts.levelDb || 0, ...(s.hz && (s.type === 'burst' || s.type === 'sine') ? { hz: s.hz } : {}), ...vars },
-      m: {
-        spl: splOf(pk / Math.SQRT2), peakPressure: pk,
-        cmp: lin ? 20 * Math.log10(pk / lin) : null,
-        xPeak: maxOf(xPeak), xOver: overOf(xPeak, xmax),
-        vPeak: maxOf(Object.fromEntries(Object.entries(run.velocity).map(([id, v]) => [id, levels(v).peak]))),
-        iPeak: maxOf(Object.fromEntries(Object.entries(run.current).map(([id, v]) => [id, levels(v).peak]))),
-      },
-    }]
-  }
-  if (analysis === 'harmonics') return [{ vars: { level: result.levelDb, hz: result.hz, ...vars }, m: toneFigures(result, xmax) }]
-  if (analysis === 'thd') {
-    return result.rows.filter((r) => r.thd != null).map((r) => ({
-      vars: { level: result.levelDb, hz: r.hz, ...vars },
-      m: { spl: r.spl, thd: r.thd * 100, h2: r.h2, h3: r.h3, xPeak: maxOf(r.xPeak), xOver: overOf(r.xPeak, xmax) },
-    }))
-  }
-  if (analysis === 'compression') {
-    return result.rows.flatMap((r) => result.levels.filter((L) => r.at?.[L]).map((L) => ({
-      vars: { level: L, hz: r.hz, ...vars },
-      m: { ...toneFigures(r.at[L], xmax), cmp: r.at[L].cmp, effLoss: r.at[L].effLoss, powerChange: r.at[L].powerChange },
-    })))
-  }
-  return result.rows.filter((r) => r.spl != null).map((r) => ({
-    vars: { hz: r.hz, ...vars },
-    m: { spl: r.spl, levelDb: r.levelDb, xPeak: maxOf(r.xPeak), xOver: overOf(r.xPeak, xmax) },
-  }))
-}
-
-/**
- * The one figure a run is listed with.
- *
- * @param {string} analysis - An `ANALYSES` id.
- * @param {Array<object>} points - From `runPoints`.
- * @returns {{text: string, bad: boolean}} The figure, and whether it breaks a limit (a cone past Xmax).
- * @pure
- */
-export function headline(analysis, points) {
-  if (!points.length) return { text: '—', bad: false }
-  const bad = points.some((p) => p.m.xOver > 1)
-  /**
-   * The extreme of a figure over the points.
-   *
-   * @param {string} k - The figure.
-   * @param {Function} [fn] - `Math.max` or `Math.min`.
-   * @returns {number} The extreme.
-   * @pure
-   */
-  const worst = (k, fn = Math.max) => fn(...points.map((p) => p.m[k]).filter(Number.isFinite))
-  if (analysis === 'transient') return { text: points[0].m.xPeak != null ? `${points[0].m.xPeak.toFixed(1)} mm` : `${points[0].m.peakPressure.toFixed(2)} Pa`, bad }
-  if (analysis === 'harmonics' || analysis === 'thd') return { text: `${worst('thd').toFixed(1)} %`, bad }
-  if (analysis === 'compression') return { text: `${worst('cmp', Math.min).toFixed(1)} dB`.replace('-', '−'), bad }
-  return { text: `${worst('spl').toFixed(1)} dB`, bad }
-}
-
-// ---------------------------------------------------------- traces ---
-
-/** The quantities a chart card can draw, `[id, label, x kind]`. */
-export const QUANTITIES = [
-  ['pressure', 'Pressure', 'time'],
-  ['excursion', 'Excursion', 'time'],
-  ['current', 'Current', 'time'],
-  ['velocity', 'Port velocity', 'time'],
-  ['spectrum', 'Spectrum', 'hz'],
-  ['probes', 'Probes', 'time'],
-  ['m:cmp', 'Compression', 'hz'],
-  ['m:thd', 'THD', 'hz'],
-  ['m:spl', 'SPL', 'hz'],
-  ['m:xPeak', 'Peak excursion', 'hz'],
-  ['m:efficiency', 'Efficiency', 'hz'],
+export const TABS = [
+  ['output', 'Output'],
+  ['compression', 'Compression'],
+  ['distortion', 'Distortion'],
+  ['excursion', 'Excursion'],
+  ['velocity', 'Port velocity'],
+  ['impedance', 'Impedance'],
+  ['power', 'Power'],
+  ['maxspl', 'Max SPL (10% THD)'],
+  ['waveforms', 'Waveforms'],
 ]
 
-/**
- * The unit of a quantity.
- *
- * @param {string} q - A `QUANTITIES` id.
- * @returns {string} Its unit.
- * @pure
- */
-export function quantityUnit(q) {
-  if (q.startsWith('m:')) return METRICS[q.slice(2)]?.unit || ''
-  return { pressure: 'Pa', excursion: 'mm', current: 'A', velocity: 'm/s', spectrum: 'dB SPL', probes: '' }[q] || ''
+/** The choices inside a tab, `[id, label, unit]`; the first is shown first. */
+export const TAB_VIEWS = {
+  output: [['spl', 'Output', 'dB SPL']],
+  compression: [['cmp', 'Compression', 'dB'], ['effLoss', 'Efficiency loss', 'dB'], ['powerChange', 'Power drawn', 'dB']],
+  distortion: [['thd', 'THD', '%'], ['h2', '2nd harmonic', 'dB re fundamental'], ['h3', '3rd harmonic', 'dB re fundamental']],
+  excursion: [['xPeak', 'Peak excursion', 'mm']],
+  velocity: [['vPeak', 'Peak port velocity', 'm/s']],
+  impedance: [['zMag', 'Impedance', 'Ω']],
+  power: [['pe', 'Electrical power', 'W'], ['efficiency', 'Efficiency', '%']],
+  maxspl: [['spl', 'Max SPL at 10% THD', 'dB SPL'], ['levelDb', 'Drive at 10% THD', 'dB']],
+  waveforms: [['pressure', 'Pressure', 'Pa'], ['excursion', 'Excursion', 'mm'], ['velocity', 'Port velocity', 'm/s']],
 }
 
 /**
- * Whether a run can be drawn as a quantity.
+ * The ids a map-valued figure carries across a result's rows: drivers, waveguides or channels.
  *
- * @param {object} meta - The run's summary.
- * @param {string} q - A `QUANTITIES` id.
- * @returns {boolean} True when it has something to draw.
+ * @param {Array<object>} rows - The result's rows.
+ * @param {string} field - `xPeak`, `vPeak` or `z`.
+ * @returns {string[]} The ids, in first-seen order.
  * @pure
  */
-export function hasQuantity(meta, q) {
-  if (q.startsWith('m:')) {
-    const k = q.slice(2)
-    const hz = new Set((meta.points || []).filter((p) => p.m[k] != null).map((p) => p.vars.hz))
-    return hz.size > 1
-  }
-  if (meta.analysis === 'transient') return true
-  return meta.analysis === 'harmonics' && (q === 'pressure' || q === 'spectrum')
-}
-
-/**
- * A dB spectrum of a pressure waveform, Hann-windowed, up to 2 kHz.
- *
- * @param {ArrayLike<number>} y - Pressure, Pa.
- * @param {number} fs - Sample rate, Hz.
- * @returns {{x: number[], y: number[]}} Frequency, Hz, and dB SPL.
- * @pure
- */
-export function spectrumOf(y, fs) {
-  const n = y.length
-  const w = Array.from(y, (v, i) => v * (0.5 - 0.5 * Math.cos((2 * Math.PI * i) / Math.max(n - 1, 1))))
-  const S = rfft(w)
-  const bins = S.re.length
-  const df = fs / ((bins - 1) * 2)
-  const x = []
+function idsOf(rows, field) {
   const out = []
-  for (let k = 1; k < bins && k * df <= Math.min(fs / 2, 2000); k++) {
-    x.push(k * df)
-    out.push(splOf((Math.hypot(S.re[k], S.im[k]) * 4) / n / Math.SQRT2))
-  }
-  return { x, y: out }
+  for (const r of rows || []) for (const k of Object.keys(r?.[field] || {})) if (!out.includes(k)) out.push(k)
+  return out
 }
 
 /**
- * The traces a run gives for a quantity.
+ * Whether a run's result has anything for a tab.
  *
- * Waveforms come from the results; frequency figures come from the run's
- * points, one trace per level (or other setting) the run measured at.
- *
- * @param {object} meta - The run's summary.
- * @param {object|null} data - Its `run.json`, needed for waveforms and spectra.
- * @param {string} q - A `QUANTITIES` id.
- * @returns {Array<{name: string, x: number[], y: number[], dash?: boolean}>} The traces; x in ms for time, Hz for frequency.
+ * @param {string} tab - A `TABS` id.
+ * @param {object} result - The run's result.
+ * @returns {boolean} Whether the tab has something to show.
  * @pure
  */
-export function runTraces(meta, data, q) {
-  const names = meta.info?.names || {}
-  if (q.startsWith('m:')) {
-    const k = q.slice(2)
-    const groups = new Map()
-    for (const p of meta.points || []) {
-      if (p.m[k] == null || p.vars.hz == null) continue
-      const rest = Object.entries(p.vars).filter(([key]) => key !== 'hz' && !(meta.vars && key in meta.vars))
-      const label = rest.map(([key, v]) => varText(key, v)).join(' · ')
-      if (!groups.has(label)) groups.set(label, [])
-      groups.get(label).push([p.vars.hz, p.m[k]])
-    }
-    return [...groups.entries()].map(([label, pts]) => {
-      pts.sort((a, b) => a[0] - b[0])
-      return { name: groups.size > 1 ? label : '', x: pts.map((p) => p[0]), y: pts.map((p) => p[1]) }
-    })
-  }
-  if (!data) return []
-  const r = data.result
-  if (meta.analysis === 'harmonics') {
-    const w = r.waveform
-    if (q === 'pressure') return [{ name: '', x: w.t.map((t) => (t - w.t[0]) * 1000), y: w.pressure }]
-    if (q === 'spectrum') return [{ name: '', ...spectrumOf(w.pressure, w.fs) }]
-    return []
-  }
-  if (meta.analysis !== 'transient' || !r?.run) return []
-  const { run, linear } = r
-  const ms = run.t.map((t) => t * 1000)
+export function hasTab(tab, result) {
+  if (!result?.rows) return false
+  if (tab === 'excursion') return idsOf(result.rows, 'xPeak').length > 0
+  if (tab === 'velocity') return idsOf(result.rows, 'vPeak').length > 0
+  if (tab === 'impedance') return idsOf(result.rows, 'z').length > 0
+  if (tab === 'maxspl') return Array.isArray(result.maxSpl) && result.maxSpl.some((m) => m && m.levelDb != null)
+  if (tab === 'waveforms') return Array.isArray(result.start) && result.start.some((s) => s && !s.failed)
+  return true
+}
+
+/**
+ * The tabs a set of runs share: those every one of them has something for.
+ *
+ * @param {Array<object>} results - The runs' results.
+ * @returns {string[]} Tab ids, in `TABS` order.
+ * @pure
+ */
+export function sharedTabs(results) {
+  if (!results.length) return []
+  return TABS.map((t) => t[0]).filter((t) => results.every((r) => hasTab(t, r)))
+}
+
+/**
+ * One run's traces for a tab: `{key, label, x, y, dash?, marker?}`, x in Hz (or ms for waveforms).
+ *
+ * Where a project has several drivers, ports or channels, each is a trace,
+ * labelled with its node's name. Linear-model traces are dashed.
+ *
+ * @param {string} tab - A `TABS` id.
+ * @param {string} view - One of the tab's `TAB_VIEWS` ids.
+ * @param {object} result - The run's result.
+ * @param {Object<string, string>} [names] - Node labels by id.
+ * @param {number} [hz] - For waveforms: the tone, the nearest one run is used.
+ * @returns {Array<object>} The traces; points that could not be solved are left out.
+ * @pure
+ */
+export function tabTraces(tab, view, result, names = {}, hz) {
+  const rows = (result?.rows || []).filter((r) => r && !r.failed)
   /**
-   * Traces from one per-id series of the run, and of the linear run dashed.
+   * A trace across frequency.
    *
-   * @param {string} key - `excursion`, `current` or `velocity`.
+   * @param {string} key - Its key.
+   * @param {string} label - Its label.
+   * @param {Function} get - The value from a row, or null.
+   * @param {object} [extra] - Fields to add, e.g. `dash`.
+   * @returns {object} The trace.
+   * @pure
+   */
+  const line = (key, label, get, extra = {}) => {
+    const pts = rows.map((r) => [r.hz, get(r)]).filter(([, y]) => Number.isFinite(y))
+    return { key, label, x: pts.map((p) => p[0]), y: pts.map((p) => p[1]), ...extra }
+  }
+  /**
+   * Traces of a map-valued figure, one per id, with the linear model's beside each when it has one.
+   *
+   * @param {string} field - `xPeak`, `vPeak` or `z`.
+   * @param {Function} [pick] - Turns a map value into a number.
    * @returns {Array<object>} The traces.
    * @pure
    */
-  const each = (key) => Object.keys(run[key] || {}).flatMap((id) => [
-    { name: names[id] || id, x: ms, y: run[key][id] },
-    ...(linear?.[key]?.[id] ? [{ name: `${names[id] || id} linear`, x: linear.t.map((t) => t * 1000), y: linear[key][id], dash: true }] : []),
-  ])
-  if (q === 'pressure') {
-    return [{ name: '', x: ms, y: run.pressure }, ...(linear ? [{ name: 'linear', x: linear.t.map((t) => t * 1000), y: linear.pressure, dash: true }] : [])]
+  const perId = (field, pick = (v) => v) => {
+    const ids = idsOf(rows, field)
+    return ids.flatMap((id) => {
+      const lab = ids.length > 1 ? (names[id] || id) : ''
+      const out = [line(id, lab, (r) => pick(r[field]?.[id]))]
+      if (field !== 'z' && rows.some((r) => Number.isFinite(r.linear?.[field]?.[id]))) {
+        out.push(line(`${id}:lin`, lab ? `${lab}, linear` : 'Linear', (r) => r.linear?.[field]?.[id], { dash: true }))
+      }
+      return out
+    })
   }
-  if (q === 'spectrum') {
-    return [{ name: '', ...spectrumOf(run.pressure, r.fs) }, ...(linear ? [{ name: 'linear', ...spectrumOf(linear.pressure, r.fs), dash: true }] : [])]
+  if (tab === 'output') return [line('spl', '', (r) => r.spl), line('lin', 'Linear', (r) => r.linSpl, { dash: true })]
+  if (tab === 'compression') return [line(view, '', (r) => r[view])]
+  if (tab === 'distortion') {
+    if (view === 'thd') return [line('thd', '', (r) => (Number.isFinite(r.thd) ? r.thd * 100 : null))]
+    const n = view === 'h2' ? 0 : 1
+    return [line(view, '', (r) => r.h?.[n])]
   }
-  if (q === 'excursion' || q === 'current' || q === 'velocity') return each(q)
-  if (q === 'probes') return Object.entries(run.probes || {}).map(([id, p]) => ({ name: `${id} (${p.kind})`, x: ms, y: p.values }))
+  if (tab === 'excursion') return perId('xPeak')
+  if (tab === 'velocity') return perId('vPeak')
+  if (tab === 'impedance') return perId('z', (v) => v?.mag)
+  if (tab === 'power') {
+    if (view === 'efficiency') return [line('eff', '', (r) => (Number.isFinite(r.efficiency) ? r.efficiency * 100 : null))]
+    return [line('pe', '', (r) => r.pe)]
+  }
+  if (tab === 'maxspl') {
+    const m = (result?.maxSpl || []).filter((x) => x && x.levelDb != null)
+    const pts = m.map((x) => [x.hz, x[view]]).filter(([, y]) => Number.isFinite(y))
+    return [{ key: view, label: '', x: pts.map((p) => p[0]), y: pts.map((p) => p[1]), marker: true }]
+  }
+  if (tab === 'waveforms') {
+    const s = nearestStart(result, hz)
+    if (!s) return []
+    /**
+     * A start-up series as a trace in ms.
+     *
+     * @param {string} key - Its key.
+     * @param {string} label - Its label.
+     * @param {number[]} y - The samples.
+     * @returns {object} The trace.
+     * @pure
+     */
+    const wave = (key, label, y) => ({ key, label, x: y.map((_, i) => i * s.dt * 1000), y })
+    if (view === 'pressure') return [wave('p', '', s.pressure || [])]
+    const m = (view === 'excursion' ? s.excursion : s.velocity) || {}
+    const ids = Object.keys(m)
+    return ids.map((id) => wave(id, ids.length > 1 ? (names[id] || id) : '', m[id]))
+  }
   return []
 }
 
 /**
- * One trace minus another, on the first one's x.
+ * The start-up of the tone nearest a frequency.
  *
- * The second is interpolated linearly onto the first's points; outside its
- * range the difference is left out.
- *
- * @param {{x: number[], y: number[]}} a - The reference.
- * @param {{x: number[], y: number[]}} b - The other trace.
- * @returns {{x: number[], y: number[]}} `b − a` where both are defined.
+ * @param {object} result - A run's result.
+ * @param {number} [hz] - The frequency; the run's lowest when omitted.
+ * @returns {object|null} `{hz, dt, pressure, excursion, velocity}`, or null when none was kept.
  * @pure
  */
-export function differenceOf(a, b) {
-  const x = []
-  const y = []
-  let j = 0
-  for (let i = 0; i < a.x.length; i++) {
-    const xi = a.x[i]
-    while (j < b.x.length - 2 && b.x[j + 1] < xi) j++
-    if (xi < b.x[0] || xi > b.x[b.x.length - 1] || b.x.length < 2) continue
-    const t = (xi - b.x[j]) / Math.max(b.x[j + 1] - b.x[j], 1e-12)
-    const bi = b.y[j] + (b.y[j + 1] - b.y[j]) * Math.min(Math.max(t, 0), 1)
-    if (Number.isFinite(bi) && Number.isFinite(a.y[i])) { x.push(xi); y.push(bi - a.y[i]) }
-  }
-  return { x, y }
+export function nearestStart(result, hz) {
+  const all = (result?.start || []).filter((s) => s && !s.failed)
+  if (!all.length) return null
+  if (!(hz > 0)) return all[0]
+  return all.reduce((a, b) => (Math.abs(Math.log(b.hz / hz)) < Math.abs(Math.log(a.hz / hz)) ? b : a))
+}
+
+/**
+ * The 10% THD search's frequencies where THD stayed under the limit at the top of the range searched.
+ *
+ * @param {object} result - A run's result.
+ * @returns {number[]} Those frequencies, Hz: the Max SPL shown there is a floor, not the limit.
+ * @pure
+ */
+export function unreachedAt(result) {
+  return (result?.maxSpl || []).filter((m) => m?.unreached).map((m) => m.hz)
 }

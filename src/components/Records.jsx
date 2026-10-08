@@ -6,6 +6,45 @@
 // button is pressed; the lock returns when another record is selected.
 import React from 'react'
 import { useStore, isLocked } from '../store'
+import { recordName } from '../records'
+import { useDraft } from './NumInput'
+
+/**
+ * Read a record name as typed: anything goes, empty included.
+ *
+ * @param {string} text - What was typed.
+ * @returns {{ok: true, value: string}} The trimmed name.
+ * @pure
+ */
+const readName = (text) => ({ ok: true, value: text.trim() })
+
+/**
+ * The selected record's name, editable in place; empty shows its number.
+ *
+ * @param {object} props - Component props.
+ * @param {boolean} props.disabled - Whether it can be edited.
+ * @returns {React.ReactElement} The text box.
+ * @sideEffect Subscribes to the store; committing renames the record.
+ */
+function RecordName({ disabled }) {
+  const records = useStore((s) => s.records)
+  const nav = useStore((s) => s.recordNav)
+  const id = records?.ids?.[nav.selected]
+  const given = (id && records?.names?.[id]) || ''
+  /**
+   * Save the typed name.
+   *
+   * @param {string} v - The name.
+   * @returns {void}
+   * @sideEffect Renames the selected record.
+   */
+  const commit = (v) => { useStore.getState().recordRename(v) }
+  const d = useDraft({ value: given, read: readName, onCommit: commit })
+  return (
+    <input className="rec-name" value={d.text} onChange={d.onChange} onBlur={d.onBlur} onKeyDown={d.onKeyDown} disabled={disabled} placeholder={recordName(records, nav.selected)} spellCheck={false}
+      title="Name this record; leave it empty to go by its number" aria-label="Record name" />
+  )
+}
 
 /**
  * The records bar: previous and next, the record number, Add, Delete and Edit.
@@ -31,6 +70,7 @@ export function RecordsBar() {
       <span className="rec-num">Record <b>{nav.selected + 1}</b> of {nav.count}</span>
       <button className="tb-icon" title="Next record" disabled={off || last}
         onClick={() => st().recordStep(1)}>▶</button>
+      <RecordName disabled={off} />
       <span className="rec-sep" />
       <button className="rec-btn" disabled={off} onClick={() => st().recordAdd()}
         title="Add a record at the end, starting as a copy of this one">Add</button>

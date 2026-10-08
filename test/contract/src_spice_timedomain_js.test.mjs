@@ -7,7 +7,7 @@ import { prepareProject } from '../../src/engine/pipeline.js'
 import { compileProject } from '../../src/spice/compile.js'
 import { normalizeSignal } from '../../src/spice/dsp.js'
 import {
-  linearResponses, transientRun, transientAnalysis, measureTone, linearLevel, distortionAnalysis,
+  linearResponses, transientRun, transientAnalysis, measureTone, linearLevel, distortionAnalysis, levelRun, thdLimitAt, STARTUP_SAMPLES,
   logFreqs, brokenLimit, levels, splOf, CEA2010_LIMITS, maxLevel, linearPoint, scaleLinear, ratioDb,
 } from '../../src/spice/timedomain.js'
 import { setThreads, setRunner, runLocal } from '../../src/spice/run.js'
@@ -347,4 +347,36 @@ test('distortion: an unsolvable point is listed, the rest complete', async () =>
     assert.match(some.failed[0].label, /^45 Hz$/)
     assert.match(some.failed[0].error, /stuck/)
   } finally { setRunner(null) }
+})
+
+
+// CONTRACT (levelRun): one run gives every figure per tone, compression
+// against the linear model at the same drive, and each tone's start-up;
+// a Max SPL passed in is kept rather than searched again.
+test('levelRun: figures per tone, start-ups, and a Max SPL passed in', async () => {
+  const given = [{ hz: 30, levelDb: 9, spl: 105, thd: 0.09 }, { hz: 60, levelDb: 20, spl: 120, thd: 0.09 }]
+  const r = await levelRun(box({ Bl: { points: [{ x: 8, g: -0.3, w: 5 }], sym: true } }), { levelDb: 6, f1: 30, f2: 60, points: 2, harmonics: 6, maxSpl: given })
+  assert.deepEqual(r.freqs, [30, 60])
+  assert.equal(r.levelDb, 6)
+  for (const row of r.rows) {
+    assert.ok(Math.abs(row.cmp - (row.spl - row.linSpl)) < 1e-9)
+    assert.ok(row.thd > 0 && row.h.length === 5)
+    assert.ok(row.xPeak.d > 0 && row.vPeak.w > 0 && Object.values(row.z).every((z) => z.mag > 0) && Object.keys(row.z).length > 0)
+  }
+  assert.equal(r.maxSpl, given)
+  const s = r.start[0]
+  assert.ok(s.pressure.length > 50 && s.pressure.length <= STARTUP_SAMPLES)
+  assert.ok(Math.abs(s.pressure[0]) < 1e-6, 'from switch-on')
+  assert.ok(s.excursion.d.length === s.pressure.length && s.velocity.w.length === s.pressure.length)
+})
+
+// CONTRACT (thdLimitAt): the highest level within 0.25 dB at which THD stays under 10%.
+test('thdLimitAt: the level where THD reaches 10%', async () => {
+  const p = box({ Bl: { points: [{ x: 0, g: -0.6, w: 9 }], sym: true } })
+  const o = { harmonics: 6, bandwidth: 1000, nonlinear: true, thdLimit: 0.1, maxBoostDb: 40, resolutionDb: 0.25 }
+  const first = await measureTone(p, 30, 0, o)
+  const r = await thdLimitAt(p, 30, { L: 0, m: first }, o)
+  assert.ok(r.levelDb != null && r.thd < 0.1, `${r.levelDb} dB, THD ${r.thd}`)
+  const above = await measureTone(p, 30, r.levelDb + 0.3, o)
+  assert.ok(above.thd >= 0.1 * 0.95, `just above, THD ${above.thd}`)
 })

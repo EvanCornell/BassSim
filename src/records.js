@@ -44,6 +44,9 @@ const NOT_RECORDED = ['name', 'modified', 'records', 'tdBoards']
 /** A git object's name. */
 const OID = /^[0-9a-f]{40}$/
 
+/** The kind every stored run is; see src/runs.js. */
+const RUN_KIND = 'level'
+
 /**
  * A fresh id for a record or a run.
  *
@@ -273,7 +276,7 @@ export function recordContent(project) {
  * The records a project file carries, checked; none when it carries none or they are unusable.
  *
  * @param {*} raw - The file's `records` field.
- * @returns {{list: string[], selected: number, objects: Object<string, string>}|null} The records, or `null`.
+ * @returns {{list: string[], ids: string[], selected: number, objects: Object<string, string>, runs: Array<object>, names: Object<string, string>}|null} The records, or `null`; `names` maps record ids to the names they were given.
  * @pure
  */
 export function readRecords(raw) {
@@ -286,9 +289,47 @@ export function readRecords(raw) {
   const given = Array.isArray(raw.ids) && raw.ids.length === raw.list.length ? raw.ids.filter((_, i) => keep[i]) : null
   const ids = given && given.every((x) => typeof x === 'string' && x) && new Set(given).size === given.length
     ? given : list.map((oid, i) => `r-${oid.slice(0, 8)}${i}`)
+  // Runs stored before there was one kind of run are dropped; the next save
+  // collects their objects.
   const runs = (Array.isArray(raw.runs) ? raw.runs : [])
     .filter((r) => r && typeof r === 'object' && typeof r.id === 'string' && typeof r.oid === 'string' && OID.test(r.oid) && raw.objects[r.oid])
-  return { list, ids, selected, objects: { ...raw.objects }, runs }
+    .filter((r) => r.analysis === RUN_KIND)
+  const names = {}
+  if (raw.names && typeof raw.names === 'object') {
+    for (const id of ids) if (typeof raw.names[id] === 'string' && raw.names[id].trim()) names[id] = raw.names[id].trim()
+  }
+  return { list, ids, selected, objects: { ...raw.objects }, runs, names }
+}
+
+/**
+ * A record's name: the one it was given, else its number.
+ *
+ * @param {object|null} records - The project's records.
+ * @param {number} index - The record.
+ * @returns {string} e.g. `Sealed 40 L`, or `3`.
+ * @pure
+ */
+export function recordName(records, index) {
+  const id = records?.ids?.[index]
+  return (id && records.names?.[id]) || String(index + 1)
+}
+
+/**
+ * Name a record, or clear its name so it goes by its number again.
+ *
+ * @param {object} records - The project's records.
+ * @param {number} index - The record.
+ * @param {string} name - Its name; empty clears it.
+ * @returns {object} The records.
+ * @pure
+ */
+export function renameRecord(records, index, name) {
+  const id = records.ids[index]
+  const names = { ...(records.names || {}) }
+  const t = String(name || '').trim()
+  if (t && t !== String(index + 1)) names[id] = t
+  else delete names[id]
+  return { ...records, names }
 }
 
 /**
@@ -455,9 +496,11 @@ export async function deleteRecord(records) {
   if (records.list.length <= 1) throw new Error('A project keeps at least one record.')
   const list = records.list.filter((_, i) => i !== records.selected)
   const ids = records.ids.filter((_, i) => i !== records.selected)
+  const names = { ...(records.names || {}) }
+  delete names[records.ids[records.selected]]
   const repo = memoryRepo(records.objects)
   await collect(repo, list, records.runs)
-  return { ...records, list, ids, selected: Math.max(0, records.selected - 1), objects: objectsOf(repo.files) }
+  return { ...records, list, ids, names, selected: Math.max(0, records.selected - 1), objects: objectsOf(repo.files) }
 }
 
 /**

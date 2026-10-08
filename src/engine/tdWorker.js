@@ -11,14 +11,14 @@
 import { prepareProject } from './pipeline'
 import { installRemoteRunner, isPoolMessage } from './remote'
 import { setThreads } from '../spice/run'
-import { linearResponses, transientAnalysis, distortionAnalysis } from '../spice/timedomain'
+import { linearResponses, transientAnalysis, distortionAnalysis, levelRun } from '../spice/timedomain'
 
 installRemoteRunner()
 
 /**
  * Run one time-domain job and post its progress and result.
  *
- * @param {MessageEvent} e - The request: `{id, kind, project, opts, mode, threads}` — `kind` is `linear`, `transient` or `distortion`; `mode` the distortion analysis; `threads` the pool's size. The pool's own messages are left to its listener.
+ * @param {MessageEvent} e - The request: `{id, kind, project, opts, mode, threads}` — `kind` is `linear`, `transient`, `distortion` or `level`; `mode` the distortion analysis; `threads` the pool's size. The pool's own messages are left to its listener.
  * @returns {Promise<void>} Settles once the reply is posted.
  * @sideEffect Runs the engine and posts `progress` messages, then one `done` or `error` message.
  */
@@ -41,6 +41,7 @@ self.onmessage = async (e) => {
     if (kind === 'linear') result = await linearResponses(p, opts, progress)
     else if (kind === 'transient') result = await transientAnalysis(p, opts, progress)
     else if (kind === 'distortion') result = await distortionAnalysis(p, mode, opts, progress)
+    else if (kind === 'level') result = await levelRun(p, opts, progress)
     else throw new Error(`unknown time-domain job "${kind}"`)
     self.postMessage({ id, type: 'done', kind, mode, result, warnings })
   } catch (err) {

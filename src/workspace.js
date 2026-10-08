@@ -60,10 +60,7 @@ export const DRIVERS_PATH = `${SYSTEM_FOLDER}/drivers.json`
 export const SNAPSHOTS_PATH = `${SYSTEM_FOLDER}/snapshots.json`
 
 /**
- * Path of the time-domain boards inside the system folder.
- *
- * A board compares runs, and the runs it compares may come from any project,
- * so boards belong to the workspace rather than to one project's file.
+ * Path where older builds kept time-domain comparison boards; dropped when read.
  */
 export const BOARDS_PATH = `${SYSTEM_FOLDER}/boards.json`
 
@@ -618,49 +615,28 @@ export function writeSnapshots(ws, snapshots) {
 }
 
 /**
- * The workspace's time-domain boards, as stored.
+ * Drop the comparison boards older builds saved: the workspace's boards file, and boards kept inside project files.
+ *
+ * Runs are compared in the run viewer now, which saves nothing.
  *
  * @param {object} ws - The workspace.
- * @returns {Array<object>} The stored boards, unchecked; empty when none have been made.
- * @pure
+ * @returns {object} The workspace itself when there are none, otherwise a new one.
+ * @sideEffect Reads the current time for the modification stamps when anything is dropped.
  */
-export function readBoardList(ws) {
-  return readList(ws, BOARDS_PATH)
-}
-
-/**
- * Replace the workspace's time-domain boards.
- *
- * @param {object} ws - The workspace.
- * @param {Array<object>} boards - Every board.
- * @returns {object} A new workspace holding the boards.
- * @sideEffect Reads the current time for the modification stamps.
- */
-export function writeBoards(ws, boards) {
-  return writeFile(ws, BOARDS_PATH, { kind: 'boards', data: boards })
-}
-
-/**
- * Move boards that older builds kept inside project files into the workspace's boards.
- *
- * A board already in the workspace (by id) is not added twice. The projects
- * lose their `tdBoards` field; nothing else in them changes.
- *
- * @param {object} ws - The workspace.
- * @returns {object} The workspace itself when no project carries boards, otherwise a new one.
- * @sideEffect Reads the current time for the modification stamps when anything moves.
- */
-export function liftBoards(ws) {
+export function dropBoards(ws) {
   const carriers = Object.keys(ws.files).filter((p) => ws.files[p].kind === 'project' && ws.files[p].data && 'tdBoards' in ws.files[p].data)
-  if (!carriers.length) return ws
-  const boards = [...readBoardList(ws)]
+  if (!carriers.length && !ws.files[BOARDS_PATH]) return ws
   let out = ws
   for (const path of carriers) {
     const { tdBoards, ...data } = ws.files[path].data
-    for (const b of Array.isArray(tdBoards) ? tdBoards : []) if (b && !boards.some((x) => x?.id === b.id)) boards.push(b)
     out = writeFile(out, path, { ...ws.files[path], data })
   }
-  return boards.length ? writeBoards(out, boards) : out
+  if (out.files[BOARDS_PATH]) {
+    const files = { ...out.files }
+    delete files[BOARDS_PATH]
+    out = { ...out, files }
+  }
+  return out
 }
 
 // ---------- transport ----------
@@ -731,7 +707,6 @@ export function workspaceToEntries(ws) {
 export function kindForPath(path) {
   if (path === DRIVERS_PATH) return 'drivers'
   if (path === SNAPSHOTS_PATH) return 'snapshots'
-  if (path === BOARDS_PATH) return 'boards'
   if (path.endsWith(PROJECT_EXT)) return 'project'
   return 'json'
 }
