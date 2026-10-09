@@ -165,6 +165,8 @@ export default function FileBrowser() {
   // acting on the whole selection, so a lone selected row is the common case
   // and the last-selected is the anchor when several are.
   const focused = selection[selection.length - 1] || activeFile
+  // The row new entries are placed by — the selection only, never the open project.
+  const picked = selection[selection.length - 1]
 
   /**
    * Select a row, honouring the modifier keys.
@@ -224,7 +226,6 @@ export default function FileBrowser() {
    * @reads The current selection and the workspace.
    */
   const targetFolder = () => {
-    const picked = selection[selection.length - 1]
     if (!picked) return ''
     if (workspace.files[picked]) return parentOf(picked)
     return picked
@@ -465,6 +466,9 @@ export default function FileBrowser() {
       selection.includes(path) ? 'selected' : '',
       path === activeFile ? 'active' : '',
       folder && activeFile?.startsWith(`${path}/`) ? 'holds-active' : '',
+      // A selected project's folder is highlighted with it: that folder is where
+      // a new project or folder will go.
+      folder && workspace.files[picked] && parentOf(picked) === path ? 'selected' : '',
       isSystemPath(path) ? 'system' : '',
       dropTarget === path ? 'drop' : '',
       cut ? 'cut' : '',
