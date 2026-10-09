@@ -105,16 +105,18 @@ const short = (v) => {
  * @param {boolean} [props.focus] - The section being worked on — the selected element.
  * @param {React.ReactNode} [props.actions] - Buttons shown in the head while open, in place of the summary.
  * @param {boolean} [props.initial] - Open the first time it is shown.
+ * @param {boolean} [props.fixed] - Always open, with no way to close it.
  * @param {React.ReactNode} props.children - The body.
  * @returns {React.ReactElement} The section.
  * @sideEffect Holds its open state.
  */
-function Section({ id, title, summary, color, focus, actions, initial = false, children }) {
-  const [open, toggle] = useOpen(id, initial)
+function Section({ id, title, summary, color, focus, actions, initial = false, fixed = false, children }) {
+  const [shut, toggle] = useOpen(id, initial)
+  const open = fixed || shut
   return (
-    <div className={`psec${open ? ' open' : ''}${focus ? ' focus' : ''}`} style={color ? { '--nc': color } : undefined}>
-      <div className="psec-head" onClick={toggle} role="button" aria-expanded={open}>
-        <span className="psec-twisty">{open ? '▾' : '▸'}</span>
+    <div className={`psec${open ? ' open' : ''}${focus ? ' focus' : ''}${fixed ? ' fixed' : ''}`} style={color ? { '--nc': color } : undefined}>
+      <div className="psec-head" onClick={fixed ? undefined : toggle} role={fixed ? undefined : 'button'} aria-expanded={fixed ? undefined : open}>
+        {!fixed && <span className="psec-twisty">{open ? '▾' : '▸'}</span>}
         {color && <span className="psec-dot" />}
         <span className="psec-title">{title}</span>
         {open && actions
@@ -359,7 +361,7 @@ function SweepSection() {
   const settings = useStore((s) => s.settings)
   const updateSettings = useStore((s) => s.updateSettings)
   return (
-    <Section id="sweep" title="Sweep" summary={`${short(settings.fmin)}–${short(settings.fmax)} Hz · ${settings.npts}`}>
+    <Section id="sweep" title="Sweep" fixed summary={`${short(settings.fmin)}–${short(settings.fmax)} Hz · ${settings.npts}`}>
       <div className="param-grid">
         <div className="param-row">
           <label title="Lowest frequency of the sweep">From</label>
@@ -486,7 +488,7 @@ function DriverForm({ node }) {
   const nominal = driverNominal(p)
   return (
     <Section
-      id="driver" title={p.label || 'Driver'} color="var(--s1)" focus initial
+      id="driver" title={p.label || 'Driver'} color="var(--s1)" focus fixed
       summary={`Fs ${short(p.Fs)} Hz · Qts ${short(p.Qts)}`}
       actions={<>
         <button onClick={() => setShowDriverDB(true)}>Database</button>
@@ -508,35 +510,35 @@ function DriverForm({ node }) {
         {ts('Bl', 'T·m')}
         <NumField id={id} field="Xmax" value={p.Xmax} unit="mm" above="0" />
       </div>
-      <Sub id="driver.electrical" title="Electrical" summary={`Re ${short(p.Re)} Ω · Le ${short(p.Le)} mH`}>
-        <div className="param-grid">
-          {ts('Re', 'Ω')}
-          {ts('Qes', '', '0.01')}
-          <NumField id={id} field="Le" value={p.Le} unit="mH" step="0.1" min="0" />
-          <NumField id={id} field="LeExp" value={p.LeExp} label="Le exp." step="0.05" min="0.3" />
-        </div>
-      </Sub>
-      <Sub id="driver.mechanical" title="Mechanical" summary={`Mms ${short(p.Mms)} g · Qms ${short(p.Qms)}`}>
-        <div className="param-grid">
-          {ts('Mms', 'g')}
-          {ts('Cms', 'mm/N', '0.01')}
-          {ts('Rms', 'kg/s', '0.1')}
-          {ts('Qms', '', '0.1')}
-        </div>
-      </Sub>
-      <Sub id="driver.array" title="Array & wiring" summary={`${short(p.count)}× · ${nominal >= 1 ? nominal.toFixed(0) : nominal.toFixed(2)} Ω`}>
-        <div className="param-grid">
-          <NumField id={id} field="count" value={p.count} label="Drivers" step="1" min="1" />
-          <SelectField id={id} field="wiring" value={p.wiring} options={[
-            ['single', 'Single'], ['series', 'Series'], ['parallel', 'Parallel'], ['series-parallel', 'Series-parallel'],
-          ]} />
-          <DvcField id={id} p={p} />
-        </div>
-        <div className="ts-hint">
-          How this node's drivers connect to their amplifier channel is set in
-          the <a href="#" onClick={(e) => { e.preventDefault(); useStore.getState().layoutOps.open('wiring') }}>Wiring</a> panel.
-        </div>
-      </Sub>
+      <div className="psec-caption">Electrical</div>
+      <div className="param-grid">
+        {ts('Re', 'Ω')}
+        {ts('Qes', '', '0.01')}
+        <NumField id={id} field="Le" value={p.Le} unit="mH" step="0.1" min="0" />
+        <NumField id={id} field="LeExp" value={p.LeExp} label="Le exp." step="0.05" min="0.3" />
+      </div>
+      <div className="psec-caption">Mechanical</div>
+      <div className="param-grid">
+        {ts('Mms', 'g')}
+        {ts('Cms', 'mm/N', '0.01')}
+        {ts('Rms', 'kg/s', '0.1')}
+        {ts('Qms', '', '0.1')}
+      </div>
+      <div className="psec-caption">
+        Array & wiring
+        <span className="psec-caption-note">{`${short(p.count)}× · ${nominal >= 1 ? nominal.toFixed(0) : nominal.toFixed(2)} Ω`}</span>
+      </div>
+      <div className="param-grid">
+        <NumField id={id} field="count" value={p.count} label="Drivers" step="1" min="1" />
+        <SelectField id={id} field="wiring" value={p.wiring} options={[
+          ['single', 'Single'], ['series', 'Series'], ['parallel', 'Parallel'], ['series-parallel', 'Series-parallel'],
+        ]} />
+        <DvcField id={id} p={p} />
+      </div>
+      <div className="ts-hint">
+        How this node's drivers connect to their amplifier channel is set in
+        the <a href="#" onClick={(e) => { e.preventDefault(); useStore.getState().layoutOps.open('wiring') }}>Wiring</a> panel.
+      </div>
       <div className="drv-actions">
         <button
           onClick={() => setSaveDriverFor(id)}
