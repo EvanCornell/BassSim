@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState, useCallback, useRef } from 'react'
 import {
-  ComposedChart, Line, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
+  ComposedChart, Line, Area, XAxis, YAxis, CartesianGrid, Tooltip,
   ReferenceLine, ResponsiveContainer, ReferenceArea,
 } from 'recharts'
 import { useStore } from '../store'
@@ -61,11 +61,12 @@ const fmt = (v, d = 1) => (v == null || !isFinite(v) ? '—' : v.toFixed(d))
  * @param {Array} [props.y2Domain] - Right axis domain.
  * @param {Array<React.ReactElement>} [props.refLines=[]] - Reference lines to overlay.
  * @param {Array<React.ReactElement>} [props.refAreas=[]] - Shaded regions to overlay.
+ * @param {Array<object>} [props.keyLines] - The series the colour key lists, drawn over the chart's top left; defaults to `lines`, and nothing is drawn for fewer than two.
  * @param {React.ReactNode} [props.children] - Extra toolbar content.
  * @returns {React.ReactElement} The chart.
  * @sideEffect Subscribes to the store. Registers wheel and pointerdown listeners on its own element, removed on unmount.
  */
-function BaseChart({ chartId, data, lines, yLabel, yDomain, y2Label, y2Domain, refLines = [], refAreas = [], children }) {
+function BaseChart({ chartId, data, lines, yLabel, yDomain, y2Label, y2Domain, refLines = [], refAreas = [], keyLines = lines, children }) {
   const settings = useStore((s) => s.settings)
   const xZoom = useStore((s) => s.xZoom[chartId])
   const setXZoom = useStore((s) => s.setXZoom)
@@ -266,6 +267,15 @@ function BaseChart({ chartId, data, lines, yLabel, yDomain, y2Label, y2Domain, r
   }
   return (
     <div ref={wrapRef} className="plot-body">
+    {keyLines.length > 1 && (
+      <div className="plot-key">
+        {keyLines.map((l) => (
+          <span key={l.dataKey} className="plot-key-item">
+            <span className="ct-swatch" style={{ borderTopColor: l.color, borderTopStyle: l.dash ? 'dashed' : 'solid' }} />{l.name}
+          </span>
+        ))}
+      </div>
+    )}
     {xZoom && (
       <button
         className="zoom-reset"
@@ -315,10 +325,6 @@ function BaseChart({ chartId, data, lines, yLabel, yDomain, y2Label, y2Domain, r
           labelFormatter={(v) => `${fmt(v)} Hz`}
           formatter={(v) => fmt(v, 2)}
           isAnimationActive={false}
-        />
-        <Legend
-          wrapperStyle={{ fontSize: 11.5 }}
-          payload={lines.map((l) => ({ id: l.dataKey, value: l.name, type: 'plainline', color: l.color, payload: { strokeDasharray: l.dash || '0' } }))}
         />
         {refAreas}
         {lines.filter((l) => l.area).map((l) => (
@@ -653,7 +659,8 @@ function SPLTab() {
         {yControl}
         <SolveTime />
       </div>
-      <BaseChart chartId="spl" data={data} lines={lines} yLabel="SPL dB @ 1m" yDomain={yDomain} />
+      <BaseChart chartId="spl" data={data} lines={lines} yLabel="SPL dB @ 1m" yDomain={yDomain}
+        keyLines={show.ports && portIds.length > 1 ? lines.filter((l) => l.dataKey.startsWith('port_')) : []} />
     </>
   )
 }
@@ -684,7 +691,7 @@ function ImpedanceTab() {
       ]
   const refLines = (metrics?.zPeaks || []).map((p, i) => (
     <ReferenceLine key={i} yAxisId="left" x={p.f} stroke="var(--text-3)" strokeDasharray="3 3"
-      label={{ value: `F${i + 1} ${p.f.toFixed(1)}`, fill: 'var(--text-2)', fontSize: 10, position: 'insideTopLeft' }} />
+      label={{ value: `F${i + 1} ${p.f.toFixed(1)}`, fill: 'var(--text-2)', fontSize: 10, position: 'insideBottomLeft' }} />
   ))
   const fitData = useFitData('zin', data)
   const [yDomain, yControl] = useYScale('zin', fitLinear(fitData, [...(ids.length > 1 ? ids.map((c) => `zch_${c}`) : ['zmag']), ...snapshots.map((_, i) => `snap${i}_zin`)]))
