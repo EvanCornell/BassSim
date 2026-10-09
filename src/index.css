@@ -552,11 +552,11 @@ select { cursor: pointer; }
 }
 .np-zoom button:hover { background: var(--active); color: var(--text); }
 .np-zoom .np-pct { min-width: 40px; text-align: center; font-family: var(--mono-font); font-size: 12px; color: var(--text-2); }
-/* A short canvas: the chips drop their names, so the whole column fits. */
+/* A short canvas: the chips get shorter, names kept, so more of the column
+   fits; past that it scrolls. */
 @container canvas (max-height: 380px) {
   .np-dock { gap: 3px; padding: 4px; }
   .np-cube { height: 26px; padding: 0 9px; gap: 7px; }
-  .np-name { display: none; }
 }
 @container canvas (max-height: 240px) {
   .np-cube { height: 22px; }
