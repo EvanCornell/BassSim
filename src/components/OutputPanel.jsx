@@ -62,11 +62,12 @@ const fmt = (v, d = 1) => (v == null || !isFinite(v) ? '—' : v.toFixed(d))
  * @param {Array<React.ReactElement>} [props.refLines=[]] - Reference lines to overlay.
  * @param {Array<React.ReactElement>} [props.refAreas=[]] - Shaded regions to overlay.
  * @param {Array<object>} [props.keyLines] - The series the colour key lists, drawn over the chart's top left; defaults to `lines`, and nothing is drawn for fewer than two.
+ * @param {React.ReactNode} [props.toggles] - Buttons that show or hide series, drawn over the top left before the key.
  * @param {React.ReactNode} [props.children] - Extra toolbar content.
  * @returns {React.ReactElement} The chart.
  * @sideEffect Subscribes to the store. Registers wheel and pointerdown listeners on its own element, removed on unmount.
  */
-function BaseChart({ chartId, data, lines, yLabel, yDomain, y2Label, y2Domain, refLines = [], refAreas = [], keyLines = lines, children }) {
+function BaseChart({ chartId, data, lines, yLabel, yDomain, y2Label, y2Domain, refLines = [], refAreas = [], keyLines = lines, toggles, children }) {
   const settings = useStore((s) => s.settings)
   const xZoom = useStore((s) => s.xZoom[chartId])
   const setXZoom = useStore((s) => s.setXZoom)
@@ -267,13 +268,18 @@ function BaseChart({ chartId, data, lines, yLabel, yDomain, y2Label, y2Domain, r
   }
   return (
     <div ref={wrapRef} className="plot-body">
-    {keyLines.length > 1 && (
-      <div className="plot-key">
-        {keyLines.map((l) => (
-          <span key={l.dataKey} className="plot-key-item">
-            <span className="ct-swatch" style={{ borderTopColor: l.color, borderTopStyle: l.dash ? 'dashed' : 'solid' }} />{l.name}
-          </span>
-        ))}
+    {(toggles || keyLines.length > 1) && (
+      <div className="plot-left">
+        {toggles}
+        {keyLines.length > 1 && (
+          <div className="plot-key">
+            {keyLines.map((l) => (
+              <span key={l.dataKey} className="plot-key-item">
+                <span className="ct-swatch" style={{ borderTopColor: l.color, borderTopStyle: l.dash ? 'dashed' : 'solid' }} />{l.name}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
     )}
     {xZoom && (
@@ -644,23 +650,23 @@ function SPLTab() {
   return (
     <>
       <div className="plot-controls">
-        {[['combined', 'Combined', SERIES[0]], ['driver', 'Driver', SERIES[1]], ['ports', 'Ports', SERIES[2]]].map(([k, label, color]) => (
-          <button key={k} className={`chip-toggle${show[k] ? ' on' : ''}`} aria-pressed={show[k]}
-            onClick={() => setShow({ ...show, [k]: !show[k] })}>
-            <span className="ct-swatch" style={{ borderTopColor: color }} />{label}
-          </button>
-        ))}
-        {snapshots.map((sn) => (
-          <span key={sn.id} className="chip-toggle on dashed" title={sn.project ? `Snapshot from ${sn.project}` : 'Snapshot'}>
-            <span className="ct-swatch" style={{ borderTopColor: sn.color }} />{sn.label}
-          </span>
-        ))}
-        <span style={{ flex: 1 }} />
         {yControl}
-        <SolveTime />
       </div>
       <BaseChart chartId="spl" data={data} lines={lines} yLabel="SPL dB @ 1m" yDomain={yDomain}
-        keyLines={show.ports && portIds.length > 1 ? lines.filter((l) => l.dataKey.startsWith('port_')) : []} />
+        keyLines={show.ports && portIds.length > 1 ? lines.filter((l) => l.dataKey.startsWith('port_')) : []}
+        toggles={<>
+          {[['combined', 'Combined', SERIES[0]], ['driver', 'Driver', SERIES[1]], ['ports', 'Ports', SERIES[2]]].map(([k, label, color]) => (
+            <button key={k} className={`chip-toggle${show[k] ? ' on' : ''}`} aria-pressed={show[k]}
+              onClick={() => setShow({ ...show, [k]: !show[k] })}>
+              <span className="ct-swatch" style={{ borderTopColor: color }} />{label}
+            </button>
+          ))}
+          {snapshots.map((sn) => (
+            <span key={sn.id} className="chip-toggle on dashed" title={sn.project ? `Snapshot from ${sn.project}` : 'Snapshot'}>
+              <span className="ct-swatch" style={{ borderTopColor: sn.color }} />{sn.label}
+            </span>
+          ))}
+        </>} />
     </>
   )
 }
@@ -697,7 +703,7 @@ function ImpedanceTab() {
   const [yDomain, yControl] = useYScale('zin', fitLinear(fitData, [...(ids.length > 1 ? ids.map((c) => `zch_${c}`) : ['zmag']), ...snapshots.map((_, i) => `snap${i}_zin`)]))
   return (
     <>
-      <div className="plot-controls">{yControl}<SolveTime /></div>
+      <div className="plot-controls">{yControl}</div>
       <BaseChart chartId="zin" data={data} lines={lines} yLabel="|Z| Ω" yDomain={yDomain} y2Label="Phase °" y2Domain={[-90, 90]} refLines={refLines} />
     </>
   )
@@ -803,7 +809,6 @@ function ExcursionTab() {
           </select>
         </label>
         {yControl}
-        <SolveTime />
       </div>
       <BaseChart chartId="exc" data={data} lines={lines} yLabel={pct ? '% of Xmax' : 'mm'}
         yDomain={yDomain} refLines={refLines} refAreas={refAreas} />
@@ -839,7 +844,6 @@ function VelocityTab() {
           <NumInput value={vThreshold} above="0" onCommit={(v) => updateSettings({ vThreshold: v })} /> m/s
         </label>
         {yControl}
-        <SolveTime />
       </div>
       <BaseChart chartId="vel" data={data} lines={lines} yLabel="m/s (peak)" yDomain={yDomain} refLines={[
         <ReferenceLine key="th" yAxisId="left" y={vThreshold} stroke="var(--red)" strokeDasharray="6 4"
@@ -886,7 +890,6 @@ function InteriorTab() {
           dB SPL inside the volume (no 1 m convention — point pressure at the mic station)
         </span>
         {yControl}
-        <SolveTime />
       </div>
       <BaseChart chartId="int" data={data} lines={lines} yLabel="dB SPL (interior)" yDomain={yDomain} />
     </>
@@ -952,7 +955,6 @@ function ProbeFlowTab() {
       <div className="plot-controls">
         <span style={{ fontSize: 11, color: 'var(--text-3)' }}>peak values</span>
         {yControl}
-        <SolveTime />
       </div>
       <BaseChart chartId="pfl" data={data} lines={lines} yLabel="m/s (peak)" yDomain={yDomain} {...(hasFlow ? { y2Label: 'L/s (peak)', y2Domain: ['auto', 'auto'] } : {})} />
     </>
@@ -973,7 +975,7 @@ function PowerTab() {
   const [yDomain, yControl] = useYScale('pow', fitDb(fitData, lines.map((l) => l.dataKey)))
   return (
     <>
-      <div className="plot-controls">{yControl}<SolveTime /></div>
+      <div className="plot-controls">{yControl}</div>
       <BaseChart chartId="pow" data={data} lines={lines} yLabel="dBW" yDomain={yDomain} />
     </>
   )
@@ -992,7 +994,7 @@ function EfficiencyTab() {
   const [yDomain, yControl] = useYScale('eff', fitLinear(fitData, ['eff']))
   return (
     <>
-      <div className="plot-controls">{yControl}<SolveTime /></div>
+      <div className="plot-controls">{yControl}</div>
       <BaseChart chartId="eff" data={data} lines={lines} yLabel="acoustic / electrical %" yDomain={yDomain} />
     </>
   )
@@ -1014,7 +1016,7 @@ function ElecPowerTab() {
   const [yDomain, yControl] = useYScale('pe', fitLinear(fitData, ['peW', 'peVA']))
   return (
     <>
-      <div className="plot-controls">{yControl}<SolveTime /></div>
+      <div className="plot-controls">{yControl}</div>
       <BaseChart chartId="pe" data={data} lines={lines} yLabel="W / VA" yDomain={yDomain} />
     </>
   )
@@ -1047,23 +1049,10 @@ function PhaseTab() {
         <label><input type="checkbox" checked={settings.unwrapPhase} onChange={(e) => updateSettings({ unwrapPhase: e.target.checked })} />unwrap</label>
         <label>Delay offset <NumInput step="0.5" value={off} onCommit={(v) => updateSettings({ delayOffset: v })} /> ms</label>
         {yControl}
-        <SolveTime />
       </div>
       <BaseChart chartId="ph" data={adj} lines={lines} yLabel="deg" yDomain={yDomain} y2Label="ms" />
     </>
   )
-}
-
-/**
- * How long the result on screen took to solve.
- *
- * @returns {React.ReactElement|null} The readout, or `null` before the first result.
- * @sideEffect Subscribes to the store.
- */
-function SolveTime() {
-  const ms = useStore((s) => s.results?.elapsedMs)
-  if (ms == null) return null
-  return <span className="plot-solved" title="Time to solve the frequency sweep">solved {ms.toFixed(0)} ms</span>
 }
 
 /**

@@ -519,7 +519,8 @@ select { cursor: pointer; }
 /* ---------- the canvas ----------
    A dot grid on its own darker ground, with the element palette docked as
    a column at the left, centred, so it takes no height from the canvas: one
-   chip per element, in its hue, with the key that adds it, then the zoom. */
+   chip per element, in its hue, with the key that adds it. The zoom sits in
+   the bottom-right corner. */
 .dock-panel .canvas-wrap { background: var(--canvas); container-type: size; container-name: canvas; }
 .np-dock {
   position: absolute; left: 12px; top: 50%; transform: translateY(-50%); z-index: 6;
@@ -539,22 +540,23 @@ select { cursor: pointer; }
 .np-chip { width: 8px; height: 8px; border-radius: 2px; flex: none; }
 .np-name { color: var(--text); }
 .np-key { font-family: var(--mono-font); font-size: 10.5px; color: var(--text-3); text-transform: uppercase; margin-left: auto; }
-.np-sep { height: 1px; background: var(--line-2); margin: 2px 4px; flex: none; }
-.np-zoom { display: flex; align-items: center; justify-content: space-between; gap: 2px; flex: none; }
+.np-zoom {
+  position: absolute; right: 12px; bottom: 12px; z-index: 6;
+  display: flex; align-items: center; gap: 2px; padding: 4px;
+  border-radius: 12px; background: color-mix(in srgb, var(--raised) 95%, transparent);
+  border: 1px solid var(--line-2); box-shadow: var(--shadow-float);
+}
 .np-zoom button {
   background: none; border: none; color: var(--text-2); padding: 3px 7px;
   font-family: var(--mono-font); font-size: 12px; border-radius: var(--r-sm);
 }
 .np-zoom button:hover { background: var(--active); color: var(--text); }
 .np-zoom .np-pct { min-width: 40px; text-align: center; font-family: var(--mono-font); font-size: 12px; color: var(--text-2); }
-/* A short canvas: the chips drop their names and the zoom keeps only Fit
-   (the wheel still zooms), so the whole column fits. */
+/* A short canvas: the chips drop their names, so the whole column fits. */
 @container canvas (max-height: 380px) {
   .np-dock { gap: 3px; padding: 4px; }
   .np-cube { height: 26px; padding: 0 9px; gap: 7px; }
   .np-name { display: none; }
-  .np-zoom { justify-content: center; }
-  .np-zoom > :not(:last-child) { display: none; }
 }
 @container canvas (max-height: 240px) {
   .np-cube { height: 22px; }
@@ -900,17 +902,24 @@ svg.ws-chevron.toggle:hover { color: var(--text); background: var(--panel-2); }
   /* Laid over the chart's top right, so the plot gets the panel's full height.
      Only the controls themselves take the pointer; the chart under the gaps
      still zooms and pans. */
-  position: absolute; top: 2px; right: 12px; z-index: 4; max-width: calc(100% - 64px);
+  position: absolute; top: 2px; right: 12px; z-index: 4; max-width: 50%;
   pointer-events: none;
 }
 .plot-controls > * { pointer-events: auto; }
-.plot-controls > .chip-toggle, .plot-controls > label, .plot-controls > .plot-solved, .plot-controls > span {
+.plot-controls > label, .plot-controls > span {
   background: color-mix(in oklab, var(--panel) 82%, transparent); backdrop-filter: blur(6px); border-radius: var(--r-ctl);
 }
-.plot-controls > label, .plot-controls > span:not(.chip-toggle):not(.plot-solved) { padding: 2px 8px; }
-/* The colour key, laid over the chart's top left past the Y axis. */
+.plot-controls > label, .plot-controls > span { padding: 2px 8px; }
+/* Over the chart's top left, past the Y axis: the buttons that show and
+   hide series, then the colour key. */
+.plot-left {
+  position: absolute; top: 2px; left: 50px; z-index: 3; max-width: 45%;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px; pointer-events: none;
+}
+.plot-left > * { pointer-events: auto; }
+.plot-left > .chip-toggle { background: color-mix(in oklab, var(--panel) 82%, transparent); backdrop-filter: blur(6px); }
+.plot-left > .chip-toggle.on { background: var(--chip); }
 .plot-key {
-  position: absolute; top: 4px; left: 50px; z-index: 3; max-width: 38%;
   display: flex; flex-wrap: wrap; gap: 2px 10px; padding: 3px 8px; pointer-events: none;
   font-size: 11.5px; color: var(--text-2); border-radius: var(--r-ctl);
   background: color-mix(in oklab, var(--panel) 82%, transparent); backdrop-filter: blur(6px);
@@ -920,7 +929,6 @@ svg.ws-chevron.toggle:hover { color: var(--text); background: var(--panel-2); }
 .plot-controls label { display: flex; gap: 6px; align-items: center; color: var(--text-2); cursor: pointer; }
 .plot-controls input[type="number"], .plot-controls input.num { width: 58px; }
 .plot-controls select { width: auto; }
-.plot-solved { font-family: var(--mono-font); font-size: 12px; color: var(--text-3); padding: 0 6px; white-space: nowrap; }
 .plot-body { flex: 1; min-height: 0; position: relative; }
 .chip-toggle {
   display: inline-flex; align-items: center; gap: 7px; height: 26px; padding: 0 10px;

@@ -31,12 +31,12 @@ function onDragStart(e, type) {
 }
 
 /**
- * The element dock, a column at the canvas's left: draggable element chips with their shortcut keys, and the zoom.
+ * The element dock, a column at the canvas's left, of draggable element chips with their shortcut keys; and the zoom, in the canvas's bottom-right corner.
  *
  * Must be rendered inside the canvas's React Flow provider, which the zoom
  * reads and drives.
  *
- * @returns {React.ReactElement} The dock.
+ * @returns {React.ReactElement} The dock and the zoom.
  * @sideEffect Subscribes to the store and to the canvas viewport.
  */
 export default function NodePalette() {
@@ -45,6 +45,7 @@ export default function NodePalette() {
   const { zoomIn, zoomOut, fitView } = useReactFlow()
   const { zoom } = useViewport()
   return (
+    <>
     <div className="np-dock" onContextMenu={(e) => e.stopPropagation()}>
       {NODE_KINDS.map((it) => {
         const key = bindings[`add.${it.type}`]?.[0]
@@ -62,13 +63,13 @@ export default function NodePalette() {
           </div>
         )
       })}
-      <span className="np-sep" />
-      <div className="np-zoom">
-        <button title="Zoom out" onClick={() => zoomOut({ duration: 150 })}>−</button>
-        <span className="np-pct" title="Zoom">{Math.round(zoom * 100)}%</span>
-        <button title="Zoom in" onClick={() => zoomIn({ duration: 150 })}>+</button>
-        <button title="Fit the whole graph in view" onClick={() => fitView({ duration: 200, padding: 0.15 })}>⤢</button>
-      </div>
     </div>
+    <div className="np-zoom" onContextMenu={(e) => e.stopPropagation()}>
+      <button title="Zoom out" onClick={() => zoomOut({ duration: 150 })}>−</button>
+      <span className="np-pct" title="Zoom">{Math.round(zoom * 100)}%</span>
+      <button title="Zoom in" onClick={() => zoomIn({ duration: 150 })}>+</button>
+      <button title="Fit the whole graph in view" onClick={() => fitView({ duration: 200, padding: 0.15 })}>⤢</button>
+    </div>
+    </>
   )
 }
