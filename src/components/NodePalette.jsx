@@ -31,7 +31,7 @@ function onDragStart(e, type) {
 }
 
 /**
- * The element dock: draggable element chips with their shortcut keys, and the zoom.
+ * The element dock, a column at the canvas's left: draggable element chips with their shortcut keys, and the zoom.
  *
  * Must be rendered inside the canvas's React Flow provider, which the zoom
  * reads and drives.
