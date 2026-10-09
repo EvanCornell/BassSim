@@ -653,7 +653,7 @@ export const useStore = create((rawSet, get) => {
   // Explorer view state: window-local and unpersisted, deliberately. See the
   // explorer actions below.
   wsSelection: [],
-  wsCollapsed: [],
+  wsExpanded: [],
   wsEdit: null,
   fileClipboard: null,
   // Shown once, before the user has anything to lose: where the workspace is
@@ -2908,7 +2908,7 @@ export const useStore = create((rawSet, get) => {
     get()._commitWorkspace(ws)
     // Every explorer path just changed. Keeping a selection or a half-typed
     // rename across that would leave both pointing at a workspace that is gone.
-    set({ wsSelection: [], wsCollapsed: [], wsEdit: null, fileClipboard: null })
+    set({ wsSelection: [], wsExpanded: [], wsEdit: null, fileClipboard: null })
 
     const first = W.listProjects(ws)[0] || null
     set({ activeFile: first })
@@ -2941,7 +2941,7 @@ export const useStore = create((rawSet, get) => {
   setWsSelection: (paths) => set({ wsSelection: paths }),
 
   /**
-   * Expand or collapse a folder in the explorer.
+   * Expand or collapse a folder in the explorer. Folders start collapsed.
    *
    * @param {string} path - The folder's path.
    * @param {boolean} [open] - Force a state; omitted, the folder toggles.
@@ -2949,11 +2949,11 @@ export const useStore = create((rawSet, get) => {
    * @sideEffect Writes store state.
    */
   toggleWsFolder: (path, open) => {
-    const collapsed = get().wsCollapsed
-    const isOpen = !collapsed.includes(path)
+    const expanded = get().wsExpanded
+    const isOpen = expanded.includes(path)
     const want = open === undefined ? !isOpen : open
     if (want === isOpen) return
-    set({ wsCollapsed: want ? collapsed.filter((p) => p !== path) : [...collapsed, path] })
+    set({ wsExpanded: want ? [...expanded, path] : expanded.filter((p) => p !== path) })
   },
 
   /**
@@ -2962,7 +2962,7 @@ export const useStore = create((rawSet, get) => {
    * @returns {void}
    * @sideEffect Writes store state.
    */
-  collapseAllWsFolders: () => set({ wsCollapsed: W.listFolders(get().workspace) }),
+  collapseAllWsFolders: () => set({ wsExpanded: [] }),
 
   /**
    * Start an inline edit in the explorer.

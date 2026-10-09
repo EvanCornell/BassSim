@@ -71,17 +71,17 @@ function RowIcon({ kind }) {
  * render would answer none of those without re-deriving this anyway.
  *
  * @param {Array<object>} nodes - Tree nodes from `buildTree`.
- * @param {string[]} collapsed - Paths of the collapsed folders.
+ * @param {string[]} expanded - Paths of the expanded folders; every other folder is collapsed.
  * @param {number} [depth] - Nesting depth of `nodes`, used by the recursion.
  * @returns {Array<object>} Row descriptors, each carrying its node, depth and expanded state.
  * @pure
  */
-function flatten(nodes, collapsed, depth = 0) {
+function flatten(nodes, expanded, depth = 0) {
   const out = []
   for (const node of nodes) {
-    const open = node.kind === 'folder' && !collapsed.includes(node.path)
+    const open = node.kind === 'folder' && expanded.includes(node.path)
     out.push({ node, depth, open })
-    if (open) out.push(...flatten(node.children, collapsed, depth + 1))
+    if (open) out.push(...flatten(node.children, expanded, depth + 1))
   }
   return out
 }
@@ -145,7 +145,7 @@ export default function FileBrowser() {
   const workspace = useStore((s) => s.workspace)
   const activeFile = useStore((s) => s.activeFile)
   const selection = useStore((s) => s.wsSelection)
-  const collapsed = useStore((s) => s.wsCollapsed)
+  const expanded = useStore((s) => s.wsExpanded)
   const edit = useStore((s) => s.wsEdit)
   const clip = useStore((s) => s.fileClipboard)
   const folderStatus = useStore((s) => s.folderStatus)
@@ -159,7 +159,7 @@ export default function FileBrowser() {
   const fileInput = useRef(null)
   const treeRef = useRef(null)
 
-  const rows = useMemo(() => flatten(buildTree(workspace), collapsed), [workspace, collapsed])
+  const rows = useMemo(() => flatten(buildTree(workspace), expanded), [workspace, expanded])
 
   // The row the keyboard acts on. VS Code keeps one "focused" row rather than
   // acting on the whole selection, so a lone selected row is the common case
@@ -172,6 +172,7 @@ export default function FileBrowser() {
    * Ctrl or Cmd toggles one row in or out; Shift extends from the anchor
    * across the visible list, which is why the flattened rows are what is
    * spanned rather than the tree.
+   * A plain click on the one selected row clears the selection.
    *
    * @param {string} path - The clicked row's path.
    * @param {React.MouseEvent} e - The click, read for its modifier keys.
@@ -193,7 +194,9 @@ export default function FileBrowser() {
         return
       }
     }
-    st.setWsSelection([path])
+    // Clicking the one selected row again lets go of it, so nothing is
+    // selected and a new entry goes at the root.
+    st.setWsSelection(selection.length === 1 && selection[0] === path ? [] : [path])
   }
 
   /**
