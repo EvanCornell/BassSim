@@ -214,15 +214,17 @@ export default function FileBrowser() {
    *
    * A selected folder takes the entry; a selected file puts it beside itself.
    * Both match what every file manager does with New File while something is
-   * highlighted.
+   * highlighted. With nothing highlighted it goes at the root — never into
+   * the open project's folder, which the user can no longer see is chosen.
    *
    * @returns {string} A folder path, or the empty string for the root.
    * @reads The current selection and the workspace.
    */
   const targetFolder = () => {
-    if (!focused) return ''
-    if (workspace.files[focused]) return parentOf(focused)
-    return focused
+    const picked = selection[selection.length - 1]
+    if (!picked) return ''
+    if (workspace.files[picked]) return parentOf(picked)
+    return picked
   }
 
   /**
@@ -459,6 +461,7 @@ export default function FileBrowser() {
       folder ? 'folder' : 'file',
       selection.includes(path) ? 'selected' : '',
       path === activeFile ? 'active' : '',
+      folder && activeFile?.startsWith(`${path}/`) ? 'holds-active' : '',
       isSystemPath(path) ? 'system' : '',
       dropTarget === path ? 'drop' : '',
       cut ? 'cut' : '',
