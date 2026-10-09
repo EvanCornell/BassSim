@@ -107,7 +107,7 @@ become empty cells rather than `NaN`, which spreadsheets handle badly.
 
 **Parameters**
 
-- `results` — `object|null` — A result from `runSimulation`. A failed or absent result exports nothing.
+- `results` — `object|null` — A sweep result, as `simulateProject` returns it. A failed or absent result exports nothing.
 - `nodes` — `Array<object>` — Graph nodes, used to label port and chamber columns.
 - `projectName` — `string` — Base filename.
 

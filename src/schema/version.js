@@ -77,11 +77,9 @@ export const NODE_HANDLES = {
  * The analysis a new project runs: one frequency sweep.
  *
  * `masking` swaps every chamber's transmission line for a lumped volume.
- * `nlEnabled` is the legacy engine's large-signal mode, carried until
- * transient analysis replaces it.
  */
 export const DEFAULT_ANALYSIS = {
-  id: 'sweep', type: 'ac', fmin: 10, fmax: 1000, npts: 512, masking: false, nlEnabled: false,
+  id: 'sweep', type: 'ac', fmin: 10, fmax: 1000, npts: 512, masking: false,
 }
 
 /**

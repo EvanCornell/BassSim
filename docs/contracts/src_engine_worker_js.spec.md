@@ -33,7 +33,7 @@ an exception, carrying every reason on `projectErrors`.
 
 **Parameters**
 
-- `e` — `MessageEvent` — The request, `{id, project, engine}`; the pool's own messages are left to its listener.
+- `e` — `MessageEvent` — The request, `{id, project}`; the pool's own messages are left to its listener.
 
 **Returns**
 

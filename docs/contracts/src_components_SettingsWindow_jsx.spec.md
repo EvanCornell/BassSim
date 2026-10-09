@@ -34,7 +34,7 @@ lost the next time it is needed.
 - **Reachability:** UNREACHABLE
 - **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
 
-The Application section: engine, sweep range and display options.
+The Application section: sweep range and display options.
 
 **Returns**
 

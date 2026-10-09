@@ -6,8 +6,7 @@
 // speaker quantities without knowing how the netlist was built.
 
 import { areaProfile } from '../engine/geometry.js'
-import { driverSI } from '../engine/solver.js'
-import { RHO, C_AIR, SOLID_ANGLE, perimeter, viscousCoeff, flowResistivity, stuffedSoundSpeed } from './physics.js'
+import { RHO, C_AIR, SOLID_ANGLE, perimeter, viscousCoeff, flowResistivity, stuffedSoundSpeed, driverSI } from './physics.js'
 import { fmt, resistor, sense } from './netlist.js'
 import { radiationLoad, fractionalSeries } from './networks.js'
 import { compileLine } from './line.js'

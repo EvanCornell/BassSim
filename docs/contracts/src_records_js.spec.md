@@ -14,14 +14,40 @@ a design share its objects, and a record saved twice unchanged is stored
 once. The objects travel inside the project file, deflated as git keeps
 them, so a project's records go wherever the project goes.
 
-There is no branching or merging. The records are a numbered list; the
-project's own content is the working copy of the selected one, written
-into it when another record is selected, added or the list is changed.
+There is no merging. The records are a numbered list; the project's own
+content is the working copy of the selected one, written into it when
+another record is selected, added or the list is changed. Each record also
+has an id that stays with it while its commit changes, so a time-domain run
+can say which record it came from.
+
+A time-domain run is a branch: a commit whose parent is the record it was
+run from and whose tree holds the project exactly as it was run, beside the
+run's results. The record can go on changing; the run keeps its own state,
+and that state can be restored as a new record.
 
 Nothing here touches the store or the DOM: each function takes the records
 and returns new ones.
 
-## EXPORTED (8)
+## EXPORTED (16)
+
+### `newId(prefix)`
+
+- **Reachability:** EXPORTED
+- **Obtain via:** import { newId } from '../../src/records.js'
+
+A fresh id for a record or a run.
+
+**Parameters**
+
+- `prefix` — `string` — `r` for a record, `run` for a run.
+
+**Returns**
+
+- `string` — e.g. `r-k3j9x2`.
+
+**Side effects**
+
+- Reads the random number generator and the clock.
 
 ### `recordContent(project)`
 
@@ -53,7 +79,44 @@ The records a project file carries, checked; none when it carries none or they a
 
 **Returns**
 
-- `{list: string[], selected: number, objects: Object<string, string>}|null` — The records, or `null`.
+- `{list: string[], ids: string[], selected: number, objects: Object<string, string>, runs: Array<object>, names: Object<string, string>}|null` — The records, or `null`; `names` maps record ids to the names they were given.
+
+**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
+
+### `recordName(records, index)`
+
+- **Reachability:** EXPORTED
+- **Obtain via:** import { recordName } from '../../src/records.js'
+
+A record's name: the one it was given, else its number.
+
+**Parameters**
+
+- `records` — `object|null` — The project's records.
+- `index` — `number` — The record.
+
+**Returns**
+
+- `string` — e.g. `Sealed 40 L`, or `3`.
+
+**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
+
+### `renameRecord(records, index, name)`
+
+- **Reachability:** EXPORTED
+- **Obtain via:** import { renameRecord } from '../../src/records.js'
+
+Name a record, or clear its name so it goes by its number again.
+
+**Parameters**
+
+- `records` — `object` — The project's records.
+- `index` — `number` — The record.
+- `name` — `string` — Its name; empty clears it.
+
+**Returns**
+
+- `object` — The records.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
@@ -203,7 +266,136 @@ Select another record, saving the selected one first.
 
 - Loads the library.
 
-## UNREACHABLE (19)
+### `branchPoint(records, project, now)`
+
+- **Reachability:** EXPORTED
+- **Obtain via:** import { branchPoint } from '../../src/records.js'
+- **Async:** returns a Promise
+
+The record a run branches from: the selected one, saved with the project first.
+
+Called when a run is queued, so the branch point is the record as it was
+then, whatever is edited while the run waits.
+
+**Parameters**
+
+- `records` — `object|null` — The project's records; `null` starts them.
+- `project` — `object` — The serialized project.
+- `now` — `number` _(optional)_ — The time, ms since the epoch.
+
+**Returns**
+
+- `Promise<{records: object, parent: string, recordId: string, content: object}>` — The records, the record's commit, its id, and the content a run of it holds.
+
+**Side effects**
+
+- Loads the library.
+
+### `addRun(records, run, now)`
+
+- **Reachability:** EXPORTED
+- **Obtain via:** import { addRun } from '../../src/records.js'
+- **Async:** returns a Promise
+
+Store a finished run as a branch off its record.
+
+The commit's tree holds the project as it was run and the run's results;
+its parent is the record commit the run was queued from, or, when that has
+since been replaced by a later save, the record's commit now.
+
+**Parameters**
+
+- `records` — `object` — The project's records.
+- `run` — `object` — The run.
+- `run.id` — `string` — Its id.
+- `run.parent` — `string` _(optional)_ — The record commit it was queued from.
+- `run.recordId` — `string` _(optional)_ — The id of the record it was queued from.
+- `run.content` — `object` — The project content it ran.
+- `run.data` — `object` — Its settings and results, as `run.json` holds them.
+- `run.meta` — `object` _(optional)_ — What the run list shows of it: title, kind, figures.
+- `now` — `number` _(optional)_ — The time, ms since the epoch.
+
+**Returns**
+
+- `Promise<object>` — The records, the run at the end of `runs`.
+
+**Side effects**
+
+- Loads the library.
+
+### `readRun(records, oid)`
+
+- **Reachability:** EXPORTED
+- **Obtain via:** import { readRun } from '../../src/records.js'
+- **Async:** returns a Promise
+
+Read a run's project and results.
+
+**Parameters**
+
+- `records` — `object` — The records holding the run.
+- `oid` — `string` — The run's commit.
+
+**Returns**
+
+- `Promise<{content: object, data: object}>` — The project as it was run, and `run.json`.
+
+**Throws**
+
+- `Error` — When the run is missing or unreadable.
+
+**Side effects**
+
+- Loads the library.
+
+### `deleteRuns(records, ids)`
+
+- **Reachability:** EXPORTED
+- **Obtain via:** import { deleteRuns } from '../../src/records.js'
+- **Async:** returns a Promise
+
+Delete runs, dropping whatever only they reached.
+
+**Parameters**
+
+- `records` — `object` — The project's records.
+- `ids` — `string[]` — The runs.
+
+**Returns**
+
+- `Promise<object>` — The records.
+
+**Side effects**
+
+- Loads the library.
+
+### `addRecordFrom(records, project, content, now)`
+
+- **Reachability:** EXPORTED
+- **Obtain via:** import { addRecordFrom } from '../../src/records.js'
+- **Async:** returns a Promise
+
+Add a record at the end holding given content — a run's project — and select it.
+
+The selected record is saved with the working copy first, as when adding
+any record.
+
+**Parameters**
+
+- `records` — `object|null` — The project's records.
+- `project` — `object` — The serialized project, the selected record's working copy.
+- `content` — `object` — The new record's content.
+- `now` — `number` _(optional)_ — The time, ms since the epoch.
+
+**Returns**
+
+- `Promise<object>` — The records, the new one selected.
+
+**Side effects**
+
+- Loads the library.
+
+## UNREACHABLE (21)
 
 ### `git()`
 
@@ -557,18 +749,19 @@ The hash of the project file inside a record.
 
 - Loads the library.
 
-### `collect(repo, list)`
+### `collect(repo, list, runs)`
 
 - **Reachability:** UNREACHABLE
 - **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
 - **Async:** returns a Promise
 
-Drop every object no record reaches.
+Drop every object no record or run reaches.
 
 **Parameters**
 
 - `repo` — `object` — From `memoryRepo`.
 - `list` — `string[]` — The records.
+- `runs` — `Array<{oid: string}>` _(optional)_ — The runs, whose commits, trees and parent records are kept too.
 
 **Returns**
 
@@ -577,3 +770,41 @@ Drop every object no record reaches.
 **Side effects**
 
 - Loads the library; removes objects from the repository.
+
+### `addRun > blobOf(value)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+Write a JSON file's blob.
+
+**Parameters**
+
+- `value` — `object` — The content.
+
+**Returns**
+
+- `Promise<string>` — The blob's hash.
+
+**Side effects**
+
+- Writes the repository.
+
+### `addRun > has(oid)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+Whether the repository holds an object.
+
+**Parameters**
+
+- `oid` — `string` _(optional)_ — Its hash.
+
+**Returns**
+
+- `boolean` — True when present.
+
+**Reads external mutable state**
+
+- the repository's files.

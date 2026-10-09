@@ -127,6 +127,7 @@ closed, sums up what is in it on one line.
 - `props.focus` — `boolean` _(optional)_ — The section being worked on — the selected element.
 - `props.actions` — `React.ReactNode` _(optional)_ — Buttons shown in the head while open, in place of the summary.
 - `props.initial` — `boolean` _(optional)_ — Open the first time it is shown.
+- `props.fixed` — `boolean` _(optional)_ — Always open, with no way to close it.
 - `props.children` — `React.ReactNode` — The body.
 
 **Returns**
@@ -201,6 +202,7 @@ trigger a failed solve.
 - `props.label` — `string` _(optional)_ — Display label; defaults to the field name.
 - `props.step` — `string|number` _(optional)_ — Input step.
 - `props.min` — `number` _(optional)_ — Minimum accepted value.
+- `props.above` — `number` _(optional)_ — Values must be greater than this.
 - `props.onCommit` — `Function` _(optional)_ — Called instead of the default update, for fields needing derived changes.
 
 **Returns**

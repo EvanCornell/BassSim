@@ -68,7 +68,63 @@ are not form controls, still open and close.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
-## UNREACHABLE (1)
+## UNREACHABLE (4)
+
+### `readName(text)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+Read a record name as typed: anything goes, empty included.
+
+**Parameters**
+
+- `text` — `string` — What was typed.
+
+**Returns**
+
+- `{ok: true, value: string}` — The trimmed name.
+
+**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
+
+### `RecordName(props)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+The selected record's name, editable in place; empty shows its number.
+
+**Parameters**
+
+- `props` — `object` — Component props.
+- `props.disabled` — `boolean` — Whether it can be edited.
+
+**Returns**
+
+- `React.ReactElement` — The text box.
+
+**Side effects**
+
+- Subscribes to the store; committing renames the record.
+
+### `RecordName > commit(v)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+Save the typed name.
+
+**Parameters**
+
+- `v` — `string` — The name.
+
+**Returns**
+
+- `void`
+
+**Side effects**
+
+- Renames the selected record.
 
 ### `readOnlyWhenLocked > Locked(props)`
 

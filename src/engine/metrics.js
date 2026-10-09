@@ -58,13 +58,11 @@ function localMaxima(freqs, vals, minProminence = 1) {
  * on. Zero peaks, or three or more, yield neither `fb` nor `fc`.
  *
  * Maximum power before Xmax is driven by the per-driver headroom ratio, so a
- * mixed set of drivers is judged against each cone's own limit; it falls back
- * to a single global Xmax for results produced before that ratio existed.
+ * mixed set of drivers is judged against each cone's own limit.
  *
- * @param {object|null} res - A result from `runSimulation`.
+ * @param {object|null} res - A sweep result, as `simulateProject` returns it.
  * @param {object} settings - Sweep settings.
  * @param {number} [settings.voltage=2.83] - Drive voltage the sweep was run at, V RMS.
- * @param {number} [settings.xmax] - Legacy single Xmax, mm, used only when the result carries no per-driver ratio.
  * @returns {object|null} Metrics — any of `passband`, `peakSPL`, `f3`, `f10`, `bwHz`, `bwOct`, `zPeaks` (an array of at most five `{f, v, i}` peak descriptors — frequency in Hz, impedance magnitude in Ω, and the sweep index — in ascending frequency), `fb`, `fbZ`, `fc`, `qtc`, `xPeak`, `xPeakF`, `xAtFb`, `xAtF3`, `xRatioPeak`, `xRatioPeakF`, `xLimitDriver`, `maxPower`, `vMax` — or `null` when the sweep failed or is empty. Most fields are simply absent when the topology does not define them, so a sealed box has no `fb` key at all. The exceptions are `f3`, `f10`, `xPeakF`, `xAtFb` and `xAtF3`, which are always present and carry `null` when undefined — `xAtFb` is null for a sealed box because it is looked up at a tuning that does not exist.
  * @post res and settings are not modified
  * @pure
@@ -143,7 +141,6 @@ export function computeMetrics(res, settings) {
   }
 
   // Excursion diagnostics
-  const xmax = settings.xmax || null
   let xPk = 0, xPkF = null
   for (let i = 0; i < n; i++) {
     if (excursion[i] > xPk) { xPk = excursion[i]; xPkF = freqs[i] }
@@ -199,10 +196,9 @@ export function computeMetrics(res, settings) {
   }
 
   // Max power before Xmax (displacement scales linearly with voltage). Driven
-  // by the headroom ratio so a mixed set of drivers is judged per driver;
-  // falls back to the single-Xmax path for results predating the ratio.
+  // by the headroom ratio so a mixed set of drivers is judged per driver.
   const vNow = settings.voltage || 2.83
-  const vMax = rPk > 0 ? vNow / rPk : (xmax && xPk > 0 ? (vNow * xmax) / xPk : null)
+  const vMax = rPk > 0 ? vNow / rPk : null
   if (vMax) {
     const zMin = Math.min(...zinMag.filter((v) => v > 0.1))
     m.maxPower = (vMax * vMax) / zMin

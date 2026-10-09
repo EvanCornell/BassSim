@@ -1,14 +1,10 @@
-// Large-signal driver curves, and the legacy engine's quasi-linear use of them.
+// Large-signal driver curves.
 //
 // Each driver may carry three ratio curves — Bl(x), Cms(x), Le(x) — expressed
 // relative to the small-signal value (1.0 = datasheet number). A curve is a
 // flat 1.0 baseline (or an imported table), deformed by parametric-EQ style
-// control points: gaussian bumps {x mm, g gain, w width mm}.
-//
-// The solver iterates: linear sweep → per-frequency excursion → cycle-averaged
-// ratio at that excursion → scale Bl/Cms/Le → re-solve. Captures power
-// compression and resonance drift; does NOT produce harmonic distortion
-// products (that needs a time-domain engine).
+// control points: gaussian bumps {x mm, g gain, w width mm}. Time-domain runs
+// build the driver's motor and suspension from them.
 
 // Kms(x) (suspension stiffness, as published by Klippel reports) is the
 // reciprocal representation of Cms(x): they describe the same suspension.
@@ -44,9 +40,8 @@ export function defaultNL() {
 /**
  * Whether a curve deviates from the flat 1.0 baseline.
  *
- * A curve has content once it has either control points or an imported table.
- * This is what decides whether the experimental large-signal path runs at all,
- * so an untouched driver costs nothing.
+ * A curve has content once it has either control points, an imported table or
+ * a polynomial. An untouched driver is linear, and costs nothing.
  *
  * @param {object|null|undefined} curve - A curve, or nothing.
  * @returns {boolean} True when the curve would evaluate to anything other than a constant 1.0.
@@ -78,29 +73,6 @@ export function polyRatio(poly, x) {
   let v = 0
   for (let i = c.length - 1; i >= 0; i--) v = v * xc + c[i]
   return c[0] ? v / c[0] : 1
-}
-
-// Effective compliance ratio at excursion X: from Kms if defined, else Cms.
-// Stiffness averages physically over the cycle, so Cms_eff = 1/avg(Kms).
-/**
- * Effective compliance ratio at peak excursion X.
- *
- * Klippel reports publish suspension stiffness Kms(x); the solver wants
- * compliance. They are reciprocals of each other, but the averaging does not
- * commute with the inversion — stiffness is what averages physically over a
- * cycle, so the correct result is `1/avg(Kms)`, not `avg(1/Kms)`. A Kms curve
- * therefore takes precedence over a Cms curve when both are present.
- *
- * @param {object|null|undefined} nl - A driver's nonlinear parameter set.
- * @param {number} X - Peak excursion, mm.
- * @param {number} [xmax=0] - The driver's Xmax, mm, used only for extrapolation. 0 disables it.
- * @returns {number} Compliance as a ratio of the small-signal value; 1 when neither curve has content.
- * @post result > 0 — the averaged stiffness is floored at 0.05 so a curve driven to zero stiffness cannot produce an infinite compliance
- * @pure
- */
-export function complianceRatio(nl, X, xmax = 0) {
-  if (curveHasContent(nl?.Kms)) return 1 / Math.max(cycleAverage(nl.Kms, X, xmax), 0.05)
-  return cycleAverage(nl?.Cms, X, xmax)
 }
 
 // baseline: imported table (linear interp, clamped ends) or flat 1.0
@@ -178,7 +150,7 @@ function rawEval(curve, x) {
  * @param {number} x - Displacement, mm.
  * @param {number} [xmax=0] - Xmax, mm. Extrapolation is skipped when this is 0.
  * @returns {number} Ratio at x, floored at 0.01.
- * @post result >= 0.01 — a ratio must stay physically positive, since the solver multiplies Bl, Cms and Le by it
+ * @post result >= 0.01 — a ratio must stay physically positive, since Bl, Cms and Le are multiplied by it
  * @pure
  */
 export function evalCurve(curve, x, xmax = 0) {
@@ -194,77 +166,6 @@ export function evalCurve(curve, x, xmax = 0) {
   }
   // no upper limit — only keep the ratio physically positive
   return Math.max(r, 0.01)
-}
-
-// average ratio over one sinusoidal cycle of peak excursion X (mm).
-// This is the quasi-linear "effective" parameter at that drive level.
-/**
- * Average ratio over one sinusoidal cycle of peak excursion X.
- *
- * This is the quasi-linear approximation at the heart of the large-signal mode:
- * a cone swinging to ±X spends its cycle sampling the whole curve, so the
- * parameter the solver should use is the average over that swing, not the value
- * at the peak. Sampled uniformly in phase at 24 points, which is well past the
- * point where the average stops moving for smooth curves.
- *
- * @param {object|null|undefined} curve - The curve to average.
- * @param {number} X - Peak excursion, mm.
- * @param {number} [xmax=0] - Xmax, mm, passed through for extrapolation.
- * @returns {number} The cycle-averaged ratio; exactly 1 for a curve with no content, short-circuited before any sampling.
- * @pure
- */
-export function cycleAverage(curve, X, xmax = 0) {
-  if (!curveHasContent(curve)) return 1
-  const N = 24
-  let s = 0
-  for (let k = 0; k < N; k++) {
-    s += evalCurve(curve, X * Math.sin((2 * Math.PI * k) / N), xmax)
-  }
-  return s / N
-}
-
-/**
- * Whether a driver has any nonlinear content at all.
- *
- * The solver's gate for the experimental path: without this returning true, the
- * sweep runs once instead of four times.
- *
- * @param {object|null|undefined} nl - A driver's nonlinear parameter set.
- * @returns {boolean} True when at least one of Bl, Cms, Kms or Le has content.
- * @pure
- */
-export function hasNL(nl) {
-  if (!nl) return false
-  return NL_PARAMS.some((p) => curveHasContent(nl[p]))
-}
-
-// Derived small-signal ratios at excursion X, for display in the Lab:
-// Fs ∝ 1/√Cms, Qes ∝ 1/Bl² · √(M/C)... expressed as ratios:
-/**
- * Small-signal T/S parameters at excursion X, expressed as ratios.
- *
- * For display in the Nonlinear Lab: it answers "what does this driver look like
- * once it is moving this far?". The derived figures follow from the standard
- * relations — Fs varies as 1/sqrt(Cms), Vas directly with Cms, and Qes as
- * sqrt(1/Cms)/Bl².
- *
- * @param {object} nl - A driver's nonlinear parameter set.
- * @param {number} X - Peak excursion, mm.
- * @param {number} [xmax=0] - Xmax, mm, passed through for extrapolation.
- * @returns {{Bl: number, Cms: number, Le: number, Fs: number, Qes: number, Vas: number}} Each parameter as a ratio of its small-signal value, where 1 means unchanged.
- * @pure
- */
-export function derivedRatios(nl, X, xmax = 0) {
-  const rBl = cycleAverage(nl.Bl, X, xmax)
-  const rC = complianceRatio(nl, X, xmax)
-  return {
-    Bl: rBl,
-    Cms: rC,
-    Le: cycleAverage(nl.Le, X, xmax),
-    Fs: 1 / Math.sqrt(rC),
-    Qes: Math.sqrt(1 / rC) / (rBl * rBl),
-    Vas: rC,
-  }
 }
 
 // Normalize an imported table to ratios. Published curves are usually

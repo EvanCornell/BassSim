@@ -28,7 +28,7 @@ Run one time-domain job and post its progress and result.
 
 **Parameters**
 
-- `e` — `MessageEvent` — The request: `{id, kind, project, opts, mode, threads}` — `kind` is `linear`, `transient` or `distortion`; `mode` the distortion analysis; `threads` the pool's size. The pool's own messages are left to its listener.
+- `e` — `MessageEvent` — The request: `{id, kind, project, opts, mode, threads}` — `kind` is `linear`, `transient`, `distortion` or `level`; `mode` the distortion analysis; `threads` the pool's size. The pool's own messages are left to its listener.
 
 **Returns**
 

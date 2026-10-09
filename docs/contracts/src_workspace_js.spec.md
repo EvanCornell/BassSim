@@ -70,6 +70,10 @@ Snapshots are workspace data, not project data — see `readSnapshots` for
 why — so they live here beside the driver library and travel with a
 downloaded workspace.
 
+### `BOARDS_PATH`
+
+Path where older builds kept time-domain comparison boards; dropped when read.
+
 ### `PROJECT_EXT`
 
 Filename extension for a project file inside a workspace.
@@ -101,7 +105,7 @@ window, or an eviction under storage pressure all take it without asking.
 A week is long enough not to nag someone mid-session and short enough that
 the loss, if it comes, is a week of work rather than a year of it.
 
-## EXPORTED (31)
+## EXPORTED (32)
 
 ### `normalizePath(path)`
 
@@ -612,6 +616,27 @@ Replace the workspace's reference snapshots.
 **Side effects**
 
 - Reads the current time for the modification stamps.
+
+### `dropBoards(ws)`
+
+- **Reachability:** EXPORTED
+- **Obtain via:** import { dropBoards } from '../../src/workspace.js'
+
+Drop the comparison boards older builds saved: the workspace's boards file, and boards kept inside project files.
+
+Runs are compared in the run viewer now, which saves nothing.
+
+**Parameters**
+
+- `ws` — `object` — The workspace.
+
+**Returns**
+
+- `object` — The workspace itself when there are none, otherwise a new one.
+
+**Side effects**
+
+- Reads the current time for the modification stamps when anything is dropped.
 
 ### `workspaceToEntries(ws)`
 

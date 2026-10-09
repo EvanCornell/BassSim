@@ -90,7 +90,7 @@ export async function exportWorkspaceZip(ws) {
  * Values are written at 7 significant digits; absent and non-finite entries
  * become empty cells rather than `NaN`, which spreadsheets handle badly.
  *
- * @param {object|null} results - A result from `runSimulation`. A failed or absent result exports nothing.
+ * @param {object|null} results - A sweep result, as `simulateProject` returns it. A failed or absent result exports nothing.
  * @param {Array<object>} nodes - Graph nodes, used to label port and chamber columns.
  * @param {string} projectName - Base filename.
  * @returns {void}

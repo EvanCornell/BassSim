@@ -29,6 +29,13 @@
 import { test, beforeEach } from 'node:test'
 import assert from 'node:assert/strict'
 
+/** The flat sweep and drive settings a new project starts with. */
+const DEFAULT_SETTINGS = {
+  fmin: 10, fmax: 1000, npts: 512,
+  voltage: 2.83, impedance: 4, power: 2, rg: 0,
+  vThreshold: 17, masking: false, unwrapPhase: true, delayOffset: 0,
+}
+
 import { useStore, nextId, __internals, isLocked, runIndex, runDataOf } from '../../src/store.js'
 import { readSnapshots, writeSnapshots } from '../../src/workspace.js'
 import {
@@ -36,7 +43,6 @@ import {
 } from '../../src/layout.js'
 import { loadBindings, findConflict } from '../../src/keymap.js'
 import { PANEL_IDS } from '../../src/panelMeta.js'
-import { DEFAULT_SETTINGS } from '../../src/engine/project.js'
 import { SCHEMA_VERSION, DEFAULT_PARAMS } from '../../src/schema/version.js'
 import { SHARED_KEYS } from '../../src/popout.js'
 

@@ -21,15 +21,15 @@ installRemoteRunner()
  * A project that cannot be simulated comes back as a failed reply rather than
  * an exception, carrying every reason on `projectErrors`.
  *
- * @param {MessageEvent} e - The request, `{id, project, engine}`; the pool's own messages are left to its listener.
+ * @param {MessageEvent} e - The request, `{id, project}`; the pool's own messages are left to its listener.
  * @returns {Promise<void>} Settles once the reply is posted.
  * @sideEffect Runs the simulation and posts a reply back to the main thread.
  */
 self.onmessage = async (e) => {
   if (isPoolMessage(e.data)) return
-  const { id, project, engine } = e.data
+  const { id, project } = e.data
   try {
-    const { results, metrics, warnings } = await simulateProject(project, { engine })
+    const { results, metrics, warnings } = await simulateProject(project)
     self.postMessage({ id, ok: true, results, metrics, warnings })
   } catch (err) {
     self.postMessage({

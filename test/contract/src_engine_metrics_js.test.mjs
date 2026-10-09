@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { computeMetrics, __internals } from '../../src/engine/metrics.js'
-import { runSimulation } from '../../src/engine/solver.js'
+import { simulateProject } from '../../src/engine/pipeline.js'
 
 const { localMaxima } = __internals
 
@@ -10,25 +10,30 @@ const { localMaxima } = __internals
 //   computeMetrics > atFreq(f)
 
 // --- fixtures ----------------------------------------------------------
-// `res` is documented as "A result from `runSimulation`", so the fixture is a
-// real sweep. The node/edge shapes come from the solver contract's parameter
-// documentation; the handle names are not documented anywhere in the pack.
+// A real sweep: one driver radiating front and rear, simulated once and shared.
 const DRIVER_PARAMS = {
   Re: 6, Le: 1, Bl: 10, Sd: 500, Mms: 100, Cms: 0.2,
-  Rms: 2, Fs: 30, Xmax: 8, Q: 5, count: 1, wiring: 'single',
+  Rms: 2, Fs: 30, Xmax: 8, count: 1, wiring: 'single',
 }
 
-function sweep(settings = {}) {
-  const nodes = [
-    { id: 'd1', type: 'driver', data: { params: { ...DRIVER_PARAMS } } },
-    { id: 'r1', type: 'radiation', data: { params: {} } },
-    { id: 'r2', type: 'radiation', data: { params: {} } },
-  ]
-  const edges = [
-    { source: 'd1', sourceHandle: 'front', target: 'r1', targetHandle: 'in' },
-    { source: 'd1', sourceHandle: 'rear', target: 'r2', targetHandle: 'in' },
-  ]
-  return runSimulation(nodes, edges, { npts: 128, ...settings })
+let cached = null
+async function sweep() {
+  if (!cached) {
+    cached = (await simulateProject({
+      schemaVersion: 2,
+      nodes: [
+        { id: 'd1', type: 'driver', position: { x: 0, y: 0 }, data: { params: { ...DRIVER_PARAMS } } },
+        { id: 'r1', type: 'radiation', position: { x: 0, y: 0 }, data: { params: {} } },
+        { id: 'r2', type: 'radiation', position: { x: 0, y: 0 }, data: { params: {} } },
+      ],
+      edges: [
+        { id: 'e1', source: 'd1', sourceHandle: 'front', target: 'r1', targetHandle: 'in' },
+        { id: 'e2', source: 'd1', sourceHandle: 'rear', target: 'r2', targetHandle: 'in' },
+      ],
+      settings: { fmin: 10, fmax: 1000, npts: 128, voltage: 2.83 },
+    })).results
+  }
+  return structuredClone(cached)
 }
 
 const METRIC_KEYS = [
@@ -55,7 +60,7 @@ test('__internals: publishes exactly the documented keys', () => {
 // computeMetrics(res, settings)
 // ======================================================================
 
-// CONTRACT: "`res` — `object|null` — A result from `runSimulation`."
+// CONTRACT: "`res` — `object|null` — A sweep result."
 // CONTRACT: "`object|null` — Metrics ... or `null` when the sweep failed or is
 //            empty."
 test('computeMetrics: null when there is no result', () => {
@@ -64,7 +69,7 @@ test('computeMetrics: null when there is no result', () => {
 
 // CONTRACT: "or `null` when the sweep failed or is empty"
 test('computeMetrics: null when the sweep failed', () => {
-  const failed = runSimulation([], [], {})
+  const failed = { ok: false, validation: { errors: ['no driver'], warnings: [] }, freqs: [] }
   assert.equal(failed.ok, false)
   assert.equal(computeMetrics(failed, {}), null)
 })
@@ -78,8 +83,8 @@ test('computeMetrics: null when the sweep is empty', () => {
 //            `bwOct`, `zPeaks`, `fb`, `fbZ`, `fc`, `qtc`, `xPeak`, `xPeakF`,
 //            `xAtFb`, `xAtF3`, `xRatioPeak`, `xRatioPeakF`, `xLimitDriver`,
 //            `maxPower`, `vMax`"
-test('computeMetrics: returns only documented fields', () => {
-  const m = computeMetrics(sweep(), {})
+test('computeMetrics: returns only documented fields', async () => {
+  const m = computeMetrics(await sweep(), {})
   assert.equal(typeof m, 'object')
   assert.notEqual(m, null)
   for (const k of Object.keys(m)) {
@@ -91,8 +96,8 @@ test('computeMetrics: returns only documented fields', () => {
 //            them, so a sealed box has no `fb` key at all. The exceptions are
 //            `f3`, `f10`, `xPeakF`, `xAtFb` and `xAtF3`, which are always
 //            present and carry `null` when undefined"
-test('computeMetrics: the five nullable fields are always present', () => {
-  const m = computeMetrics(sweep(), {})
+test('computeMetrics: the five nullable fields are always present', async () => {
+  const m = computeMetrics(await sweep(), {})
   for (const k of NULLABLE_KEYS) {
     assert.ok(Object.hasOwn(m, k), `${k} should always be present`)
   }
@@ -101,8 +106,8 @@ test('computeMetrics: the five nullable fields are always present', () => {
 // CONTRACT: "Most fields are simply absent when the topology does not define
 //            them ... The exceptions are `f3`, `f10`, `xPeakF`, `xAtFb` and
 //            `xAtF3`, which are always present and carry `null` when undefined"
-test('computeMetrics: only the five documented exceptions may be null', () => {
-  const m = computeMetrics(sweep(), {})
+test('computeMetrics: only the five documented exceptions may be null', async () => {
+  const m = computeMetrics(await sweep(), {})
   for (const [k, v] of Object.entries(m)) {
     if (NULLABLE_KEYS.includes(k)) continue
     assert.notEqual(v, null, `${k} is null; it should be absent instead`)
@@ -112,8 +117,8 @@ test('computeMetrics: only the five documented exceptions may be null', () => {
 
 // CONTRACT: "`xAtFb` is null for a sealed box because it is looked up at a
 //            tuning that does not exist."
-test('computeMetrics: xAtFb is null when there is no tuning to look it up at', () => {
-  const m = computeMetrics(sweep(), {})
+test('computeMetrics: xAtFb is null when there is no tuning to look it up at', async () => {
+  const m = computeMetrics(await sweep(), {})
   if (!Object.hasOwn(m, 'fb')) {
     assert.equal(m.xAtFb, null, 'no fb means xAtFb has no tuning to be read at')
   }
@@ -121,8 +126,8 @@ test('computeMetrics: xAtFb is null when there is no tuning to look it up at', (
 
 // CONTRACT: "Passband level is the median of the top quartile of SPL rather than
 //            the peak" — so passband can never exceed the peak.
-test('computeMetrics: passband never exceeds peakSPL', () => {
-  const m = computeMetrics(sweep(), {})
+test('computeMetrics: passband never exceeds peakSPL', async () => {
+  const m = computeMetrics(await sweep(), {})
   if (Object.hasOwn(m, 'passband') && Object.hasOwn(m, 'peakSPL')) {
     assert.equal(typeof m.passband, 'number')
     assert.equal(typeof m.peakSPL, 'number')
@@ -135,8 +140,8 @@ test('computeMetrics: passband never exceeds peakSPL', () => {
 //            can never sit above F3.
 // f3 and f10 are always-present nullable fields, so the ordering claim applies
 // only where both are actually defined.
-test('computeMetrics: f10 is never above f3', () => {
-  const m = computeMetrics(sweep(), {})
+test('computeMetrics: f10 is never above f3', async () => {
+  const m = computeMetrics(await sweep(), {})
   if (typeof m.f3 === 'number' && typeof m.f10 === 'number') {
     assert.ok(m.f10 <= m.f3, `f10 ${m.f10} > f3 ${m.f3}`)
   }
@@ -151,8 +156,8 @@ test('computeMetrics: f10 is never above f3', () => {
 // CONTRACT (@returns): "`zPeaks` (an array of at most five `{f, v, i}` peak
 //            descriptors — frequency in Hz, impedance magnitude in Ω, and the
 //            sweep index — in ascending frequency)"
-test('computeMetrics: fb appears only with two impedance peaks, fc only with one', () => {
-  const m = computeMetrics(sweep(), {})
+test('computeMetrics: fb appears only with two impedance peaks, fc only with one', async () => {
+  const m = computeMetrics(await sweep(), {})
   assert.ok(Object.hasOwn(m, 'zPeaks'), 'zPeaks should be reported')
   assert.ok(Array.isArray(m.zPeaks), 'zPeaks must be an array, not a count')
   assert.ok(m.zPeaks.length <= 5, 'zPeaks holds at most five peak descriptors')
@@ -179,33 +184,21 @@ test('computeMetrics: fb appears only with two impedance peaks, fc only with one
 
 // CONTRACT: "one peak means sealed, so it is `fc` and `qtc` follows from the
 //            exact second-order high-pass relation between fc and F3."
-test('computeMetrics: qtc accompanies fc, never appears without it', () => {
-  const m = computeMetrics(sweep(), {})
+test('computeMetrics: qtc accompanies fc, never appears without it', async () => {
+  const m = computeMetrics(await sweep(), {})
   if (Object.hasOwn(m, 'qtc')) assert.ok(Object.hasOwn(m, 'fc'))
 })
 
 // CONTRACT: "`settings.voltage` — `number` _(optional, default `2.83`)_ — Drive
 //            voltage the sweep was run at, V RMS."
-test('computeMetrics: voltage defaults to 2.83', () => {
-  const res = sweep()
+test('computeMetrics: voltage defaults to 2.83', async () => {
+  const res = await sweep()
   assert.deepEqual(computeMetrics(res, {}), computeMetrics(res, { voltage: 2.83 }))
 })
 
-// CONTRACT: "Maximum power before Xmax is driven by the per-driver headroom
-//            ratio ... it falls back to a single global Xmax for results
-//            produced before that ratio existed."
-// CONTRACT: "`settings.xmax` — used only when the result carries no per-driver
-//            ratio."
-test('computeMetrics: settings.xmax is ignored when the result carries a per-driver ratio', () => {
-  const res = sweep()
-  assert.ok(Object.hasOwn(res, 'excursionRatio'), 'the sweep should carry excursionRatio')
-  assert.deepEqual(computeMetrics(res, { xmax: 1 }), computeMetrics(res, {}))
-  assert.deepEqual(computeMetrics(res, { xmax: 999 }), computeMetrics(res, {}))
-})
-
 // CONTRACT: "@post res and settings are not modified"
-test('computeMetrics: res and settings are not modified', () => {
-  const res = sweep()
+test('computeMetrics: res and settings are not modified', async () => {
+  const res = await sweep()
   const settings = { voltage: 5, xmax: 6 }
   const resBefore = structuredClone(res)
   const settingsBefore = structuredClone(settings)
@@ -216,8 +209,8 @@ test('computeMetrics: res and settings are not modified', () => {
 
 // CONTRACT: "@pure — ... Calling it twice with equal inputs must produce equal
 //            output and change nothing observable."
-test('computeMetrics: @pure — two calls with equal inputs produce equal output', () => {
-  const res = sweep()
+test('computeMetrics: @pure — two calls with equal inputs produce equal output', async () => {
+  const res = await sweep()
   const a = computeMetrics(res, { voltage: 2.83 })
   const b = computeMetrics(structuredClone(res), { voltage: 2.83 })
   assert.deepEqual(a, b)

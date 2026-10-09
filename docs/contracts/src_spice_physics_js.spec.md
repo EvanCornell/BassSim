@@ -46,7 +46,7 @@ Solid angle Ω in steradians for each named radiating space.
 
 Keys: `free`, `half`, `quarter`, `eighth`
 
-## EXPORTED (5)
+## EXPORTED (10)
 
 ### `perimeter(S, shape)`
 
@@ -155,5 +155,130 @@ up to 15.5% at 8 g/L, beyond which it stops changing.
 **Returns**
 
 - `number` — Speed of sound, m/s.
+
+**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
+
+### `driverSI(p)`
+
+- **Reachability:** EXPORTED
+- **Obtain via:** import { driverSI } from '../../src/spice/physics.js'
+
+Convert a driver node's display-unit parameters into the SI set the compiler builds from.
+
+This is also where a multi-driver node collapses into one equivalent driver.
+Series wiring multiplies Re, Le and Bl by the count; parallel wiring divides
+the electrical terms; series-parallel splits the count into a square grid
+when it is a perfect square and falls back to plain parallel when it is not.
+The mechanical side scales with cone count regardless of wiring: Sd, Mms and
+Rms multiply, Cms divides.
+
+Every field has a fallback, so a partially filled node still simulates rather
+than producing NaN. That is deliberate — the editor lets you drop a driver on
+the canvas before typing any numbers.
+
+**Parameters**
+
+- `p` — `object` — Driver node params in display units (Sd cm², Mms g, Cms mm/N, Le mH, Xmax mm).
+
+**Returns**
+
+- `{n: number, s: number, par: number, Re: number, Le: number, LeExp: number, Bl: number, Sd: number, Mms: number, Cms: number, Rms: number, Xmax: number}` — The equivalent single driver in SI units, plus the resolved count and the series/parallel multipliers.
+
+**Postconditions (must hold on return)**
+
+- result.n >= 1
+- p is not modified
+
+**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
+
+### `besselJ1(x)`
+
+- **Reachability:** EXPORTED
+- **Obtain via:** import { besselJ1 } from '../../src/spice/physics.js'
+
+Bessel function of the first kind, order 1.
+
+Abramowitz & Stegun rational approximations, split at |x| = 8 between the
+small-argument polynomial and the large-argument asymptotic form. Accurate
+to roughly 1e-8.
+
+**Parameters**
+
+- `x` — `number` — Argument, dimensionless (here 2ka).
+
+**Returns**
+
+- `number` — J₁(x).
+
+**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
+
+### `besselJ0(x)`
+
+- **Reachability:** EXPORTED
+- **Obtain via:** import { besselJ0 } from '../../src/spice/physics.js'
+
+Bessel function of the first kind, order 0.
+
+Abramowitz & Stegun rational approximations, split at |x| = 8. Used only as
+an input to `struveH1`.
+
+**Parameters**
+
+- `x` — `number` — Argument, dimensionless.
+
+**Returns**
+
+- `number` — J₀(x).
+
+**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
+
+### `struveH1(x)`
+
+- **Reachability:** EXPORTED
+- **Obtain via:** import { struveH1 } from '../../src/spice/physics.js'
+
+Struve function H₁, via the Aarts & Janssen (2003) approximation.
+
+Roughly 1e-3 relative over the usable range — well inside the error of the
+rigid-piston assumption it feeds.
+
+**Parameters**
+
+- `x` — `number` — Argument, dimensionless (here 2ka).
+
+**Returns**
+
+- `number` — H₁(x); exactly 0 at x = 0.
+
+**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
+
+### `pistonImpedance(S, w)`
+
+- **Reachability:** EXPORTED
+- **Obtain via:** import { pistonImpedance } from '../../src/spice/physics.js'
+
+Radiation impedance of a flanged circular piston: `ρc/S · (R1(2ka) + jX1(2ka))`.
+
+The exact curve the radiation network is fitted to. Below 2ka ≈ 1e-3 the
+leading terms x²/8 and 2x/3π replace `1 − 2J₁(x)/x`, which cancels
+catastrophically there.
+
+**Parameters**
+
+- `S` — `number` — Piston area, m².
+- `w` — `number` — Angular frequency ω, rad/s.
+
+**Returns**
+
+- `{re: number, im: number}` — Acoustic radiation impedance, Pa·s/m³.
+
+**Preconditions (caller must guarantee)**
+
+- S > 0
+- w >= 0
+
+**Postconditions (must hold on return)**
+
+- result.re >= 0
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.

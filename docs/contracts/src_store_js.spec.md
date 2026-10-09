@@ -68,7 +68,49 @@ Values: `#f59e0b`, `#10b981`, `#8b5cf6`
 
 Keys: `loadLayout`, `loadPresets`, `loadToolbar`, `freeSpotNear`, `graphSignature`
 
-## EXPORTED (4)
+## EXPORTED (6)
+
+### `runDataOf(id)`
+
+- **Reachability:** EXPORTED
+- **Obtain via:** import { runDataOf } from '../../src/store.js'
+
+A stored run's results, if they have been read.
+
+**Parameters**
+
+- `id` — `string` — The run's id.
+
+**Returns**
+
+- `{data?: object, content?: object, error?: string, loading?: boolean}|null` — What is known, or `null` before it is asked for.
+
+**Reads external mutable state**
+
+- the module's run cache.
+
+### `runIndex(st)`
+
+- **Reachability:** EXPORTED
+- **Obtain via:** import { runIndex } from '../../src/store.js'
+
+Every stored run in the workspace, newest first.
+
+Runs of the open project come from the store; the rest from their files.
+Each carries where it lives (`path`), its project's name, whether that is
+the open project, and the number of the record it was run from (`-1` once
+that record is deleted) and how that record is named. Runs of kinds
+older builds made are left out.
+
+**Parameters**
+
+- `st` — `object` — Store state.
+
+**Returns**
+
+- `Array<object>` — The runs.
+
+**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
 ### `tdSettingsOf(extras)`
 
@@ -237,7 +279,7 @@ one point, so this steps down-right until the spot is clear.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
-### `graphSignature(nodes, edges, settings, extras, engine)`
+### `graphSignature(nodes, edges, settings, extras, tag)`
 
 - **Reachability:** INTERNAL
 - **Obtain via:** import { __internals } from '../../src/store.js'  →  __internals.graphSignature
@@ -254,7 +296,7 @@ around the canvas does not re-run the sweep.
 - `edges` — `Array<object>` — Graph edges.
 - `settings` — `object` — Sweep settings.
 - `extras` — `object` _(optional)_ — The project sections the editor carries without controls — params, wiring, analyses, probes, components, air.
-- `engine` — `string` _(optional)_ — The engine the result came from.
+- `tag` — `string` _(optional)_ — Which kind of result it signs, so the sweep's and the time domain's never match.
 
 **Returns**
 
@@ -262,7 +304,7 @@ around the canvas does not re-run the sweep.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
-## STORE ACTION (128)
+## STORE ACTION (143)
 
 ### `openContextMenu(x, y, target)`
 
@@ -1724,25 +1766,6 @@ Choose the appearance, remember it, and show it.
 
 - Writes LocalStorage, the page's theme attribute and store state.
 
-### `setEngine(engine)`
-
-- **Reachability:** STORE ACTION
-- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().setEngine(…)
-
-Choose which engine simulates, remember it, and resimulate.
-
-**Parameters**
-
-- `engine` — `string` — One of the pipeline's `ENGINES`; anything else is ignored.
-
-**Returns**
-
-- `void`
-
-**Side effects**
-
-- Writes LocalStorage and store state, and schedules a resimulation.
-
 ### `openTimeDomain(tab)`
 
 - **Reachability:** STORE ACTION
@@ -1821,7 +1844,7 @@ Change the project's time-domain settings for one section.
 - **Reachability:** STORE ACTION
 - **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().tdSignature(…)
 
-The signature of what a time-domain result depends on — the graph, the extras and the engine.
+The signature of what a time-domain result depends on — the graph and the extras.
 
 **Returns**
 
@@ -1867,6 +1890,314 @@ Stop the running time-domain job.
 **Side effects**
 
 - Terminates the worker and clears the job.
+
+### `setTdDrawer(open)`
+
+- **Reachability:** STORE ACTION
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().setTdDrawer(…)
+
+Open or close the New run drawer. Closing it leaves queued runs running.
+
+**Parameters**
+
+- `open` — `boolean` — Whether it is open.
+
+**Returns**
+
+- `void`
+
+**Side effects**
+
+- Writes store state.
+
+### `setTdDraft(patch)`
+
+- **Reachability:** STORE ACTION
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().setTdDraft(…)
+
+Change what the New run drawer will run: its name, levels and range.
+
+**Parameters**
+
+- `patch` — `object` — Fields to merge.
+
+**Returns**
+
+- `void`
+
+**Side effects**
+
+- Writes store state.
+
+### `queueRuns()`
+
+- **Reachability:** STORE ACTION
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().queueRuns(…)
+- **Async:** returns a Promise
+
+Queue the drawer's runs: one per level.
+
+Each takes the project as it is now, so the project can be edited and
+more runs queued while these wait. The record they branch from is saved
+first. Runs solve one at a time, in the order queued. Unnamed runs take
+the project's name and the record's.
+
+**Returns**
+
+- `Promise<string[]>` — The queued runs' ids; none when there is nothing to run.
+
+**Side effects**
+
+- Saves the selected record; queues jobs and starts the next.
+
+### `_pumpTdQueue()`
+
+- **Reachability:** STORE ACTION
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState()._pumpTdQueue(…)
+
+Start the next queued run, if none is solving.
+
+A live linear response in progress gives way: it is redone when its tab
+next asks.
+
+**Returns**
+
+- `void`
+
+**Side effects**
+
+- Starts a worker job; writes progress into the queue; stores the run when it finishes.
+
+### `_storeRun(job, result, warnings)`
+
+- **Reachability:** STORE ACTION
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState()._storeRun(…)
+- **Async:** returns a Promise
+
+Keep a finished run: a branch off its record in its project.
+
+The project is the one the run was queued from, whether or not it is
+still the open one. Its Max SPL is kept for the runs of other levels
+still to solve.
+
+**Parameters**
+
+- `job` — `object` — The queue entry.
+- `result` — `object` — From `levelRun`.
+- `warnings` — `string[]` _(optional)_ — The engine's warnings.
+
+**Returns**
+
+- `Promise<void>` — Resolves once stored.
+
+**Throws**
+
+- `Error` — When the project is no longer in the workspace.
+
+**Side effects**
+
+- Writes the project's records; caches the results and the Max SPL.
+
+### `_updateProject(path, fn)`
+
+- **Reachability:** STORE ACTION
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState()._updateProject(…)
+
+Change a project's records, whether it is the open project or another file.
+
+**Parameters**
+
+- `path` — `string` — The project file.
+- `fn` — `Function` — `async ({records, project}) → {records?}`: the changes.
+
+**Returns**
+
+- `Promise<void>` — Resolves once written.
+
+**Throws**
+
+- `Error` — When the file is gone.
+
+**Side effects**
+
+- Writes store state or the workspace file; saves the open file.
+
+### `removeQueued(id)`
+
+- **Reachability:** STORE ACTION
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().removeQueued(…)
+
+Take a run off the queue: a queued one before it starts, or a failed one's notice.
+
+**Parameters**
+
+- `id` — `string` — The job's id.
+
+**Returns**
+
+- `void`
+
+**Side effects**
+
+- Writes store state; cancels it when it is the one solving.
+
+### `loadRunData(entry)`
+
+- **Reachability:** STORE ACTION
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().loadRunData(…)
+
+Read a stored run's results, for the views that need them.
+
+**Parameters**
+
+- `entry` — `object` — The run, as `runIndex` lists it.
+
+**Returns**
+
+- `void`
+
+**Side effects**
+
+- Reads the run from its project's records into the cache; bumps `tdDataTick` once read.
+
+### `restoreRunAsRecord(entry)`
+
+- **Reachability:** STORE ACTION
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().restoreRunAsRecord(…)
+
+Add a stored run's project as a new record at the end of the open project, and show it.
+
+The run can come from any project in the workspace; the open project's
+selected record is saved first, as when adding any record.
+
+**Parameters**
+
+- `entry` — `object` — The run, as `runIndex` lists it.
+
+**Returns**
+
+- `Promise<void>` — Resolves once shown.
+
+**Side effects**
+
+- Replaces the project on the canvas and saves the open file.
+
+### `deleteRuns(entries)`
+
+- **Reachability:** STORE ACTION
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().deleteRuns(…)
+- **Async:** returns a Promise
+
+Delete stored runs, wherever they live.
+
+**Parameters**
+
+- `entries` — `Array<object>` — The runs, as `runIndex` lists them.
+
+**Returns**
+
+- `Promise<void>` — Resolves once deleted.
+
+**Side effects**
+
+- Writes each project's records, and closes the runs in the viewer.
+
+### `renameRun(entry, title)`
+
+- **Reachability:** STORE ACTION
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().renameRun(…)
+
+Rename a stored run.
+
+**Parameters**
+
+- `entry` — `object` — The run, as `runIndex` lists it.
+- `title` — `string` — Its new title.
+
+**Returns**
+
+- `Promise<void>` — Resolves once written.
+
+**Side effects**
+
+- Writes its project's run list.
+
+### `setNl(patch)`
+
+- **Reachability:** STORE ACTION
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().setNl(…)
+
+Change the driver curve editor's choices.
+
+**Parameters**
+
+- `patch` — `object` — Any of `nlDriver`, `nlParam`, `nlOverlays`.
+
+**Returns**
+
+- `void`
+
+**Side effects**
+
+- Writes store state.
+
+### `viewRuns(ids, overlay)`
+
+- **Reachability:** STORE ACTION
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().viewRuns(…)
+
+Open runs in the viewer: alone, or over those already open.
+
+**Parameters**
+
+- `ids` — `string[]` — The runs.
+- `overlay` — `boolean` _(optional)_ — Add them to those open rather than replace them.
+
+**Returns**
+
+- `void`
+
+**Side effects**
+
+- Writes the viewer and shows the runs tab.
+
+### `closeRun(id)`
+
+- **Reachability:** STORE ACTION
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().closeRun(…)
+
+Close one run in the viewer, or all of them.
+
+**Parameters**
+
+- `id` — `string` _(optional)_ — The run; every run when omitted.
+
+**Returns**
+
+- `void`
+
+**Side effects**
+
+- Writes the viewer.
+
+### `setViewTab(tab)`
+
+- **Reachability:** STORE ACTION
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().setViewTab(…)
+
+Show a tab of the viewer.
+
+**Parameters**
+
+- `tab` — `string` — A `TABS` id.
+
+**Returns**
+
+- `void`
+
+**Side effects**
+
+- Writes the viewer.
 
 ### `scheduleCompute()`
 
@@ -2025,6 +2356,28 @@ Unlock, or lock again, an earlier record for editing.
 
 - Writes store state.
 
+### `recordRename(name)`
+
+- **Reachability:** STORE ACTION
+- **Obtain via:** import { useStore } from '../../src/store.js'  →  useStore.getState().recordRename(…)
+
+Name the selected record, or clear its name so it goes by its number.
+
+A name is not part of the record's content, so naming an earlier,
+read-only record does not need it unlocked.
+
+**Parameters**
+
+- `name` — `string` — The name; empty clears it.
+
+**Returns**
+
+- `Promise<void>` — Resolves once saved.
+
+**Side effects**
+
+- Writes the records (saving the first one when there are none yet) and saves the open file.
+
 ### `serialize()`
 
 - **Reachability:** STORE ACTION
@@ -2130,7 +2483,9 @@ Store a modified workspace.
 
 **Returns**
 
-- `void`
+- `void` — Comparison boards an older build saved, in the workspace or inside a
+project file, are dropped on the way in: runs are compared in the run
+viewer now.
 
 **Side effects**
 
@@ -3011,9 +3366,9 @@ The full shared slice, sent to a popped-out tab when it announces itself.
 
 - Current store state.
 
-## UNREACHABLE (15)
+## UNREACHABLE (20)
 
-### `simulateInWorker(project, engine)`
+### `simulateInWorker(project)`
 
 - **Reachability:** UNREACHABLE
 - **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
@@ -3027,7 +3382,6 @@ longer pending are dropped, which is what makes a superseded run harmless.
 **Parameters**
 
 - `project` — `object` — A serialized v3 project.
-- `engine` — `string` — Which engine should run it.
 
 **Returns**
 
@@ -3113,6 +3467,65 @@ Stop whatever the time-domain worker is doing.
 
 - Terminates the worker and the pool's time-domain runs; the next job spawns a fresh one.
 
+### `inRecordsQueue(fn)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+Run a change to a project's records after every change already waiting.
+
+Records change asynchronously — git objects are hashed and deflated — so
+two changes started together (a run finishing while a record is added)
+would otherwise each start from the records as they were and one would be
+lost.
+
+**Parameters**
+
+- `fn` — `Function` — `async () → *`, the change.
+
+**Returns**
+
+- `Promise<*>` — What `fn` returns.
+
+**Side effects**
+
+- Chains onto the module's queue of record changes.
+
+### `maxSplKey(job)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+What a run's Max SPL depends on: the project as it was run, and the range.
+
+**Parameters**
+
+- `job` — `object` — A queue entry.
+
+**Returns**
+
+- `string` — The cache key.
+
+**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
+
+### `projectNameOf(path, data)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+The project name a workspace file shows.
+
+**Parameters**
+
+- `path` — `string` — The file's path.
+- `data` — `object` _(optional)_ — Its project data.
+
+**Returns**
+
+- `string` — Its name.
+
+**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
+
 ### `syncPopoutUrl(ids, active)`
 
 - **Reachability:** UNREACHABLE
@@ -3181,7 +3594,7 @@ appear when something writes to it, not when the app starts.
 
 **Side effects**
 
-- Reads LocalStorage and the current time.
+- Reads the preloaded IndexedDB copy, LocalStorage and the current time.
 
 ### `scheduleFolderSync()`
 
@@ -3205,24 +3618,6 @@ report the folder as saved when nothing had been.
 **Side effects**
 
 - Schedules a timer that writes to the user's filesystem. Does nothing when no folder is connected, or when the connected one is locked.
-
-### `loadEngine()`
-
-- **Reachability:** UNREACHABLE
-- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
-
-The simulation engine this browser last chose.
-
-A preference of the person, not a property of the project, so it lives in
-LocalStorage rather than in the file.
-
-**Returns**
-
-- `string` — The engine name; the pipeline's default when nothing valid is stored or storage is unavailable.
-
-**Reads external mutable state**
-
-- LocalStorage.
 
 ### `defaultExtras()`
 
@@ -3310,6 +3705,69 @@ Whether an edge end is a tap on this node that no longer exists.
 **Reads external mutable state**
 
 - the enclosing node id and live tap set.
+
+### `_pumpTdQueue > update(patch)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+Write a change to this job in the queue.
+
+**Parameters**
+
+- `patch` — `object` — Fields to merge.
+
+**Returns**
+
+- `void`
+
+**Side effects**
+
+- Writes store state.
+
+### `_pumpTdQueue > finish(failed)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+Take this job off the queue and start the next.
+
+**Parameters**
+
+- `failed` — `object` _(optional)_ — `{error}` to keep it listed as failed instead.
+
+**Returns**
+
+- `void`
+
+**Side effects**
+
+- Writes store state; starts the next job.
+
+### `persistWorkspace(ws)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+- **Async:** returns a Promise
+
+Store the workspace in the browser, one write at a time, the latest winning.
+
+IndexedDB, since projects that keep their time-domain runs outgrow
+LocalStorage. Where IndexedDB is missing (tests), LocalStorage stands in.
+Once IndexedDB holds it, the old LocalStorage copy is removed, so it is not
+read in its place.
+
+**Parameters**
+
+- `ws` — `object` — The workspace.
+
+**Returns**
+
+- `Promise<void>` — Resolves once this and any queued write are done.
+
+**Side effects**
+
+- Writes IndexedDB or LocalStorage.
 
 ### `channel.onmessage(event)`
 

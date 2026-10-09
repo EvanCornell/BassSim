@@ -78,8 +78,7 @@ Handle: `in`. Params: `space` = `free|half|quarter|eighth` (4π/2π/π/π/2),
 
 `fmin`/`fmax` Hz, `npts` (log-spaced, ≤1024), `voltage` V RMS at amp
 (`power` W and `impedance` Ω are UI conveniences; the solver uses voltage),
-`rg` source resistance Ω, `masking` (lump chambers), `nlEnabled` + per-driver
-`params.nl` curves (experimental large-signal mode).
+`rg` source resistance Ω, `masking` (lump chambers).
 
 ## Interpreting results
 

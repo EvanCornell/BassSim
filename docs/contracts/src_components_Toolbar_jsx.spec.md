@@ -53,7 +53,7 @@ Metric ids split into runs of neighbours that share a cluster.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
-## UNREACHABLE (8)
+## UNREACHABLE (7)
 
 ### `UndoRedo()`
 
@@ -179,24 +179,6 @@ One cluster of readouts in a pill, or nothing when none of them has a value.
 **Returns**
 
 - `React.ReactElement|null` — The pill.
-
-**Side effects**
-
-- Subscribes to the store.
-
-### `TimeDomainButton()`
-
-- **Reachability:** UNREACHABLE
-- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
-
-The switch between the editor and the time-domain workspace.
-
-Always on the bar rather than one of its configurable items: it changes
-the whole window, so it should always be where the user left it.
-
-**Returns**
-
-- `React.ReactElement` — The button.
 
 **Side effects**
 

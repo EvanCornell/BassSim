@@ -11,11 +11,10 @@ import { filterSections, sectionsResponse } from '../../src/spice/filters.js'
 import { createNetlist, DC_TIE } from '../../src/spice/netlist.js'
 import { fitBand } from '../../src/spice/networks.js'
 import { runNetlist } from '../../src/spice/run.js'
-import { RHO, C_AIR, perimeter, viscousCoeff, thermalCoeff } from '../../src/spice/physics.js'
+import { RHO, C_AIR, perimeter, viscousCoeff, thermalCoeff, pistonImpedance } from '../../src/spice/physics.js'
 import { simulateProject } from '../../src/engine/pipeline.js'
 import { migrateProject } from '../../src/schema/migrate.js'
 import { resolveProject } from '../../src/schema/params.js'
-import { radiationImpedance, waveguideMatrix } from '../../src/engine/acoustics.js'
 import { junctionCorrection } from '../../src/engine/geometry.js'
 
 // ---------- helpers ----------
@@ -58,7 +57,7 @@ async function lineZ(spec, ZL, f1, f2) {
  * @param {object} Zp - Series impedance per metre.
  * @param {object} Yp - Shunt admittance per metre.
  * @param {number} L - Length.
- * @param {number} ZL - Termination.
+ * @param {number|object} ZL - Termination, real or `{re, im}`.
  * @returns {object} Zin.
  */
 function exactLine(Zp, Yp, L, ZL) {
@@ -68,7 +67,7 @@ function exactLine(Zp, Yp, L, ZL) {
   // tanh(gl)
   const e2 = { re: Math.exp(-2 * gl.re) * Math.cos(-2 * gl.im), im: Math.exp(-2 * gl.re) * Math.sin(-2 * gl.im) }
   const t = cx.div({ re: 1 - e2.re, im: -e2.im }, { re: 1 + e2.re, im: e2.im })
-  const zl = { re: ZL, im: 0 }
+  const zl = typeof ZL === 'number' ? { re: ZL, im: 0 } : ZL
   return cx.mul(Zc, cx.div(cx.add(zl, cx.mul(Zc, t)), cx.add(Zc, cx.mul(zl, t))))
 }
 
@@ -105,15 +104,20 @@ test('compileLine: a lossless duct is the exact transmission line', async () => 
 })
 
 // CONTRACT (line.js): "A flared piece is stepped into slices along its area
-// profile." — the same stepping the legacy engine's waveguideMatrix uses.
-test('compileLine: a flared horn matches the stepped-line matrix', async () => {
+// profile." — 24 uniform slices, each at the area of its midpoint.
+test('compileLine: a flared horn matches the stepped line', async () => {
   const S1 = 0.005, S2 = 0.05, L = 1.2, ZL = (RHO * C_AIR) / S2
   const { areaProfile } = await import('../../src/engine/geometry.js')
   const rows = await lineZ({ note: 'horn', L, area: areaProfile('exponential', S1, S2, L), c: C_AIR, shape: 'round', viscous: 0, thermal: 0, flowResistance: 0, stepped: true, lumped: false, volume: 0 }, ZL, 20, 1000)
   for (const { f, z } of rows) {
-    const M = waveguideMatrix({ S1, S2, L, flare: 'exponential', Q: Infinity }, 2 * Math.PI * f, 24)
-    const zl = { re: ZL, im: 0 }
-    const want = cx.div(cx.add(cx.mul(M[0][0], zl), M[0][1]), cx.add(cx.mul(M[1][0], zl), M[1][1]))
+    const w = 2 * Math.PI * f
+    const prof = areaProfile('exponential', S1, S2, L)
+    const N = 24, dx = L / N
+    let want = { re: ZL, im: 0 }
+    for (let i = N - 1; i >= 0; i--) {
+      const S = prof((i + 0.5) * dx)
+      want = exactLine({ re: 0, im: (w * RHO) / S }, { re: 0, im: (w * S) / (RHO * C_AIR * C_AIR) }, dx, want)
+    }
     assert.ok(cx.abs(cx.add(z, { re: -want.re, im: -want.im })) / cx.abs(want) < 1e-3, `${f.toFixed(1)} Hz`)
   }
 })
@@ -164,7 +168,7 @@ test('sealed box: impedance, SPL and excursion match the closed-form model', asy
   r.freqs.forEach((f, i) => {
     const w = 2 * Math.PI * f
     const Zbox = cx.add({ re: 0, im: w * Mstep }, cx.div({ re: 1, im: 0 }, cx.add({ re: 0, im: w * C }, cx.mul({ re: Bt, im: 0 }, cx.pow(w, 0.5)))))
-    const Zrad = radiationImpedance(Sd, 'half', w)
+    const Zrad = pistonImpedance(Sd, w)
     const Zm = cx.add({ re: Rms, im: w * Mms - 1 / (w * Cms) }, cx.mul({ re: Sd * Sd, im: 0 }, cx.add(Zrad, Zbox)))
     const Zin = cx.add({ re: Re, im: 0 }, cx.add(cx.mul({ re: Le, im: 0 }, cx.pow(w, n)), cx.div({ re: Bl * Bl, im: 0 }, Zm)))
     const eZ = Math.abs(r.zinMag[i] / cx.abs(Zin) - 1)
@@ -474,11 +478,11 @@ test('passive radiators: impedance and SPL match the closed-form model', async (
   const one = { re: 1, im: 0 }
   r.freqs.forEach((f, i) => {
     const w = 2 * Math.PI * f
-    const Zpr = cx.add(cx.div({ re: Rm, im: w * Mm - 1 / (w * Cm) }, { re: Spr * Spr, im: 0 }), radiationImpedance(Spr, 'half', w))
+    const Zpr = cx.add(cx.div({ re: Rm, im: w * Mm - 1 / (w * Cm) }, { re: Spr * Spr, im: 0 }), pistonImpedance(Spr, w))
     const Zbranch = cx.add({ re: 0, im: w * M2 }, Zpr)
     const Ybox = cx.add(cx.add({ re: 0, im: w * C }, cx.mul({ re: Bt, im: 0 }, cx.pow(w, 0.5))), cx.div(one, Zbranch))
     const Zrear = cx.add({ re: 0, im: w * M1 }, cx.div(one, Ybox))
-    const Zm = cx.add({ re: Rms, im: w * Mms - 1 / (w * Cms) }, cx.mul({ re: Sd * Sd, im: 0 }, cx.add(radiationImpedance(Sd, 'half', w), Zrear)))
+    const Zm = cx.add({ re: Rms, im: w * Mms - 1 / (w * Cms) }, cx.mul({ re: Sd * Sd, im: 0 }, cx.add(pistonImpedance(Sd, w), Zrear)))
     const Zin = cx.add({ re: Re, im: 0 }, cx.add(cx.mul({ re: Le, im: 0 }, cx.pow(w, 0.7)), cx.div({ re: Bl * Bl, im: 0 }, Zm)))
     assert.ok(Math.abs(r.zinMag[i] / cx.abs(Zin) - 1) < 0.005, `${f.toFixed(1)} Hz |Z|: ${r.zinMag[i]} vs ${cx.abs(Zin)}`)
     const U = cx.mul({ re: Sd, im: 0 }, cx.div(cx.mul({ re: Bl, im: 0 }, cx.div({ re: 2.83, im: 0 }, Zin)), Zm))

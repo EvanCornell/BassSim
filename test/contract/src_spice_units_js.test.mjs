@@ -98,7 +98,7 @@ test('runNetlist: a netlist SPICE cannot parse is rejected with its messages', a
   assert.ok(Math.abs(ok.vec('i(v1)').re[0] + 0.5) < 1e-12)
 })
 
-// CONTRACT: "Unwrap a phase curve and derive group delay, as the legacy engine does."
+// CONTRACT: "Unwrap a phase curve and derive group delay."
 test('phaseAndDelay: a pure delay unwraps to a straight line of constant delay', () => {
   const freqs = Array.from({ length: 200 }, (_, i) => 10 + i * 5)
   const tau = 0.004

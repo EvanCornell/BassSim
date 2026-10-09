@@ -42,11 +42,11 @@ test('migrateProject: every section is present at the current version', () => {
   assert.equal('settings' in p, false, 'settings is split, not kept')
 })
 
-// CONTRACT: "sweep range, `masking`, `nlEnabled` → one analysis; `voltage` and
+// CONTRACT: "sweep range, `masking` → one analysis; `voltage` and
 // `rg` → one channel; the rest → `display`."
 test('migrateProject: settings split into analysis, channel and display', () => {
   const p = migrateProject(v2())
-  assert.deepEqual(p.analyses, [{ ...DEFAULT_ANALYSIS, fmin: 15, fmax: 500, npts: 300, masking: true, nlEnabled: true }])
+  assert.deepEqual(p.analyses, [{ ...DEFAULT_ANALYSIS, fmin: 15, fmax: 500, npts: 300, masking: true }])
   assert.equal(p.wiring.masterDb, 0)
   assert.equal(p.wiring.channels.length, 1)
   assert.equal(p.wiring.channels[0].volts, 8)

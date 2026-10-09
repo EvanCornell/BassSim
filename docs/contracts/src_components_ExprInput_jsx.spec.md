@@ -48,10 +48,11 @@ Read typed text as a field value: a number, an expression, or neither.
 A numeric input that also takes an expression over the named params.
 
 Typing a number stores a number; typing anything else stores it as an
-expression once it resolves, and shows what it resolves to. Text that does
-not resolve yet — half an expression, a misspelt name — is held in the box,
-outlined, and never written, so a half-typed edit cannot break the run.
-Arrow keys step a plain number.
+expression, and shows what it resolves to. Anything can be typed: text that
+is not a value the field takes — half an expression, a misspelt name, a
+number under the minimum — turns the box red and is not applied. Enter or
+leaving the box applies valid text; leaving with invalid text puts the
+stored value back. Arrow keys step a plain number.
 
 **Parameters**
 
@@ -60,6 +61,7 @@ Arrow keys step a plain number.
 - `props.onCommit` — `Function` — Called with a number or an expression string.
 - `props.step` — `number` _(optional)_ — Arrow-key step for a plain number.
 - `props.min` — `number` _(optional)_ — Smallest number accepted.
+- `props.above` — `number` _(optional)_ — A number must be greater than this.
 - `props.placeholder` — `string` _(optional)_ — Shown when empty.
 - `props.disabled` — `boolean` _(optional)_ — Disable the input.
 - `props.title` — `string` _(optional)_ — Tooltip.
@@ -74,12 +76,12 @@ Arrow keys step a plain number.
 
 ## UNREACHABLE (1)
 
-### `ExprInput > commit(t)`
+### `ExprInput > read(t)`
 
 - **Reachability:** UNREACHABLE
 - **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
 
-Store what was typed if it can be stored.
+Read typed text as a value this field takes.
 
 **Parameters**
 
@@ -87,8 +89,6 @@ Store what was typed if it can be stored.
 
 **Returns**
 
-- `void`
+- `{ok: boolean, value?: number|string, error?: string}` — The value, or why it is refused.
 
-**Side effects**
-
-- Calls `onCommit` when the text is a usable value.
+**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.

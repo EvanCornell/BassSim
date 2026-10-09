@@ -7,7 +7,7 @@
 
 import { nodeHandles } from '../schema/validate.js'
 import { junctionCorrection } from '../engine/geometry.js'
-import { driverSI } from '../engine/solver.js'
+import { driverSI } from './physics.js'
 
 /**
  * The area a node presents at one of its handles, m².

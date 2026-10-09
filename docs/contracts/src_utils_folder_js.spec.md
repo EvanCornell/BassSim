@@ -34,7 +34,7 @@ hold one. Permission does not survive with it: the browser re-asks on the
 next visit, and that ask needs a user gesture, so a resumed session may come
 back locked and waiting for a click rather than connected.
 
-## EXPORTED (11)
+## EXPORTED (13)
 
 ### `supportsFolders()`
 
@@ -150,6 +150,45 @@ database, so a renamed app resumes the same folder.
 **Side effects**
 
 - Reads IndexedDB; may move a handle out of the former database and delete that database.
+
+### `readStoredWorkspace()`
+
+- **Reachability:** EXPORTED
+- **Obtain via:** import { readStoredWorkspace } from '../../src/utils/folder.js'
+- **Async:** returns a Promise
+
+The browser's own copy of the workspace, as last stored.
+
+**Returns**
+
+- `Promise<string|null>` — The workspace JSON, or `null` when none is stored or IndexedDB is unavailable.
+
+**Side effects**
+
+- Reads IndexedDB.
+
+### `storeWorkspace(text)`
+
+- **Reachability:** EXPORTED
+- **Obtain via:** import { storeWorkspace } from '../../src/utils/folder.js'
+- **Async:** returns a Promise
+
+Store the browser's own copy of the workspace.
+
+IndexedDB rather than LocalStorage: a workspace whose projects keep their
+time-domain runs is far past LocalStorage's few megabytes.
+
+**Parameters**
+
+- `text` — `string` — The workspace JSON.
+
+**Returns**
+
+- `Promise<boolean>` — True once stored; false when IndexedDB is unavailable or refused.
+
+**Side effects**
+
+- Writes IndexedDB.
 
 ### `forgetFolder()`
 

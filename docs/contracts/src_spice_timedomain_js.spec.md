@@ -69,7 +69,19 @@ Defaults for the distortion analyses.
 
 Keys: `hz`, `levelDb`, `harmonics`, `bandwidth`, `f1`, `f2`, `points`, `levels`, `bands`, `xLimit`, `maxBoostDb`
 
-## EXPORTED (16)
+### `STARTUP_SAMPLES`
+
+Most samples kept of a tone's start-up, per quantity.
+
+Value: `400`
+
+### `LEVEL_DEFAULTS`
+
+Defaults for a level run.
+
+Keys: `f1`, `f2`, `points`, `harmonics`, `bandwidth`, `thdLimit`, `maxBoostDb`, `resolutionDb`
+
+## EXPORTED (19)
 
 ### `splOf(p)`
 
@@ -244,6 +256,27 @@ samples and there is no leakage.
 **Side effects**
 
 - Runs the engine.
+
+### `startupOf(run, fs, hz)`
+
+- **Reachability:** EXPORTED
+- **Obtain via:** import { startupOf } from '../../src/spice/timedomain.js'
+
+A tone's start-up: the first quarter second, or six periods if longer, from the moment it is switched on.
+
+Kept at no more than `STARTUP_SAMPLES` samples, picked evenly.
+
+**Parameters**
+
+- `run` — `object` — From `transientRun`.
+- `fs` — `number` — Its sample rate, Hz.
+- `hz` — `number` — The tone, Hz.
+
+**Returns**
+
+- `{dt: number, pressure: number[], excursion: object, velocity: object}` — The sample step, s; pressure in Pa at 1 m, excursion in mm per driver, port velocity in m/s per waveguide.
+
+**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
 ### `linearLevel(project, hz, levelDb)`
 
@@ -440,6 +473,72 @@ it is 0.25 dB wide. With a width of 1 this is a plain step-then-halve search.
 
 - Calls `test`, several at a time.
 
+### `thdLimitAt(project, hz, first, o)`
+
+- **Reachability:** EXPORTED
+- **Obtain via:** import { thdLimitAt } from '../../src/spice/timedomain.js'
+- **Async:** returns a Promise
+
+Where THD reaches a limit at one frequency, by raising or lowering the level.
+
+Steps 6 dB at a time from the first level until the limit is crossed, then
+halves the step until the bracket is no wider than `resolutionDb`. The
+result is the highest level tested that stays within the limit. A level the
+circuit cannot be solved at counts as past it.
+
+**Parameters**
+
+- `project` — `object` — A resolved project.
+- `hz` — `number` — Frequency, Hz.
+- `first` — `{L: number, m: object|null}` — A tone already measured, to start from.
+- `o` — `object` — Level-run options.
+
+**Returns**
+
+- `Promise<{hz: number, levelDb: number|null, spl: number|null, thd: number|null, tones: number}>` — The level and the fundamental's SPL there, with its THD; nulls when no level within the range stays under the limit. `tones` counts the tones it took.
+
+**Throws**
+
+- `Error` — A cancellation, passed straight on.
+
+**Side effects**
+
+- Runs the engine.
+
+### `levelRun(project, opts, onProgress)`
+
+- **Reachability:** EXPORTED
+- **Obtain via:** import { levelRun } from '../../src/spice/timedomain.js'
+- **Async:** returns a Promise
+
+One run at one drive level: every figure the time-domain views show, from stepped tones.
+
+A steady tone at each frequency across the range is measured once —
+output, harmonics and THD, excursion, port velocity, impedance, power and
+efficiency, and how it started up — beside the linear model at the same
+drive, which gives the compression. Then, when `searchMaxSpl` is set (it
+is off by default) and unless a `maxSpl` from the same
+project state is passed in, each frequency's level is raised until THD
+reaches `thdLimit` (10%): the Max SPL.
+
+**Parameters**
+
+- `project` — `object` — A resolved, validated project.
+- `opts` — `object` — `{levelDb, f1, f2, points, harmonics, bandwidth, thdLimit, maxBoostDb, resolutionDb, searchMaxSpl, maxSpl}`; see `LEVEL_DEFAULTS`.
+- `onProgress` — `Function` _(optional)_ — `(fraction, message)`.
+
+**Returns**
+
+- `Promise<object>` — `{levelDb, freqs, rows, start, maxSpl, failed, thdLimit}`: per frequency a row of figures (`spl`, `linSpl`, `cmp`, `thd`, `h` harmonic levels in dB re the fundamental from H2, `xPeak`, `vPeak`, `z`, `pe`, `pa`, `efficiency`, `effLoss`, `powerChange`, `currentPeak`, `voltagePeak`) or `null` where it could not be solved, the start-ups, and the Max SPL per frequency when it was searched for or passed in.
+
+**Throws**
+
+- `Error` — When no frequency could be solved, or the run is cancelled.
+
+**Side effects**
+
+- Runs the engine.
+
 ### `distortionAnalysis(project, mode, opts, onProgress)`
 
 - **Reachability:** EXPORTED
@@ -486,7 +585,7 @@ Distortion analyses.
 
 - Runs the engine, many times.
 
-## UNREACHABLE (24)
+## UNREACHABLE (28)
 
 ### `sweepOf(project)`
 
@@ -726,6 +825,40 @@ Mean of a product over the analysed periods: the average power of a flow and its
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
+### `startupOf > pick(x)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+Every `step`-th sample of the start-up.
+
+**Parameters**
+
+- `x` — `ArrayLike<number>` — Samples.
+
+**Returns**
+
+- `number[]` — The kept ones.
+
+**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
+
+### `startupOf > each(m)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+Pick from every series of a map.
+
+**Parameters**
+
+- `m` — `object` — `{id: samples}`.
+
+**Returns**
+
+- `object` — `{id: number[]}`.
+
+**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
+
 ### `scaleLinear > each(m)`
 
 - **Reachability:** UNREACHABLE
@@ -774,6 +907,41 @@ The current bracket: the lowest breaking level, and the highest passing one belo
 **Reads external mutable state**
 
 - the levels tried.
+
+### `thdLimitAt > test(L)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+- **Async:** returns a Promise
+
+Measure one level.
+
+**Parameters**
+
+- `L` — `number` — Level offset, dB.
+
+**Returns**
+
+- `Promise<{L: number, m: object|null, over: boolean}>` — The tone, and whether it is past the limit.
+
+**Side effects**
+
+- Runs the engine.
+
+### `levelRun > report()`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+Report how far along the run is.
+
+**Returns**
+
+- `void`
+
+**Side effects**
+
+- Calls `onProgress`.
 
 ### `distortionAnalysis > fail(label, err)`
 

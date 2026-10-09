@@ -5,33 +5,14 @@
 
 ## Module
 
-One simulation, from a saved project to results, for any engine.
+One simulation, from a saved project to results.
 
 The worker and the MCP server both call `simulateProject`, so a project
-simulates identically in the browser and over the API. The stages are the
-same whichever engine runs:
+simulates identically in the browser and over the API. The stages are:
 
-  migrate → resolve expressions → validate → engine → metrics
+  migrate → resolve expressions → validate → SPICE → metrics
 
 Validation errors stop the run; warnings travel with the results.
-
-## Exported constants
-
-Names this module publishes that are not methods. The method contracts
-above and below refer to these by role — a command, a node type, a panel —
-so this is the vocabulary they assume.
-
-### `ENGINES`
-
-The engines `simulateProject` accepts.
-
-Values: `spice`, `legacy`
-
-### `DEFAULT_ENGINE`
-
-The engine used when none is named.
-
-Value: `"spice"`
 
 ## EXPORTED (2)
 
@@ -56,7 +37,7 @@ Carry a saved project to a resolved, validated v3 project.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
-### `simulateProject(input, opts)`
+### `simulateProject(input)`
 
 - **Reachability:** EXPORTED
 - **Obtain via:** import { simulateProject } from '../../src/engine/pipeline.js'
@@ -67,22 +48,20 @@ Simulate a saved project of any schema version.
 **Parameters**
 
 - `input` — `object` — A parsed `.speakerspice.json` project, any version.
-- `opts` — `object` _(optional)_ — Options.
-- `opts.engine` — `string` _(optional)_ — One of `ENGINES`; defaults to `DEFAULT_ENGINE`.
 
 **Returns**
 
-- `Promise<{results: object, metrics: object|null, warnings: Object<string, string[]>, netlist?: string}>` — The sweep, its metrics, the project's warnings keyed by node id, and — from the SPICE engine — the netlist it ran.
+- `Promise<{results: object, metrics: object|null, warnings: Object<string, string[]>, netlist: string}>` — The sweep, its metrics, the project's warnings keyed by node id, and the netlist it ran.
 
 **Throws**
 
-- `Error` — When the project cannot be simulated — unresolvable expressions, structural errors, or an engine that cannot represent it. Every reason is on `projectErrors`.
+- `Error` — When the project cannot be simulated — unresolvable expressions, structural errors, or something SPICE cannot build or solve. Every reason is on `projectErrors`.
 
 **Side effects**
 
-- Runs an engine.
+- Runs ngspice.
 
-## UNREACHABLE (3)
+## UNREACHABLE (2)
 
 ### `projectError(reasons)`
 
@@ -100,29 +79,6 @@ Build the error `simulateProject` throws for a project it cannot run.
 - `Error` — An error whose message joins them and whose `projectErrors` lists them.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
-
-### `runLegacy(project)`
-
-- **Reachability:** UNREACHABLE
-- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
-
-Run the legacy engine on a resolved, validated v3 project.
-
-**Parameters**
-
-- `project` — `object` — A resolved v3 project.
-
-**Returns**
-
-- `{results: object, metrics: object|null}` — The sweep and its metrics.
-
-**Throws**
-
-- `Error` — When the project uses anything the legacy engine cannot represent.
-
-**Side effects**
-
-- Runs the legacy solver.
 
 ### `runSpice(project, warnings)`
 

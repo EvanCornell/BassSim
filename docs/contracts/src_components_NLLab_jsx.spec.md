@@ -11,9 +11,41 @@ so this is the vocabulary they assume.
 
 ### `__internals`
 
-Keys: `refValue`, `fmtVal`, `niceTicks`, `catalogueXvar`
+Keys: `refValue`, `fmtVal`, `niceTicks`, `catalogueXvar`, `catalogueGeometry`, `fitFor`, `curveSummary`
 
-## EXPORTED (1)
+## EXPORTED (3)
+
+### `curveSummary(curve)`
+
+- **Reachability:** EXPORTED
+- **Obtain via:** import { curveSummary } from '../../src/components/NLLab.jsx'
+
+What a curve holds, in a few words.
+
+**Parameters**
+
+- `curve` — `object` — A curve.
+
+**Returns**
+
+- `string` — e.g. `2 points, symmetric`, `Imported table`, `Flat`.
+
+**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
+
+### `NLRail()`
+
+- **Reachability:** EXPORTED
+- **Obtain via:** import { NLRail } from '../../src/components/NLLab.jsx'
+
+The curve list beside the editor: the driver, and what each curve holds.
+
+**Returns**
+
+- `React.ReactElement` — The rail's sections.
+
+**Side effects**
+
+- Subscribes to the store; picks the driver and curve.
 
 ### `NLLab()`
 
@@ -24,7 +56,8 @@ The driver curve editor: a driver's large-signal Bl, Kms/Cms and Le curves.
 
 Curves describe how each parameter varies with excursion, as a ratio of
 its small-signal value. Nonlinear time-domain runs use them directly; the
-frequency sweep does not, since it is the small-signal model.
+frequency sweep does not, since it is the small-signal model. The driver
+and curve are picked in the rail beside it (`NLRail`).
 
 **Returns**
 
@@ -34,7 +67,7 @@ frequency sweep does not, since it is the small-signal model.
 
 - Subscribes to the store; edits update the driver's params.
 
-## INTERNAL (4)
+## INTERNAL (6)
 
 ### `refValue(param, p)`
 
@@ -105,7 +138,7 @@ exactly on it.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
-### `catalogueXvar(p)`
+### `catalogueXvar(p, custom)`
 
 - **Reachability:** INTERNAL
 - **Obtain via:** import { __internals } from '../../src/components/NLLab.jsx'  →  __internals.catalogueXvar
@@ -115,6 +148,7 @@ A driver's published Xvar, when it came from the built-in catalogue.
 **Parameters**
 
 - `p` — `object` — The driver node's params.
+- `custom` — `Array<object>` _(optional)_ — The workspace's custom drivers.
 
 **Returns**
 
@@ -122,7 +156,43 @@ A driver's published Xvar, when it came from the built-in catalogue.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
-## UNREACHABLE (25)
+### `catalogueGeometry(p, custom)`
+
+- **Reachability:** INTERNAL
+- **Obtain via:** import { __internals } from '../../src/components/NLLab.jsx'  →  __internals.catalogueGeometry
+
+A driver's coil (winding) and magnetic gap heights, when its catalogue entry lists them.
+
+**Parameters**
+
+- `p` — `object` — The driver node's params.
+- `custom` — `Array<object>` _(optional)_ — The workspace's custom drivers.
+
+**Returns**
+
+- `{coil: number, gap: number}|null` — Heights, mm, or `null` without both.
+
+**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
+
+### `fitFor(p, custom)`
+
+- **Reachability:** INTERNAL
+- **Obtain via:** import { __internals } from '../../src/components/NLLab.jsx'  →  __internals.fitFor
+
+The curves a driver's saved build settings, or its catalogue entry, give: from the motor when its geometry is known, else from Xmax.
+
+**Parameters**
+
+- `p` — `object` — The driver node's params.
+- `custom` — `Array<object>` _(optional)_ — The workspace's custom drivers.
+
+**Returns**
+
+- `{Bl: object, Kms: object, label: string}|null` — The curves and what they were built from; `null` when there is nothing to build from.
+
+**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
+
+## UNREACHABLE (36)
 
 ### `CurveEditor(props)`
 
@@ -149,6 +219,7 @@ rather than adding to what is already there.
 - `props.width` — `number` — Available width, px.
 - `props.height` — `number` — Available height, px.
 - `props.refv` — `{v: number, unit: string}` — Small-signal reference for the absolute-value axis.
+- `props.overlays` — `Array<{label: string, color: string, curve: object, xmax: number}>` _(optional)_ — Curves drawn dashed for comparison.
 
 **Returns**
 
@@ -487,17 +558,134 @@ on. The curve becomes P(x)/P(0), held at its end values outside that range.
 
 - Holds the form's text in component state.
 
+### `catalogueEntry(p, custom)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+A driver's catalogue entry, from the built-in catalogue or the workspace's own drivers.
+
+Driver nodes keep only what the solver reads, so construction figures such
+as coil and gap heights are looked up again by model.
+
+**Parameters**
+
+- `p` — `object` — The driver node's params.
+- `custom` — `Array<object>` _(optional)_ — The workspace's custom drivers.
+
+**Returns**
+
+- `object|null` — The entry, or `null` when no driver of that model is listed.
+
+**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
+
+### `buildMethod(r, geo)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+How a driver's curves are built: as last built, else from the motor when its geometry is known.
+
+Builds saved before the motor model carry no method and were made from Xmax.
+
+**Parameters**
+
+- `r` — `object|undefined` — The saved build settings (`nl.ratings`).
+- `geo` — `object|null` — The catalogue's coil and gap heights.
+
+**Returns**
+
+- `'geometry'|'xmax'` — The method.
+
+**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
+
+### `pct(r)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+A ratio as a percentage.
+
+**Parameters**
+
+- `r` — `number` — The ratio.
+
+**Returns**
+
+- `string` — e.g. `70%`.
+
+**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
+
+### `dbText(v)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+A level in dB.
+
+**Parameters**
+
+- `v` — `number` — dB.
+
+**Returns**
+
+- `string` — e.g. `3.1 dB`.
+
+**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
+
+### `mmText(v)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+An excursion in mm, or a dash when there is none.
+
+**Parameters**
+
+- `v` — `number|null` — mm.
+
+**Returns**
+
+- `string` — e.g. `4.1 mm`.
+
+**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
+
+### `MmField(props)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+A number field for the builder: free text, red while it does not read as a number.
+
+**Parameters**
+
+- `props` — `object` — Component props.
+- `props.label` — `string` — Its label.
+- `props.value` — `string` — The text.
+- `props.onChange` — `Function` — Called with the new text.
+- `props.placeholder` — `string` _(optional)_ — Shown when empty.
+- `props.zero` — `boolean` _(optional)_ — Whether 0 is allowed.
+- `props.title` — `string` _(optional)_ — Its tooltip.
+
+**Returns**
+
+- `React.ReactElement` — The field.
+
+**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
+
 ### `RatingsButton(props)`
 
 - **Reachability:** UNREACHABLE
 - **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
 
-Build Bl(x) and Kms(x) from the driver's Xmax and Xvar, as a form behind a button.
+Build Bl(x) and Kms(x) for a driver, as a form behind a button.
 
-Bl falls to 70% at Xmax; the suspension stiffens by whatever the 6 dB at
-Xvar still needs (see `curvesFromRatings`). The form says what the curves
-come to before they are applied, and applying replaces both curves — and
-any Cms(x), which Kms(x) would override — and sets the driver's Xmax.
+From the motor: Bl(x) follows the coil and gap heights and the fringe
+past each plate face (see `blFromGeometry`); the driver's Xmax is not used
+for it and is left as it is. From Xmax, for drivers whose geometry is not
+published: Bl falls to 70% at Xmax (see `curvesFromRatings`). Either way the
+suspension stiffens by whatever the 6 dB at Xvar still needs. Applying
+replaces Bl(x), Kms(x) and any Cms(x).
 
 **Parameters**
 
@@ -518,7 +706,7 @@ any Cms(x), which Kms(x) would override — and sets the driver's Xmax.
 - **Reachability:** UNREACHABLE
 - **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
 
-Open the form, filled from what was used last, or the driver and the catalogue.
+Open the form, filled from the last build, or the driver and its catalogue entry.
 
 **Returns**
 
@@ -528,37 +716,54 @@ Open the form, filled from what was used last, or the driver and the catalogue.
 
 - Writes component state.
 
-### `RatingsButton > pct(r)`
+### `RatingsButton > show > str(v)`
 
 - **Reachability:** UNREACHABLE
 - **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
 
-A ratio as a percentage.
+A stored number as field text.
 
 **Parameters**
 
-- `r` — `number` — The ratio.
+- `v` — `*` — The number, or nothing.
 
 **Returns**
 
-- `string` — e.g. `70%`.
+- `string` — Its text; empty for nothing.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
-### `RatingsButton > db(v)`
+### `RatingsButton > field(k)`
 
 - **Reachability:** UNREACHABLE
 - **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
 
-A level in dB.
+Set one field.
 
 **Parameters**
 
-- `v` — `number` — dB.
+- `k` — `string` — The field.
 
 **Returns**
 
-- `string` — e.g. `3.1 dB`.
+- `Function` — Its change handler.
+
+**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
+
+### `RatingsButton > num(t)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+A field's number.
+
+**Parameters**
+
+- `t` — `string` — Its text.
+
+**Returns**
+
+- `number|null` — The number; `null` when empty, NaN when unreadable.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
@@ -576,6 +781,83 @@ Install the curves on the driver.
 **Side effects**
 
 - Updates the driver's params, which triggers a resimulation.
+
+### `useNlDriver()`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+The driver being edited, and its curves with defaults filled in.
+
+**Returns**
+
+- `{drivers: Array<object>, driver: object|undefined, nl: object|null, param: string}` — Every driver, the chosen one, its curves, and the chosen curve.
+
+**Side effects**
+
+- Subscribes to the store.
+
+### `AddOverlay(props)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+The "+ Add overlay" menu: the same driver's curves in another record, a driver in another project, or a fit to the driver's ratings.
+
+**Parameters**
+
+- `props` — `object` — Component props.
+- `props.driver` — `object` — The driver being edited.
+
+**Returns**
+
+- `React.ReactElement` — The button and, when open, its menu.
+
+**Side effects**
+
+- Subscribes to the store; reads records; adds overlays.
+
+### `AddOverlay > add(id, label, nl, xmax)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+Lay a curve set over the editor.
+
+**Parameters**
+
+- `id` — `string` — What it is, so it is added once.
+- `label` — `string` — Its name.
+- `nl` — `object|null` — Its curves; none is the linear driver, every curve flat.
+- `xmax` — `number` — Its driver's Xmax.
+
+**Returns**
+
+- `void`
+
+**Side effects**
+
+- Writes the overlays; closes the menu.
+
+### `AddOverlay > fromRecord(i)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+- **Async:** returns a Promise
+
+Overlay this driver as another record holds it.
+
+**Parameters**
+
+- `i` — `number` — The record.
+
+**Returns**
+
+- `Promise<void>` — Resolves once added.
+
+**Side effects**
+
+- Reads the record; writes the overlays.
 
 ### `NLLab > setCurve(patch)`
 

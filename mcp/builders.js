@@ -1,7 +1,7 @@
 // Phase-2 helpers for the MCP server: driver lookup, self-calibrating
 // enclosure builders, an optimizer, and comparison scoring.
 import { BUILTIN_DRIVERS, driverToParams, EXT_BY_KEY } from '../src/data/drivers.js'
-import { C_AIR } from '../src/engine/acoustics.js'
+import { C_AIR } from '../src/engine/geometry.js'
 
 // ---------- driver lookup ----------
 

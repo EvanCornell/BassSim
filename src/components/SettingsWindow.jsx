@@ -27,7 +27,7 @@ const dim = { color: 'var(--text-3)', fontSize: 12, lineHeight: 1.5 }
 // ---------- application settings ----------
 
 /**
- * The Application section: engine, sweep range and display options.
+ * The Application section: sweep range and display options.
  *
  * @returns {React.ReactElement} The section.
  * @sideEffect Subscribes to the store.
@@ -35,8 +35,6 @@ const dim = { color: 'var(--text-3)', fontSize: 12, lineHeight: 1.5 }
 function ApplicationSection() {
   const settings = useStore((s) => s.settings)
   const updateSettings = useStore((s) => s.updateSettings)
-  const engine = useStore((s) => s.engine)
-  const setEngine = useStore((s) => s.setEngine)
   const theme = useStore((s) => s.theme)
   const setTheme = useStore((s) => s.setTheme)
   const row = { display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, marginBottom: 8 }
@@ -53,20 +51,6 @@ function ApplicationSection() {
       </div>
       <div style={card}>
         <h4 style={h}>Simulation</h4>
-        <label style={row}>
-          Engine
-          <select style={{ ...inputStyle, width: 'auto', marginBottom: 0 }} value={engine}
-            onChange={(e) => setEngine(e.target.value)}>
-            <option value="spice">SPICE (ngspice)</option>
-            <option value="legacy">Legacy solver</option>
-          </select>
-        </label>
-        <div style={{ ...dim, marginTop: -2, marginBottom: 10 }}>
-          The SPICE engine solves the box as a circuit, so any wiring of chambers,
-          ducts and drivers is handled exactly. The legacy solver is kept for
-          comparison during the transition; it cannot solve paths that split and
-          rejoin, taps, or anything beyond one amplifier channel.
-        </div>
         <label style={row}>
           Frequency sweep
           <NumInput

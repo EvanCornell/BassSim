@@ -136,11 +136,9 @@ test('exportProjectJSON: the filename falls back to speakerspice-project', () =>
 // exportCSV
 // ---------------------------------------------------------------------------
 
-// CONTRACT: "`results` — `object|null` — A result from `runSimulation`. A
-// failed or absent result exports nothing." /
-// "Returns silently when there is nothing to export."
-// The failed shape is the one runSimulation documents: `{ok: false, validation,
-// freqs: []}` (see src/engine/solver.js spec).
+// CONTRACT: "`results` — `object|null` — A sweep result. A failed or absent
+// result exports nothing." / "Returns silently when there is nothing to export."
+// The failed shape is `{ok: false, validation, freqs: []}`.
 test('exportCSV: a failed or absent result exports nothing', () => {
   for (const results of [
     null,

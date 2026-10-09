@@ -30,7 +30,6 @@ import { SCHEMA_VERSION, DEFAULT_PARAMS } from './schema/version'
 import { migrateProject } from './schema/migrate'
 import { toEditor, fromEditor } from './schema/editor'
 import { pruneExtras, driveOf, masterForVoltage, freshId } from './schema/extras'
-import { ENGINES, DEFAULT_ENGINE } from './engine/pipeline'
 import { getPool, relay, cancelLane } from './engine/poolHost'
 import { loadTheme, saveTheme, THEMES } from './theme'
 import * as L from './layout'
@@ -66,11 +65,10 @@ const simPending = new Map()
  * longer pending are dropped, which is what makes a superseded run harmless.
  *
  * @param {object} project - A serialized v3 project.
- * @param {string} engine - Which engine should run it.
  * @returns {Promise<{id: number, ok: boolean, results?: object, metrics?: object|null, warnings?: object, error?: string, projectErrors?: string[]|null}>} The worker's reply.
  * @sideEffect Spawns the worker on first call and posts a message to it.
  */
-function simulateInWorker(project, engine) {
+function simulateInWorker(project) {
   if (!simWorker) {
     simWorker = new Worker(new URL('./engine/worker.js', import.meta.url), { type: 'module' })
     /**
@@ -94,7 +92,7 @@ function simulateInWorker(project, engine) {
   const id = ++simReqId
   return new Promise((resolve) => {
     simPending.set(id, resolve)
-    simWorker.postMessage({ id, project, engine })
+    simWorker.postMessage({ id, project })
   })
 }
 
@@ -509,25 +507,6 @@ export const nextId = (type) => `${type}_${Date.now().toString(36)}_${idCounter+
 
 const HISTORY_LIMIT = 80
 
-const ENGINE_KEY = 'speakerspice:engine'
-
-/**
- * The simulation engine this browser last chose.
- *
- * A preference of the person, not a property of the project, so it lives in
- * LocalStorage rather than in the file.
- *
- * @returns {string} The engine name; the pipeline's default when nothing valid is stored or storage is unavailable.
- * @reads LocalStorage.
- */
-function loadEngine() {
-  try {
-    const v = localStorage.getItem(ENGINE_KEY)
-    if (ENGINES.includes(v)) return v
-  } catch { /* storage unavailable */ }
-  return DEFAULT_ENGINE
-}
-
 /**
  * The editor sections of an empty project, for the initial state.
  *
@@ -577,18 +556,17 @@ function freeSpotNear(spot, nodes, step = 34, limit = 40) {
  * @param {Array<object>} edges - Graph edges.
  * @param {object} settings - Sweep settings.
  * @param {object} [extras] - The project sections the editor carries without controls — params, wiring, analyses, probes, components, air.
- * @param {string} [engine] - The engine the result came from.
+ * @param {string} [tag] - Which kind of result it signs, so the sweep's and the time domain's never match.
  * @returns {string} A JSON signature, compared by equality against the last solved one.
  * @pure
  */
-function graphSignature(nodes, edges, settings, extras = {}, engine = '') {
+function graphSignature(nodes, edges, settings, extras = {}, tag = '') {
   return JSON.stringify([
     nodes.map((n) => [n.id, n.type, n.data.params]),
     edges.map((e) => [e.source, e.sourceHandle, e.target, e.targetHandle]),
     settings.fmin, settings.fmax, settings.npts, settings.voltage, settings.rg, settings.masking,
-    settings.nlEnabled,
     extras.params, extras.wiring, extras.analyses, extras.probes, extras.components, extras.air,
-    engine,
+    tag,
   ])
 }
 
@@ -704,7 +682,6 @@ export const useStore = create((rawSet, get) => {
     fmin: 10, fmax: 1000, npts: 512,
     voltage: 2.83, impedance: 4, power: 2, rg: 0,
     vThreshold: 17, masking: false, unwrapPhase: true, delayOffset: 0,
-    nlEnabled: false,
   },
   // The v3 sections outside the node graph — named params, the wiring,
   // analyses, probes, components, air. Edited through `setExtra`; see
@@ -717,8 +694,6 @@ export const useStore = create((rawSet, get) => {
   records: null,
   recordNav: recordNavOf(null, false, false),
   recordError: null,
-  // Which engine simulates: a preference of this browser, not of the project.
-  engine: loadEngine(),
   theme: loadTheme(),
   // ---- the time-domain workspace ----
   // A full-screen view of its own, replacing the dock while it is open.
@@ -2021,20 +1996,6 @@ export const useStore = create((rawSet, get) => {
     saveTheme(theme)
     set({ theme })
   },
-  /**
-   * Choose which engine simulates, remember it, and resimulate.
-   *
-   * @param {string} engine - One of the pipeline's `ENGINES`; anything else is ignored.
-   * @returns {void}
-   * @sideEffect Writes LocalStorage and store state, and schedules a resimulation.
-   */
-  setEngine: (engine) => {
-    if (!ENGINES.includes(engine)) return
-    try { localStorage.setItem(ENGINE_KEY, engine) } catch { /* storage unavailable */ }
-    set({ engine })
-    get().scheduleCompute()
-  },
-
   // ---- time domain ----
   /**
    * Open the time-domain workspace, optionally at a tab.
@@ -2082,7 +2043,7 @@ export const useStore = create((rawSet, get) => {
     get().saveActiveFile()
   },
   /**
-   * The signature of what a time-domain result depends on — the graph, the extras and the engine.
+   * The signature of what a time-domain result depends on — the graph and the extras.
    *
    * @returns {string} A signature to compare results against.
    * @reads the project state.
@@ -2468,15 +2429,14 @@ export const useStore = create((rawSet, get) => {
     const st = get()
     if (st._computeTimer) clearTimeout(st._computeTimer)
     const timer = setTimeout(async () => {
-      const { nodes, edges, settings, projectExtras, projectName, engine } = get()
+      const { nodes, edges, settings, projectExtras, projectName } = get()
       if (!nodes.length) return
-      const sig = graphSignature(nodes, edges, settings, projectExtras, engine)
+      const sig = graphSignature(nodes, edges, settings, projectExtras)
       if (sig === get()._lastSig && get().results) return
       const token = {}
       set({ _simToken: token, simBusy: true })
       const reply = await simulateInWorker(
         fromEditor({ name: projectName, nodes, edges, settings, extras: projectExtras }),
-        engine,
       )
       if (get()._simToken !== token) return // a newer request superseded this one
       set({ simBusy: false })

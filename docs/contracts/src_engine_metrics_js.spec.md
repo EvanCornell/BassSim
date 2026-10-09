@@ -39,15 +39,13 @@ peak *list*, not the count — `zPeaks.length` is what the branch above turns
 on. Zero peaks, or three or more, yield neither `fb` nor `fc`.
 
 Maximum power before Xmax is driven by the per-driver headroom ratio, so a
-mixed set of drivers is judged against each cone's own limit; it falls back
-to a single global Xmax for results produced before that ratio existed.
+mixed set of drivers is judged against each cone's own limit.
 
 **Parameters**
 
-- `res` — `object|null` — A result from `runSimulation`.
+- `res` — `object|null` — A sweep result, as `simulateProject` returns it.
 - `settings` — `object` — Sweep settings.
 - `settings.voltage` — `number` _(optional, default `2.83`)_ — Drive voltage the sweep was run at, V RMS.
-- `settings.xmax` — `number` _(optional)_ — Legacy single Xmax, mm, used only when the result carries no per-driver ratio.
 
 **Returns**
 

@@ -5,8 +5,7 @@
 // scaled to a physical impedance level and frequency.
 
 import { fitAtoms, fitFractional, logspace } from './fit.js'
-import { radiationImpedance } from '../engine/acoustics.js'
-import { RHO, C_AIR, SOLID_ANGLE } from './physics.js'
+import { RHO, C_AIR, SOLID_ANGLE, pistonImpedance } from './physics.js'
 import { fmt, resistor } from './netlist.js'
 
 /**
@@ -140,7 +139,7 @@ export function halfSpaceRadiationFit() {
   const S = Math.PI // a = 1 m
   const z0 = (RHO * C_AIR) / S
   const samples = logspace(0.003, 12, 240).map((q) => {
-    const z = radiationImpedance(S, 'half', q * C_AIR)
+    const z = pistonImpedance(S, q * C_AIR)
     return { q, z: { re: z.re / z0, im: z.im / z0 }, w: q < 3 ? 1 : 0.3 }
   })
   const atoms = [

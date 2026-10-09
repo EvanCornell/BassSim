@@ -7,9 +7,8 @@
 
 SPICE vectors → the results a loudspeaker designer reads.
 
-Produces the same result object the legacy engine does, so every chart,
-metric, export and MCP tool reads either engine's output unchanged. Drive
-levels are RMS, so pressures and flows are RMS; excursion and duct velocity
+Produces the one result object every chart, metric, export and MCP tool
+reads. Drive levels are RMS, so pressures and flows are RMS; excursion and duct velocity
 are reported as peaks, as before.
 
 ## EXPORTED (2)
@@ -19,7 +18,7 @@ are reported as peaks, as before.
 - **Reachability:** EXPORTED
 - **Obtain via:** import { phaseAndDelay } from '../../src/spice/adapt.js'
 
-Unwrap a phase curve and derive group delay, as the legacy engine does.
+Unwrap a phase curve and derive group delay.
 
 **Parameters**
 
@@ -56,7 +55,7 @@ Turn a SPICE run into the results object.
 
 **Returns**
 
-- `object` — The results, in the legacy engine's shape.
+- `object` — The results, in the shape every chart reads.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 

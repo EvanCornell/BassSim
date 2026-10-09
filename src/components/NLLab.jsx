@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { useStore } from '../store'
 import { readRecord } from '../records'
 import {
-  NL_PARAMS, defaultNL, evalCurve, derivedRatios, parseCurveCSV, normalizeTable, curveHasContent,
+  NL_PARAMS, defaultNL, evalCurve, parseCurveCSV, normalizeTable, curveHasContent,
   curvesFromRatings, curvesFromGeometry, emptyCurve, BL_AT_XMAX, XVAR_DB, FRINGE_LEVEL, DEFAULT_FRINGE_SHARE,
 } from '../engine/nonlinear'
 import { readDrivers } from '../workspace'
@@ -901,27 +901,16 @@ export function curveSummary(curve) {
 }
 
 /**
- * The curve list and readouts beside the editor: the driver, what each curve holds, and the parameters at the current drive.
+ * The curve list beside the editor: the driver, and what each curve holds.
  *
  * @returns {React.ReactElement} The rail's sections.
  * @sideEffect Subscribes to the store; picks the driver and curve.
  */
 export function NLRail() {
   const { drivers, driver, nl, param } = useNlDriver()
-  const results = useStore((s) => s.results)
   const setNl = useStore((s) => s.setNl)
   if (!driver) return <div className="td-hint">Add a Driver node to the circuit first.</div>
-  const p = driver.data.params
-  const xmax = p.Xmax || 10
-  const arr = results?.excursionByDriver?.[driver.id]
-  const xPk = arr && arr.length ? Math.max(...arr) : null
-  const der = xPk != null ? derivedRatios(nl, xPk, xmax) : null
   const both = curveHasContent(nl.Cms) && curveHasContent(nl.Kms)
-  const readouts = der ? [
-    ['X̂', `${xPk.toFixed(1)} mm`], ['Bl', `${(der.Bl * 100).toFixed(0)}%`], ['Cms', `${(der.Cms * 100).toFixed(0)}%`],
-    ['Le', `${(der.Le * 100).toFixed(0)}%`], ['Fs', `${(p.Fs * der.Fs).toFixed(1)} Hz`], ['Qes', `${(der.Qes * 100).toFixed(0)}%`],
-    ['Vas', `${(der.Vas * 100).toFixed(0)}%`],
-  ] : []
   return (
     <>
       <div className="td-section">
@@ -941,15 +930,6 @@ export function NLRail() {
           </button>
         ))}
         {curveHasContent(nl.Kms) && <div className="td-hint">Kms(x) has content, so it takes precedence over Cms(x).{both ? ' Reset one of them.' : ''}</div>}
-      </div>
-      <div className="td-section">
-        <h4>At current drive</h4>
-        {der ? (
-          <>
-            <div className="nl-readouts">{readouts.map(([l, v]) => <span key={l}>{l}<b>{v}</b></span>)}</div>
-            <div className="td-hint">Cycle averages at the sweep&apos;s peak excursion — a guide only; transient runs use the curves themselves.</div>
-          </>
-        ) : <div className="td-hint">Run a simulation to see effective large-signal parameters.</div>}
       </div>
     </>
   )

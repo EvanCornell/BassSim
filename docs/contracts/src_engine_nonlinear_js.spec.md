@@ -5,17 +5,13 @@
 
 ## Module
 
-Large-signal driver curves, and the legacy engine's quasi-linear use of them.
+Large-signal driver curves.
 
 Each driver may carry three ratio curves — Bl(x), Cms(x), Le(x) — expressed
 relative to the small-signal value (1.0 = datasheet number). A curve is a
 flat 1.0 baseline (or an imported table), deformed by parametric-EQ style
-control points: gaussian bumps {x mm, g gain, w width mm}.
-
-The solver iterates: linear sweep → per-frequency excursion → cycle-averaged
-ratio at that excursion → scale Bl/Cms/Le → re-solve. Captures power
-compression and resonance drift; does NOT produce harmonic distortion
-products (that needs a time-domain engine).
+control points: gaussian bumps {x mm, g gain, w width mm}. Time-domain runs
+build the driver's motor and suspension from them.
 
 ## Exported constants
 
@@ -44,11 +40,23 @@ The output variation that defines Xvar, dB.
 
 Value: `6`
 
+### `FRINGE_LEVEL`
+
+The field at the fringe height, as a share of the gap's.
+
+Value: `0.1`
+
+### `DEFAULT_FRINGE_SHARE`
+
+The fringe height assumed when none is given, as a share of the gap height.
+
+Value: `0.25`
+
 ### `__internals`
 
-Keys: `baseValue`, `rawEval`
+Keys: `baseValue`, `rawEval`, `logCosh`
 
-## EXPORTED (13)
+## EXPORTED (12)
 
 ### `emptyCurve()`
 
@@ -83,9 +91,8 @@ A complete, empty nonlinear parameter set for a new driver.
 
 Whether a curve deviates from the flat 1.0 baseline.
 
-A curve has content once it has either control points or an imported table.
-This is what decides whether the experimental large-signal path runs at all,
-so an untouched driver costs nothing.
+A curve has content once it has either control points, an imported table or
+a polynomial. An untouched driver is linear, and costs nothing.
 
 **Parameters**
 
@@ -121,35 +128,6 @@ end values hold.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
-### `complianceRatio(nl, X, xmax)`
-
-- **Reachability:** EXPORTED
-- **Obtain via:** import { complianceRatio } from '../../src/engine/nonlinear.js'
-
-Effective compliance ratio at peak excursion X.
-
-Klippel reports publish suspension stiffness Kms(x); the solver wants
-compliance. They are reciprocals of each other, but the averaging does not
-commute with the inversion — stiffness is what averages physically over a
-cycle, so the correct result is `1/avg(Kms)`, not `avg(1/Kms)`. A Kms curve
-therefore takes precedence over a Cms curve when both are present.
-
-**Parameters**
-
-- `nl` — `object|null|undefined` — A driver's nonlinear parameter set.
-- `X` — `number` — Peak excursion, mm.
-- `xmax` — `number` _(optional, default `0`)_ — The driver's Xmax, mm, used only for extrapolation. 0 disables it.
-
-**Returns**
-
-- `number` — Compliance as a ratio of the small-signal value; 1 when neither curve has content.
-
-**Postconditions (must hold on return)**
-
-- result > 0 — the averaged stiffness is floored at 0.05 so a curve driven to zero stiffness cannot produce an infinite compliance
-
-**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
-
 ### `evalCurve(curve, x, xmax)`
 
 - **Reachability:** EXPORTED
@@ -174,76 +152,7 @@ had *at* Xmax, estimated from a 0.25 mm finite difference.
 
 **Postconditions (must hold on return)**
 
-- result >= 0.01 — a ratio must stay physically positive, since the solver multiplies Bl, Cms and Le by it
-
-**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
-
-### `cycleAverage(curve, X, xmax)`
-
-- **Reachability:** EXPORTED
-- **Obtain via:** import { cycleAverage } from '../../src/engine/nonlinear.js'
-
-Average ratio over one sinusoidal cycle of peak excursion X.
-
-This is the quasi-linear approximation at the heart of the large-signal mode:
-a cone swinging to ±X spends its cycle sampling the whole curve, so the
-parameter the solver should use is the average over that swing, not the value
-at the peak. Sampled uniformly in phase at 24 points, which is well past the
-point where the average stops moving for smooth curves.
-
-**Parameters**
-
-- `curve` — `object|null|undefined` — The curve to average.
-- `X` — `number` — Peak excursion, mm.
-- `xmax` — `number` _(optional, default `0`)_ — Xmax, mm, passed through for extrapolation.
-
-**Returns**
-
-- `number` — The cycle-averaged ratio; exactly 1 for a curve with no content, short-circuited before any sampling.
-
-**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
-
-### `hasNL(nl)`
-
-- **Reachability:** EXPORTED
-- **Obtain via:** import { hasNL } from '../../src/engine/nonlinear.js'
-
-Whether a driver has any nonlinear content at all.
-
-The solver's gate for the experimental path: without this returning true, the
-sweep runs once instead of four times.
-
-**Parameters**
-
-- `nl` — `object|null|undefined` — A driver's nonlinear parameter set.
-
-**Returns**
-
-- `boolean` — True when at least one of Bl, Cms, Kms or Le has content.
-
-**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
-
-### `derivedRatios(nl, X, xmax)`
-
-- **Reachability:** EXPORTED
-- **Obtain via:** import { derivedRatios } from '../../src/engine/nonlinear.js'
-
-Small-signal T/S parameters at excursion X, expressed as ratios.
-
-For display in the Nonlinear Lab: it answers "what does this driver look like
-once it is moving this far?". The derived figures follow from the standard
-relations — Fs varies as 1/sqrt(Cms), Vas directly with Cms, and Qes as
-sqrt(1/Cms)/Bl².
-
-**Parameters**
-
-- `nl` — `object` — A driver's nonlinear parameter set.
-- `X` — `number` — Peak excursion, mm.
-- `xmax` — `number` _(optional, default `0`)_ — Xmax, mm, passed through for extrapolation.
-
-**Returns**
-
-- `{Bl: number, Cms: number, Le: number, Fs: number, Qes: number, Vas: number}` — Each parameter as a ratio of its small-signal value, where 1 means unchanged.
+- result >= 0.01 — a ratio must stay physically positive, since Bl, Cms and Le are multiplied by it
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
@@ -354,7 +263,72 @@ polynomial over the same range; both stay symmetric past Xmax.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
-## INTERNAL (2)
+### `blFromGeometry(g)`
+
+- **Reachability:** EXPORTED
+- **Obtain via:** import { blFromGeometry } from '../../src/engine/nonlinear.js'
+
+Bl(x) from the coil height, gap height and fringe height.
+
+**Parameters**
+
+- `g` — `{coil: number, gap: number, fringe?: number}` — Coil (winding) height, magnetic gap height and fringe height, mm. The fringe defaults to a quarter of the gap; 0 is a hard-edged field.
+
+**Returns**
+
+- `Function` — `x ↦ Bl(x)/Bl(0)`, x in mm: even, 1 at rest, falling towards 0.
+
+**Throws**
+
+- `Error` — When the coil or gap height is not positive, or the fringe is negative.
+
+**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
+
+### `excursionAt(fn, level, limit)`
+
+- **Reachability:** EXPORTED
+- **Obtain via:** import { excursionAt } from '../../src/engine/nonlinear.js'
+
+The excursion at which a falling, even ratio function first reaches a level.
+
+**Parameters**
+
+- `fn` — `Function` — The ratio at an excursion, mm; 1 at rest and falling.
+- `level` — `number` — The level, below 1.
+- `limit` — `number` — The furthest excursion to look, mm.
+
+**Returns**
+
+- `number|null` — The excursion, mm, or `null` when it does not get there within `limit`.
+
+**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
+
+### `curvesFromGeometry(g)`
+
+- **Reachability:** EXPORTED
+- **Obtain via:** import { curvesFromGeometry } from '../../src/engine/nonlinear.js'
+
+Bl and Kms curves from the motor's geometry, and Xvar.
+
+Bl follows `blFromGeometry`; Kms takes what the 6 dB at Xvar still needs,
+as with `curvesFromRatings`. Xmax plays no part in the curves: when given,
+`info.blAtXmax` reports what Bl comes to at the rated Xmax, as a check.
+
+**Parameters**
+
+- `g` — `{coil: number, gap: number, fringe?: number, xvar?: number|null, xmax?: number|null}` — Coil and gap heights, fringe height, Xvar and Xmax, mm.
+
+**Returns**
+
+- `{Bl: object, Kms: object, info: object}` — The curves, and what they come to: the fringe used, where full Bl ends (`flat`), where Bl reaches 82% (`bl82At`), 70% (`bl70At`) and 6 dB (`blSixDbAt`), Bl at Xmax, and the Xvar split.
+
+**Throws**
+
+- `Error` — When a height is not usable, or Xvar is given but not positive.
+
+**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
+
+## INTERNAL (3)
 
 ### `baseValue(curve, x)`
 
@@ -409,7 +383,24 @@ to extrapolate beyond Xmax.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
-## UNREACHABLE (1)
+### `logCosh(t)`
+
+- **Reachability:** INTERNAL
+- **Obtain via:** import { __internals } from '../../src/engine/nonlinear.js'  →  __internals.logCosh
+
+ln cosh(t), without overflow for large |t|.
+
+**Parameters**
+
+- `t` — `number` — Any number.
+
+**Returns**
+
+- `number` — ln cosh t.
+
+**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
+
+## UNREACHABLE (4)
 
 ### `curvesFromRatings > bl(x)`
 
@@ -425,5 +416,66 @@ Bl at an excursion.
 **Returns**
 
 - `number` — The ratio.
+
+**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
+
+### `checkXvar(xvar)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+Throw unless an optional Xvar is missing or a positive number.
+
+**Parameters**
+
+- `xvar` — `*` — Xvar, mm, or nothing.
+
+**Returns**
+
+- `void`
+
+**Throws**
+
+- `Error` — When it is given but not positive.
+
+**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
+
+### `withSuspension(bl, span, xvar)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+A Bl function sampled into a symmetric table, with the Kms(x) an Xvar calls for.
+
+Whatever the 6 dB at Xvar still needs after Bl is given to the suspension
+as Kms(x) = 1 + k·x²; when Bl alone is already past 6 dB there, the
+suspension stays linear and `info.blAlone` says so.
+
+**Parameters**
+
+- `bl` — `Function` — Bl ratio at an excursion in mm, 1 at rest, even in x.
+- `span` — `number` — Half the stroke to tabulate, mm.
+- `xvar` — `number|null` _(optional)_ — Xvar, mm.
+
+**Returns**
+
+- `{Bl: object, Kms: object, info: object}` — The curves, and at Xvar each ratio and its share of the variation.
+
+**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
+
+### `blFromGeometry > linked(x)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+The field the coil sits in when centred at x, unnormalized.
+
+**Parameters**
+
+- `x` — `number` — Coil centre, mm.
+
+**Returns**
+
+- `number` — ∫ B over the coil.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.

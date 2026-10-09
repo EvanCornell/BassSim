@@ -69,7 +69,7 @@ export function toEditor(proj) {
   const voltage = Number(channel.volts) * gain(proj.wiring?.masterDb)
   const settings = {
     fmin: analysis.fmin, fmax: analysis.fmax, npts: analysis.npts,
-    masking: !!analysis.masking, nlEnabled: !!analysis.nlEnabled,
+    masking: !!analysis.masking,
     voltage, rg: Number(channel.outputOhms) || 0,
     impedance: display.nominalOhms, power: (voltage * voltage) / (Number(display.nominalOhms) || 4),
     vThreshold: display.vThreshold, unwrapPhase: display.unwrapPhase, delayOffset: display.delayOffset,
@@ -129,8 +129,9 @@ export function fromEditor({ name, nodes, edges, settings, extras = {} }) {
   analyses[0] = {
     ...analyses[0],
     fmin: s.fmin ?? analyses[0].fmin, fmax: s.fmax ?? analyses[0].fmax, npts: s.npts ?? analyses[0].npts,
-    masking: !!s.masking, nlEnabled: !!s.nlEnabled,
+    masking: !!s.masking,
   }
+  delete analyses[0].nlEnabled // the old solver's large-signal mode, no longer read
   const wiring = clone(extras.wiring || { masterDb: 0, channels: [DEFAULT_CHANNEL] })
   if (!wiring.channels?.length) wiring.channels = [clone(DEFAULT_CHANNEL)]
   // An expression the user wrote on the first channel stays an expression;

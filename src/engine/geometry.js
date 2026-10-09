@@ -1,6 +1,5 @@
-// Client-safe geometry helpers: area profiles, volumes, flare cutoff, end
-// corrections, and physical constants. No solver code — this module is the
-// only part of the engine shipped to the browser.
+// Geometry helpers: area profiles, volumes, flare cutoff, end corrections,
+// and physical constants, shared by the editor and the SPICE compiler.
 //
 // Everything here is SI: areas in m², lengths in m, frequencies in Hz. The UI
 // converts from cm² / cm at the parameter boundary, not here.
@@ -18,7 +17,7 @@ export const C_AIR = 344
  *
  * Returns a closure rather than a sampled table so callers can integrate it at
  * whatever resolution they need — `waveguideVolume` uses 200 slices, the
- * solver uses 24.
+ * SPICE line builder steps it more coarsely.
  *
  * Tractrix and Le Cléac'h are approximated by hyperbolic-exponential (Salmon)
  * profiles with different T parameters; their area expansions are close over

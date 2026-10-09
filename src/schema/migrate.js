@@ -14,7 +14,7 @@
 //   driver, pr  any extra `Q` folds into `Rms` — Rms + 2π·Fs·Mms/Q — so the
 //               mechanical damping is unchanged. A passive radiator's `in`
 //               handle becomes `rear`; its front is left open, as before.
-//   settings    sweep range, `masking`, `nlEnabled` → one analysis; `voltage`
+//   settings    sweep range, `masking` → one analysis; `voltage`
 //               and `rg` → one channel; the rest → `display`.
 
 import {
@@ -134,7 +134,6 @@ function splitSettings(s = {}) {
     fmax: pick('fmax', DEFAULT_ANALYSIS.fmax),
     npts: pick('npts', DEFAULT_ANALYSIS.npts),
     masking: !!pick('masking', false),
-    nlEnabled: !!pick('nlEnabled', false),
   }]
   const wiring = {
     masterDb: 0,

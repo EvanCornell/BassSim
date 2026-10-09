@@ -3,6 +3,18 @@
 > Generated from method contracts. This file contains **no implementation code**.
 > Write tests against what is claimed here, not against what you expect the code to do.
 
+## Exported constants
+
+Names this module publishes that are not methods. The method contracts
+above and below refer to these by role — a command, a node type, a panel —
+so this is the vocabulary they assume.
+
+### `SERIES`
+
+Trace colours, shared with the frequency charts.
+
+Values: `var(--c1)`, `var(--c2)`, `var(--c3)`, `var(--c4)`, `var(--c5)`, `var(--c6)`
+
 ## EXPORTED (5)
 
 ### `timeRows(t, series, tMax)`
@@ -61,24 +73,36 @@ Tick positions across a logarithmic range: 1, 2 and 5 of each decade.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
-### `compressionRows(res, pick)`
+### `TdChart(props)`
 
 - **Reachability:** EXPORTED
-- **Obtain via:** import { compressionRows } from '../../src/components/TimeDomainWindow.jsx'
+- **Obtain via:** import { TdChart } from '../../src/components/TimeDomainWindow.jsx'
 
-Chart rows of one figure of a compression result, against frequency.
-
-Each level `i` gives two keys: `n<i>`, the nonlinear run's value, and
-`l<i>`, the linear model's at the same level.
+A line chart for the time-domain views.
 
 **Parameters**
 
-- `res` — `object` — A compression result.
-- `pick` — `Function` — `(figures) → number|null`: the figure, from a point's measured or linear figures.
+- `props` — `object` — Component props.
+- `props.title` — `string` — Heading above the chart.
+- `props.data` — `Array<object>` — Rows.
+- `props.lines` — `Array<object>` — `{key, name, color?, dash?, right?, width?, legend?}` per trace; `legend: false` leaves it out of the legend.
+- `props.xKey` — `string` _(optional)_ — Row field for x; `ms` by default.
+- `props.xLabel` — `string` _(optional)_ — X axis label.
+- `props.logX` — `boolean` _(optional)_ — Logarithmic x axis.
+- `props.logY` — `boolean` _(optional)_ — Logarithmic left axis; give `yDomain` with it.
+- `props.yLabel` — `string` — Left axis label.
+- `props.y2Label` — `string` _(optional)_ — Right axis label, when some trace uses it.
+- `props.yDomain` — `Array` _(optional)_ — Left axis domain.
+- `props.refs` — `Array<object>` _(optional)_ — `{y, label, color}` horizontal reference lines on the left axis.
+- `props.height` — `number` _(optional)_ — Height, px.
+- `props.yTicks` — `number[]` _(optional)_ — Left axis ticks, in place of the automatic ones.
+- `props.yTickLabel` — `Function` _(optional)_ — `(value) → text` for the left axis ticks.
+- `props.legend` — `boolean` _(optional)_ — Show the legend; on by default.
+- `props.bare` — `boolean` _(optional)_ — Leave out the card background and title, for a chart inside a card of its own.
 
 **Returns**
 
-- `Array<object>` — `{hz, n0, l0, n1, l1, …}` per frequency.
+- `React.ReactElement` — The chart.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
@@ -89,10 +113,11 @@ Each level `i` gives two keys: `n<i>`, the nonlinear run's value, and
 
 The time-domain workspace: its own full-screen view under the menu and quick bar.
 
-Four tabs — the linear time responses, which follow the project by
-themselves; transient runs; distortion measurements; and the driver curve
-editor. Transient and distortion run only when asked, since they take
-seconds to minutes, and a result says when the project has changed since.
+Runs: the library of stored runs beside a viewer that shows one run, or
+several overlaid, a tab per category of figure; runs are queued from the
+New run drawer, solve one after another in the background, and each is
+kept as a branch off the record it was run from. Beside them, the live
+linear responses and the driver curve editor.
 
 **Returns**
 
@@ -102,7 +127,7 @@ seconds to minutes, and a result says when the project has changed since.
 
 - Subscribes to the store, and starts the linear responses when they are out of date.
 
-## UNREACHABLE (32)
+## UNREACHABLE (13)
 
 ### `f(v, d)`
 
@@ -136,35 +161,6 @@ The samples up to the last time kept.
 **Returns**
 
 - `number[]` — The kept samples.
-
-**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
-
-### `TdChart(props)`
-
-- **Reachability:** UNREACHABLE
-- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
-
-A line chart for the time-domain views.
-
-**Parameters**
-
-- `props` — `object` — Component props.
-- `props.title` — `string` — Heading above the chart.
-- `props.data` — `Array<object>` — Rows.
-- `props.lines` — `Array<object>` — `{key, name, color?, dash?, right?, width?, legend?}` per trace; `legend: false` leaves it out of the legend.
-- `props.xKey` — `string` _(optional)_ — Row field for x; `ms` by default.
-- `props.xLabel` — `string` _(optional)_ — X axis label.
-- `props.logX` — `boolean` _(optional)_ — Logarithmic x axis.
-- `props.logY` — `boolean` _(optional)_ — Logarithmic left axis; give `yDomain` with it.
-- `props.yLabel` — `string` — Left axis label.
-- `props.y2Label` — `string` _(optional)_ — Right axis label, when some trace uses it.
-- `props.yDomain` — `Array` _(optional)_ — Left axis domain.
-- `props.refs` — `Array<object>` _(optional)_ — `{y, label, color}` horizontal reference lines on the left axis.
-- `props.height` — `number` _(optional)_ — Height, px.
-
-**Returns**
-
-- `React.ReactElement` — The chart.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
@@ -351,344 +347,6 @@ Rows and lines for one response family.
 
 **Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
 
-### `TransientControls(props)`
-
-- **Reachability:** UNREACHABLE
-- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
-
-Controls for a transient run.
-
-**Parameters**
-
-- `props` — `object` — Component props.
-- `props.cfg` — `object` — The transient settings.
-- `props.set` — `Function` — Writes a patch to them.
-
-**Returns**
-
-- `React.ReactElement` — The controls.
-
-**Side effects**
-
-- Subscribes to the store.
-
-### `TransientControls > setSig(patch)`
-
-- **Reachability:** UNREACHABLE
-- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
-
-Write a patch to the signal.
-
-**Parameters**
-
-- `patch` — `object` — Fields to merge.
-
-**Returns**
-
-- `void`
-
-**Side effects**
-
-- Writes the settings.
-
-### `TransientView(props)`
-
-- **Reachability:** UNREACHABLE
-- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
-
-The transient result: waveforms, summary and output spectrum.
-
-**Parameters**
-
-- `props` — `object` — Component props.
-- `props.res` — `object|null` — The transient result.
-- `props.onRun` — `Function` — Starts a run.
-
-**Returns**
-
-- `React.ReactElement` — The view.
-
-**Side effects**
-
-- Subscribes to the store.
-
-### `TransientView > spec(y)`
-
-- **Reachability:** UNREACHABLE
-- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
-
-dB spectrum of a pressure waveform.
-
-**Parameters**
-
-- `y` — `ArrayLike<number>` — Samples.
-
-**Returns**
-
-- `Float64Array` — dB SPL per bin.
-
-**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
-
-### `numList(text)`
-
-- **Reachability:** UNREACHABLE
-- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
-
-Parse a comma-separated list of numbers.
-
-**Parameters**
-
-- `text` — `string` — The list.
-
-**Returns**
-
-- `number[]` — The finite numbers in it.
-
-**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
-
-### `DistortionControls(props)`
-
-- **Reachability:** UNREACHABLE
-- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
-
-Controls for the distortion analyses.
-
-**Parameters**
-
-- `props` — `object` — Component props.
-- `props.cfg` — `object` — The distortion settings.
-- `props.set` — `Function` — Writes a patch to them.
-
-**Returns**
-
-- `React.ReactElement` — The controls.
-
-**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
-
-### `pct(db)`
-
-- **Reachability:** UNREACHABLE
-- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
-
-Convert a level re the fundamental to a percentage.
-
-**Parameters**
-
-- `db` — `number` — dB relative to the fundamental.
-
-**Returns**
-
-- `number` — Percent.
-
-**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
-
-### `DistortionView(props)`
-
-- **Reachability:** UNREACHABLE
-- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
-
-The distortion result for the selected analysis.
-
-**Parameters**
-
-- `props` — `object` — Component props.
-- `props.mode` — `string` — The analysis.
-- `props.res` — `object|null` — Its result.
-- `props.onRun` — `Function` — Starts a run.
-
-**Returns**
-
-- `React.ReactElement` — The view.
-
-**Side effects**
-
-- Subscribes to the store.
-
-### `dBText(L)`
-
-- **Reachability:** UNREACHABLE
-- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
-
-A level offset, written for a legend or a table.
-
-**Parameters**
-
-- `L` — `number` — dB.
-
-**Returns**
-
-- `string` — `+6 dB`, `-3 dB`.
-
-**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
-
-### `dbCell(v)`
-
-- **Reachability:** UNREACHABLE
-- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
-
-A dB change for a table cell, with rounding noise shown as zero.
-
-**Parameters**
-
-- `v` — `number|null` — dB.
-
-**Returns**
-
-- `number|null` — The value; 0 when it would print as ±0.00.
-
-**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
-
-### `logDomain(rows)`
-
-- **Reachability:** UNREACHABLE
-- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
-
-A log axis's domain around the positive values of some rows.
-
-**Parameters**
-
-- `rows` — `Array<object>` — Chart rows.
-
-**Returns**
-
-- `number[]` — `[lo, hi]`, a little outside the values; `[1e-3, 1]` when there are none.
-
-**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
-
-### `CompressionView(props)`
-
-- **Reachability:** UNREACHABLE
-- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
-
-Compression across level: every measured figure against frequency, one trace per level, with the linear model's beside it.
-
-**Parameters**
-
-- `props` — `object` — Component props.
-- `props.res` — `object` — The compression result.
-- `props.stale` — `boolean` — Whether the project has changed since.
-- `props.onRun` — `Function` — Runs again.
-
-**Returns**
-
-- `React.ReactElement` — The view.
-
-**Side effects**
-
-- Subscribes to the store; keeps the linear-trace toggle and the table's frequency as local state.
-
-### `CompressionView > xmax(id)`
-
-- **Reachability:** UNREACHABLE
-- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
-
-A driver's Xmax.
-
-**Parameters**
-
-- `id` — `string` — Driver node id.
-
-**Returns**
-
-- `number` — mm; 0 when unknown.
-
-**Reads external mutable state**
-
-- the graph nodes.
-
-### `CompressionView > traces(linear)`
-
-- **Reachability:** UNREACHABLE
-- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
-
-Traces for a figure: each level solid, and its linear value dashed in the same colour.
-
-**Parameters**
-
-- `linear` — `boolean` _(optional)_ — Whether the figure has a linear counterpart worth drawing.
-
-**Returns**
-
-- `Array<object>` — TdChart lines.
-
-**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
-
-### `CompressionView > chart(title, pick, yLabel, extra)`
-
-- **Reachability:** UNREACHABLE
-- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
-
-One figure's chart.
-
-**Parameters**
-
-- `title` — `string` — Heading.
-- `pick` — `Function` — `(figures) → number|null`.
-- `yLabel` — `string` — Axis unit.
-- `extra` — `object` _(optional)_ — `{linear, logY, refs}`: whether to draw the linear traces, a log axis, reference lines.
-
-**Returns**
-
-- `React.ReactElement` — The chart.
-
-**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
-
-### `CompressionView > multi(list, name)`
-
-- **Reachability:** UNREACHABLE
-- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
-
-A name to add to a heading, when there is more than one of its kind.
-
-**Parameters**
-
-- `list` — `Array` — The drivers, ports or channels.
-- `name` — `string` — This one's name.
-
-**Returns**
-
-- `string` — ` — name`, or nothing.
-
-**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
-
-### `CompressionView > pair(n, l, d, unit)`
-
-- **Reachability:** UNREACHABLE
-- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
-
-A table cell's value, with the linear model's after it.
-
-**Parameters**
-
-- `n` — `number` — Nonlinear value.
-- `l` — `number|null` — Linear value.
-- `d` — `number` — Decimals.
-- `unit` — `string` _(optional)_ — Unit.
-
-**Returns**
-
-- `React.ReactElement` — The cell's content.
-
-**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
-
-### `FailedPoints(props)`
-
-- **Reachability:** UNREACHABLE
-- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
-
-Points of a distortion analysis that could not be solved, and why.
-
-**Parameters**
-
-- `props` — `object` — Props.
-- `props.failed` — `Array<{label: string, error: string}>` _(optional)_ — The points.
-
-**Returns**
-
-- `React.ReactElement|null` — A notice, or nothing when every point solved.
-
-**Purity:** `@pure` — no side effects, no dependence on external mutable state, and deterministic in its arguments. Calling it twice with equal inputs must produce equal output and change nothing observable.
-
 ### `ExitLosses()`
 
 - **Reachability:** UNREACHABLE
@@ -709,7 +367,7 @@ Duct exit losses, listed for every waveguide.
 - **Reachability:** UNREACHABLE
 - **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
 
-The running job's progress, with a cancel button.
+The running job's progress, with a cancel button and how many wait behind it.
 
 **Returns**
 

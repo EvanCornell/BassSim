@@ -37,7 +37,7 @@ current state.
 
 - Subscribes to the store. Registers window mousedown and keydown listeners while a menu is open.
 
-## UNREACHABLE (35)
+## UNREACHABLE (36)
 
 ### `Menu(props)`
 
@@ -81,6 +81,29 @@ when the project cannot be simulated, grey when nothing is open.
 **Side effects**
 
 - Subscribes to the store.
+
+### `TimeDomainTab(props)`
+
+- **Reachability:** UNREACHABLE
+- **Obtain via:** Not importable: a closure nested inside another function, or a module-private with no test surface. Test its behaviour through its caller, or skip it.
+
+The way into the time-domain workspace and back, on the menu bar beside Simulate.
+
+A switch rather than a menu: it shows which of the two views is up, and
+while a queued run solves it carries the run's progress and how many wait.
+
+**Parameters**
+
+- `props` — `object` — Component props.
+- `props.onHover` — `Function` — Called when the pointer enters it, to close an open menu.
+
+**Returns**
+
+- `React.ReactElement` — The button.
+
+**Side effects**
+
+- Subscribes to the store; opens or closes the workspace.
 
 ### `MenuBar > key(id)`
 

@@ -8,8 +8,8 @@ import {
 import { fitZ, logspace } from '../../src/spice/fit.js'
 import { createNetlist, DC_TIE } from '../../src/spice/netlist.js'
 import { runNetlist } from '../../src/spice/run.js'
-import { radiationImpedance } from '../../src/engine/acoustics.js'
 import { RHO, C_AIR } from '../../src/engine/geometry.js'
+import { pistonImpedance } from '../../src/spice/physics.js'
 
 /**
  * Impedance of a one-port network between `in` and ground, as SPICE sees it.
@@ -43,7 +43,7 @@ test('halfSpaceRadiationFit: within 0.5% of the flanged piston up to ka = 3', ()
   const fit = halfSpaceRadiationFit()
   const z0 = (RHO * C_AIR) / Math.PI
   for (const q of logspace(0.005, 3, 300)) {
-    const exact = radiationImpedance(Math.PI, 'half', q * C_AIR)
+    const exact = pistonImpedance(Math.PI, q * C_AIR)
     const z = fitZ(fit, q)
     const ez = Math.hypot(z.re * z0 - exact.re, z.im * z0 - exact.im) / Math.hypot(exact.re, exact.im)
     const er = Math.abs((z.re * z0) / exact.re - 1)
@@ -91,7 +91,7 @@ test('radiationLoad: ngspice sees the intended radiation impedance', async () =>
     const n = space === 'quarter' ? 2 : 1
     const rows = await measure((nl) => radiationLoad(nl, 'in', S, space), 5, 2000)
     for (const { f, re, im } of rows) {
-      const exact = radiationImpedance(n * S, 'half', 2 * Math.PI * f)
+      const exact = pistonImpedance(n * S, 2 * Math.PI * f)
       const want = { re: n * exact.re, im: n * exact.im }
       const e = Math.hypot(re - want.re, im - want.im) / Math.hypot(want.re, want.im)
       assert.ok(e < 0.005, `${space} ${f.toFixed(1)} Hz: off ${(e * 100).toFixed(3)}%`)

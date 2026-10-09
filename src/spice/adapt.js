@@ -1,8 +1,7 @@
 // SPICE vectors → the results a loudspeaker designer reads.
 //
-// Produces the same result object the legacy engine does, so every chart,
-// metric, export and MCP tool reads either engine's output unchanged. Drive
-// levels are RMS, so pressures and flows are RMS; excursion and duct velocity
+// Produces the one result object every chart, metric, export and MCP tool
+// reads. Drive levels are RMS, so pressures and flows are RMS; excursion and duct velocity
 // are reported as peaks, as before.
 
 import { RHO } from './physics.js'
@@ -19,7 +18,7 @@ const P_REF = 20e-6
 const spl = (p) => 20 * Math.log10(Math.max(p, 1e-12) / P_REF)
 
 /**
- * Unwrap a phase curve and derive group delay, as the legacy engine does.
+ * Unwrap a phase curve and derive group delay.
  *
  * @param {number[]} phase - Wrapped phase, degrees.
  * @param {number[]} freqs - Frequencies, Hz.
@@ -61,7 +60,7 @@ export function phaseAndDelay(phase, freqs) {
  *
  * @param {object} raw - From `runNetlist`.
  * @param {object} map - From `compileProject`.
- * @returns {object} The results, in the legacy engine's shape.
+ * @returns {object} The results, in the shape every chart reads.
  * @pure
  */
 export function adaptResults(raw, map) {

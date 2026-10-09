@@ -21,7 +21,7 @@ each chosen so an old project keeps doing what its author meant:
   driver, pr  any extra `Q` folds into `Rms` — Rms + 2π·Fs·Mms/Q — so the
               mechanical damping is unchanged. A passive radiator's `in`
               handle becomes `rear`; its front is left open, as before.
-  settings    sweep range, `masking`, `nlEnabled` → one analysis; `voltage`
+  settings    sweep range, `masking` → one analysis; `voltage`
               and `rg` → one channel; the rest → `display`.
 
 ## Exported constants

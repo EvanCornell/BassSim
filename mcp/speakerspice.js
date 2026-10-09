@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { z } from 'zod'
-import { simulateProject, DEFAULT_ENGINE, ENGINES } from '../src/engine/pipeline.js'
+import { simulateProject } from '../src/engine/pipeline.js'
 import { migrateProject } from '../src/schema/migrate.js'
 import { resolveProject } from '../src/schema/params.js'
 import { validateProject } from '../src/schema/validate.js'
@@ -78,11 +78,6 @@ function resolveNode(nodes, ref, types = null) {
 }
 
 /**
- * Which engine the server simulates with: `SPEAKERSPICE_ENGINE`, or the default.
- */
-const ENGINE = ENGINES.includes(process.env.SPEAKERSPICE_ENGINE) ? process.env.SPEAKERSPICE_ENGINE : DEFAULT_ENGINE
-
-/**
  * Bring a project to the current schema, applying any flat `settings` over it.
  *
  * Tools address sweep and drive settings by their flat names — `voltage`,
@@ -134,7 +129,7 @@ function withSettings(projRaw) {
 async function run(projRaw) {
   const proj = asCurrent(projRaw)
   proj.analyses[0].npts = Math.min(proj.analyses[0].npts || 512, MAX_NPTS)
-  const { results, metrics } = await simulateProject(proj, { engine: ENGINE })
+  const { results, metrics } = await simulateProject(proj)
   const ed = toEditor(proj)
   return { nodes: ed.nodes, edges: ed.edges, settings: ed.settings, res: results, metrics }
 }
