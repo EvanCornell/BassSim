@@ -6,6 +6,7 @@ import {
 import { useStore } from '../store'
 import { readSnapshots } from '../workspace'
 import NumInput from './NumInput'
+import { displayName } from '../nodeNames'
 
 /**
  * Trace colours, cycled per series — theme tokens, so a chart follows the
@@ -628,8 +629,7 @@ function SPLTab() {
   if (show.ports) portIds.forEach((pid, i) => {
     // A key may name one end or face of a node: `id:throat`, `id:rear`.
     const [id, end] = pid.split(':')
-    const n = nodes.find((nn) => nn.id === id)
-    const name = `${n?.data.params.label || 'Port'}${end ? ` (${end})` : ''}`
+    const name = `${displayName(nodes, id)}${end ? ` (${end})` : ''}`
     lines.push({ dataKey: `port_${pid}`, name, color: SERIES[(i + 2) % SERIES.length] })
   })
   lines.push(...snapLines(snapshots, 'spl'))
@@ -723,10 +723,10 @@ function ExcursionTab() {
    * The display label for a driver node, falling back to its id.
    *
    * @param {string} id - Driver node id.
-   * @returns {string} The label, or the id when unlabelled.
+   * @returns {string} Its shown name, numbered when another component shares it.
    * @reads the enclosing `nodes` list.
    */
-  const labelOf = (id) => nodes.find((n) => n.id === id)?.data.params.label || id
+  const labelOf = (id) => displayName(nodes, id)
   const limits = [...new Set(driverIds.map((id) => xmaxByDriver[id]).filter((v) => v > 0))].sort((a, b) => a - b)
   const fallbackXmax = nodes.find((n) => n.type === 'driver')?.data.params.Xmax
   const xmaxes = limits.length ? limits : (fallbackXmax > 0 ? [fallbackXmax] : [])
@@ -821,8 +821,7 @@ function VelocityTab() {
   const updateSettings = useStore((s) => s.updateSettings)
   const wgs = Object.keys(results?.velocity || {})
   const lines = wgs.map((wid, i) => {
-    const n = nodes.find((nn) => nn.id === wid)
-    return { dataKey: `vel_${wid}`, name: n?.data.params.label || 'Waveguide', color: SERIES[i % SERIES.length] }
+    return { dataKey: `vel_${wid}`, name: displayName(nodes, wid), color: SERIES[i % SERIES.length] }
   })
   const fitData = useFitData('vel', data)
   const [yDomain, yControl] = useYScale('vel', fitLinear(fitData, lines.map((l) => l.dataKey), 0, vThreshold * 1.25))
@@ -901,12 +900,11 @@ function InteriorTab() {
  * @pure
  */
 function probeName(key, probes, nodes) {
-  const n = nodes.find((nn) => nn.id === key)
-  if (n) return n.data.params.label || 'Chamber'
+  if (nodes.some((nn) => nn.id === key)) return displayName(nodes, key)
   const p = probes.find((x) => x.id === key)
   if (!p) return key
   if (p.label) return p.label
-  const on = nodes.find((nn) => nn.id === p.at?.node)?.data.params.label || p.at?.node
+  const on = displayName(nodes, p.at?.node)
   return p.at?.position != null ? `${on} @ ${p.at.position} cm` : `${on} ${p.at?.handle}`
 }
 

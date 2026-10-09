@@ -8,6 +8,7 @@ import { treeNominal, effectiveLoad } from '../schema/nominal'
 import { valueOf, freshId } from '../schema/extras'
 import { DEFAULT_CHANNEL } from '../schema/version'
 import { FILTER_TYPES, FILTER_SHAPES } from '../spice/filters'
+import { displayNames } from '../nodeNames'
 
 /** Display names for filter types. */
 const FILTER_LABELS = {
@@ -58,7 +59,7 @@ const ohms = (z) => (isFinite(z) ? `${z >= 10 ? z.toFixed(0) : shortNum(Number(z
  * @param {object} props.tree - The group.
  * @param {number[]} props.path - Its path from the channel's root.
  * @param {Function} props.onEdit - `(path, fn)` applies an edit at a path.
- * @param {Map<string, object>} props.drivers - Driver id → its node.
+ * @param {Map<string, object>} props.drivers - Driver id → its node, with `name`, the name it is shown by.
  * @param {string[]} props.free - Driver ids no channel has claimed.
  * @param {Map<string, object>} props.resolved - Driver id → resolved params, for nominal impedance.
  * @returns {React.ReactElement} The group.
@@ -80,7 +81,7 @@ function LoadGroup({ tree, path, onEdit, drivers, free, resolved }) {
       {kids.map((k, i) => (k.driver
         ? (
           <div className="load-leaf" key={i}>
-            <span>{drivers.get(k.driver)?.data.params.label || k.driver}</span>
+            <span>{drivers.get(k.driver)?.name || k.driver}</span>
             <span className="load-z">{ohms(treeNominal(k, resolved))}</span>
             <button className="icon-btn" title="Unwire this driver" onClick={() => onEdit([...path, i], () => null)}>✕</button>
           </div>
@@ -94,7 +95,7 @@ function LoadGroup({ tree, path, onEdit, drivers, free, resolved }) {
           onEdit(path, (t) => ({ [key]: [...(t[key] || []), item] }))
         }}>
           <option value="">+ Add…</option>
-          {free.map((id) => <option key={id} value={id}>{drivers.get(id)?.data.params.label || id}</option>)}
+          {free.map((id) => <option key={id} value={id}>{drivers.get(id)?.name || id}</option>)}
           <option value="#series">Series group</option>
           <option value="#parallel">Parallel group</option>
         </select>
@@ -264,7 +265,7 @@ function ChannelCard({ ch, index, ctx }) {
             <div className="ts-hint">
               Default: every driver not wired to another channel, in parallel
               {loadLeaves(load).length
-                ? <> — {loadLeaves(load).map((id) => drivers.get(id)?.data.params.label || id).join(', ')}.</>
+                ? <> — {loadLeaves(load).map((id) => drivers.get(id)?.name || id).join(', ')}.</>
                 : <> — none right now.</>}
             </div>
           )
@@ -301,7 +302,9 @@ export default function WiringPanel() {
   const setExtra = useStore((s) => s.setExtra)
   const { values } = useParamValues()
   const driverNodes = nodes.filter((n) => n.type === 'driver')
-  const drivers = new Map(driverNodes.map((n) => [n.id, n]))
+  // Each driver's node, with the name it is shown by.
+  const names = displayNames(nodes)
+  const drivers = new Map(driverNodes.map((n) => [n.id, { ...n, name: names[n.id] }]))
   const resolved = useMemo(
     () => new Map(driverNodes.map((n) => [n.id, resolveNodeParams({ id: n.id, type: n.type, params: n.data.params }, values)])),
     [nodes, values],
@@ -342,7 +345,7 @@ export default function WiringPanel() {
           <span className="unit">dB</span>
         </div>
         {unwired.length > 0 && (
-          <div className="node-warning"><span className="warn-dot" /> Not wired to any channel, so undriven with the coil open: {unwired.map((id) => drivers.get(id)?.data.params.label || id).join(', ')}.</div>
+          <div className="node-warning"><span className="warn-dot" /> Not wired to any channel, so undriven with the coil open: {unwired.map((id) => drivers.get(id)?.name || id).join(', ')}.</div>
         )}
       </div>
       {wiring.channels.map((ch, i) => (

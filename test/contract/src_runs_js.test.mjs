@@ -37,9 +37,14 @@ test('packResult: typed arrays to plain, five significant figures', () => {
   assert.deepEqual(packResult({ a: new Float64Array([1.234567, NaN]), b: [3.14159265], c: 'x' }), { a: [1.2346, null], b: [3.1416], c: 'x' })
 })
 
+test('projectInfo: shared names are numbered', () => {
+  assert.deepEqual(projectInfo({ nodes: [{ id: 'a', type: 'driver', params: { label: 'W' } }, { id: 'b', type: 'driver', params: { label: 'W' } }] }).names,
+    { a: 'W #1', b: 'W #2' })
+})
+
 test('projectInfo', () => {
   assert.deepEqual(projectInfo({ nodes: [{ id: 'd', type: 'driver', params: { label: 'Woofer', Xmax: 10 } }, { id: 'c', type: 'chamber', params: {} }] }),
-    { names: { d: 'Woofer', c: 'c' }, xmax: { d: 10 } })
+    { names: { d: 'Woofer', c: 'Chamber' }, xmax: { d: 10 } })
 })
 
 // CONTRACT: a tab is offered when the run has something for it; with several runs, only the tabs all of them have.

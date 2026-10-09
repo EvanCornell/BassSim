@@ -3,6 +3,7 @@ import { useStore } from '../store'
 import ExprInput from './ExprInput'
 import { nodeHandles } from '../schema/validate'
 import { PROBE_KINDS } from '../schema/version'
+import { displayName } from '../nodeNames'
 
 /** What each probe kind shows, and where. */
 const KIND_LABELS = {
@@ -75,7 +76,7 @@ export default function ProbesPanel() {
                   edit(i, { at: { node: e.target.value, handle: h } })
                 }}>
                   {!node && <option value="">(missing node)</option>}
-                  {nodes.map((n) => <option key={n.id} value={n.id}>{n.data.params.label || n.id}</option>)}
+                  {nodes.map((n) => <option key={n.id} value={n.id}>{displayName(nodes, n.id)}</option>)}
                 </select>
                 <span className="unit" />
               </div>

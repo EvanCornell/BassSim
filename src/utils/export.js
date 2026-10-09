@@ -4,6 +4,7 @@ import { createZip } from './zip'
 import { prepareProject } from '../engine/pipeline'
 import { compileProject } from '../spice/compile'
 import { netlistToSvg } from '../spice/schematic'
+import { displayName } from '../nodeNames'
 
 /**
  * Push content to the user as a file download.
@@ -104,7 +105,7 @@ export function exportCSV(results, nodes, projectName) {
     ['SPL Driver (dB)', (i) => results.splDriver[i]],
   ]
   for (const [pid, arr] of Object.entries(results.splPorts || {})) {
-    const label = nodes.find((n) => n.id === pid)?.data.params.label || pid
+    const label = displayName(nodes, pid)
     cols.push([`SPL ${label} (dB)`, (i) => arr[i]])
   }
   cols.push(
@@ -113,11 +114,11 @@ export function exportCSV(results, nodes, projectName) {
     ['Excursion (mm pk)', (i) => results.excursion[i]],
   )
   for (const [wid, arr] of Object.entries(results.velocity || {})) {
-    const label = nodes.find((n) => n.id === wid)?.data.params.label || wid
+    const label = displayName(nodes, wid)
     cols.push([`Velocity ${label} (m/s pk)`, (i) => arr[i]])
   }
   for (const [cid, arr] of Object.entries(results.splInterior || {})) {
-    const label = nodes.find((n) => n.id === cid)?.data.params.label || cid
+    const label = displayName(nodes, cid)
     cols.push([`Interior SPL ${label} (dB)`, (i) => arr[i]])
   }
   cols.push(

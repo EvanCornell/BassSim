@@ -13,6 +13,8 @@
 //
 // Everything here is pure.
 
+import { displayNames } from './nodeNames.js'
+
 /** The range a new run covers, and how many tones across it. */
 export const RUN_DEFAULTS = { f1: 15, f2: 200, points: 24 }
 
@@ -99,14 +101,15 @@ export function packResult(v) {
  * Node labels and driver Xmax from a project, as a run's summary keeps them.
  *
  * @param {object} project - A serialized project.
- * @returns {{names: Object<string, string>, xmax: Object<string, number>}} Labels by node id, and each driver's Xmax, mm.
+ * @returns {{names: Object<string, string>, xmax: Object<string, number>}} Shown names by node id — numbered where shared — and each driver's Xmax, mm.
  * @pure
  */
 export function projectInfo(project) {
   const names = {}
   const xmax = {}
+  const shown = displayNames(project.nodes || [])
   for (const n of project.nodes || []) {
-    names[n.id] = n.params?.label || n.id
+    names[n.id] = shown[n.id]
     if (n.type === 'driver') xmax[n.id] = Number(n.params?.Xmax) || 0
   }
   return { names, xmax }

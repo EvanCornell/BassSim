@@ -8,6 +8,7 @@ import {
 import { readDrivers } from '../workspace'
 import { BUILTIN_DRIVERS } from '../data/drivers'
 import NumInput from './NumInput'
+import { displayName, displayNames } from '../nodeNames'
 
 // Driver curve editor — large-signal Bl(x), Kms(x)/Cms(x), Le(x).
 // Parametric-EQ style editor: click the curve to add a control point, drag it
@@ -908,6 +909,7 @@ export function curveSummary(curve) {
  */
 export function NLRail() {
   const { drivers, driver, nl, param } = useNlDriver()
+  const nodes = useStore((s) => s.nodes)
   const setNl = useStore((s) => s.setNl)
   if (!driver) return <div className="td-hint">Add a Driver node to the circuit first.</div>
   const both = curveHasContent(nl.Cms) && curveHasContent(nl.Kms)
@@ -917,7 +919,7 @@ export function NLRail() {
         <div className="nl-rail-row">
           <h4>Driver</h4>
           <select value={driver.id} onChange={(e) => setNl({ nlDriver: e.target.value, nlOverlays: [] })}>
-            {drivers.map((d) => <option key={d.id} value={d.id}>{d.data.params.label || d.id}</option>)}
+            {drivers.map((d) => <option key={d.id} value={d.id}>{displayName(nodes, d.id)}</option>)}
           </select>
         </div>
       </div>
@@ -983,7 +985,7 @@ function AddOverlay({ driver }) {
   const others = Object.entries(workspace.files)
     .filter(([path, f]) => f.kind === 'project' && path !== activeFile)
     .flatMap(([path, f]) => (f.data?.nodes || []).filter((n) => n.type === 'driver' && n.params?.nl)
-      .map((n) => ({ id: `proj:${path}:${n.id}`, label: `${f.data?.name || path.split('/').pop().replace(/\.speakerspice$/, '')} · ${n.params.label || n.id}`, nl: n.params.nl, xmax: n.params.Xmax })))
+      .map((n) => ({ id: `proj:${path}:${n.id}`, label: `${f.data?.name || path.split('/').pop().replace(/\.speakerspice$/, '')} · ${displayNames(f.data.nodes)[n.id]}`, nl: n.params.nl, xmax: n.params.Xmax })))
   const fit = fitFor(p, readDrivers(workspace))
   return (
     <span style={{ position: 'relative' }}>

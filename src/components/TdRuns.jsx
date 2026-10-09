@@ -15,6 +15,7 @@ import {
 import PlotChart from './PlotChart'
 import { SERIES } from './TimeDomainWindow'
 import NumInput from './NumInput'
+import { displayNames } from '../nodeNames'
 
 /** The MIME type a dragged run list travels as. */
 const DRAG_TYPE = 'application/x-speakerspice-runs'
@@ -31,6 +32,21 @@ export function useRuns() {
   const activeFile = useStore((s) => s.activeFile)
   const projectName = useStore((s) => s.projectName)
   return useMemo(() => runIndex({ workspace, records, activeFile, projectName }), [workspace, records, activeFile, projectName])
+}
+
+/**
+ * The shown names of a run's components, from the project it was run on.
+ *
+ * Worked out from the run's own copy of the project, so two components that
+ * shared a name then are numbered, whatever the project is called now.
+ *
+ * @param {object} entry - The run.
+ * @param {object|null} loaded - What has been read of it, carrying `content`.
+ * @returns {Object<string, string>} By node id.
+ * @pure
+ */
+function runNames(entry, loaded) {
+  return loaded?.content?.nodes ? displayNames(loaded.content.nodes) : (entry.info?.names || {})
 }
 
 /**
@@ -458,7 +474,7 @@ export function RunLibrary() {
  * @param {object} props - Component props.
  * @param {string} props.tab - The tab.
  * @param {string} props.view - The view within it.
- * @param {Array<{entry: object, result: object, color: string}>} props.runs - The open runs that have loaded.
+ * @param {Array<{entry: object, result: object, names: Object<string, string>, color: string}>} props.runs - The open runs that have loaded, with their components' shown names.
  * @param {number} [props.hz] - For waveforms, the tone.
  * @returns {React.ReactElement} The chart.
  * @pure
@@ -467,7 +483,7 @@ function ViewChart({ tab, view, runs, hz }) {
   const unit = (TAB_VIEWS[tab].find((v) => v[0] === view) || TAB_VIEWS[tab][0])[2]
   const series = []
   for (const r of runs) {
-    const traces = tabTraces(tab, view, r.result, r.entry.info?.names || {}, hz)
+    const traces = tabTraces(tab, view, r.result, r.names, hz)
     traces.forEach((t, k) => {
       const solo = runs.length === 1
       const name = solo
@@ -506,7 +522,7 @@ export function RunViewer() {
   const entries = useMemo(() => view.runs.map((id) => all.find((r) => r.id === id)).filter(Boolean), [view.runs, all])
   const data = useRunData(entries)
   const loaded = entries
-    .map((entry, i) => ({ entry, result: data[entry.id]?.data?.result, color: SERIES[view.runs.indexOf(entry.id) % SERIES.length] }))
+    .map((entry, i) => ({ entry, result: data[entry.id]?.data?.result, names: runNames(entry, data[entry.id]), color: SERIES[view.runs.indexOf(entry.id) % SERIES.length] }))
     .filter((r) => r.result)
   const pending = entries.filter((e) => !data[e.id] || data[e.id].loading)
   const errors = entries.filter((e) => data[e.id]?.error)

@@ -7,6 +7,7 @@ import NumInput from './NumInput'
 import { useResolvedParams } from '../useResolved'
 import { freshId } from '../schema/extras'
 import { driverNominal } from '../schema/nominal'
+import { baseName, nameNumbers } from '../nodeNames'
 
 /**
  * One-line physical explanation per parameter, shown as a label tooltip.
@@ -273,23 +274,48 @@ function LeakSection({ id, p }) {
 }
 
 /**
- * The node's display name, shown on the canvas and in exports.
+ * The node's display name, shown on the canvas and in exports, and — while
+ * another component has the same name — a note saying which number tells
+ * this one apart.
  *
  * @param {object} props - Component props.
  * @param {string} props.id - Node id.
  * @param {object} props.p - The node's params.
- * @returns {React.ReactElement} The label input.
+ * @returns {React.ReactElement} The label input, and the note when the name is shared.
  * @sideEffect Subscribes to the store.
  */
 function LabelField({ id, p }) {
   const updateParams = useStore((s) => s.updateParams)
+  const num = useStore((s) => nameNumbers(s.nodes)[id])
+  const name = useStore((s) => baseName(s.nodes.find((n) => n.id === id)))
   return (
-    <div className="param-row wide">
-      <label title={TIPS.label}>Label</label>
-      <input value={p.label || ''} onChange={(e) => updateParams(id, { label: e.target.value })} />
-      <span className="unit" />
-    </div>
+    <>
+      <div className="param-row wide">
+        <label title={TIPS.label}>Label</label>
+        <input value={p.label || ''} placeholder={name} onChange={(e) => updateParams(id, { label: e.target.value })} />
+        <span className="unit" />
+      </div>
+      {num ? (
+        <div className="ts-hint wide name-note">
+          Another component is also called “{name}”, so this one is shown
+          as {name} <span className="name-num">#{num}</span> on the canvas and in charts. Give it its own name to drop the number.
+        </div>
+      ) : null}
+    </>
   )
+}
+
+/**
+ * The number after a shared name, as a section title shows it.
+ *
+ * @param {object} props - Component props.
+ * @param {string} props.id - Node id.
+ * @returns {React.ReactElement|null} The number, or nothing when the name is unique.
+ * @sideEffect Subscribes to the store.
+ */
+function NameNum({ id }) {
+  const num = useStore((s) => nameNumbers(s.nodes)[id])
+  return num ? <span className="name-num">#{num}</span> : null
 }
 
 /**
@@ -488,7 +514,7 @@ function DriverForm({ node }) {
   const nominal = driverNominal(p)
   return (
     <Section
-      id="driver" title={p.label || 'Driver'} color="var(--s1)" focus fixed
+      id="driver" title={<>{p.label || 'Driver'}<NameNum id={id} /></>} color="var(--s1)" focus fixed
       summary={`Fs ${short(p.Fs)} Hz · Qts ${short(p.Qts)}`}
       actions={<>
         <button onClick={() => setShowDriverDB(true)}>Database</button>
@@ -743,7 +769,7 @@ function ChamberForm({ node }) {
   const id = node.id
   const r = useResolvedParams(id, node.type, p)
   return (
-    <Section id="chamber" title={p.label || 'Chamber'} color="var(--s2)" focus initial
+    <Section id="chamber" title={<>{p.label || 'Chamber'}<NameNum id={id} /></>} color="var(--s2)" focus initial
       summary={`${short(r.volume)} L · ${short(r.length)} cm`}>
       <div className="param-grid">
         <LabelField id={id} p={p} />
@@ -832,7 +858,7 @@ function WaveguideForm({ node }) {
   const r = useResolvedParams(id, node.type, p)
   const vol = waveguideVolume(r.flare, r.S1 * 1e-4, r.S2 * 1e-4, r.length / 100) * 1000
   return (
-    <Section id="waveguide" title={p.label || 'Waveguide'} color="var(--s3)" focus initial
+    <Section id="waveguide" title={<>{p.label || 'Waveguide'}<NameNum id={id} /></>} color="var(--s3)" focus initial
       summary={`${short(r.S1)}→${short(r.S2)} cm² · ${short(r.length)} cm`}>
       <div className="param-grid">
         <LabelField id={id} p={p} />
@@ -883,7 +909,7 @@ function PRForm({ node }) {
   const m = (r.Mmd + (r.addedMass || 0)) / 1000
   const fs = 1 / (2 * Math.PI * Math.sqrt(Math.max(m * (r.Cms / 1000), 1e-12)))
   return (
-    <Section id="pr" title={p.label || 'Passive radiator'} color="var(--s4)" focus initial
+    <Section id="pr" title={<>{p.label || 'Passive radiator'}<NameNum id={id} /></>} color="var(--s4)" focus initial
       summary={`Fs ${fs.toFixed(1)} Hz · ${short(r.count)}×`}>
       <div className="param-grid">
         <LabelField id={id} p={p} />
@@ -934,7 +960,7 @@ function RadiationForm({ node }) {
     ['rigid', 'Rigid wall (reflective)'], ['anechoic', 'Anechoic (absorbing)'],
   ]
   return (
-    <Section id="radiation" title={p.label || 'Radiation'} color="var(--s5)" focus initial
+    <Section id="radiation" title={<>{p.label || 'Radiation'}<NameNum id={id} /></>} color="var(--s5)" focus initial
       summary={(SPACES.find(([k]) => k === p.space) || [, p.space])[1]}>
       <div className="param-grid">
         <LabelField id={id} p={p} />

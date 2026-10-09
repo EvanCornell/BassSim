@@ -6,6 +6,7 @@ import NLLab, { NLRail } from './NLLab'
 import { RunLibrary, RunViewer, NewRunDrawer } from './TdRuns'
 import NumInput from './NumInput'
 import PlotChart from './PlotChart'
+import { displayName } from '../nodeNames'
 
 /** Trace colours, shared with the frequency charts. */
 export const SERIES = ['var(--c1)', 'var(--c2)', 'var(--c3)', 'var(--c4)', 'var(--c5)', 'var(--c6)']
@@ -212,10 +213,10 @@ function Check({ label, checked, onChange, title }) {
  *
  * @param {Array<object>} nodes - Graph nodes.
  * @param {string} id - Node id.
- * @returns {string} Its label, or the id.
+ * @returns {string} Its shown name, numbered when another component shares it; the id when there is no such node.
  * @pure
  */
-const nameOf = (nodes, id) => nodes.find((n) => n.id === id)?.data.params.label || id
+const nameOf = (nodes, id) => displayName(nodes, id)
 
 /**
  * Whether a result was run from the project as it now stands.
@@ -387,7 +388,7 @@ function ExitLosses() {
       {!wgs.length && <div className="td-hint">No waveguides.</div>}
       {wgs.map((n) => (
         <div key={n.id} className="td-exit">
-          <div className="td-exit-name">{n.data.params.label || n.id}</div>
+          <div className="td-exit-name">{displayName(nodes, n.id)}</div>
           {['throatK', 'mouthK'].map((k) => (
             <div className="param-row" key={k}>
               <label>{k === 'throatK' ? 'Throat K' : 'Mouth K'}</label>

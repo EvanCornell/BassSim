@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine, ResponsiveContainer } from 'recharts'
 import { useStore } from '../store'
+import { displayName } from '../nodeNames'
 
 /**
  * Floating chart of air velocity in one waveguide.
@@ -17,6 +18,7 @@ export default function VelocityPopup() {
   const nodeId = useStore((s) => s.velocityPopupNodeId)
   const setVelocityPopup = useStore((s) => s.setVelocityPopup)
   const node = useStore((s) => s.nodes.find((n) => n.id === s.velocityPopupNodeId))
+  const name = useStore((s) => displayName(s.nodes, s.velocityPopupNodeId))
   const results = useStore((s) => s.results)
   const vThreshold = useStore((s) => s.settings.vThreshold)
   const settings = useStore((s) => s.settings)
@@ -33,7 +35,7 @@ export default function VelocityPopup() {
   return (
     <div className="vel-popup">
       <div className="vp-head">
-        <b>Port velocity — {node.data.params.label || 'Waveguide'}</b>
+        <b>Port velocity — {name}</b>
         <button onClick={() => setVelocityPopup(null)}>✕</button>
       </div>
       <div style={{ flex: 1, minHeight: 0 }}>

@@ -9,6 +9,7 @@
 
 import { DEFAULT_PARAMS, NODE_HANDLES, PROBE_KINDS } from './version.js'
 import { filterSections } from '../spice/filters.js'
+import { displayNames } from '../nodeNames.js'
 
 /**
  * Every handle a node exposes, taps included.
@@ -114,13 +115,14 @@ export function validateProject(proj) {
    */
   const warn = (id, msg) => { (warnings[id] ||= []).push(msg) }
   const nodes = proj.nodes || []
+  const shown = displayNames(nodes)
   const byId = new Map()
   for (const [i, n] of nodes.entries()) {
     if (!n.id) { errors.push(`nodes[${i}] is missing "id"`); continue }
     if (byId.has(n.id)) errors.push(`node id "${n.id}" is used more than once`)
     byId.set(n.id, n)
     if (!DEFAULT_PARAMS[n.type]) { errors.push(`node "${n.id}" has unknown type "${n.type}"`); continue }
-    const name = n.params?.label || n.id
+    const name = shown[n.id]
     for (const k of POSITIVE[n.type]) {
       const v = Number(n.params?.[k])
       if (!(v > 0)) errors.push(`${name}: ${k} must be greater than zero`)
@@ -138,8 +140,8 @@ export function validateProject(proj) {
     const b = byId.get(e.target)
     if (!a) { errors.push(`edges[${i}] source "${e.source}" is not a node id`); continue }
     if (!b) { errors.push(`edges[${i}] target "${e.target}" is not a node id`); continue }
-    if (!nodeHandles(a).includes(e.sourceHandle)) { errors.push(`edges[${i}]: ${a.params?.label || a.id} has no handle "${e.sourceHandle}"`); continue }
-    if (!nodeHandles(b).includes(e.targetHandle)) { errors.push(`edges[${i}]: ${b.params?.label || b.id} has no handle "${e.targetHandle}"`); continue }
+    if (!nodeHandles(a).includes(e.sourceHandle)) { errors.push(`edges[${i}]: ${shown[a.id]} has no handle "${e.sourceHandle}"`); continue }
+    if (!nodeHandles(b).includes(e.targetHandle)) { errors.push(`edges[${i}]: ${shown[b.id]} has no handle "${e.targetHandle}"`); continue }
     if (a.id === b.id && e.sourceHandle === e.targetHandle) { errors.push(`edges[${i}] joins a handle to itself`); continue }
     for (const [x, hx, y, hy] of [[a, e.sourceHandle, b, e.targetHandle], [b, e.targetHandle, a, e.sourceHandle]]) {
       const k = `${x.id}:${hx}`
@@ -176,7 +178,7 @@ export function validateProject(proj) {
     for (const id of loadLeaves(c.load)) {
       const n = byId.get(id)
       if (!n || n.type !== 'driver') { errors.push(`${c.label || c.id}: "${id}" is not a driver node`); continue }
-      if (claimed.has(id)) errors.push(`${n.params?.label || id} is wired to more than one place (${claimed.get(id)} and ${c.label || c.id})`)
+      if (claimed.has(id)) errors.push(`${shown[id]} is wired to more than one place (${claimed.get(id)} and ${c.label || c.id})`)
       else claimed.set(id, c.label || c.id)
     }
   }
@@ -214,7 +216,7 @@ export function validateProject(proj) {
       if (n.type !== 'chamber' && n.type !== 'waveguide') warn(key, `Probe ${name}: only chambers and waveguides have positions along them.`)
       else if (!(Number(p.at.position) >= 0 && Number(p.at.position) <= len)) warn(key, `Probe ${name} at ${p.at.position} cm is not within the ${len} cm length.`)
     } else if (!nodeHandles(n).includes(p.at.handle)) {
-      warn(key, `Probe ${name}: ${n.params?.label || n.id} has no handle "${p.at.handle}".`)
+      warn(key, `Probe ${name}: ${shown[n.id]} has no handle "${p.at.handle}".`)
     }
   }
 
@@ -232,7 +234,7 @@ export function validateProject(proj) {
         for (const o of conns.get(`${n.id}:${face}`) || []) {
           const area = endArea(o.node, o.handle)
           if (area != null && Sd > area * 1.05) {
-            warn(n.id, `The ${face} face (${Sd.toFixed(0)} cm²) meets ${o.node.params?.label || o.node.id}'s ${o.handle} (${area.toFixed(0)} cm²), which is smaller than the cone. A real build needs a throat chamber between them; this is simulated as an ideal coupling with no trapped air.`)
+            warn(n.id, `The ${face} face (${Sd.toFixed(0)} cm²) meets ${shown[o.node.id]}'s ${o.handle} (${area.toFixed(0)} cm²), which is smaller than the cone. A real build needs a throat chamber between them; this is simulated as an ideal coupling with no trapped air.`)
           }
         }
       }

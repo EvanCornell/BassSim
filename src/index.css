@@ -837,6 +837,11 @@ svg.ws-chevron.toggle:hover { color: var(--text); background: var(--panel-2); }
   display: flex; align-items: center; gap: 8px;
 }
 .acou-node .node-head .pi-dot { width: 8px; height: 8px; border-radius: 2px; flex: none; }
+/* The number after a name another component shares — not part of the label. */
+.name-num {
+  font-family: var(--mono-font); font-size: 0.85em; font-weight: 500; color: var(--accent);
+  background: oklch(from var(--accent) l c h / 0.14); border-radius: 4px; padding: 0 4px; margin-left: 4px;
+}
 .acou-node .node-body { padding: 3px 12px 10px; color: var(--text-2); line-height: 1.6; }
 .acou-node .warn-dot {
   width: 7px; height: 7px; border-radius: 50%; background: var(--amber);

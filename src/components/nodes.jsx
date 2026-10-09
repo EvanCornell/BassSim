@@ -4,6 +4,7 @@ import { useStore } from '../store'
 import { C_AIR, flareCutoff, endCorrectionLength, waveguideVolume } from '../engine/geometry'
 import { useResolvedParams } from '../useResolved'
 import { driverNominal } from '../schema/nominal'
+import { nameNumbers } from '../nodeNames'
 
 /**
  * Accent colour per node type, shared by the canvas nodes and the minimap.
@@ -28,20 +29,24 @@ function useWarnings(id) {
 }
 
 /**
- * A node's title bar: colour dot, label, and a warning marker when it has warnings.
+ * A node's title bar: colour dot, label, its number when another component
+ * shares the name, and a warning marker when it has warnings.
  *
  * @param {object} props - Component props.
+ * @param {string} props.id - Node id.
  * @param {string} props.type - Node type, which picks the colour.
  * @param {string} props.label - Display label.
  * @param {string[]|undefined} props.warn - Validation warnings, shown in the marker's tooltip.
  * @returns {React.ReactElement} The node header.
- * @pure
+ * @sideEffect Subscribes to the store.
  */
-function Head({ type, label, warn }) {
+function Head({ id, type, label, warn }) {
+  const num = useStore((s) => nameNumbers(s.nodes)[id])
   return (
     <div className="node-head">
       <span className="pi-dot" style={{ background: NODE_COLORS[type] }} />
       {label}
+      {num ? <span className="name-num" title="Another component has this name too; the number tells them apart">#{num}</span> : null}
       {warn && <span className="warn-dot" title={warn.join('\n')} />}
     </div>
   )
@@ -120,7 +125,7 @@ export function DriverNode({ id, data, selected }) {
   const nominal = driverNominal(p)
   return (
     <div className={`acou-node ${selected ? 'selected' : ''}`}>
-      <Head type="driver" label={p.label || 'Driver'} warn={warn} />
+      <Head id={id} type="driver" label={p.label || 'Driver'} warn={warn} />
       <div className="node-body">
         Fs <span className="node-readout">{p.Fs} Hz</span> · Qts <span className="node-readout">{p.Qts}</span><br />
         Sd <span className="node-readout">{p.Sd} cm²</span>
@@ -152,7 +157,7 @@ export function ChamberNode({ id, data, selected }) {
   const fRes = C_AIR / (2 * (p.length / 100)) // first λ/2 standing wave
   return (
     <div className={`acou-node ${selected ? 'selected' : ''}`}>
-      <Head type="chamber" label={p.label || 'Chamber'} warn={warn} />
+      <Head id={id} type="chamber" label={p.label || 'Chamber'} warn={warn} />
       <div className="node-body">
         <span className="node-readout">{p.volume} L</span> · L {p.length} cm<br />
         1st mode <span className="node-readout">{fRes.toFixed(0)} Hz</span> · {Number(p.leakQL) > 0 ? `QL ${p.leakQL}` : 'sealed'}
@@ -198,7 +203,7 @@ export function WaveguideNode({ id, data, selected }) {
   const volL = waveguideVolume(p.flare, p.S1 * 1e-4, S2, L) * 1000
   return (
     <div className={`acou-node ${selected ? 'selected' : ''}`}>
-      <Head type="waveguide" label={p.label || 'Waveguide'} warn={warn} />
+      <Head id={id} type="waveguide" label={p.label || 'Waveguide'} warn={warn} />
       <div className="node-body">
         {p.S1}→{p.S2} cm² · {p.length} cm · {p.flare}<br />
         vol <span className="node-readout" title="Internal air volume of this segment (from the flare profile)">{volL >= 100 ? volL.toFixed(0) : volL.toFixed(1)} L</span> ·{' '}
@@ -241,7 +246,7 @@ export function PRNode({ id, data, selected }) {
   const fs = 1 / (2 * Math.PI * Math.sqrt(Math.max(m * c, 1e-12)))
   return (
     <div className={`acou-node ${selected ? 'selected' : ''}`}>
-      <Head type="pr" label={p.label || 'Passive Radiator'} warn={warn} />
+      <Head id={id} type="pr" label={p.label || 'Passive Radiator'} warn={warn} />
       <div className="node-body">
         Sd {p.Sd} cm² · M {p.Mmd}{p.addedMass ? `+${p.addedMass}` : ''} g<br />
         Fs <span className="node-readout">{fs.toFixed(1)} Hz</span>{p.count > 1 && <> · <span className="node-readout">{p.count}×</span></>}
@@ -272,7 +277,7 @@ export function RadiationNode({ id, data, selected }) {
   const p = data.params
   return (
     <div className={`acou-node ${selected ? 'selected' : ''}`}>
-      <Head type="radiation" label={p.label || 'Radiation'} warn={warn} />
+      <Head id={id} type="radiation" label={p.label || 'Radiation'} warn={warn} />
       <div className="node-body">{SPACE_LABELS[p.space] || p.space}</div>
       <Handle type="source" position={Position.Top} id="in" title="One shared opening — everything joined here radiates together" />
     </div>
