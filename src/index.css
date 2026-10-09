@@ -446,14 +446,23 @@ select { cursor: pointer; }
 .dock-splitter:hover::after { background: var(--accent); }
 
 .dock-stack {
+  --tabbar: 44px;
+  position: relative;
   display: flex; flex-direction: column; min-width: 0; min-height: 0;
   background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-card);
   overflow: hidden;
 }
+/* The tab bar floats over the top of the stack, see-through, and firms up
+   under the pointer. The canvas and charts run up beneath it. */
 .dock-tabs {
-  display: flex; align-items: center; flex-shrink: 0; gap: 4px;
-  height: 44px; padding: 0 8px; user-select: none;
+  position: absolute; top: 0; left: 0; right: 0; z-index: 8;
+  display: flex; align-items: center; gap: 4px;
+  height: var(--tabbar); padding: 0 8px; user-select: none;
+  background: color-mix(in oklab, var(--panel) 45%, transparent);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  transition: background 0.15s;
 }
+.dock-tabs:hover { background: color-mix(in oklab, var(--panel) 94%, transparent); }
 /* Tabs scroll sideways rather than squeezing, so the chrome buttons and
    every close cross stay reachable however many panels share a stack. */
 .dock-tabscroll {
@@ -487,7 +496,11 @@ select { cursor: pointer; }
   flex: 1; min-height: 0; min-width: 0; position: relative; display: flex;
   overflow: hidden;
 }
-.dock-panel { flex: 1; min-width: 0; min-height: 0; flex-direction: column; }
+.dock-panel { flex: 1; min-width: 0; min-height: 0; flex-direction: column; padding-top: var(--tabbar, 0px); }
+.dock-panel.under { padding-top: 0; }
+/* What sits over the top of a canvas or chart moves down past the tab bar. */
+.dock-panel.under .plot-controls, .dock-panel.under .plot-left { top: calc(var(--tabbar, 0px) + 2px); }
+.dock-panel.under .react-flow__minimap { margin-top: calc(var(--tabbar, 0px) + 4px); }
 .dock-panel > * { flex: 1; min-height: 0; min-width: 0; }
 .panel-scroll {
   overflow-y: auto; padding: 4px 10px 10px;

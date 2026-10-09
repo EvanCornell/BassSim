@@ -13,6 +13,19 @@ import { useStore } from '../../store'
 import { PANELS, panelTitle } from './panels'
 import { StackContext } from './stackContext'
 
+
+/**
+ * Whether a panel's content runs up under the stack's see-through tab bar.
+ *
+ * The canvas and the charts do, so they get the bar's height and show
+ * through it; lists and forms start below it.
+ *
+ * @param {string} id - Panel id.
+ * @returns {boolean} True for the canvas and every chart.
+ * @pure
+ */
+const UNDER_TABS = (id) => id === 'canvas' || PANELS[id]?.group === 'charts'
+
 /**
  * The dataTransfer type marking a panel tab drag.
  */
@@ -237,7 +250,7 @@ function DockStack({ node }) {
         onContextMenu={onContextMenu}
       >
         {node.panels.map((pid) => (
-          <div key={pid} className="dock-panel" style={{ display: pid === active ? 'flex' : 'none' }}>
+          <div key={pid} className={`dock-panel${UNDER_TABS(pid) ? ' under' : ''}`} style={{ display: pid === active ? 'flex' : 'none' }}>
             <PanelBody id={pid} />
           </div>
         ))}
