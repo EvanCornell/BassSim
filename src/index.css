@@ -609,6 +609,8 @@ select { cursor: pointer; }
 
 .ws-chevron { width: 16px; height: 16px; flex: none; color: var(--text-3); }
 svg.ws-chevron.open { transform: rotate(90deg); }
+svg.ws-chevron.toggle { border-radius: 4px; }
+svg.ws-chevron.toggle:hover { color: var(--text); background: var(--panel-2); }
 
 .ws-sq { width: 8px; height: 8px; border-radius: 2px; flex: none; margin: 0 8px 0 2px; background: var(--text-4); }
 .ws-sq.project { background: var(--s1); }

@@ -31,16 +31,19 @@ import { connectFolderWithPrompt, disconnectFolderWithPrompt } from '../utils/fo
 const ROW_DRAG_TYPE = 'application/speakerspice-path'
 
 /**
- * The twisty drawn beside a folder.
+ * The twisty drawn beside a folder; clicking it expands or collapses the
+ * folder without touching the selection.
  *
  * @param {object} props - Component props.
  * @param {boolean} props.open - Whether the folder is expanded.
+ * @param {Function} props.onToggle - Called on a click, which goes no further than the chevron.
  * @returns {React.ReactElement} The chevron.
  * @pure
  */
-function Chevron({ open }) {
+function Chevron({ open, onToggle }) {
   return (
-    <svg className={`ws-chevron ${open ? 'open' : ''}`} viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+    <svg className={`ws-chevron toggle ${open ? 'open' : ''}`} viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"
+      onClick={(e) => { e.stopPropagation(); onToggle() }}>
       <path d="M6 4l4 4-4 4" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
@@ -178,39 +181,44 @@ export default function FileBrowser() {
    *
    * @param {string} path - The clicked row's path.
    * @param {React.MouseEvent} e - The click, read for its modifier keys.
-   * @returns {void}
+   * @returns {string[]} The new selection.
    * @sideEffect Writes store state.
    */
   const select = (path, e) => {
     const st = useStore.getState()
+    let next = [path]
     if (e.ctrlKey || e.metaKey) {
-      st.setWsSelection(selection.includes(path) ? selection.filter((p) => p !== path) : [...selection, path])
-      return
-    }
-    if (e.shiftKey && focused) {
+      next = selection.includes(path) ? selection.filter((p) => p !== path) : [...selection, path]
+    } else if (e.shiftKey && focused && rows.some((r) => r.node.path === focused) && rows.some((r) => r.node.path === path)) {
       const from = rows.findIndex((r) => r.node.path === focused)
       const to = rows.findIndex((r) => r.node.path === path)
-      if (from !== -1 && to !== -1) {
-        const span = rows.slice(Math.min(from, to), Math.max(from, to) + 1).map((r) => r.node.path)
-        st.setWsSelection(span)
-        return
-      }
+      next = rows.slice(Math.min(from, to), Math.max(from, to) + 1).map((r) => r.node.path)
+    } else if (selection.length === 1 && selection[0] === path) {
+      // Clicking the one selected row again lets go of it. A project hands
+      // the selection back to its folder, which stays highlighted; a folder
+      // or a top-level project leaves nothing selected, so a new entry goes
+      // at the root.
+      const parent = workspace.files[path] ? parentOf(path) : ''
+      next = parent ? [parent] : []
     }
-    // Clicking the one selected row again lets go of it, so nothing is
-    // selected and a new entry goes at the root.
-    st.setWsSelection(selection.length === 1 && selection[0] === path ? [] : [path])
+    st.setWsSelection(next)
+    return next
   }
 
   /**
-   * Act on a row: open a project, or expand a folder.
+   * Act on a clicked row: open a project, or expand a folder as it is selected.
+   *
+   * A selected folder is always expanded by the click that selects it, and
+   * letting go of one leaves it as it was; only the chevron collapses.
    *
    * @param {object} node - The row's tree node.
+   * @param {string[]} selected - The selection the click left.
    * @returns {void}
    * @sideEffect Writes store state; opening a project replaces what is on the canvas.
    */
-  const activate = (node) => {
+  const activate = (node, selected) => {
     const st = useStore.getState()
-    if (node.kind === 'folder') st.toggleWsFolder(node.path)
+    if (node.kind === 'folder') { if (selected.includes(node.path)) st.toggleWsFolder(node.path, true) }
     else if (node.entry.kind === 'project') st.openFile(node.path)
   }
 
@@ -487,7 +495,7 @@ export default function FileBrowser() {
         onDragOver={folder ? (e) => onDragOver(e, path) : undefined}
         onDragLeave={folder ? () => setDropTarget(null) : undefined}
         onDrop={folder ? (e) => onDrop(e, path) : undefined}
-        onClick={(e) => { if (!renaming) { select(path, e); activate(node) } }}
+        onClick={(e) => { if (!renaming) activate(node, select(path, e)) }}
         onContextMenu={(e) => onContextMenu(e, node)}
       >
         {/* Indent guides, one per level crossed — the vertical rules VS Code
@@ -495,7 +503,7 @@ export default function FileBrowser() {
         {Array.from({ length: depth }, (_, k) => (
           <span key={k} className="ws-guide" style={{ left: 9 + k * 12 }} />
         ))}
-        {folder ? <Chevron open={open} /> : <span className="ws-chevron" />}
+        {folder ? <Chevron open={open} onToggle={() => useStore.getState().toggleWsFolder(path)} /> : <span className="ws-chevron" />}
         <RowIcon kind={folder ? 'folder' : node.entry.kind} />
         {renaming
           ? <NameEditor value={baseName(path)} error={editError} onCommit={commitEdit} onCancel={cancelEdit} />
