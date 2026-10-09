@@ -593,6 +593,10 @@ select { cursor: pointer; }
 .ws-row:hover { background: var(--panel-2); color: var(--text); }
 .ws-row.selected { background: oklch(from var(--accent) l c h / 0.28); color: var(--text); box-shadow: inset 0 0 0 1px oklch(from var(--accent) l c h / 0.45); }
 .ws-tree:focus .ws-row.selected { box-shadow: inset 0 0 0 1px oklch(from var(--accent) l c h / 0.7); }
+/* A file is never filled: its colored text says it is open, and a selected
+   project shows through its folder's highlight. */
+.ws-row.file.selected, .ws-tree:focus .ws-row.file.selected { background: none; box-shadow: none; }
+.ws-row.file.selected:hover { background: var(--panel-2); }
 /* Accent text marks what is open — the project and every folder holding it;
    a filled row marks what is selected. */
 .ws-row.active, .ws-row.holds-active { color: var(--accent); font-weight: 600; }
