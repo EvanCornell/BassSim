@@ -195,9 +195,9 @@ export default function FileBrowser() {
       next = rows.slice(Math.min(from, to), Math.max(from, to) + 1).map((r) => r.node.path)
     } else if (selection.length === 1 && selection[0] === path) {
       // Clicking the one selected row again lets go of it. A project hands
-      // the selection back to its folder, which stays highlighted; a folder
-      // or a top-level project leaves nothing selected, so a new entry goes
-      // at the root.
+      // the selection back to its folder, which stays highlighted; a
+      // top-level project leaves nothing selected, so a new entry goes at
+      // the root.
       const parent = workspace.files[path] ? parentOf(path) : ''
       next = parent ? [parent] : []
     }
@@ -206,20 +206,28 @@ export default function FileBrowser() {
   }
 
   /**
-   * Act on a clicked row: open a project, or expand a folder as it is selected.
+   * Act on a clicked row.
    *
-   * A selected folder is always expanded by the click that selects it, and
-   * letting go of one leaves it as it was; only the chevron collapses.
+   * A plain click on a folder opens or closes it, and the folder is
+   * highlighted exactly while it is open: opening selects it, closing lets go
+   * of everything. Ctrl, Cmd or Shift only change the selection. A project
+   * opens on the canvas.
    *
    * @param {object} node - The row's tree node.
-   * @param {string[]} selected - The selection the click left.
+   * @param {boolean} open - Whether the row is a folder that is expanded now.
+   * @param {React.MouseEvent} e - The click, read for its modifier keys.
    * @returns {void}
    * @sideEffect Writes store state; opening a project replaces what is on the canvas.
    */
-  const activate = (node, selected) => {
+  const activate = (node, open, e) => {
     const st = useStore.getState()
-    if (node.kind === 'folder') { if (selected.includes(node.path)) st.toggleWsFolder(node.path, true) }
-    else if (node.entry.kind === 'project') st.openFile(node.path)
+    if (node.kind === 'folder' && !(e.ctrlKey || e.metaKey || e.shiftKey)) {
+      st.toggleWsFolder(node.path, !open)
+      st.setWsSelection(open ? [] : [node.path])
+      return
+    }
+    select(node.path, e)
+    if (node.kind !== 'folder' && node.entry.kind === 'project') st.openFile(node.path)
   }
 
   /**
@@ -339,7 +347,7 @@ export default function FileBrowser() {
           if (up) st.setWsSelection([up])
         }
         break
-      case 'Enter': if (row) activate(row.node); break
+      case 'Enter': if (row?.node.kind === 'folder') st.toggleWsFolder(row.node.path); else if (row?.node.entry.kind === 'project') st.openFile(row.node.path); break
       case 'F2': if (row && !isSystemPath(row.node.path)) st.beginWsEdit('rename', row.node.path); break
       case 'Delete': case 'Backspace': deleteSelection(); break
       case 'Escape': st.setWsSelection([]); break
@@ -495,7 +503,7 @@ export default function FileBrowser() {
         onDragOver={folder ? (e) => onDragOver(e, path) : undefined}
         onDragLeave={folder ? () => setDropTarget(null) : undefined}
         onDrop={folder ? (e) => onDrop(e, path) : undefined}
-        onClick={(e) => { if (!renaming) activate(node, select(path, e)) }}
+        onClick={(e) => { if (!renaming) activate(node, open, e) }}
         onContextMenu={(e) => onContextMenu(e, node)}
       >
         {/* Indent guides, one per level crossed — the vertical rules VS Code
