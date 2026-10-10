@@ -476,14 +476,15 @@ export function RunLibrary() {
  * @param {string} props.view - The view within it.
  * @param {Array<{entry: object, result: object, names: Object<string, string>, color: string}>} props.runs - The open runs that have loaded, with their components' shown names.
  * @param {number} [props.hz] - For waveforms, the tone.
+ * @param {boolean} [props.linear=true] - Draw the linear model's dashed traces.
  * @returns {React.ReactElement} The chart.
  * @pure
  */
-function ViewChart({ tab, view, runs, hz }) {
+function ViewChart({ tab, view, runs, hz, linear = true }) {
   const unit = (TAB_VIEWS[tab].find((v) => v[0] === view) || TAB_VIEWS[tab][0])[2]
   const series = []
   for (const r of runs) {
-    const traces = tabTraces(tab, view, r.result, r.names, hz)
+    const traces = tabTraces(tab, view, r.result, r.names, hz).filter((t) => linear || !t.dash)
     traces.forEach((t, k) => {
       const solo = runs.length === 1
       const name = solo
@@ -533,6 +534,9 @@ export function RunViewer() {
   const freqs = loaded[0]?.result?.freqs || []
   const tone = hz ?? freqs[Math.min(freqs.length - 1, Math.floor(freqs.length / 3))]
   const unreached = tab === 'maxspl' ? loaded.flatMap((r) => unreachedAt(r.result).map((f) => ({ f, r }))) : []
+  const toneHz = tab === 'waveforms' && loaded.length ? (nearestStart(loaded[0].result, tone)?.hz ?? tone) : undefined
+  // The linear model's traces are the dashed ones; the toggle shows only where there are some.
+  const hasLinear = !!tab && loaded.some((r) => tabTraces(tab, v, r.result, r.names, toneHz).some((t) => t.dash))
   /**
    * Drop runs onto the viewer: they are laid over what is open.
    *
@@ -586,6 +590,13 @@ export function RunViewer() {
                       {views.map(([id, label]) => <button key={id} className={v === id ? 'on' : ''} onClick={() => setSub({ ...sub, [tab]: id })}>{label}</button>)}
                     </div>
                   )}
+                  {hasLinear && (
+                    <button className={`chip-toggle dashed${view.linear !== false ? ' on' : ''}`} aria-pressed={view.linear !== false}
+                      title="Show or hide the linear model: the same project with every nonlinearity switched off"
+                      onClick={() => st().setViewLinear(view.linear === false)}>
+                      <span className="ct-swatch" style={{ borderTopStyle: 'dashed' }} />Linear
+                    </button>
+                  )}
                   {tab === 'waveforms' && (
                     <label className="viewer-tone">Tone
                       <select value={tone} onChange={(e) => setHz(Number(e.target.value))}>
@@ -601,7 +612,7 @@ export function RunViewer() {
                   )}
                 </div>
                 <div className="viewer-chart">
-                  <ViewChart tab={tab} view={v} runs={loaded} hz={tab === 'waveforms' ? (nearestStart(loaded[0].result, tone)?.hz ?? tone) : undefined} />
+                  <ViewChart tab={tab} view={v} runs={loaded} hz={toneHz} linear={view.linear !== false} />
                 </div>
                 {unreached.length > 0 && (
                   <div className="viewer-note">

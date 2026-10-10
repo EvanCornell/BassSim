@@ -2007,6 +2007,10 @@ test('runs: stored as a branch, listed with its level and record, viewed, restor
   assert.deepEqual(st().tdView.runs, ['run-1', 'run-x'], 'overlaid, each once')
   st().closeRun('run-x')
   assert.deepEqual(st().tdView.runs, ['run-1'])
+  assert.equal(st().tdView.linear, true, 'the linear model shows by default')
+  st().setViewLinear(false)
+  assert.deepEqual([st().tdView.linear, st().tdView.runs], [false, ['run-1']], 'hidden, the open runs kept')
+  st().setViewLinear(true)
 
   // runs travel in the project file
   const saved = st().serialize()

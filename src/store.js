@@ -715,7 +715,7 @@ export const useStore = create((rawSet, get) => {
   tdDrawer: false,
   tdDraft: { name: '', levels: [0], ...RUNS.RUN_DEFAULTS },
   // The run viewer: the runs open in it, overlaid, and the tab shown.
-  tdView: { runs: [], tab: 'output' },
+  tdView: { runs: [], tab: 'output', linear: true },
   // Bumped as run results finish loading, so views reading the cache redraw.
   tdDataTick: 0,
   // The driver curve editor's choices: which driver and curve, and curves
@@ -2391,6 +2391,14 @@ export const useStore = create((rawSet, get) => {
    * @sideEffect Writes the viewer.
    */
   setViewTab: (tab) => set({ tdView: { ...get().tdView, tab } }),
+  /**
+   * Show or hide the linear model's traces in the run viewer.
+   *
+   * @param {boolean} on - Show them.
+   * @returns {void}
+   * @sideEffect Writes store state.
+   */
+  setViewLinear: (on) => set({ tdView: { ...get().tdView, linear: !!on } }),
 
   // ---- compute pipeline (debounced 150 ms) ----
   // Simulation runs in a Web Worker: the engine ships with the app, but off
