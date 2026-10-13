@@ -29,12 +29,14 @@ export const COUPLED = ['Fs', 'Qts', 'Qes', 'Qms', 'Vas', 'Re', 'Bl', 'Mms', 'Cm
 /**
  * Every field that belongs to the driver itself, rather than to the node.
  *
- * The coupled eleven plus the three independent ones. A label, an array
+ * The coupled eleven plus the four independent ones: Le, its exponent, Xmax
+ * and the nominal impedance `Znom` (absent or null when it is to be
+ * estimated rather than taken as given). A label, an array
  * count and the loss settings describe how a driver is being used, not what
  * it is, so they are outside this list — restoring a driver's parameters
  * must not rename the node it is in.
  */
-export const TS_FIELDS = [...COUPLED, 'Le', 'LeExp', 'Xmax']
+export const TS_FIELDS = [...COUPLED, 'Le', 'LeExp', 'Xmax', 'Znom']
 
 /**
  * How many parameters must be held for the other five to follow.
@@ -340,7 +342,8 @@ export function baselineOf(node) {
  *
  * Compared over the driver's own fields only, and on the stored values
  * rather than to any tolerance: the baseline was written from the same
- * rounding, so anything that differs at all is a real change.
+ * rounding, so anything that differs at all is a real change. A field absent
+ * on one side and null on the other is the same: not set.
  *
  * @param {object} node - The driver node.
  * @returns {boolean} True when there is a baseline and every field still equals it.
@@ -350,5 +353,5 @@ export function matchesBaseline(node) {
   const base = baselineOf(node)
   if (!base) return false
   const p = node.data.params || {}
-  return TS_FIELDS.every((k) => p[k] === base[k])
+  return TS_FIELDS.every((k) => (p[k] ?? null) === (base[k] ?? null))
 }

@@ -6,7 +6,7 @@ import ExprInput from './ExprInput'
 import NumInput from './NumInput'
 import { useResolvedParams } from '../useResolved'
 import { freshId } from '../schema/extras'
-import { driverNominal, fmtOhms } from '../schema/nominal'
+import { driverNominal, estimateNominal, fmtOhms } from '../schema/nominal'
 import { baseName, nameNumbers } from '../nodeNames'
 import { mergeParams, plural } from '../groupEdit'
 import { driverStatus } from '../schema/wires'
@@ -33,6 +33,7 @@ const TIPS = {
   Le: 'Voice-coil inductance at 1 kHz.',
   LeExp: 'Semi-inductance exponent: 1 = pure inductor, ~0.6–0.7 with shorting rings.',
   Xmax: 'Linear excursion limit (one-way).',
+  Znom: 'Nominal impedance of one voice coil — the rating the amplifier\'s watts are worked out against. The database\'s listed figure, else an estimate from Re and Qes; type one to override.',
   Rms: 'Mechanical resistance of the suspension.',
   leakQL: 'Box leakage as the familiar QL: lower = leakier. Compiled to the equivalent leak resistance at the reference frequency.',
   leakHz: 'Frequency QL is referred to — conventionally the box tuning.',
@@ -560,6 +561,63 @@ const formTitle = (group, node, fallback) => (group
   : <>{node.data.params.label || fallback}<NameNum id={node.id} /></>)
 
 /**
+ * Where a driver's nominal impedance is coming from.
+ *
+ * @param {object} p - The node's params.
+ * @param {object|null} baseline - The driver's starting point.
+ * @returns {{set: number|null, listed: number|null, source: string}} The typed or listed figure, the listed one, and `listed`, `entered` or `estimated`.
+ * @pure
+ */
+function znomSource(p, baseline) {
+  const listed = Number(baseline?.Znom) > 0 ? Number(baseline.Znom) : null
+  const set = Number(p.Znom) > 0 ? Number(p.Znom) : null
+  return { set, listed, source: set == null ? 'estimated' : set === listed ? 'listed' : 'entered' }
+}
+
+/**
+ * A driver's nominal impedance: listed, estimated, or typed over either.
+ *
+ * Empty means estimated, and the box shows the estimate greyed. A figure that
+ * matches the driver's starting point is the listed one; anything else was
+ * typed, and ↺ puts the listed figure back, or the estimate when none was.
+ *
+ * @param {object} props - Component props.
+ * @param {string} props.id - Driver node id.
+ * @param {object} props.p - The node's params.
+ * @param {object} props.r - The node's params resolved to numbers.
+ * @param {object|null} props.baseline - The driver's starting point.
+ * @returns {React.ReactElement} The row.
+ * @sideEffect Subscribes to the store. Editing updates the node's params.
+ */
+function ZnomField({ id, p, r, baseline }) {
+  const { updateParams } = useEdit()
+  const mixed = isMixed(useContext(Group), 'Znom')
+  const z = znomSource(p, baseline)
+  const { set, listed } = z
+  const estimate = estimateNominal(r.Re, r.Qes)
+  const source = mixed ? null : z.source === 'estimated' ? 'estimated from Re and Qes' : z.source
+  return (
+    <div className={`param-row${mixed ? ' mixed' : ''}`}>
+      <label title={`${TIPS.Znom}${source ? ` Now ${source}.` : ''}`}>Nominal Z</label>
+      <NumInput
+        value={mixed ? null : set}
+        placeholder={mixed ? MIXED : estimate > 0 ? fmtOhms(estimate) : ''}
+        allowEmpty above="0" step="1"
+        title={source ? `Nominal impedance, ${source}` : undefined}
+        onCommit={(v) => updateParams(id, { Znom: v })}
+      />
+      <span className="unit">
+        Ω
+        {!mixed && source === 'entered' && (
+          <button className="icon-btn" title={listed ? `Back to the listed ${fmtOhms(listed)} Ω` : 'Back to the estimate'}
+            onClick={() => updateParams(id, { Znom: listed })}>↺</button>
+        )}
+      </span>
+    </div>
+  )
+}
+
+/**
  * Parameter form for a driver, with links to the library and the T/S solver.
  *
  * The eleven T/S figures are six free values and five consequences of them,
@@ -599,6 +657,7 @@ function DriverForm({ node }) {
     <TSField id={id} field={field} value={p[field]} held={basis.includes(field)} unit={unit} step={step} />
   )
   const nominal = driverNominal(p)
+  const r = useResolvedParams(id, node.type, p)
   return (
     <Section
       id="driver" title={formTitle(group, node, 'Driver')} color="var(--s1)" focus fixed
@@ -622,7 +681,6 @@ function DriverForm({ node }) {
         {ts('Vas', 'L')}
         {ts('Sd', 'cm²')}
         {ts('Bl', 'T·m')}
-        <NumField id={id} field="Xmax" value={p.Xmax} unit="mm" above="0" />
       </div>
       <div className="psec-caption">Electrical</div>
       <div className="param-grid">
@@ -637,6 +695,14 @@ function DriverForm({ node }) {
         {ts('Cms', 'mm/N', '0.01')}
         {ts('Rms', 'kg/s', '0.1')}
         {ts('Qms', '', '0.1')}
+      </div>
+      <div className="psec-caption">
+        Other
+        {!isMixed(group, 'Znom') && <span className="psec-caption-note">nominal Z {znomSource(p, baseline).source}</span>}
+      </div>
+      <div className="param-grid">
+        <ZnomField id={id} p={p} r={r} baseline={baseline} />
+        <NumField id={id} field="Xmax" value={p.Xmax} unit="mm" above="0" />
       </div>
       <div className="psec-caption">
         Array & wiring

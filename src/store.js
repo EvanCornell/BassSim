@@ -1352,7 +1352,8 @@ export const useStore = create((rawSet, get) => {
     const node = get().nodes.find((n) => n.id === id)
     const base = node && D.baselineOf(node)
     if (!base) return
-    get().updateParams(id, base)
+    // A figure the start never had goes back to unset: a typed nominal impedance, say.
+    get().updateParams(id, { Znom: null, ...base })
   },
 
   /**

@@ -318,7 +318,7 @@ test('basisOf returns a stored basis that still resolves', () => {
 // CONTRACT: "A label, an array count and the loss settings describe how a
 // driver is being used, not what it is, so they are outside this list."
 test('TS_FIELDS is the driver itself, not how the node uses it', () => {
-  assert.deepStrictEqual(TS_FIELDS, [...COUPLED, 'Le', 'LeExp', 'Xmax'])
+  assert.deepStrictEqual(TS_FIELDS, [...COUPLED, 'Le', 'LeExp', 'Xmax', 'Znom'])
   for (const k of ['label', 'count', 'wiring', 'Q', 'lossless']) {
     assert.ok(!TS_FIELDS.includes(k), `${k} is not a driver field`)
   }
@@ -327,7 +327,7 @@ test('TS_FIELDS is the driver itself, not how the node uses it', () => {
 // CONTRACT: "Fields the set does not carry are left out rather than written as
 // `undefined`."
 test('pickTS copies the driver fields and nothing else', () => {
-  const picked = pickTS({ ...DRIVER, Le: 1.5, LeExp: 1, Xmax: 15, label: 'left woofer', count: 2, Q: 30 })
+  const picked = pickTS({ ...DRIVER, Le: 1.5, LeExp: 1, Xmax: 15, Znom: 4, label: 'left woofer', count: 2, Q: 30 })
   assert.deepStrictEqual(new Set(Object.keys(picked)), new Set(TS_FIELDS))
   for (const k of ['label', 'count', 'Q']) assert.ok(!(k in picked), `${k} not copied`)
   assert.equal(picked.Fs, DRIVER.Fs)
@@ -380,4 +380,11 @@ test('matchesBaseline ignores fields outside the driver itself', () => {
   const base = pickTS({ ...DRIVER, Le: 1.5, LeExp: 1, Xmax: 15 })
   const node = { data: { params: { ...base, label: 'left woofer', count: 2, Q: 30 }, baseline: base } }
   assert.equal(matchesBaseline(node), true)
+})
+
+// CONTRACT: "A field absent on one side and null on the other is the same: not set."
+test('matchesBaseline: an unset Znom matches a baseline without one', () => {
+  const base = pickTS(DRIVER)
+  assert.equal(matchesBaseline({ data: { params: { ...DRIVER, Znom: null }, baseline: base } }), true)
+  assert.equal(matchesBaseline({ data: { params: { ...DRIVER, Znom: 4 }, baseline: base } }), false)
 })

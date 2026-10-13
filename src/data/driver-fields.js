@@ -145,11 +145,13 @@ export const SOURCE_LABELS = {
  * carries construction trivia — spider type, magnet material, recommended
  * enclosure — that must never reach a node's params, so this copies the core
  * fields explicitly rather than spreading the row and deleting what it does not
- * want. Fields the record omits stay absent, leaving the node's own defaults in
- * place.
+ * want. Core fields the record omits stay absent, leaving the node's own
+ * defaults in place. The one extended field a node takes is the nominal
+ * impedance, `ext.Znom` (or a custom entry's own `Znom`), always written:
+ * null when the record lists none, so the node estimates it.
  *
  * @param {object} d - A driver database record.
- * @returns {object} Node params: `label` taken from the record's `model` field, plus each present core T/S field.
+ * @returns {object} Node params: `label` taken from the record's `model` field, each present core T/S field, and `Znom`.
  * @post The result contains no `ext`, `source`, `suspect` or `brand` key, whatever the input carries.
  * @post d is not modified.
  * @pure
@@ -157,6 +159,8 @@ export const SOURCE_LABELS = {
 export function driverToParams(d) {
   const p = { label: d.model }
   for (const f of CORE_FIELDS) if (d[f.key] != null) p[f.key] = d[f.key]
+  // Always written, null when the record lists none, so a figure left from the previous driver goes.
+  p.Znom = Number(d.Znom ?? d.ext?.Znom) > 0 ? Number(d.Znom ?? d.ext.Znom) : null
   return p
 }
 

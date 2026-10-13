@@ -2,31 +2,79 @@
 //
 // A channel stores volts, never watts. The watts it shows are its voltage
 // squared over the nominal load its wiring presents — the figure an amplifier
-// is rated against. Nominal is a label, not a measurement: it comes from each
-// driver's voice-coil resistance, rounded to the standard ratings, then split
-// for a dual voice coil and combined through the node's own arrangement and the cables of the Wiring
+// is rated against. Nominal is a label, not a measurement. Each driver's comes
+// from, in order: a figure typed for it, the rating its database record lists,
+// or an estimate from Re and Qes. That is then split for a dual voice coil and
+// combined through the node's own arrangement and the cables of the Wiring
 // window (`wires.js`). The minimum impedance the simulation finds is shown
 // separately.
 
-/** Standard nominal ratings, Ω. */
-const RATINGS = [0.5, 1, 2, 3, 4, 6, 8, 16, 32]
+/** Qes assumed when a driver has none, a typical woofer's. */
+const QES_TYPICAL = 0.4
 
 /**
- * The nominal rating a voice-coil resistance belongs to.
+ * The low end of where a driver's nominal impedance is likely to lie, from Re and Qes.
  *
- * Re is typically 70–90% of nominal, so the rating is the standard value
- * nearest Re / 0.85 on a logarithmic scale.
+ * Re is always some share of nominal, and how large a share depends on the
+ * motor: a strong one (low Qes) holds the impedance well above Re past
+ * resonance, so its Re is a smaller part of its nominal. The share is taken
+ * as at most 0.7 + 0.25·Qes, capped at 0.85, so the low end is Re over that:
+ * lower Qes raises it. Qes is held to 0.15–1, where real drivers lie.
  *
- * @param {number} re - DC resistance, Ω.
- * @returns {number} The nominal rating, Ω; 0 for a non-positive resistance.
+ * @param {number} re - DC resistance of one coil, Ω.
+ * @param {number} [qes] - Electrical Q; a typical value when absent.
+ * @returns {number} The low end, Ω; 0 for a non-positive resistance.
  * @pure
  */
-export function ratingOf(re) {
+export function nominalFloor(re, qes) {
   if (!(re > 0)) return 0
-  const target = Math.log(re / 0.85)
-  let best = RATINGS[0]
-  for (const r of RATINGS) if (Math.abs(Math.log(r) - target) < Math.abs(Math.log(best) - target)) best = r
-  return best
+  const q = Number(qes) > 0 ? Math.min(1, Math.max(0.15, Number(qes))) : QES_TYPICAL
+  return re / Math.min(0.85, 0.7 + 0.25 * q)
+}
+
+/** How far a power-of-two rating may sit below the low end and still be the one. */
+const POW_SLACK = 1.25
+
+/**
+ * The nominal rating estimated for a driver with none listed.
+ *
+ * The first rating, going up, that fits above `nominalFloor`. Ratings are the
+ * powers of two, any of them, plus 6 Ω and 12 Ω. A power of two still fits
+ * when the low end overshoots it by up to a quarter, the way many 4 Ω drivers
+ * have an Re near 4; 6 Ω and 12 Ω, rare but made, get no such allowance and
+ * must sit above it. Checked against the catalogue's listed ratings, this
+ * gives the listed figure for all but a few drivers.
+ *
+ * @param {number} re - DC resistance of one coil, Ω.
+ * @param {number} [qes] - Electrical Q.
+ * @returns {number} The rating, Ω; 0 for a non-positive resistance.
+ * @pure
+ */
+export function estimateNominal(re, qes) {
+  const low = nominalFloor(re, qes)
+  if (!(low > 0)) return 0
+  for (let k = Math.floor(Math.log2(low / POW_SLACK)) - 1; ; k++) {
+    const pow = 2 ** k
+    if (low <= pow * POW_SLACK) return pow
+    // Between this power and the next: 6 between 4 and 8, 12 between 8 and 16.
+    const odd = 1.5 * pow
+    if ((odd === 6 || odd === 12) && low <= odd) return odd
+  }
+}
+
+/**
+ * One driver's nominal impedance as a single coil: typed or listed, else estimated.
+ *
+ * A typed figure and a database's listed one are the same field, `Znom`; the
+ * typed one replaces the listed one. Without it the rating is estimated.
+ *
+ * @param {object} p - Driver params, resolved.
+ * @returns {number} Nominal Ω; 0 when there is nothing to go on.
+ * @pure
+ */
+export function nominalOf(p) {
+  const z = Number(p?.Znom)
+  return z > 0 ? z : estimateNominal(Number(p?.Re), p?.Qes)
 }
 
 /**
@@ -51,9 +99,8 @@ function coilShare(p) {
 /**
  * The nominal impedance of one driver node as its two terminals present it.
  *
- * Each driver is rated from its coil resistance first, then split for a dual
- * voice coil, then the node's own
- * arrangement combines those ratings, so four 4 Ω drivers in parallel read
+ * Each driver is rated first (`nominalOf`), then split for a dual voice
+ * coil, then the node's own arrangement combines those ratings, so four 4 Ω drivers in parallel read
  * 1 Ω. A node wired by hand coil by coil has no arrangement of its own; it
  * reads as its drivers in parallel, and the Wiring window rates the circuit
  * the cables make.
@@ -63,7 +110,7 @@ function coilShare(p) {
  * @pure
  */
 export function driverNominal(p) {
-  const one = ratingOf(Number(p.Re) || 0) * coilShare(p)
+  const one = nominalOf(p) * coilShare(p)
   const n = Math.max(1, Math.round(Number(p.count) || 1))
   if (p.wiring === 'series') return one * n
   if (p.wiring === 'series-parallel') {

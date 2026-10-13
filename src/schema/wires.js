@@ -25,7 +25,7 @@
 // half has Re/2 and Bl/2, and the halves are tightly coupled, so in series
 // they are exactly the driver as entered.
 
-import { ratingOf, driverNominal } from './nominal.js'
+import { nominalOf, driverNominal } from './nominal.js'
 
 /** How a node's drivers may be joined inside it, and how a dual-coil driver's coils may be. */
 export const UNIT_ARRANGEMENTS = ['series', 'parallel', 'series-parallel']
@@ -109,7 +109,7 @@ export function elementsOf(node) {
   if (!isCustom(p)) return [{ key: '', label: '', plus: nodeTerm(node.id, '', '+'), minus: nodeTerm(node.id, '', '-'), nominal: driverNominal(p) }]
   const coils = coilsOf(p)
   const n = unitsOf(p)
-  const coilOhms = ratingOf(Number(p.Re) || 0) / coils.length
+  const coilOhms = nominalOf(p) / coils.length
   const out = []
   for (let u = 1; u <= n; u++) {
     for (const c of coils) {

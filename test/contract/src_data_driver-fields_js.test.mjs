@@ -245,12 +245,12 @@ test('driverToParams: result contains no ext, source, suspect or brand key', () 
 // CONTRACT: "A record carries construction trivia — spider type, magnet material,
 // recommended enclosure — that must never reach a node's params, so this copies the core
 // fields explicitly rather than spreading the row and deleting what it does not want."
-test('driverToParams: nothing beyond label and core T/S fields reaches node params', () => {
+test('driverToParams: nothing beyond label, core T/S fields and Znom reaches node params', () => {
   const result = driverToParams(fullRecord())
   // An explicit copy of the core fields cannot admit any other key. The record
   // above carries only the ten core fields the contract names, so the allowed
-  // set needs no field the contract leaves unnamed.
-  const allowed = new Set(['label', ...SPEC_CORE_FIELDS])
+  // set needs no field the contract leaves unnamed — beyond Znom, always written.
+  const allowed = new Set(['label', ...SPEC_CORE_FIELDS, 'Znom'])
   for (const key of Object.keys(result)) {
     assert.ok(allowed.has(key), `unexpected key ${key} reached node params`)
   }
@@ -335,4 +335,16 @@ test('formatExt: pure — twice with equal inputs gives equal output', () => {
       assert.deepEqual(formatExt(key, value), formatExt(key, value))
     }
   }
+})
+
+// CONTRACT: "The one extended field a node takes is the nominal impedance,
+// `ext.Znom` (or a custom entry's own `Znom`), always written: null when the
+// record lists none".
+test('driverToParams: nominal impedance from ext, a custom entry, or null', () => {
+  assert.equal(driverToParams({ model: 'a', Re: 3.2, ext: { Znom: 4, Zmin: 3.6 } }).Znom, 4)
+  assert.equal(driverToParams({ model: 'b', Re: 3.2, Znom: 6 }).Znom, 6)
+  const none = driverToParams({ model: 'c', Re: 3.2 })
+  assert.ok('Znom' in none)
+  assert.equal(none.Znom, null)
+  assert.ok(!('Zmin' in driverToParams({ model: 'a', ext: { Zmin: 3.6 } })))
 })
