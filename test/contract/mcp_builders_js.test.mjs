@@ -406,7 +406,7 @@ test('driverParams: the library-derived part is exactly driverToParams', async (
   const projected = driverToParams(D0)
   assert.deepEqual(
     driverParams({ db: NAME0 }),
-    { ...projected, count: 1, wiring: 'single' },
+    { ...projected, count: 1, wiring: 'parallel' },
     'the result must be driverToParams plus only the documented count and wiring',
   )
   // Documented keys present, in both directions, across every row.
@@ -426,19 +426,19 @@ test('driverParams: the library-derived part is exactly driverToParams', async (
 })
 
 // CONTRACT: "`spec.count` — Drivers in this node." _(default `1`)_ /
-// "`spec.wiring` — Defaults to `parallel` when count > 1, `single` otherwise."
+// "`spec.wiring` — How the node's drivers are joined. Defaults to `parallel`."
 // / "`spec.label` — defaults to the library model name, or \"Driver\"."
 test('driverParams: documented defaults for count, wiring and label', async () => {
   const bare = driverParams()
   assert.equal(bare.count, 1)
-  assert.equal(bare.wiring, 'single')
+  assert.equal(bare.wiring, 'parallel')
   assert.equal(bare.label, 'Driver')
 
   assert.deepEqual(driverParams({}), bare)
 
   const lib = driverParams({ db: NAME0 })
   assert.equal(lib.count, 1)
-  assert.equal(lib.wiring, 'single')
+  assert.equal(lib.wiring, 'parallel')
   assert.equal(lib.label, D0.model)
 
   const many = driverParams({ db: NAME0, count: 2 })

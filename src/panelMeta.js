@@ -34,12 +34,6 @@ export const PANEL_META = {
     closable: true,
     dock: { edge: 'right' },
   },
-  wiring: {
-    title: 'Wiring',
-    group: 'main',
-    closable: true,
-    dock: { nextTo: 'params', zone: 'center', edge: 'right' },
-  },
   vars: {
     title: 'Project Parameters',
     group: 'main',

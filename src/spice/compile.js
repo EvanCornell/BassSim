@@ -117,9 +117,9 @@ export function compileProject(proj, analysis, opts = {}) {
     }
   }
   nl.lines.push('.options rshunt=1e12')
-  const terms = compileWiring(ctx, proj)
+  const termOf = compileWiring(ctx, proj)
   for (const node of proj.nodes || []) {
-    if (node.type === 'driver') compileDriver(ctx, node, terms.get(node.id))
+    if (node.type === 'driver') compileDriver(ctx, node, termOf)
     else if (node.type === 'chamber') compileChamber(ctx, node)
     else if (node.type === 'waveguide') compileWaveguide(ctx, node)
     else if (node.type === 'pr') compilePR(ctx, node)
@@ -149,8 +149,8 @@ export function compileProject(proj, analysis, opts = {}) {
     // Output on the sample grid exactly. The internal step never passes a
     // sample, nor an eighth of a period at the model bandwidth — the
     // trapezoidal rule's error grows with the square of the step — nor the
-    // delay of any line left in the circuit (a channel's DSP delay), which
-    // ngspice cannot step across.
+    // delay of any transmission line left in the circuit, which ngspice
+    // cannot step across.
     const step = 1 / tran.fs
     let maxStep = Math.min(step, 1 / (8 * analysis.fmax))
     for (const l of nl.lines) {

@@ -51,7 +51,11 @@ test('migrateProject: settings split into analysis, channel and display', () => 
   assert.equal(p.wiring.channels.length, 1)
   assert.equal(p.wiring.channels[0].volts, 8)
   assert.equal(p.wiring.channels[0].outputOhms, 0.1)
-  assert.equal(p.wiring.channels[0].load, null, 'every driver in parallel')
+  assert.equal('load' in p.wiring.channels[0], false)
+  assert.deepEqual(p.wiring.wires, [
+    { a: 'ch:ch1:+', b: 'd:+' }, { a: 'ch:ch1:+', b: 'd2:+' },
+    { a: 'ch:ch1:-', b: 'd:-' }, { a: 'ch:ch1:-', b: 'd2:-' },
+  ], 'every driver in parallel')
   assert.equal(p.display.vThreshold, 20)
   assert.equal(p.display.unwrapPhase, false)
   assert.equal(p.display.delayOffset, 1.5)
@@ -151,4 +155,23 @@ test('migrateProject: default tap lists are not shared between nodes', () => {
   p.nodes[0].params.taps.push({ id: 't', position: 1 })
   assert.equal(p.nodes[1].params.taps.length, 0)
   assert.equal(DEFAULT_PARAMS.chamber.taps.length, 0)
+})
+
+// CONTRACT: within v3, a channel's load tree becomes cables making the same
+// circuit; channels lose the tree and their DSP, an old default name becomes
+// "Channel n", and a driver's `single` wiring is `parallel`.
+test('migrateProject: load trees become cables', () => {
+  const p = migrateProject({
+    schemaVersion: 3,
+    nodes: [{ id: 'a', type: 'driver', params: { wiring: 'single' } }, { id: 'b', type: 'driver' }],
+    wiring: { channels: [
+      { id: 'c1', label: 'Amp', load: null, dsp: { polarity: -1 } },
+      { id: 'c2', label: 'Amp 2', load: { series: [{ driver: 'b' }] } },
+    ] },
+  })
+  assert.deepEqual(p.wiring.channels.map((c) => [c.label, 'dsp' in c, 'load' in c]), [['Channel 1', false, false], ['Channel 2', false, false]])
+  assert.deepEqual(p.wiring.wires, [{ a: 'ch:c1:+', b: 'a:+' }, { a: 'ch:c1:-', b: 'a:-' }, { a: 'ch:c2:+', b: 'b:+' }, { a: 'ch:c2:-', b: 'b:-' }])
+  assert.equal(p.wiring.toolbar, 'c1')
+  assert.equal(p.nodes[0].params.wiring, 'parallel')
+  assert.deepEqual(migrateProject(p).wiring, p.wiring, 'idempotent')
 })

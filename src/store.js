@@ -26,10 +26,11 @@
 
 import { create } from 'zustand'
 import { applyNodeChanges, applyEdgeChanges, addEdge } from 'reactflow'
-import { SCHEMA_VERSION, DEFAULT_PARAMS } from './schema/version'
+import { SCHEMA_VERSION, DEFAULT_PARAMS, DEFAULT_CHANNEL } from './schema/version'
 import { migrateProject } from './schema/migrate'
 import { toEditor, fromEditor } from './schema/editor'
 import { pruneExtras, driveOf, masterForVoltage, freshId } from './schema/extras'
+import * as WR from './schema/wires'
 import { getPool, relay, cancelLane } from './engine/poolHost'
 import { loadTheme, saveTheme, THEMES } from './theme'
 import * as L from './layout'
@@ -704,6 +705,10 @@ export const useStore = create((rawSet, get) => {
   // Results belong to this window and this project; each records the graph
   // signature it was run from, so the view can say when it is out of date.
   tdOpen: false,
+  /** Whether the Wiring window has the screen, in place of the dock. */
+  wiringOpen: false,
+  /** The driver node the Wiring window's inspector shows, or `null`. */
+  wiringSel: null,
   tdTab: 'runs',
   tdJob: null,
   tdError: null,
@@ -1297,6 +1302,7 @@ export const useStore = create((rawSet, get) => {
         : get().edges,
       selectedNodeId: id,
     })
+    get()._wireNewDrivers([node])
     get().scheduleCompute()
     return id
   },
@@ -1499,6 +1505,8 @@ export const useStore = create((rawSet, get) => {
       nodes: nodes.map((n) =>
         n.id === id ? { ...n, data: { ...n.data, params: { ...n.data.params, ...patch } } } : n),
     })
+    // A driver wired coil by coil loses the cables of coils it no longer has.
+    if (['count', 'dvc', 'wiring'].some((k) => k in patch)) get().setWiring(get().projectExtras.wiring, false)
     get().scheduleCompute()
   },
 
@@ -1558,6 +1566,7 @@ export const useStore = create((rawSet, get) => {
       nodes: [...nodes.map((n) => ({ ...n, selected: false })), ...copies.map((c) => ({ ...c, selected: true }))],
       selectedNodeId: copies[copies.length - 1].id,
     })
+    get()._wireNewDrivers(copies)
     get().scheduleCompute()
   },
 
@@ -1700,6 +1709,7 @@ export const useStore = create((rawSet, get) => {
       edges: [...get().edges, ...freshEdges],
       selectedNodeId: fresh[fresh.length - 1].id,
     })
+    get()._wireNewDrivers(fresh)
     get().scheduleCompute()
   },
 
@@ -1729,6 +1739,7 @@ export const useStore = create((rawSet, get) => {
       }),
       edges: plan.edges,
     })
+    get().setWiring(get().projectExtras.wiring, false)
     if (plan.dropped) get().showCanvasAlert(`${plan.dropped} join${plan.dropped > 1 ? 's' : ''} to taps the copied node doesn't have ${plan.dropped > 1 ? 'were' : 'was'} removed.`)
     get().scheduleCompute()
   },
@@ -1797,9 +1808,9 @@ export const useStore = create((rawSet, get) => {
     set({ settings: { ...get().settings, ...patch } })
     if ('rg' in patch) {
       const w = get().projectExtras.wiring
-      const ch = w?.channels?.[0]
+      const ch = WR.toolbarChannel(w)
       if (ch && typeof ch.outputOhms !== 'string') {
-        get()._setExtras({ ...get().projectExtras, wiring: { ...w, channels: [{ ...ch, outputOhms: Number(patch.rg) || 0 }, ...w.channels.slice(1)] } })
+        get()._setExtras({ ...get().projectExtras, wiring: { ...w, channels: w.channels.map((c) => (c === ch ? { ...c, outputOhms: Number(patch.rg) || 0 } : c)) } })
       }
     }
     get().scheduleCompute()
@@ -1833,7 +1844,7 @@ export const useStore = create((rawSet, get) => {
   /**
    * Install new extra project sections, keeping the flat drive settings in step.
    *
-   * The toolbar and keyboard show the first channel's output at the master
+   * The toolbar and keyboard show the toolbar channel's output at the master
    * level; whenever the wiring changes, that figure is re-derived from it.
    *
    * @param {object} extras - The new extras.
@@ -1866,6 +1877,231 @@ export const useStore = create((rawSet, get) => {
     if (undoable) get().pushHistory()
     get()._setExtras({ ...get().projectExtras, [key]: value })
     get().scheduleCompute()
+  },
+  // ---- wiring ----
+  /**
+   * Cable newly added drivers to the first channel, in parallel with what is there.
+   *
+   * What keeps a new driver driven without a trip to the Wiring window. A
+   * driver wired coil by coil has no two terminals to cable, and is left for
+   * the user to wire.
+   *
+   * @param {Array<object>} added - The nodes just added.
+   * @returns {void}
+   * @sideEffect Writes store state and schedules a resimulation when any driver was added. Records no history: the caller already has.
+   */
+  _wireNewDrivers: (added) => {
+    const drivers = added.filter((n) => n.type === 'driver')
+    const w = get().projectExtras.wiring
+    if (!drivers.length || !w?.channels?.length) return
+    get().setWiring({ ...w, wires: [...(w.wires || []), ...WR.parallelWires(drivers, w.channels[0].id)] }, false)
+  },
+  /**
+   * Install new wiring, dropping cables to terminals that no longer exist.
+   *
+   * @param {object} wiring - The new wiring.
+   * @param {boolean} [undoable=true] - Record a history entry first.
+   * @returns {void}
+   * @sideEffect Records history when undoable, writes store state and schedules a resimulation.
+   */
+  setWiring: (wiring, undoable = true) => {
+    if (isLocked(get())) return
+    const wires = WR.liveWires(wiring.wires, WR.allTerminals(wiring, get().nodes))
+    get().setExtra('wiring', { ...wiring, wires }, undoable)
+  },
+  /**
+   * Join two terminals with a cable.
+   *
+   * @param {string} a - One terminal.
+   * @param {string} b - The other.
+   * @returns {string|null} Why it was refused, or `null` once it is made.
+   * @sideEffect Records history, writes store state and schedules a resimulation — or nothing, when refused.
+   */
+  addWire: (a, b) => {
+    if (isLocked(get())) return 'This record is read-only.'
+    const w = get().projectExtras.wiring
+    const why = WR.wireRefusal(w, a, b)
+    if (why) return why
+    get().setWiring({ ...w, wires: [...(w.wires || []), { a, b }] })
+    return null
+  },
+  /**
+   * Remove a cable.
+   *
+   * @param {number} index - Its place in `wires`.
+   * @returns {void}
+   * @sideEffect Records history, writes store state and schedules a resimulation.
+   */
+  removeWire: (index) => {
+    const w = get().projectExtras.wiring
+    get().setWiring({ ...w, wires: (w.wires || []).filter((_, i) => i !== index) })
+  },
+  /**
+   * Move one end of a cable to another terminal.
+   *
+   * @param {number} index - The cable's place in `wires`.
+   * @param {'a'|'b'} end - The end that moves.
+   * @param {string} to - The terminal it moves to.
+   * @returns {string|null} Why it was refused, or `null` once it is moved.
+   * @sideEffect Records history, writes store state and schedules a resimulation — or nothing, when refused.
+   */
+  moveWireEnd: (index, end, to) => {
+    if (isLocked(get())) return 'This record is read-only.'
+    const w = get().projectExtras.wiring
+    const cable = w.wires?.[index]
+    if (!cable) return null
+    const other = end === 'a' ? cable.b : cable.a
+    const rest = { ...w, wires: w.wires.filter((_, i) => i !== index) }
+    const why = WR.wireRefusal(rest, other, to)
+    if (why) return why
+    get().setWiring({ ...w, wires: w.wires.map((c, i) => (i === index ? { ...c, [end]: to } : c)) })
+    return null
+  },
+  /**
+   * Put a driver somewhere in the Wiring window.
+   *
+   * @param {string} id - Driver node id.
+   * @param {{x: number, y: number}} pos - Its top-left corner, px.
+   * @param {boolean} [undoable=false] - Record a history entry first: true once, as a drag begins.
+   * @returns {void}
+   * @sideEffect Writes store state.
+   */
+  placeWiringNode: (id, pos, undoable = false) => {
+    if (isLocked(get())) return
+    if (undoable) get().pushHistory()
+    const w = get().projectExtras.wiring
+    get()._setExtras({ ...get().projectExtras, wiring: { ...w, layout: { ...(w.layout || {}), [id]: pos } } })
+  },
+  /**
+   * Change one channel.
+   *
+   * @param {string} id - Channel id.
+   * @param {object} patch - Fields to merge: `label`, `volts`, `outputOhms`.
+   * @param {boolean} [undoable=true] - Record a history entry first.
+   * @returns {void}
+   * @sideEffect Records history when undoable, writes store state and schedules a resimulation.
+   */
+  updateChannel: (id, patch, undoable = true) => {
+    const w = get().projectExtras.wiring
+    get().setWiring({ ...w, channels: w.channels.map((c) => (c.id === id ? { ...c, ...patch } : c)) }, undoable)
+  },
+  /**
+   * Add a channel at the first channel's level, with nothing on it yet.
+   *
+   * @returns {string|undefined} The new channel's id; nothing when read-only.
+   * @sideEffect Records history, writes store state and schedules a resimulation.
+   */
+  addChannel: () => {
+    if (isLocked(get())) return undefined
+    const w = get().projectExtras.wiring
+    const id = freshId('ch', w.channels.map((c) => c.id))
+    const ch = { ...DEFAULT_CHANNEL, id, label: `Channel ${w.channels.length + 1}`, volts: w.channels[0]?.volts ?? DEFAULT_CHANNEL.volts }
+    get().setWiring({ ...w, channels: [...w.channels, ch] })
+    return id
+  },
+  /**
+   * Remove a channel and its cables. The last channel stays.
+   *
+   * @param {string} id - Channel id.
+   * @returns {void}
+   * @sideEffect Records history, writes store state and schedules a resimulation.
+   */
+  removeChannel: (id) => {
+    const w = get().projectExtras.wiring
+    if (w.channels.length < 2) return
+    const channels = w.channels.filter((c) => c.id !== id)
+    get().setWiring({ ...w, channels, toolbar: w.toolbar === id ? channels[0].id : w.toolbar })
+  },
+  /**
+   * Choose the channel the toolbar's drive level sets.
+   *
+   * @param {string} id - Channel id.
+   * @returns {void}
+   * @sideEffect Records history, writes store state — which re-derives the toolbar's voltage — and schedules a resimulation.
+   */
+  setToolbarChannel: (id) => {
+    const w = get().projectExtras.wiring
+    if (!w.channels.some((c) => c.id === id)) return
+    get().setWiring({ ...w, toolbar: id })
+  },
+  /**
+   * Put every driver back on the first channel, in parallel.
+   *
+   * Every cable goes; a driver wired coil by coil goes back to its drivers in
+   * parallel, wired as a whole.
+   *
+   * @returns {void}
+   * @sideEffect Records history, writes store state and schedules a resimulation.
+   */
+  resetWiring: () => {
+    if (isLocked(get())) return
+    get().pushHistory()
+    const nodes = get().nodes.map((n) => (n.type === 'driver' && WR.isCustom(n.data.params)
+      ? { ...n, data: { ...n.data, params: { ...n.data.params, wiring: 'parallel' } } }
+      : n))
+    set({ nodes })
+    const w = get().projectExtras.wiring
+    const wires = WR.parallelWires(nodes.filter((n) => n.type === 'driver'), w.channels[0].id)
+    get().setWiring({ ...w, wires }, false)
+  },
+  /**
+   * Change how a driver node's drivers and coils are joined.
+   *
+   * A node wired as a whole keeps its cables through any change of count,
+   * coils or arrangement: its two terminals stay. Going to `custom` swaps
+   * them for every coil's own, already cabled the way the arrangement joined
+   * them, and moves the node's cables onto the coils at its ends. Coming back
+   * from `custom`, the coil cables go and the node is put on the channel that
+   * drove it, in parallel — or left unwired if none did.
+   *
+   * @param {string} id - Driver node id.
+   * @param {object} patch - Any of `count`, `wiring`, `dvc`.
+   * @returns {string|null} A note on cables that were replaced, or `null`.
+   * @sideEffect Records history, writes store state and schedules a resimulation.
+   */
+  setDriverArrangement: (id, patch) => {
+    if (isLocked(get())) return null
+    const node = get().nodes.find((n) => n.id === id)
+    if (!node || node.type !== 'driver') return null
+    get().pushHistory()
+    const before = node.data.params
+    const after = { ...before, ...patch }
+    const w = get().projectExtras.wiring
+    let wires = w.wires || []
+    let note = null
+    if (!WR.isCustom(before) && WR.isCustom(after)) {
+      const inner = WR.arrangementWires({ id, params: before })
+      const plus = WR.nodeTerm(id, '', '+')
+      const minus = WR.nodeTerm(id, '', '-')
+      /**
+       * The terminal a cable on the node's own terminal moves to.
+       *
+       * @param {string} t - Terminal id.
+       * @returns {string} The coil terminal that takes its place, or `t` itself.
+       * @reads the enclosing arrangement.
+       */
+      const swap = (t) => (t === plus ? inner.plus : t === minus ? inner.minus : t)
+      wires = [...wires.map((c) => ({ a: swap(c.a), b: swap(c.b) })), ...inner.wires]
+    } else if (WR.isCustom(before) && !WR.isCustom(after)) {
+      const status = WR.driverStatus(w, get().nodes).get(id)
+      /**
+       * Whether a terminal is one of this node's.
+       *
+       * @param {string} t - Terminal id.
+       * @returns {boolean} True for the node's terminals.
+       * @reads the enclosing node id.
+       */
+      const mine = (t) => WR.parseTerm(t)?.node === id
+      wires = wires.filter((c) => !mine(c.a) && !mine(c.b))
+      const ch = status?.channels?.[0]
+      if (ch) wires = [...wires, ...WR.parallelWires([{ id, params: after }], ch)]
+      const name = w.channels.find((c) => c.id === ch)?.label
+      note = ch ? `Its coil cables were replaced: it is now on ${name || ch}, wired as a whole.` : 'Its coil cables were removed.'
+    }
+    const nodes = get().nodes.map((n) => (n.id === id ? { ...n, data: { ...n.data, params: after } } : n))
+    set({ nodes })
+    get().setWiring({ ...w, wires }, false)
+    return note
   },
   /**
    * Replace a chamber's or waveguide's taps, removing edges to taps that are gone.
@@ -2083,8 +2319,31 @@ export const useStore = create((rawSet, get) => {
   openTimeDomain: (tab) => {
     // Load an engine on every thread now, so the first run need not wait.
     if (typeof Worker !== 'undefined') getPool().warm()
-    set({ tdOpen: true, ...(tab ? { tdTab: tab } : {}) })
+    set({ tdOpen: true, wiringOpen: false, ...(tab ? { tdTab: tab } : {}) })
   },
+  /**
+   * Open the Wiring window in place of the dock, optionally showing one driver.
+   *
+   * @param {string} [nodeId] - A driver node to select in it.
+   * @returns {void}
+   * @sideEffect Writes store state.
+   */
+  openWiring: (nodeId) => set({ wiringOpen: true, tdOpen: false, ...(nodeId ? { wiringSel: nodeId } : {}) }),
+  /**
+   * Return from the Wiring window to the editor.
+   *
+   * @returns {void}
+   * @sideEffect Writes store state.
+   */
+  closeWiring: () => set({ wiringOpen: false }),
+  /**
+   * Show one driver in the Wiring window's inspector.
+   *
+   * @param {string|null} id - Driver node id, or `null` for none.
+   * @returns {void}
+   * @sideEffect Writes store state.
+   */
+  setWiringSel: (id) => set({ wiringSel: id }),
   /**
    * Return to the editor. A running job carries on.
    *
@@ -2664,7 +2923,8 @@ export const useStore = create((rawSet, get) => {
    * which also fills every param from the defaults, so a project saved by an
    * older build gains any parameter added since and edges missing an id get
    * one. A bare `{name, nodes, edges}` — a new empty file — keeps the current
-   * sweep, drive and display settings rather than resetting them.
+   * sweep, drive, channels and display settings rather than resetting them,
+   * and its drivers go on the first channel in parallel.
    *
    * History, redo and selection are all cleared: they describe the project
    * being replaced and would be meaningless against the new one. Snapshots are
@@ -2679,12 +2939,17 @@ export const useStore = create((rawSet, get) => {
     const ed = toEditor(migrateProject(proj))
     const bare = !proj.settings && !proj.analyses && !proj.wiring && !proj.display
     const cur = get()
+    // A bare file keeps the channels in use, with its own drivers on the first.
+    const keep = cur.projectExtras.wiring
+    const wiring = bare && keep?.channels?.length
+      ? { ...keep, wires: WR.parallelWires(ed.nodes.filter((n) => n.type === 'driver'), keep.channels[0].id), layout: {} }
+      : ed.extras.wiring
     set({
       nodes: ed.nodes, edges: ed.edges,
       projectName: proj.name || '',
       settings: bare ? cur.settings : { ...cur.settings, ...ed.settings },
       projectExtras: bare
-        ? { ...ed.extras, wiring: cur.projectExtras.wiring, analyses: cur.projectExtras.analyses, display: cur.projectExtras.display }
+        ? { ...ed.extras, wiring, analyses: cur.projectExtras.analyses, display: cur.projectExtras.display }
         : ed.extras,
       history: [], future: [], selectedNodeId: null,
       records: R.readRecords(proj.records),

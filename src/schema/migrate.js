@@ -16,11 +16,17 @@
 //               handle becomes `rear`; its front is left open, as before.
 //   settings    sweep range, `masking` → one analysis; `voltage`
 //               and `rg` → one channel; the rest → `display`.
+//
+// Within v3, wiring moved from a series/parallel load tree on each channel to
+// cables between terminals (`wires.js`). A file without `wiring.wires` has its
+// trees turned into the cables that make the same circuit; channels lose the
+// tree and their old DSP. A driver node's `single` wiring is `parallel`.
 
 import {
   SCHEMA_VERSION, DEFAULT_PARAMS, DEFAULT_ANALYSIS, DEFAULT_CHANNEL, DEFAULT_WIRING,
   DEFAULT_DISPLAY, DEFAULT_AIR,
 } from './version.js'
+import { wiresFromLoads, liveWires, allTerminals } from './wires.js'
 
 /**
  * The `ecFactor` that meant "no adjustment" before v2.
@@ -167,11 +173,11 @@ function splitSettings(s = {}) {
  * @pure
  */
 function normalize(proj) {
-  const nodes = (proj.nodes || []).map((n) => ({
-    id: n.id, type: n.type,
-    position: clone(n.position) || { x: 0, y: 0 },
-    params: { ...clone(DEFAULT_PARAMS[n.type] || {}), ...clone(n.params || {}) },
-  }))
+  const nodes = (proj.nodes || []).map((n) => {
+    const params = { ...clone(DEFAULT_PARAMS[n.type] || {}), ...clone(n.params || {}) }
+    if (n.type === 'driver' && (params.wiring === 'single' || !params.wiring)) params.wiring = 'parallel'
+    return { id: n.id, type: n.type, position: clone(n.position) || { x: 0, y: 0 }, params }
+  })
   const used = new Set((proj.edges || []).map((e) => e.id).filter(Boolean))
   let k = 0
   /**
@@ -191,11 +197,14 @@ function normalize(proj) {
     target: e.target, targetHandle: e.targetHandle,
   }))
   const w = proj.wiring || {}
-  const channels = (w.channels && w.channels.length ? w.channels : DEFAULT_WIRING.channels).map((c) => ({
-    ...clone(DEFAULT_CHANNEL),
-    ...clone(c),
-    dsp: { ...clone(DEFAULT_CHANNEL.dsp), ...clone(c.dsp || {}) },
-  }))
+  const saved = w.channels && w.channels.length ? w.channels : DEFAULT_WIRING.channels
+  const channels = saved.map((c, i) => {
+    const { load, dsp, ...rest } = clone(c)
+    const label = !rest.label || /^Amp( \d+)?$/.test(rest.label) ? `Channel ${i + 1}` : rest.label
+    return { ...clone(DEFAULT_CHANNEL), ...rest, label }
+  })
+  const driverIds = nodes.filter((n) => n.type === 'driver').map((n) => n.id)
+  const cables = Array.isArray(w.wires) ? clone(w.wires) : wiresFromLoads(saved, driverIds)
   const analyses = (proj.analyses && proj.analyses.length ? proj.analyses : [DEFAULT_ANALYSIS])
     .map((a) => ({ ...(a.type === 'ac' || !a.type ? DEFAULT_ANALYSIS : {}), ...clone(a) }))
   const out = {
@@ -206,7 +215,13 @@ function normalize(proj) {
     params: clone(proj.params || []),
     nodes,
     edges,
-    wiring: { masterDb: typeof w.masterDb === 'string' ? w.masterDb : Number(w.masterDb) || 0, channels },
+    wiring: {
+      masterDb: typeof w.masterDb === 'string' ? w.masterDb : Number(w.masterDb) || 0,
+      toolbar: channels.some((c) => c.id === w.toolbar) ? w.toolbar : channels[0].id,
+      channels,
+      wires: liveWires(cables, allTerminals({ channels }, nodes)),
+      layout: clone(w.layout || {}),
+    },
     analyses,
     probes: clone(proj.probes || []),
     components: clone(proj.components || []),

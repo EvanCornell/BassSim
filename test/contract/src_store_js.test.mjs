@@ -1825,10 +1825,10 @@ test('deleteSelected: forgets the deleted driver in wiring and probes', () => {
   st().loadSerialized(m4())
   st().setSelection(['x'])
   st().deleteSelected()
-  assert.deepEqual(st().projectExtras.wiring.channels[1].load, { parallel: [] })
+  assert.deepEqual(st().projectExtras.wiring.wires.filter((w) => /x/.test(w.a + w.b)), [])
   assert.deepEqual(st().projectExtras.probes, [])
   st().undo()
-  assert.deepEqual(st().projectExtras.wiring.channels[1].load, { series: [{ driver: 'x' }] }, 'undo brings them back')
+  assert.deepEqual(st().projectExtras.wiring.wires.filter((w) => w.b.startsWith('x:')).map((w) => w.a), ['ch:ch2:+', 'ch:ch2:-'], 'undo brings them back')
   assert.equal(st().projectExtras.probes.length, 1)
 })
 
@@ -2079,4 +2079,68 @@ test('editGroup: one edit across several nodes, undone together', () => {
   assert.deepEqual([paramsOf(a).taps, paramsOf(b).taps], [[{ id: 't1', position: 3 }], [{ id: 't1', position: 3 }]])
   st().undo()
   assert.deepEqual([paramsOf(a).taps || [], paramsOf(b).taps || []], [[], []])
+})
+
+// CONTRACT (addNode / _wireNewDrivers): a new driver goes on the first channel, in parallel.
+test('addNode: a new driver is cabled to the first channel', () => {
+  st().loadSerialized(m4())
+  const id = st().addNode('driver', { x: 0, y: 0 })
+  const mine = st().projectExtras.wiring.wires.filter((w) => w.b.startsWith(`${id}:`))
+  assert.deepEqual(mine, [{ a: 'ch:ch1:+', b: `${id}:+` }, { a: 'ch:ch1:-', b: `${id}:-` }])
+  st().undo()
+  assert.equal(st().projectExtras.wiring.wires.some((w) => w.b.startsWith(`${id}:`)), false, 'one undo step')
+})
+
+// CONTRACT (addWire / removeWire / moveWireEnd): cables are made, moved and removed; a short is refused.
+test('addWire: cables, and a short refused', () => {
+  st().loadSerialized(m4())
+  const n = st().projectExtras.wiring.wires.length
+  assert.match(st().addWire('ch:ch1:+', 'ch:ch1:-'), /Two channel terminals/)
+  assert.match(st().addWire('d:+', 'd:-'), /short/)
+  assert.match(st().addWire('d:+', 'x:+'), /join Channel 1 and Channel 2/)
+  assert.equal(st().addWire('d:-', 'x:-'), null)
+  assert.equal(st().projectExtras.wiring.wires.length, n + 1)
+  st().removeWire(n)
+  assert.equal(st().projectExtras.wiring.wires.length, n)
+  const i = st().projectExtras.wiring.wires.findIndex((w) => w.a === 'ch:ch2:+')
+  assert.match(st().moveWireEnd(i, 'b', 'd:+'), /join Channel 1 and Channel 2/)
+  assert.match(st().moveWireEnd(i, 'b', 'x:-'), /short Channel 2/)
+  const j = st().projectExtras.wiring.wires.findIndex((w) => w.a === 'ch:ch2:-')
+  assert.equal(st().moveWireEnd(j, 'b', 'd:-'), null)
+  assert.equal(st().projectExtras.wiring.wires[j].b, 'd:-')
+})
+
+// CONTRACT (setDriverArrangement): going to `custom` keeps the circuit, cabled coil by coil; coming back puts the node on its channel.
+test('setDriverArrangement: by hand and back', () => {
+  st().loadSerialized(m4())
+  st().setDriverArrangement('x', { dvc: { coils: 'series' } })
+  st().setDriverArrangement('x', { wiring: 'custom' })
+  const ws = st().projectExtras.wiring.wires.filter((w) => /x:/.test(w.a + w.b)).map((w) => `${w.a}~${w.b}`)
+  assert.deepEqual(ws, ['ch:ch2:+~x:1A:+', 'ch:ch2:-~x:1B:-', 'x:1A:-~x:1B:+'])
+  const note = st().setDriverArrangement('x', { wiring: 'parallel' })
+  assert.match(note, /now on/)
+  assert.deepEqual(st().projectExtras.wiring.wires.filter((w) => /x:/.test(w.a + w.b)).map((w) => w.a), ['ch:ch2:+', 'ch:ch2:-'])
+})
+
+// CONTRACT (setToolbarChannel): the toolbar's drive follows the chosen channel.
+test('setToolbarChannel: the toolbar shows that channel', () => {
+  st().loadSerialized(m4())
+  assert.equal(st().settings.voltage, 2)
+  st().setToolbarChannel('ch2')
+  assert.equal(st().settings.voltage, 4)
+  st().setAmp('voltage', 8)
+  assert.deepEqual(st().projectExtras.wiring.channels.map((c) => c.volts), [2, 4], 'the master moves, not the channels')
+})
+
+// CONTRACT (addChannel / removeChannel / resetWiring).
+test('channels: add, remove, and reset the wiring', () => {
+  st().loadSerialized(m4())
+  const id = st().addChannel()
+  assert.equal(st().projectExtras.wiring.channels.find((c) => c.id === id).label, 'Channel 3')
+  st().setToolbarChannel('ch2')
+  st().removeChannel('ch2')
+  assert.equal(st().projectExtras.wiring.toolbar, 'ch1', 'the toolbar falls back to the first channel')
+  assert.equal(st().projectExtras.wiring.wires.some((w) => w.a.startsWith('ch:ch2:')), false)
+  st().resetWiring()
+  assert.deepEqual(st().projectExtras.wiring.wires.map((w) => `${w.a}~${w.b}`).sort(), ['ch:ch1:+~d:+', 'ch:ch1:+~x:+', 'ch:ch1:-~d:-', 'ch:ch1:-~x:-'])
 })

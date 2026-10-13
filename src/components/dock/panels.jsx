@@ -10,7 +10,6 @@ import { useStore } from '../../store'
 import FileBrowser from '../FileBrowser'
 import FlowCanvas from '../FlowCanvas'
 import ParamPanel from '../ParamPanel'
-import WiringPanel from '../WiringPanel'
 import VariablesPanel from '../VariablesPanel'
 import ProbesPanel from '../ProbesPanel'
 import VelocityPopup from '../VelocityPopup'
@@ -66,7 +65,6 @@ const COMPONENTS = {
   // Every panel that edits the project is disabled while an earlier record
   // is selected and locked.
   params: readOnlyWhenLocked(ParamPanel),
-  wiring: readOnlyWhenLocked(WiringPanel),
   vars: readOnlyWhenLocked(VariablesPanel),
   probes: readOnlyWhenLocked(ProbesPanel),
   ...Object.fromEntries(CHART_IDS.map((id) => [id, chartPanelComponent(id)])),

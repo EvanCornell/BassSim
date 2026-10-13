@@ -91,7 +91,7 @@ export const defaultLayout = () => split('row', [
     stack(['canvas'], { size: 60 }),
     stack(['spl', 'zin', 'exc', 'vel'], { size: 40, active: 'spl' }),
   ], 60),
-  stack(['params', 'wiring', 'probes'], { size: 24, active: 'params' }),
+  stack(['params', 'probes'], { size: 24, active: 'params' }),
 ])
 
 // ---------- queries ----------

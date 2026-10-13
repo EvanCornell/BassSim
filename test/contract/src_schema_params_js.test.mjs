@@ -79,7 +79,7 @@ test('resolveProject: every numeric place is resolved', () => {
     schemaVersion: 3,
     params: [{ name: 'Vb', value: 60 }, { name: 'V', value: 20 }],
     nodes: [{ id: 'c', type: 'chamber', params: { volume: 'Vb', length: 'Vb / 2', label: 'Vb', taps: [{ id: 't', position: 'Vb / 4' }] } }],
-    wiring: { masterDb: '0 - 3', channels: [{ id: 'ch', volts: 'V', outputOhms: '0.1', dsp: { delayMs: '1 + 1', filters: [{ type: 'highpass', hz: 'Vb / 3', order: 4 }] } }] },
+    wiring: { masterDb: '0 - 3', channels: [{ id: 'ch', volts: 'V', outputOhms: '0.1' }] },
     analyses: [{ id: 'a', type: 'ac', fmin: '10', fmax: 'V * 50', npts: 100 }],
     probes: [{ id: 'p', kind: 'pressure', at: { node: 'c', position: 'Vb / 6' } }],
   })
@@ -91,8 +91,6 @@ test('resolveProject: every numeric place is resolved', () => {
   assert.equal(project.wiring.masterDb, -3)
   assert.equal(project.wiring.channels[0].volts, 20)
   assert.equal(project.wiring.channels[0].outputOhms, 0.1)
-  assert.equal(project.wiring.channels[0].dsp.delayMs, 2)
-  assert.equal(project.wiring.channels[0].dsp.filters[0].hz, 20)
   assert.equal(project.analyses[0].fmin, 10); assert.equal(project.analyses[0].fmax, 1000)
   assert.equal(project.probes[0].at.position, 10)
 })

@@ -1,7 +1,7 @@
 // Contract tests for src/schema/validate.js — errors versus warnings.
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { validateProject, nodeHandles, loadLeaves, driverChannels } from '../../src/schema/validate.js'
+import { validateProject, nodeHandles, driverChannels } from '../../src/schema/validate.js'
 import { migrateProject } from '../../src/schema/migrate.js'
 
 /** A minimal valid v3 project: driver rear into a port. */
@@ -23,20 +23,14 @@ test('nodeHandles: base handles plus one per tap', () => {
   assert.deepEqual(nodeHandles({ type: 'pr', params: {} }), ['front', 'rear'])
 })
 
-// CONTRACT: "Driver ids in tree order, duplicates included."
-test('loadLeaves: collects leaves through nested series and parallel', () => {
-  const tree = { parallel: [{ driver: 'a' }, { series: [{ driver: 'b' }, { driver: 'c' }] }, { driver: 'a' }] }
-  assert.deepEqual(loadLeaves(tree), ['a', 'b', 'c', 'a'])
-  assert.deepEqual(loadLeaves(null), [])
-})
-
-// CONTRACT: "The one channel whose `load` is `null` takes every driver no tree
-// claimed ... A driver claimed by no channel is undriven."
-test('driverChannels: explicit trees claim first, the catch-all takes the rest', () => {
-  const p = { nodes: [{ id: 'a', type: 'driver' }, { id: 'b', type: 'driver' }], wiring: { channels: [{ id: 'x', load: { driver: 'a' } }, { id: 'y', load: null }] } }
-  assert.deepEqual([...driverChannels(p)], [['a', 'x'], ['b', 'y']])
-  const q = { nodes: [{ id: 'a', type: 'driver' }], wiring: { channels: [{ id: 'x', load: { parallel: [] } }] } }
-  assert.equal(driverChannels(q).size, 0)
+// CONTRACT: a driver is driven by every channel its cables reach.
+test('driverChannels: the channels the cables reach', () => {
+  const p = migrateProject({
+    schemaVersion: 3,
+    nodes: [{ id: 'a', type: 'driver' }, { id: 'b', type: 'driver' }],
+    wiring: { channels: [{ id: 'x' }, { id: 'y' }], wires: [{ a: 'ch:x:+', b: 'a:+' }, { a: 'a:-', b: 'ch:x:-' }] },
+  })
+  assert.deepEqual([...driverChannels(p)], [['a', ['x']], ['b', []]])
 })
 
 // CONTRACT: a valid project has no errors.
@@ -87,18 +81,19 @@ test('validateProject: a tap outside the length warns', () => {
   assert.match(validateProject(p).warnings.w.join(), /Tap t at 45 cm is not inside the 30 cm length/)
 })
 
-// CONTRACT (wiring): a driver wired twice, a leaf that is not a driver, and two
-// catch-all channels are errors; an undriven driver is a warning.
+// CONTRACT (wiring): a channel shorted to the ground, or joined to another
+// channel's output, is an error; an undriven, half-connected or shorted
+// driver is a warning.
 test('validateProject: wiring mistakes', () => {
-  const twice = base({ wiring: { channels: [{ id: 'a', load: { driver: 'd' } }, { id: 'b', load: { driver: 'd' } }] } })
-  assert.match(validateProject(twice).errors.join(), /wired to more than one place/)
-  const notDriver = base({ wiring: { channels: [{ id: 'a', load: { driver: 'w' } }] } })
-  assert.match(validateProject(notDriver).errors.join(), /"w" is not a driver node/)
-  const two = base({ wiring: { channels: [{ id: 'a', load: null }, { id: 'b', load: null }] } })
-  assert.match(validateProject(two).errors.join(), /Only one channel may take/)
-  const none = base({ wiring: { channels: [{ id: 'a', load: { parallel: [] } }] } })
+  const w = (wires, channels = [{ id: 'a', label: 'Ch A' }]) => base({ wiring: { channels, wires } })
+  assert.match(validateProject(w([{ a: 'ch:a:+', b: 'd:+' }, { a: 'd:+', b: 'ch:a:-' }])).errors.join(), /Ch A is shorted/)
+  const two = w([{ a: 'ch:a:+', b: 'd:+' }, { a: 'd:+', b: 'ch:b:+' }], [{ id: 'a', label: 'Ch A' }, { id: 'b', label: 'Ch B' }])
+  assert.match(validateProject(two).errors.join(), /Ch A and Ch B are wired directly together/)
+  const none = w([])
   assert.deepEqual(validateProject(none).errors, [])
-  assert.match(validateProject(none).warnings.d.join(), /Not wired to any amplifier channel/)
+  assert.match(validateProject(none).warnings.d.join(), /Not wired to any channel/)
+  assert.match(validateProject(w([{ a: 'ch:a:+', b: 'd:+' }])).warnings.d.join(), /one terminal but not the other/)
+  assert.match(validateProject(w([{ a: 'ch:a:+', b: 'd:+' }, { a: 'd:+', b: 'd:-' }])).warnings.d.join(), /shorted/)
 })
 
 // CONTRACT (analyses): a sweep needs a positive range and at least two points.
@@ -124,13 +119,4 @@ test('validateProject: probes are checked', () => {
   }))
   assert.deepEqual(errors, ['Probe e: unknown kind "loudness"'])
   assert.deepEqual(Object.keys(warnings).filter((k) => k.startsWith('probe:')).sort(), ['probe:a', 'probe:b', 'probe:c', 'probe:d'])
-})
-
-// CONTRACT: a DSP filter that cannot be built is an error naming its channel.
-test('validateProject: a malformed filter is an error', () => {
-  const { errors } = validateProject(base({
-    wiring: { channels: [{ id: 'c1', label: 'Amp', volts: 2.83, load: null, dsp: { filters: [{ type: 'highpass', hz: -5 }] } }] },
-  }))
-  assert.equal(errors.length, 1)
-  assert.match(errors[0], /^Amp › filter 1: /)
 })

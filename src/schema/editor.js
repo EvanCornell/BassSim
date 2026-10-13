@@ -8,7 +8,8 @@
 // params, every channel, the other probes, components — travel in `extras`,
 // which the Wiring, Project Parameters and Probes panels edit directly.
 
-import { DEFAULT_ANALYSIS, DEFAULT_CHANNEL, DEFAULT_DISPLAY, SCHEMA_VERSION } from './version.js'
+import { DEFAULT_ANALYSIS, DEFAULT_CHANNEL, DEFAULT_DISPLAY, DEFAULT_WIRING, SCHEMA_VERSION } from './version.js'
+import { toolbarChannel } from './wires.js'
 
 /**
  * Deep-copy plain JSON data.
@@ -31,7 +32,7 @@ const gain = (db) => Math.pow(10, (Number(db) || 0) / 20)
 /**
  * Split a v3 project into the editor's working state.
  *
- * `settings.voltage` is the first channel's output at the current master
+ * `settings.voltage` is the toolbar channel's output at the current master
  * level — the drive the user actually sees. A chamber's own probe — the one
  * with id `probe_<chamber id>`, which is what its checkbox writes — becomes its
  * `probe`/`probePos` params; every other probe stays in `extras`.
@@ -43,7 +44,7 @@ const gain = (db) => Math.pow(10, (Number(db) || 0) / 20)
  */
 export function toEditor(proj) {
   const analysis = proj.analyses?.[0] || DEFAULT_ANALYSIS
-  const channel = proj.wiring?.channels?.[0] || DEFAULT_CHANNEL
+  const channel = toolbarChannel(proj.wiring) || DEFAULT_CHANNEL
   const display = { ...DEFAULT_DISPLAY, ...(proj.display || {}) }
   const lengths = new Map((proj.nodes || []).filter((n) => n.type === 'chamber').map((n) => [n.id, Number(n.params?.length)]))
   const chamberProbe = new Map()
@@ -96,9 +97,9 @@ export function toEditor(proj) {
  * Assemble a v3 project from the editor's working state.
  *
  * The inverse of `toEditor`: the flat settings land back in the first
- * analysis, the first channel and the display section, and a probed chamber's
- * probe becomes an entry in `probes`. A first-channel voltage or output
- * resistance written as an expression is kept, not overwritten by its value.
+ * analysis, the toolbar channel and the display section, and a probed
+ * chamber's probe becomes an entry in `probes`. A toolbar-channel voltage or
+ * Rg written as an expression is kept, not overwritten by its value.
  *
  * @param {object} state - The editor state.
  * @param {string} state.name - Project name.
@@ -132,12 +133,13 @@ export function fromEditor({ name, nodes, edges, settings, extras = {} }) {
     masking: !!s.masking,
   }
   delete analyses[0].nlEnabled // the old solver's large-signal mode, no longer read
-  const wiring = clone(extras.wiring || { masterDb: 0, channels: [DEFAULT_CHANNEL] })
+  const wiring = clone(extras.wiring || DEFAULT_WIRING)
   if (!wiring.channels?.length) wiring.channels = [clone(DEFAULT_CHANNEL)]
-  // An expression the user wrote on the first channel stays an expression;
+  // An expression the user wrote on the toolbar channel stays an expression;
   // the flat settings only ever hold numbers.
-  const ch0 = wiring.channels[0]
-  wiring.channels[0] = {
+  const at = Math.max(0, wiring.channels.indexOf(toolbarChannel(wiring)))
+  const ch0 = wiring.channels[at]
+  wiring.channels[at] = {
     ...ch0,
     volts: typeof ch0.volts === 'string' || !Number.isFinite(Number(s.voltage))
       ? ch0.volts

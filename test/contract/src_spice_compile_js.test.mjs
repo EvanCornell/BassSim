@@ -7,7 +7,6 @@ import assert from 'node:assert/strict'
 import { compileProject, pointsPerDecade } from '../../src/spice/compile.js'
 import { compileLine } from '../../src/spice/line.js'
 import { applyDvc } from '../../src/spice/elements.js'
-import { filterSections, sectionsResponse } from '../../src/spice/filters.js'
 import { createNetlist, DC_TIE } from '../../src/spice/netlist.js'
 import { fitBand } from '../../src/spice/networks.js'
 import { runNetlist } from '../../src/spice/run.js'
@@ -320,14 +319,15 @@ test('taps: where a driver joins a closed pipe decides which modes it excites', 
   assert.ok(inBand(off, 300, 400) && inBand(mid, 300, 400), 'both excite the second mode')
 })
 
-// CONTRACT (wiring): polarity flips the output's phase and not its level.
-test('wiring: channel polarity inverts phase only', async () => {
+// CONTRACT (wiring): a driver's cables swapped at its terminals flip its phase and not its level.
+test('wiring: swapping a driver\'s cables inverts its phase only', async () => {
   const base = {
     nodes: [{ id: 'd', type: 'driver', params: DRV }, { id: 'c', type: 'chamber', params: {} }],
     edges: [{ source: 'd', sourceHandle: 'rear', target: 'c', targetHandle: 'in' }],
   }
-  const a = (await sim({ ...base, wiring: { channels: [{ id: 'ch', volts: 2.83 }] } })).results
-  const b = (await sim({ ...base, wiring: { channels: [{ id: 'ch', volts: 2.83, dsp: { polarity: -1 } }] } })).results
+  const wired = (plus, minus) => ({ channels: [{ id: 'ch', volts: 2.83 }], wires: [{ a: 'ch:ch:+', b: plus }, { a: 'ch:ch:-', b: minus }] })
+  const a = (await sim({ ...base, wiring: wired('d:+', 'd:-') })).results
+  const b = (await sim({ ...base, wiring: wired('d:-', 'd:+') })).results
   for (let i = 0; i < a.freqs.length; i++) {
     assert.ok(Math.abs(a.splCombined[i] - b.splCombined[i]) < 1e-9)
     const d = ((b.phase[i] - a.phase[i]) % 360 + 360) % 360
@@ -335,39 +335,49 @@ test('wiring: channel polarity inverts phase only', async () => {
   }
 })
 
-// CONTRACT (filters.js): every filter is "a cascade of first- and
-// second-order sections, each one a real R-L-C network". The compiled chain
-// must reproduce the analytic cascade: the SPL difference with and without
-// the filters is exactly the filters' own magnitude, and a bypassed filter is
-// not in the signal.
-test('wiring: DSP filters are the analytic cascade, in circuit', async () => {
-  const filters = [
-    { type: 'highpass', shape: 'linkwitz-riley', order: 4, hz: 25 },
-    { type: 'lowpass', shape: 'butterworth', order: 3, hz: 300 },
-    { type: 'peq', hz: 50, q: 3, db: 6 },
-    { type: 'lowshelf', hz: 40, q: 0.7, db: -4 },
-    { type: 'highshelf', hz: 200, q: 0.9, db: 3 },
-    { type: 'peq', hz: 80, q: 1, db: 12, bypass: true },
+// CONTRACT (compileDriver): a node wired by hand, coil by coil, is the same
+// circuit as the arrangement it reproduces — dual coils in series, in
+// parallel and one alone, and drivers in series.
+test('wiring: coils wired by hand match the arrangements', async () => {
+  const run = async (params, wires) => (await sim({
+    nodes: [{ id: 'd', type: 'driver', params: { ...DRV, ...params } }, { id: 'c', type: 'chamber', params: {} }],
+    edges: [{ source: 'd', sourceHandle: 'rear', target: 'c', targetHandle: 'in' }],
+    wiring: { channels: [{ id: 'ch', volts: 2.83 }], wires },
+  })).results
+  const whole = [{ a: 'ch:ch:+', b: 'd:+' }, { a: 'ch:ch:-', b: 'd:-' }]
+  const cases = [
+    [{ wiring: 'parallel', dvc: { coils: 'series' } }, { wiring: 'custom', dvc: { coils: 'series' } },
+      [{ a: 'ch:ch:+', b: 'd:1A:+' }, { a: 'd:1A:-', b: 'd:1B:+' }, { a: 'd:1B:-', b: 'ch:ch:-' }]],
+    [{ wiring: 'parallel', dvc: { coils: 'parallel' } }, { wiring: 'custom', dvc: { coils: 'parallel' } },
+      [{ a: 'ch:ch:+', b: 'd:1A:+' }, { a: 'ch:ch:+', b: 'd:1B:+' }, { a: 'd:1A:-', b: 'ch:ch:-' }, { a: 'd:1B:-', b: 'ch:ch:-' }]],
+    [{ wiring: 'parallel', dvc: { coils: 'one' } }, { wiring: 'custom', dvc: { coils: 'one' } },
+      [{ a: 'ch:ch:+', b: 'd:1A:+' }, { a: 'd:1A:-', b: 'ch:ch:-' }]],
+    [{ wiring: 'series', count: 2 }, { wiring: 'custom', count: 2 },
+      [{ a: 'ch:ch:+', b: 'd:1:+' }, { a: 'd:1:-', b: 'd:2:+' }, { a: 'd:2:-', b: 'ch:ch:-' }]],
   ]
-  const base = { nodes: [{ id: 'd', type: 'driver', params: DRV }], edges: [] }
-  const a = (await sim(base)).results
-  const b = (await sim({ ...base, wiring: { channels: [{ id: 'ch', volts: 2.83, dsp: { filters } }] } })).results
-  const secs = filters.filter((f) => !f.bypass).flatMap(filterSections)
-  for (let i = 0; i < a.freqs.length; i++) {
-    const h = sectionsResponse(secs, a.freqs[i])
-    const want = 20 * Math.log10(Math.hypot(h.re, h.im))
-    assert.ok(Math.abs(b.splCombined[i] - a.splCombined[i] - want) < 1e-6, `${a.freqs[i]} Hz`)
+  for (const [preset, custom, wires] of cases) {
+    const a = await run(preset, whole)
+    const b = await run(custom, wires)
+    for (let i = 0; i < a.freqs.length; i++) {
+      assert.ok(Math.abs(a.zinMag[i] / b.zinMag[i] - 1) < 1e-6, `${JSON.stringify(preset)} |Z| at ${a.freqs[i]} Hz`)
+      assert.ok(Math.abs(a.splCombined[i] - b.splCombined[i]) < 1e-6, `${JSON.stringify(preset)} SPL at ${a.freqs[i]} Hz`)
+    }
   }
 })
 
-// CONTRACT (compileWiring): "@throws Error When a channel's DSP filter is
-// malformed" — and validation refuses it before it gets that far.
-test('wiring: a malformed filter is an error naming the channel', async () => {
-  await assert.rejects(sim({
-    nodes: [{ id: 'd', type: 'driver', params: DRV }],
+// CONTRACT (compileWiring): the toolbar channel is compiled first, so its
+// impedance is `zinMag` and the results are reported against its level.
+test('wiring: the toolbar channel is the one reported', async () => {
+  const { results: r } = await sim({
+    nodes: [{ id: 'a', type: 'driver', params: DRV }, { id: 'b', type: 'driver', params: { ...DRV, count: 2, wiring: 'series' } }],
     edges: [],
-    wiring: { channels: [{ id: 'ch', label: 'Sub amp', volts: 2.83, dsp: { filters: [{ type: 'bandstop', hz: 20 }] } }] },
-  }), /Sub amp › filter 1: unknown filter type/)
+    wiring: {
+      toolbar: 'c2',
+      channels: [{ id: 'c1', volts: 2.83 }, { id: 'c2', volts: 2.83 }],
+      wires: [{ a: 'ch:c1:+', b: 'a:+' }, { a: 'ch:c1:-', b: 'a:-' }, { a: 'ch:c2:+', b: 'b:+' }, { a: 'ch:c2:-', b: 'b:-' }],
+    },
+  })
+  assert.deepEqual(r.zinByChannel.c2.mag, r.zinMag)
 })
 
 // CONTRACT (adaptResults): "Impedance is the load each channel sees"; the

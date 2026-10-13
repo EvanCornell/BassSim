@@ -9,6 +9,7 @@ import { freshId } from '../schema/extras'
 import { driverNominal } from '../schema/nominal'
 import { baseName, nameNumbers } from '../nodeNames'
 import { mergeParams, plural } from '../groupEdit'
+import { driverStatus, toolbarChannel } from '../schema/wires'
 
 /**
  * One-line physical explanation per parameter, shown as a label tooltip.
@@ -427,6 +428,7 @@ function AmpSolver() {
   const settings = useStore((s) => s.settings)
   const setAmp = useStore((s) => s.setAmp)
   const updateSettings = useStore((s) => s.updateSettings)
+  const channel = useStore((s) => { const c = toolbarChannel(s.projectExtras.wiring); return c?.label || c?.id || 'The first channel' })
   /**
    * One linked amplifier field.
    *
@@ -455,15 +457,15 @@ function AmpSolver() {
     <Section
       id="amp" title="Amplifier"
       summary={`${short(settings.voltage)} V · ${short(settings.impedance)} Ω · ${short(settings.power)} W`}
-      actions={<button onClick={() => useStore.getState().layoutOps.open('wiring')}
-        title="The first amplifier channel at the master level. Changing the voltage moves the master, so every channel keeps its relative level.">Wiring…</button>}
+      actions={<button onClick={() => useStore.getState().openWiring()}
+        title={`${channel} at the master level — the channel the toolbar's drive level sets. Changing the voltage moves the master, so every channel keeps its relative level.`}>Wiring…</button>}
     >
       <div className="param-grid">
         {f('voltage', 'Voltage', 'V')}
         {f('impedance', 'Impedance', 'Ω')}
         {f('power', 'Power', 'W')}
         <div className="param-row">
-          <label title="The first channel's output resistance — amplifier output plus cable — in series with its load.">Rg</label>
+          <label title={`${channel}'s Rg — amplifier output resistance plus cable — in series with its load.`}>Rg</label>
           <NumInput step="0.01" min="0" value={settings.rg}
             onCommit={(v) => updateSettings({ rg: v })} />
           <span className="unit">Ω</span>
@@ -667,21 +669,13 @@ function DriverForm({ node }) {
       </div>
       <div className="psec-caption">
         Array & wiring
-        <span className="psec-caption-note">{Number.isFinite(nominal) && nominal > 0
-          ? `${short(p.count)}× · ${nominal >= 1 ? nominal.toFixed(0) : nominal.toFixed(2)} Ω`
-          : ''}</span>
+        <span className="psec-caption-note">{p.wiring === 'custom'
+          ? `${short(p.count)}× · wired by hand`
+          : Number.isFinite(nominal) && nominal > 0
+            ? `${short(p.count)}× · ${nominal >= 1 ? nominal.toFixed(0) : nominal.toFixed(2)} Ω`
+            : ''}</span>
       </div>
-      <div className="param-grid">
-        <NumField id={id} field="count" value={p.count} label="Drivers" step="1" min="1" />
-        <SelectField id={id} field="wiring" value={p.wiring} options={[
-          ['single', 'Single'], ['series', 'Series'], ['parallel', 'Parallel'], ['series-parallel', 'Series-parallel'],
-        ]} />
-        <DvcField id={id} p={p} />
-      </div>
-      <div className="ts-hint">
-        How this node's drivers connect to their amplifier channel is set in
-        the <a href="#" onClick={(e) => { e.preventDefault(); useStore.getState().layoutOps.open('wiring') }}>Wiring</a> panel.
-      </div>
+      <ArrayField id={id} p={p} />
       <div className="drv-actions">
         {!group && <button
           onClick={() => setSaveDriverFor(id)}
@@ -702,33 +696,58 @@ function DriverForm({ node }) {
 }
 
 /**
- * A driver's dual voice coil option.
+ * How many drivers a node holds and how they are joined, and the channel it is on.
  *
- * Purely electrical, and available on any driver: the catalogue never says
- * whether a driver has two coils, and its figures are always taken as both
- * coils in series. The other choices rescale Re, Bl and Le from there.
+ * Series or parallel only: series-parallel, dual voice coils and wiring
+ * coil by coil are set in the Wiring window, which this links to.
  *
  * @param {object} props - Component props.
  * @param {string} props.id - Node id.
  * @param {object} props.p - The node's params.
- * @returns {React.ReactElement} The select row.
+ * @returns {React.ReactElement} The rows.
  * @sideEffect Subscribes to the store.
  */
-function DvcField({ id, p }) {
+function ArrayField({ id, p }) {
   const { updateParams } = useEdit()
-  const mixed = isMixed(useContext(Group), 'dvc')
+  const group = useContext(Group)
+  const mixed = isMixed(group, 'wiring')
+  const count = Number(p.count) || 1
+  const other = !mixed && (p.wiring === 'series-parallel' || p.wiring === 'custom')
+  const on = useStore((s) => {
+    if (group) return null
+    const st = driverStatus(s.projectExtras.wiring, s.nodes).get(id)
+    const names = (st?.channels || []).map((c) => s.projectExtras.wiring.channels.find((x) => x.id === c)?.label || c)
+    return names.join(' and ')
+  })
+  /**
+   * One of the two arrangements, as a segment of the switch.
+   *
+   * @param {'series'|'parallel'} v - The arrangement.
+   * @param {string} label - Its name.
+   * @returns {React.ReactElement} The button.
+   * @reads the enclosing node and edit actions.
+   */
+  const seg = (v, label) => (
+    <button className={!mixed && p.wiring === v && count > 1 ? 'on' : ''} aria-pressed={!mixed && p.wiring === v}
+      disabled={count < 2 && !group} onClick={() => updateParams(id, { wiring: v })}>{label}</button>
+  )
   return (
-    <div className={`param-row wide${mixed ? ' mixed' : ''}`}>
-      <label title="Dual voice coil wiring. The driver's parameters are taken as both coils in series; parallel quarters Re (same Qes), one coil alone halves Re and Bl (double Qes).">Voice coils</label>
-      <select value={mixed ? MIXED : p.dvc?.coils || 'single'} onChange={(e) => updateParams(id, { dvc: e.target.value === 'single' ? null : { coils: e.target.value } })}>
-        {mixed && <option value={MIXED} disabled>{MIXED}</option>}
-        <option value="single">Single coil</option>
-        <option value="series">Dual, in series</option>
-        <option value="parallel">Dual, in parallel</option>
-        <option value="one">Dual, one coil only</option>
-      </select>
-      <span className="unit" />
-    </div>
+    <>
+      <div className="param-grid">
+        <NumField id={id} field="count" value={p.count} label="Drivers" step="1" min="1" />
+        <div className={`param-row seg-row${mixed ? ' mixed' : ''}`} title="How the drivers in this node are joined to each other">
+          {seg('series', 'Series')}
+          {seg('parallel', 'Parallel')}
+        </div>
+      </div>
+      <div className="ts-hint">
+        {other && <>{p.wiring === 'custom' ? 'Wired coil by coil' : 'Series-parallel'} — set in the Wiring window. </>}
+        {p.dvc && !group && <>Dual voice coils, {p.wiring === 'custom' ? 'each wired by hand' : `in ${p.dvc.coils === 'one' ? 'one coil only' : p.dvc.coils}`}. </>}
+        {!group && (on ? <>On <b>{on}</b>. </> : <>Not wired to a channel. </>)}
+        Dual voice coils, other arrangements and the channels:{' '}
+        <a href="#" onClick={(e) => { e.preventDefault(); useStore.getState().openWiring(group ? undefined : id) }}>Wiring window</a>.
+      </div>
+    </>
   )
 }
 

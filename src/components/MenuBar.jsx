@@ -111,6 +111,28 @@ function TimeDomainTab({ onHover }) {
 }
 
 /**
+ * The way into the Wiring window and back, on the menu bar beside Time Domain.
+ *
+ * @param {object} props - Component props.
+ * @param {Function} props.onHover - Called when the pointer enters it, to close an open menu.
+ * @returns {React.ReactElement} The button.
+ * @sideEffect Subscribes to the store; opens or closes the window.
+ */
+function WiringTab({ onHover }) {
+  const open = useStore((s) => s.wiringOpen)
+  return (
+    <button
+      className={`menu-title mb-td${open ? ' on' : ''}`}
+      onClick={(e) => { e.stopPropagation(); const st = useStore.getState(); if (open) st.closeWiring(); else st.openWiring() }}
+      onMouseEnter={onHover}
+      title={open ? 'Back to the editor (Alt+W)' : 'Channels, and how the drivers are wired to them (Alt+W)'}
+    >
+      Wiring
+    </button>
+  )
+}
+
+/**
  * The application menu bar.
  *
  * Follows the native pattern: click a title to open, then hover any other
@@ -619,6 +641,7 @@ export default function MenuBar() {
           {/* The time-domain workspace is a place, not a command: one click
               goes there and back, beside the menu of what gets simulated. */}
           {title === 'Simulate' && <TimeDomainTab onHover={() => { if (open) setOpen(null) }} />}
+          {title === 'Simulate' && <WiringTab onHover={() => { if (open) setOpen(null) }} />}
         </React.Fragment>
       ))}
       {/* Settings is a section of its own rather than an item buried in a

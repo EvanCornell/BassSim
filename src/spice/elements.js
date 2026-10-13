@@ -12,6 +12,7 @@ import { radiationLoad, fractionalSeries } from './networks.js'
 import { compileLine } from './line.js'
 import { endCorrection, faceArea } from './nets.js'
 import { curveSpan, pwlOf, stiffnessRatio, ratioOf, slopeOf } from './nonlinear.js'
+import { isCustom, unitsOf, coilsOf, nodeTerm } from '../schema/wires.js'
 
 /**
  * A readable name for a graph node in netlist comments.
@@ -290,11 +291,13 @@ export function compileChamber(ctx, node) {
 }
 
 /**
- * Apply a driver's dual voice coil wiring to its catalogue parameters.
+ * Apply a driver's dual voice coil wiring to its parameters.
  *
- * Catalogue data for a dual-coil driver is its both-coils-in-series figures.
+ * A driver's figures are a single coil's; a dual-coil driver splits it into
+ * two tightly coupled halves. In series they are the driver as entered.
  * Parallel quarters Re and Le and halves Bl, leaving Bl²/Re — and so Qes and
- * the response shape — unchanged. One coil alone halves Re and Bl, doubling Qes.
+ * the response shape — unchanged. One coil alone halves Re and Bl, doubling
+ * Qes, and has a quarter of Le.
  *
  * @param {object} p - Driver params, display units.
  * @returns {object} The params with Re, Bl and Le adjusted.
@@ -360,32 +363,71 @@ function driverCurves(p, xmax) {
 }
 
 /**
- * Compile a driver.
+ * Compile a driver node.
  *
  * Electrical side: Re, the voice coil inductance (a fitted ladder when LeExp
- * is below 1), and the back EMF Bl·u, between the terminals the wiring gave
- * it. Mechanical side: the force Bl·i driving Rms, Mms and Cms against the
+ * is below 1), and the back EMF Bl·u, between the terminals its cables reach.
+ * Mechanical side: the force Bl·i driving Rms, Mms and Cms against the
  * acoustic reaction Sd·(p_front − p_rear). Acoustic side: a flow Sd·u out of
- * the front net and into the rear. Several identical drivers in one node, and
- * their wiring, collapse to one equivalent via `driverSI`.
+ * the front net and into the rear.
+ *
+ * A node wired as a whole collapses its drivers and coils, as its
+ * arrangement joins them, into one equivalent via `applyDvc` and `driverSI`.
+ * A node wired by hand (`custom`) is built driver by driver, each with its
+ * own moving parts and its own coils between the terminals the cables give
+ * them; the drivers share the node's front and rear.
  *
  * @param {object} ctx - Compile context.
  * @param {object} node - The driver node.
- * @param {{ep: string, em: string}} terms - The driver's electrical terminals.
+ * @param {Function} termOf - Terminal id → its netlist node.
  * @returns {void}
  * @mutates ctx.nl and ctx.map.
  */
-export function compileDriver(ctx, node, terms) {
+export function compileDriver(ctx, node, termOf) {
+  const p = node.params
+  if (!isCustom(p)) {
+    const d = driverSI(applyDvc(p))
+    compileUnit(ctx, node, d, [{ ep: termOf(nodeTerm(node.id, '', '+')), em: termOf(nodeTerm(node.id, '', '-')) }], '', true)
+    exposedFaces(ctx, node, d.Sd, true)
+    return
+  }
+  const n = unitsOf(p)
+  const d = driverSI({ ...p, count: 1, wiring: 'parallel', dvc: null })
+  const coils = coilsOf(p)
+  for (let u = 1; u <= n; u++) {
+    const terms = coils.map((c) => ({ ep: termOf(nodeTerm(node.id, `${u}${c}`, '+')), em: termOf(nodeTerm(node.id, `${u}${c}`, '-')) }))
+    compileUnit(ctx, node, d, terms, n > 1 ? ` #${u}` : '', u === 1, n)
+  }
+  exposedFaces(ctx, node, d.Sd * n, true)
+}
+
+/**
+ * Compile one moving system and its coils.
+ *
+ * With one coil it is the whole driver `d` describes. With two, each is half
+ * of it — Re/2 and Bl/2 — and they are tightly coupled: one inductance
+ * network, of a quarter of Le, carries the sum of their currents and each
+ * coil sees its voltage. So the two in series are exactly `d`, in parallel a
+ * quarter of its impedance, and one alone has Le/4.
+ *
+ * @param {object} ctx - Compile context.
+ * @param {object} node - The driver node.
+ * @param {object} d - The moving system, SI, from `driverSI`.
+ * @param {Array<{ep: string, em: string}>} coils - Each coil's + and − netlist nodes.
+ * @param {string} tag - Added to the netlist comments, to tell a node's drivers apart.
+ * @param {boolean} primary - Report this one's velocity and excursion as the node's.
+ * @param {number} [flowScale=1] - How many such drivers the node's face flow stands for.
+ * @returns {void}
+ * @mutates ctx.nl and ctx.map.
+ */
+function compileUnit(ctx, node, d, coils, tag, primary, flowScale = 1) {
   const { nl } = ctx
-  const note = noteOf(node)
-  const d = driverSI(applyDvc(node.params))
+  const note = `${noteOf(node)}${tag}`
   const front = ctx.nets.netOf(node.id, 'front')
   const rear = ctx.nets.netOf(node.id, 'rear')
-  const x1 = nl.node(); const x2 = nl.node(); const x3 = nl.node()
   const m1 = nl.node(); const m2 = nl.node(); const m3 = nl.node(); const m4 = nl.node(); const m5 = nl.node()
   // Controlling sources are named before they are defined; SPICE resolves them after parsing.
   const vm = `V_${m5}`
-  const ve = `V_${x3}`
   nl.comment(`driver ${note}`)
   // Excursion, x = ∫u dt, as a node — the transient outputs and the
   // nonlinear elements both read it. Not needed in the sweep.
@@ -398,29 +440,54 @@ export function compileDriver(ctx, node, terms) {
   }
   const curves = ctx.nonlinear && xn ? driverCurves(node.params, d.Xmax * 1000) : null
   const x = xn && `v(${xn})`
-  resistor(nl, terms.ep, x1, d.Re, `${note} Re`)
-  if (curves?.le) {
-    // Le(x): the coil's own inductance network, driven by a copy of the coil
-    // current, scaled by the curve — plus the motional term i·dLe/dx·u.
+  const k = coils.length
+  const Re = d.Re / k
+  const Bl = d.Bl / k
+  const Le = d.Le / (k * k)
+  const blOf = curves?.bl ? `${fmt(Bl)}*${curves.bl(x)}` : null
+  const parts = coils.map((c, i) => {
+    const x1 = nl.node(); const x2 = nl.node(); const x3 = nl.node()
+    const cn = k > 1 ? `${note} coil ${'AB'[i]}` : note
+    resistor(nl, c.ep, x1, Re, `${cn} Re`)
+    return { ...c, x1, x2, x3, ve: `V_${x3}`, cn }
+  })
+  const sum = parts.map((q) => `i(${q.ve})`).join('+')
+  if (k === 1 && !curves?.le) {
+    const q = parts[0]
+    if (d.LeExp >= 0.999 || !(Le > 0)) nl.add('L', [q.x1, q.x2], fmt(Math.max(Le, 1e-9)), `${note} Le`)
+    else fractionalSeries(nl, q.x1, q.x2, d.LeExp, Le, ctx.band, `${note} Le^${d.LeExp}`, 3)
+  } else {
+    // One inductance network carrying every coil's current — the coils'
+    // shared flux — whose voltage each coil sees: Le(x)·v plus, when Le
+    // varies with excursion, the motional term i·dLe/dx·u.
     const sh = nl.node()
-    nl.add('F', ['0', sh, ve], '1', `${note} Le(x) reference`)
-    if (d.LeExp >= 0.999 || !(d.Le > 0)) nl.add('L', [sh, '0'], fmt(Math.max(d.Le, 1e-9)))
-    else fractionalSeries(nl, sh, '0', d.LeExp, d.Le, ctx.band, `${note} Le^${d.LeExp}`, 3)
-    nl.add('B', [x1, x2], `V=${curves.le(x)}*v(${sh})+${fmt(d.Le)}*${curves.leSlope(x)}*i(${ve})*i(${vm})`, `${note} Le(x)`)
-  } else if (d.LeExp >= 0.999 || !(d.Le > 0)) nl.add('L', [x1, x2], fmt(Math.max(d.Le, 1e-9)), `${note} Le`)
-  else fractionalSeries(nl, x1, x2, d.LeExp, d.Le, ctx.band, `${note} Le^${d.LeExp}`, 3)
-  const bl = curves?.bl ? `${fmt(d.Bl)}*${curves.bl(x)}` : null
-  if (bl) nl.add('B', [x2, x3], `V=${bl}*i(${vm})`, `${note} back EMF, Bl(x)`)
-  else nl.add('H', [x2, x3, vm], fmt(d.Bl), `${note} back EMF`)
-  nl.lines.push(`${ve} ${x3} ${terms.em} DC 0 ; ${note} coil current`)
+    for (const q of parts) nl.add('F', ['0', sh, q.ve], '1', `${q.cn} flux`)
+    if (d.LeExp >= 0.999 || !(Le > 0)) nl.add('L', [sh, '0'], fmt(Math.max(Le, 1e-9)))
+    else fractionalSeries(nl, sh, '0', d.LeExp, Le, ctx.band, `${note} Le^${d.LeExp}`, 3)
+    for (const q of parts) {
+      if (curves?.le) nl.add('B', [q.x1, q.x2], `V=${curves.le(x)}*v(${sh})+${fmt(Le)}*${curves.leSlope(x)}*(${sum})*i(${vm})`, `${q.cn} Le(x)`)
+      else nl.add('E', [q.x1, q.x2, sh, '0'], '1', `${q.cn} Le`)
+    }
+  }
+  for (const q of parts) {
+    if (blOf) nl.add('B', [q.x2, q.x3], `V=${blOf}*i(${vm})`, `${q.cn} back EMF, Bl(x)`)
+    else nl.add('H', [q.x2, q.x3, vm], fmt(Bl), `${q.cn} back EMF`)
+    nl.lines.push(`${q.ve} ${q.x3} ${q.em} DC 0 ; ${q.cn} coil current`)
+  }
+  // The coils' forces add, each a source in series in the mechanical loop.
   let force = m1
   if (curves?.le) {
     // reluctance force ½·i²·dLe/dx, in series with the motor force
     force = nl.node()
-    nl.add('B', [m1, force], `V=${fmt(0.5 * d.Le)}*${curves.leSlope(x)}*i(${ve})*i(${ve})`, `${note} reluctance force`)
+    nl.add('B', [m1, force], `V=${fmt(0.5 * Le)}*${curves.leSlope(x)}*(${sum})*(${sum})`, `${note} reluctance force`)
   }
-  if (bl) nl.add('B', [force, '0'], `V=${bl}*i(${ve})`, `${note} motor force, Bl(x)`)
-  else nl.add('H', [force, '0', ve], fmt(d.Bl), `${note} motor force`)
+  let at = '0'
+  parts.forEach((q, i) => {
+    const to = i === parts.length - 1 ? force : nl.node()
+    if (blOf) nl.add('B', [to, at], `V=${blOf}*i(${q.ve})`, `${q.cn} motor force, Bl(x)`)
+    else nl.add('H', [to, at, q.ve], fmt(Bl), `${q.cn} motor force`)
+    at = to
+  })
   resistor(nl, m1, m2, d.Rms, `${note} Rms`)
   nl.add('L', [m2, m3], fmt(d.Mms), `${note} Mms`)
   if (curves?.k) nl.add('B', [m3, m4], `V=${fmt(1 / d.Cms)}*${curves.k(x)}*${x}`, `${note} Kms(x)`)
@@ -428,9 +495,9 @@ export function compileDriver(ctx, node, terms) {
   nl.add('E', [m4, m5, front, rear], fmt(d.Sd), `${note} acoustic reaction`)
   nl.lines.push(`${vm} ${m5} 0 DC 0 ; ${note} cone velocity`)
   nl.add('F', [rear, front, vm], fmt(d.Sd), `${note} cone flow`)
+  if (!primary) return
   ctx.map.drivers.push({ id: node.id, velocity: vm, Xmax: d.Xmax, x: xn, nonlinear: !!curves })
-  for (const face of ['front', 'rear']) recordFlow(ctx, node.id, face, vm, d.Sd, d.Sd)
-  exposedFaces(ctx, node, d.Sd, true)
+  for (const face of ['front', 'rear']) recordFlow(ctx, node.id, face, vm, d.Sd * flowScale, d.Sd * flowScale)
 }
 
 /**

@@ -35,16 +35,19 @@ export const SCHEMA_VERSION = 3
  *
  * `throatK`/`mouthK` are a waveguide end's flow loss coefficient, used only
  * by nonlinear time-domain runs: about 1 for a sharp edge, 0.2 for a generous
- * radius. `leakQL: null` is a sealed chamber. `dvc: null` is a single voice coil;
- * `dvc: {coils: 'series'|'parallel'|'one'}` a dual one, whose catalogue
- * figures are always taken as both coils in series. `loss` scales a waveguide's derived wall
+ * radius. `leakQL: null` is a sealed chamber. A driver's figures are always
+ * those of a single-coil driver. `dvc: null` keeps it so; `dvc: {coils:
+ * 'series'|'parallel'|'one'}` splits that coil into two equal halves, joined
+ * as named. `wiring` joins a node's `count` drivers: `series`, `parallel` or
+ * `series-parallel` — or `custom`, which leaves every coil's terminals to be
+ * wired by hand in the Wiring window. `loss` scales a waveguide's derived wall
  * loss — 1 is the physical estimate, 0 is lossless.
  */
 export const DEFAULT_PARAMS = {
   driver: {
     Fs: 30, Qts: 0.45, Qes: 0.5, Qms: 5, Vas: 60, Re: 3.6, Bl: 15, Mms: 150,
     Cms: 0.19, Sd: 480, Le: 1.5, LeExp: 1, Xmax: 15, Rms: 4,
-    count: 1, wiring: 'single', dvc: null, label: 'Driver',
+    count: 1, wiring: 'parallel', dvc: null, label: 'Driver',
   },
   chamber: {
     volume: 30, length: 40, shape: 'rectangular', stuffing: 0,
@@ -83,22 +86,23 @@ export const DEFAULT_ANALYSIS = {
 }
 
 /**
- * The amplifier channel a new project drives its drivers with.
+ * The channel a new project drives its drivers with.
  *
- * `volts` is the channel's output at master 0 dB — its gain. `load: null`
- * means the default wiring, every driver node in parallel, which is what
- * keeps a newly added driver driven without anyone editing a tree.
+ * `volts` is the channel's output at master 0 dB — its gain. `outputOhms` is
+ * Rg: the amplifier's output resistance plus the cable, in series with
+ * whatever the channel drives.
  */
-export const DEFAULT_CHANNEL = {
-  id: 'ch1', label: 'Amp', volts: 2.83, outputOhms: 0,
-  dsp: { polarity: 1, delayMs: 0, filters: [] },
-  load: null,
-}
+export const DEFAULT_CHANNEL = { id: 'ch1', label: 'Channel 1', volts: 2.83, outputOhms: 0 }
 
 /**
- * Default wiring: a master level and one channel.
+ * Default wiring: a master level, one channel, and no cables yet.
+ *
+ * `toolbar` names the channel the toolbar's drive level sets. `wires` are the
+ * cables between terminals and `layout` where each driver sits in the Wiring
+ * window — see `wires.js`. A driver node added to a project is cabled to the
+ * first channel, in parallel with whatever is already there.
  */
-export const DEFAULT_WIRING = { masterDb: 0, channels: [DEFAULT_CHANNEL] }
+export const DEFAULT_WIRING = { masterDb: 0, toolbar: 'ch1', channels: [DEFAULT_CHANNEL], wires: [], layout: {} }
 
 /**
  * Default display preferences — nothing here changes a simulation.

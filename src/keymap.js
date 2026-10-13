@@ -321,6 +321,19 @@ export const COMMANDS = {
      */
     run: (s) => (s.tdOpen ? s.closeTimeDomain() : s.openTimeDomain()),
   },
+  'view.wiring': {
+    label: 'Wiring',
+    group: 'View',
+    scope: 'global',
+    /**
+     * Open the Wiring window, or return to the editor from it.
+     * @param {object} s - The store state, with actions bound.
+     * @returns {*} Whatever the store action returns; the key handler ignores it.
+     * @sideEffect Swaps the dock and the Wiring window.
+     * @reads `wiringOpen`.
+     */
+    run: (s) => (s.wiringOpen ? s.closeWiring() : s.openWiring()),
+  },
   'view.popout': {
     label: 'Open focused panel in a new tab',
     group: 'View',
@@ -391,6 +404,7 @@ export const DEFAULT_BINDINGS = {
   'view.maximize': ['alt+enter'],
   'view.popout': ['alt+o'],
   'view.timedomain': ['alt+t'],
+  'view.wiring': ['alt+w'],
 }
 
 // ---------- combos ----------

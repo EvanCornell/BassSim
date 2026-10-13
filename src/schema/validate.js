@@ -8,7 +8,7 @@
 // editor can show each one on the node it concerns.
 
 import { DEFAULT_PARAMS, NODE_HANDLES, PROBE_KINDS } from './version.js'
-import { filterSections } from '../spice/filters.js'
+import { netsOf, liveWires, allTerminals, chTerm, driverStatus, GROUND } from './wires.js'
 import { displayNames } from '../nodeNames.js'
 
 /**
@@ -25,43 +25,18 @@ export function nodeHandles(node) {
 }
 
 /**
- * Collect the driver ids at the leaves of a series/parallel load tree.
+ * Which channels drive each driver node.
  *
- * @param {object|null} tree - `{parallel: [...]}`, `{series: [...]}` or `{driver: id}`.
- * @param {string[]} [out] - Accumulator.
- * @returns {string[]} Driver ids in tree order, duplicates included.
- * @pure
- */
-export function loadLeaves(tree, out = []) {
-  if (!tree) return out
-  if (tree.driver) out.push(tree.driver)
-  for (const k of ['parallel', 'series']) {
-    if (Array.isArray(tree[k])) for (const t of tree[k]) loadLeaves(t, out)
-  }
-  return out
-}
-
-/**
- * Which channel drives each driver node.
- *
- * A channel's explicit load tree claims its leaves. The one channel whose
- * `load` is `null` takes every driver no tree claimed, in parallel — which is
- * what keeps a newly added driver driven without anyone editing a tree. A
- * driver claimed by no channel is undriven.
+ * A driver is driven by every channel whose output reaches it through the
+ * cables of the Wiring window, directly or through other drivers.
  *
  * @param {object} proj - A v3 project.
- * @returns {Map<string, string>} Driver node id → channel id.
+ * @returns {Map<string, string[]>} Driver node id → the channel ids that drive it; empty for an undriven one.
  * @pure
  */
 export function driverChannels(proj) {
-  const drivers = (proj.nodes || []).filter((n) => n.type === 'driver').map((n) => n.id)
   const out = new Map()
-  const channels = proj.wiring?.channels || []
-  for (const c of channels) {
-    for (const id of loadLeaves(c.load)) if (!out.has(id)) out.set(id, c.id)
-  }
-  const catchAll = channels.find((c) => c.load == null)
-  if (catchAll) for (const id of drivers) if (!out.has(id)) out.set(id, catchAll.id)
+  for (const [id, st] of driverStatus(proj.wiring, proj.nodes)) out.set(id, st.channels)
   return out
 }
 
@@ -164,32 +139,26 @@ export function validateProject(proj) {
 
   // wiring
   const channels = proj.wiring?.channels || []
-  if (!channels.length) errors.push('Add an amplifier channel to drive the drivers.')
+  if (!channels.length) errors.push('Add a channel to drive the drivers.')
   const ids = new Set()
   for (const c of channels) {
     if (ids.has(c.id)) errors.push(`channel id "${c.id}" is used more than once`)
     ids.add(c.id)
   }
-  if (channels.filter((c) => c.load == null).length > 1) {
-    errors.push('Only one channel may take every otherwise unwired driver; give the others an explicit load.')
-  }
-  const claimed = new Map()
+  const terms = allTerminals(proj.wiring, nodes)
+  const nets = netsOf(liveWires(proj.wiring?.wires, terms), terms)
+  const outputs = new Map()
   for (const c of channels) {
-    for (const id of loadLeaves(c.load)) {
-      const n = byId.get(id)
-      if (!n || n.type !== 'driver') { errors.push(`${c.label || c.id}: "${id}" is not a driver node`); continue }
-      if (claimed.has(id)) errors.push(`${shown[id]} is wired to more than one place (${claimed.get(id)} and ${c.label || c.id})`)
-      else claimed.set(id, c.label || c.id)
-    }
+    const name = c.label || c.id
+    const net = nets.get(chTerm(c.id, '+'))
+    if (net === GROUND) errors.push(`${name} is shorted: its + is wired to the ground.`)
+    else if (outputs.has(net)) errors.push(`${outputs.get(net)} and ${name} are wired directly together.`)
+    else outputs.set(net, name)
   }
-  for (const c of channels) {
-    for (const [i, f] of (c.dsp?.filters || []).entries()) {
-      try { filterSections(f) } catch (err) { errors.push(`${c.label || c.id} › filter ${i + 1}: ${err.message}`) }
-    }
-  }
-  const driven = driverChannels(proj)
-  for (const d of drivers) {
-    if (!driven.has(d.id)) warn(d.id, 'Not wired to any amplifier channel — undriven, with its coil open.')
+  for (const [id, st] of driverStatus(proj.wiring, nodes)) {
+    if (!st.channels.length) warn(id, 'Not wired to any channel — undriven, with its coil open.')
+    if (st.dangling) warn(id, 'A coil has a cable on one terminal but not the other, so no current flows through it.')
+    if (st.shorted) warn(id, 'A coil has its + and − wired together, so it is shorted.')
   }
 
   // analyses

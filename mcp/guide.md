@@ -34,8 +34,12 @@ Handles: `front` (out), `rear` (out). Both may fan out; unconnected side
 radiates into half space by default.
 Params: `Fs` Hz, `Qes`, `Qms`, `Vas` L, `Re` Ω, `Bl` T·m, `Mms` g, `Cms` mm/N,
 `Rms` kg/s, `Sd` cm², `Le` mH, `LeExp` (semi-inductance exponent 0.5–1),
-`Xmax` mm, `count` (drivers in this node), `wiring` `single|series|parallel|series-parallel`,
-`label`.
+`Xmax` mm, `count` (drivers in this node), `wiring` `series|parallel|series-parallel`
+(how the node's drivers are joined), `dvc` `null` or `{coils: series|parallel|one}`
+(a dual voice coil: the figures are always a single coil's, split into two equal
+halves), `label`. Every driver is wired to the first channel in parallel unless
+the project's `wiring.wires` says otherwise — cables between terminals such as
+`ch:ch1:+` and `<node id>:-`.
 
 ### chamber — lumped/TL volume
 Handles: `in` (in), `out` (out). A chamber with only `in` connected is a

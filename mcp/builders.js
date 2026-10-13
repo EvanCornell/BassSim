@@ -123,7 +123,7 @@ export function findDriver(query) {
  * @param {object} [spec={}] - Driver spec.
  * @param {string} [spec.db] - Library driver to look up.
  * @param {number} [spec.count=1] - Drivers in this node.
- * @param {'single'|'series'|'parallel'|'series-parallel'} [spec.wiring] - Wiring. Defaults to `parallel` when count > 1, `single` otherwise.
+ * @param {'series'|'parallel'|'series-parallel'} [spec.wiring] - How the node's drivers are joined. Defaults to `parallel`.
  * @param {string} [spec.label] - Node label; defaults to the library model name, or "Driver".
  * @returns {object} Params ready for a driver node.
  * @throws {Error} When `spec.db` matches no driver or is ambiguous.
@@ -142,7 +142,7 @@ export function driverParams(spec = {}) {
   const { db, count, wiring, ...overrides } = spec
   return {
     ...base, ...overrides, label,
-    count: count || 1, wiring: wiring || (count > 1 ? 'parallel' : 'single'),
+    count: count || 1, wiring: wiring || 'parallel',
   }
 }
 

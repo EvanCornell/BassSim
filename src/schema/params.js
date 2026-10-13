@@ -271,18 +271,7 @@ export function resolveProject(proj) {
     channels: (w.channels || []).map((c) => ({
       ...c,
       volts: num(c.volts, `${c.label || c.id} › volts`),
-      outputOhms: num(c.outputOhms, `${c.label || c.id} › output resistance`),
-      dsp: c.dsp && {
-        ...c.dsp,
-        delayMs: num(c.dsp.delayMs, `${c.label || c.id} › delay`),
-        filters: (c.dsp.filters || []).map((f, i) => {
-          const out = { ...f }
-          for (const k of ['hz', 'q', 'db', 'order']) {
-            if (k in out) out[k] = num(out[k], `${c.label || c.id} › filter ${i + 1} › ${k}`)
-          }
-          return out
-        }),
-      },
+      outputOhms: num(c.outputOhms, `${c.label || c.id} › Rg`),
     })),
   }
   const analyses = (proj.analyses || []).map((a) => {

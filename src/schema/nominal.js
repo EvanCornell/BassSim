@@ -4,10 +4,9 @@
 // squared over the nominal load its wiring presents — the figure an amplifier
 // is rated against. Nominal is a label, not a measurement: it comes from each
 // driver's voice-coil resistance, rounded to the standard ratings, then
-// combined through the node's own array and the channel's series/parallel
-// tree. The minimum impedance the simulation finds is shown separately.
-
-import { loadLeaves } from './validate.js'
+// combined through the node's own arrangement and the cables of the Wiring
+// window (`wires.js`). The minimum impedance the simulation finds is shown
+// separately.
 
 /** Standard nominal ratings, Ω. */
 const RATINGS = [0.5, 1, 2, 3, 4, 6, 8, 16, 32]
@@ -33,8 +32,9 @@ export function ratingOf(re) {
 /**
  * Re of one driver in a node after its dual voice coil option.
  *
- * Catalogue figures are both coils in series; parallel quarters Re, one coil
- * alone halves it.
+ * A driver's figures are a single coil's; a dual-coil driver splits it into
+ * two equal halves, so its coils in series are it, in parallel a quarter of
+ * it and one alone half.
  *
  * @param {object} p - Driver params, resolved.
  * @returns {number} Re, Ω.
@@ -49,10 +49,13 @@ function coilRe(p) {
 }
 
 /**
- * The nominal impedance of one driver node as its terminals present it.
+ * The nominal impedance of one driver node as its two terminals present it.
  *
- * Each driver is rated from its coil resistance first, then the node's array
- * wiring combines those ratings, so four 4 Ω drivers in parallel read 1 Ω.
+ * Each driver is rated from its coil resistance first, then the node's own
+ * arrangement combines those ratings, so four 4 Ω drivers in parallel read
+ * 1 Ω. A node wired by hand coil by coil has no arrangement of its own; it
+ * reads as its drivers in parallel, and the Wiring window rates the circuit
+ * the cables make.
  *
  * @param {object} p - Driver params, resolved.
  * @returns {number} Nominal Ω.
@@ -62,53 +65,9 @@ export function driverNominal(p) {
   const one = ratingOf(coilRe(p))
   const n = Math.max(1, Math.round(Number(p.count) || 1))
   if (p.wiring === 'series') return one * n
-  if (p.wiring === 'parallel') return one / n
   if (p.wiring === 'series-parallel') {
     const r = Math.round(Math.sqrt(n))
     return r * r === n && r > 1 ? one : one / n
   }
-  return one
-}
-
-/**
- * The nominal impedance of a load tree.
- *
- * @param {object|null} tree - `{driver}`, `{series: [...]}` or `{parallel: [...]}`.
- * @param {Map<string, object>} drivers - Driver node id → resolved params.
- * @returns {number} Nominal Ω; `Infinity` for an empty tree (nothing connected).
- * @pure
- */
-export function treeNominal(tree, drivers) {
-  if (!tree) return Infinity
-  if (tree.driver) {
-    const p = drivers.get(tree.driver)
-    return p ? driverNominal(p) : Infinity
-  }
-  if (Array.isArray(tree.series)) {
-    const parts = tree.series.map((t) => treeNominal(t, drivers))
-    return parts.some((z) => !isFinite(z)) || !parts.length ? Infinity : parts.reduce((a, b) => a + b, 0)
-  }
-  if (Array.isArray(tree.parallel)) {
-    const g = tree.parallel.map((t) => treeNominal(t, drivers)).reduce((a, z) => a + (isFinite(z) && z > 0 ? 1 / z : 0), 0)
-    return g > 0 ? 1 / g : Infinity
-  }
-  return Infinity
-}
-
-/**
- * The load tree a channel actually drives.
- *
- * An explicit tree is used as it stands. The catch-all channel (`load: null`)
- * drives every driver no explicit tree claims, in parallel.
- *
- * @param {object} channel - A wiring channel.
- * @param {object} proj - The project, for its driver nodes and other channels.
- * @returns {object} A load tree.
- * @pure
- */
-export function effectiveLoad(channel, proj) {
-  if (channel.load) return channel.load
-  const claimed = new Set((proj.wiring?.channels || []).flatMap((c) => loadLeaves(c.load)))
-  const ids = (proj.nodes || []).filter((n) => n.type === 'driver' && !claimed.has(n.id)).map((n) => n.id)
-  return { parallel: ids.map((id) => ({ driver: id })) }
+  return one / n
 }

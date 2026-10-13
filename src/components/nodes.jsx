@@ -4,6 +4,7 @@ import { useStore } from '../store'
 import { C_AIR, flareCutoff, endCorrectionLength, waveguideVolume } from '../engine/geometry'
 import { useResolvedParams } from '../useResolved'
 import { driverNominal } from '../schema/nominal'
+import { driverStatus } from '../schema/wires'
 import { nameNumbers } from '../nodeNames'
 
 /**
@@ -120,6 +121,29 @@ function TapPorts({ id, taps, length }) {
 }
 
 /**
+ * A driver node's wiring in one line: how its drivers and coils are joined,
+ * its nominal impedance, and the channel driving it.
+ *
+ * @param {object} p - Resolved driver params.
+ * @param {string} channels - The channels driving it, e.g. `Ch 2`; empty when none.
+ * @returns {string} e.g. `2× series · 16 Ω · Ch 2`, or `dual coil · wired by hand · not wired`.
+ * @pure
+ */
+export function driverSummary(p, channels) {
+  const n = Number(p.count) || 1
+  const parts = []
+  if (n > 1) parts.push(p.wiring === 'custom' ? `${n}×` : `${n}× ${p.wiring}`)
+  if (p.dvc) parts.push(p.wiring === 'custom' ? 'dual coil' : `dual coil ${p.dvc.coils === 'one' ? 'one coil' : p.dvc.coils}`)
+  if (p.wiring === 'custom') parts.push('wired by hand')
+  else {
+    const z = driverNominal(p)
+    parts.push(`${z >= 1 ? z.toFixed(0) : z.toFixed(2)} Ω`)
+  }
+  parts.push(channels || 'not wired')
+  return parts.join(' · ')
+}
+
+/**
  * Canvas node for a driver: T/S summary, array count, and front/rear ports.
  *
  * @param {object} props - React Flow node props.
@@ -132,18 +156,18 @@ function TapPorts({ id, taps, length }) {
 export function DriverNode({ id, data, selected }) {
   const warn = useWarnings(id)
   const p = useResolvedParams(id, 'driver', data.params)
-  const nominal = driverNominal(p)
+  const channels = useStore((s) => {
+    const st = driverStatus(s.projectExtras.wiring, s.nodes).get(id)
+    return (st?.channels || []).map((c) => `Ch ${(s.projectExtras.wiring.channels.findIndex((x) => x.id === c) + 1) || c}`).join('+')
+  })
+  const summary = driverSummary(p, channels)
   return (
     <div className={`acou-node ${selected ? 'selected' : ''}`}>
       <Head id={id} type="driver" label={p.label || 'Driver'} warn={warn} />
       <div className="node-body">
         Fs <span className="node-readout">{p.Fs} Hz</span> · Qts <span className="node-readout">{p.Qts}</span><br />
-        Sd <span className="node-readout">{p.Sd} cm²</span>
-        {p.count > 1 && <> · <span className="node-readout">{p.count}× {p.wiring}</span></>}<br />
-        <span title="Nominal impedance at the node's terminals, from its coil resistance, dual voice coil option and array wiring">
-          <span className="node-readout">{nominal >= 1 ? nominal.toFixed(0) : nominal.toFixed(2)} Ω</span> nominal
-        </span>
-        {p.dvc?.coils && <> · DVC {p.dvc.coils}</>}
+        Sd <span className="node-readout">{p.Sd} cm²</span><br />
+        <span className="node-readout" title="How the node's drivers and coils are joined, its nominal impedance, and the channel driving it">{summary}</span>
       </div>
       <Port id="front" side="right" at="35%" label="front" title="Front face — unconnected, it radiates as if in an infinite baffle" />
       <Port id="rear" side="left" at="35%" label="rear" title="Rear face — unconnected, it radiates behind the baffle" />
