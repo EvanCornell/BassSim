@@ -15,7 +15,7 @@ import { displayNames, TYPE_NAMES } from './nodeNames.js'
  * @returns {string} e.g. `Waveguides`.
  * @pure
  */
-const plural = (type) => {
+export const plural = (type) => {
   const name = TYPE_NAMES[type] || type
   return name.endsWith('s') ? name : `${name}s`
 }
@@ -161,4 +161,31 @@ export function planReplace(nodes, edges, clipboard, targetIds) {
   const lost = (node, handle) => node in params && handle?.startsWith('tap:') && !taps.has(handle)
   const kept = edges.filter((e) => !lost(e.source, e.sourceHandle) && !lost(e.target, e.targetHandle))
   return { params, baseline: src.baseline, edges: kept, dropped: edges.length - kept.length }
+}
+
+/**
+ * The settings several nodes share, for editing them as one.
+ *
+ * A field every node holds the same value in is given that value; a field
+ * they disagree on is left out of the params and named in `mixed`, so a form
+ * can show it blank, marked as mixed, until something is typed — which then
+ * goes to all of them. Values are compared whole, so two tap lists that
+ * differ anywhere are mixed.
+ *
+ * @param {Array<object>} nodes - The editor nodes to merge; at least one.
+ * @returns {{params: object, mixed: Set<string>, locks: Array<string>|undefined}} The shared params, the fields that differ, and the T/S padlocks when every node holds the same ones.
+ * @pure
+ */
+export function mergeParams(nodes) {
+  const keys = new Set(nodes.flatMap((n) => Object.keys(n.data?.params || {})))
+  const params = {}
+  const mixed = new Set()
+  for (const k of keys) {
+    const vals = nodes.map((n) => JSON.stringify(n.data?.params?.[k] ?? null))
+    if (vals.every((v) => v === vals[0])) params[k] = nodes[0].data?.params?.[k]
+    else mixed.add(k)
+  }
+  const lockSets = nodes.map((n) => JSON.stringify(n.data?.locks ?? null))
+  const locks = lockSets.every((v) => v === lockSets[0]) ? nodes[0].data?.locks : undefined
+  return { params, mixed, locks }
 }

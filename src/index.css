@@ -1714,3 +1714,9 @@ button.nl-chip.add { background: var(--field); }
   cursor: default; animation: canvas-alert-in 140ms ease-out;
 }
 @keyframes canvas-alert-in { from { opacity: 0; transform: translate(-50%, -4px); } }
+
+/* A field the selected nodes disagree on, while several are edited together. */
+.param-row.mixed input { padding-right: 3px; }
+.param-row.mixed input::placeholder { font-style: italic; color: var(--text-3); }
+.param-row.mixed select { font-style: italic; color: var(--text-3); }
+.param-row.mixed select option { font-style: normal; color: var(--text); }

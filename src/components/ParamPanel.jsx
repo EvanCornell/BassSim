@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { useStore } from '../store'
 import { waveguideVolume } from '../engine/geometry'
 import { basisOf, baselineOf, matchesBaseline, BASIS_SIZE } from '../driverParams'
@@ -8,6 +8,7 @@ import { useResolvedParams } from '../useResolved'
 import { freshId } from '../schema/extras'
 import { driverNominal } from '../schema/nominal'
 import { baseName, nameNumbers } from '../nodeNames'
+import { mergeParams, plural } from '../groupEdit'
 
 /**
  * One-line physical explanation per parameter, shown as a label tooltip.
@@ -92,6 +93,89 @@ const short = (v) => {
   if (!Number.isFinite(n)) return String(v)
   if (Math.abs(n) >= 100) return String(Math.round(n))
   return String(Number(n.toPrecision(3)))
+}
+
+/**
+ * The nodes being edited together, when several of one kind are selected.
+ *
+ * `null` for an ordinary single node. Otherwise the selected ids and the
+ * fields they disagree on, which every field below reads to show itself as
+ * mixed, and through which every edit is sent to all of them.
+ */
+const Group = createContext(null)
+
+/** What a mixed field shows in place of a value. */
+const MIXED = 'Mixed'
+
+/**
+ * Whether a field differs across the nodes being edited together.
+ *
+ * @param {{mixed: Set<string>}|null} group - The group, or `null` for a single node.
+ * @param {string} field - Parameter name.
+ * @returns {boolean} True when the selected nodes disagree on it.
+ * @pure
+ */
+const isMixed = (group, field) => !!group?.mixed.has(field)
+
+/**
+ * Whether any of several fields differs across the group — so a figure
+ * worked out from them would be one node's at best.
+ *
+ * @param {{mixed: Set<string>}|null} group - The group, or `null` for a single node.
+ * @param {...string} fields - Parameter names.
+ * @returns {boolean} True when the selected nodes disagree on any of them.
+ * @pure
+ */
+const anyMixed = (group, ...fields) => fields.some((f) => isMixed(group, f))
+
+/**
+ * The store's edit actions, sent to every node being edited together.
+ *
+ * For a single node each is the store action itself. For a group, each runs
+ * once per selected node — through `editGroup`, so the change is one step of
+ * history — and the id passed in is ignored.
+ *
+ * @returns {{updateParams: Function, setDriverParam: Function, setDriverLock: Function, setTaps: Function, restoreDriverParams: Function}} The actions.
+ * @sideEffect Reads the group context.
+ */
+function useEdit() {
+  const group = useContext(Group)
+  return useMemo(() => {
+    const st = useStore.getState
+    /**
+     * One action, sent to the group when there is one.
+     *
+     * @param {string} name - Store action name; it takes a node id first.
+     * @returns {Function} The action, called as `(id, …args)`.
+     * @reads the enclosing group.
+     */
+    const fan = (name) => (id, ...args) => (group
+      ? st().editGroup(group.ids, (gid) => st()[name](gid, ...args))
+      : st()[name](id, ...args))
+    return {
+      updateParams: fan('updateParams'),
+      setDriverParam: fan('setDriverParam'),
+      setDriverLock: fan('setDriverLock'),
+      setTaps: fan('setTaps'),
+      restoreDriverParams: fan('restoreDriverParams'),
+    }
+  }, [group])
+}
+
+/**
+ * A checkbox that can also show a mixed state.
+ *
+ * @param {object} props - Component props.
+ * @param {boolean} props.checked - Ticked.
+ * @param {boolean} [props.mixed] - Neither: the nodes being edited disagree.
+ * @param {Function} props.onChange - Change handler.
+ * @returns {React.ReactElement} The checkbox.
+ * @sideEffect Sets the element's `indeterminate` flag.
+ */
+function Check({ checked, mixed = false, onChange }) {
+  const ref = useRef(null)
+  useEffect(() => { if (ref.current) ref.current.indeterminate = mixed }, [mixed])
+  return <input ref={ref} type="checkbox" checked={!mixed && checked} onChange={onChange} />
 }
 
 /**
@@ -194,12 +278,14 @@ function LockIcon({ closed }) {
  * @sideEffect Subscribes to the store. Editing updates the node's params, which triggers a resimulation.
  */
 function NumField({ id, field, value, unit, label, step, min, above, onCommit }) {
-  const updateParams = useStore((s) => s.updateParams)
+  const { updateParams } = useEdit()
+  const mixed = isMixed(useContext(Group), field)
   return (
-    <div className="param-row">
+    <div className={`param-row${mixed ? ' mixed' : ''}`}>
       <label title={TIPS[field] || ''}>{label || field}</label>
       <ExprInput
-        value={value}
+        value={mixed ? null : value}
+        placeholder={mixed ? MIXED : undefined}
         step={step}
         min={min}
         above={above}
@@ -223,11 +309,13 @@ function NumField({ id, field, value, unit, label, step, min, above, onCommit })
  * @sideEffect Subscribes to the store. Changing it updates the node's params, which triggers a resimulation.
  */
 function SelectField({ id, field, value, label, options }) {
-  const updateParams = useStore((s) => s.updateParams)
+  const { updateParams } = useEdit()
+  const mixed = isMixed(useContext(Group), field)
   return (
-    <div className="param-row wide">
+    <div className={`param-row wide${mixed ? ' mixed' : ''}`}>
       <label title={TIPS[field] || ''}>{label || field}</label>
-      <select value={value} onChange={(e) => updateParams(id, { [field]: e.target.value })}>
+      <select value={mixed ? MIXED : value} onChange={(e) => updateParams(id, { [field]: e.target.value })}>
+        {mixed && <option value={MIXED} disabled>{MIXED}</option>}
         {options.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
       </select>
       <span className="unit" />
@@ -249,22 +337,23 @@ function SelectField({ id, field, value, label, options }) {
  * @sideEffect Subscribes to the store.
  */
 function LeakSection({ id, p }) {
-  const updateParams = useStore((s) => s.updateParams)
-  const sealed = !(Number(p.leakQL) > 0)
+  const { updateParams } = useEdit()
+  const mixed = isMixed(useContext(Group), 'leakQL')
+  const sealed = !mixed && !(Number(p.leakQL) > 0)
   return (
     <>
-      <div className="param-row wide">
+      <div className={`param-row wide${mixed ? ' mixed' : ''}`}>
         <label title={TIPS.leakQL}>Leakage QL</label>
         <NumInput
           step="1" min="1"
-          value={sealed ? null : p.leakQL}
-          placeholder="sealed"
+          value={sealed || mixed ? null : p.leakQL}
+          placeholder={mixed ? MIXED : 'sealed'}
           disabled={sealed}
           onCommit={(v) => updateParams(id, { leakQL: v })}
         />
         <span className="unit">
           <label style={{ display: 'flex', gap: 4, alignItems: 'center', fontSize: 11, cursor: 'pointer' }}>
-            <input type="checkbox" checked={sealed} onChange={(e) => updateParams(id, { leakQL: e.target.checked ? null : 10 })} />sealed
+            <Check checked={sealed} mixed={mixed} onChange={(e) => updateParams(id, { leakQL: e.target.checked ? null : 10 })} />sealed
           </label>
         </span>
       </div>
@@ -285,17 +374,23 @@ function LeakSection({ id, p }) {
  * @sideEffect Subscribes to the store.
  */
 function LabelField({ id, p }) {
-  const updateParams = useStore((s) => s.updateParams)
+  const { updateParams } = useEdit()
+  const group = useContext(Group)
+  const mixed = isMixed(group, 'label')
   const num = useStore((s) => nameNumbers(s.nodes)[id])
   const name = useStore((s) => baseName(s.nodes.find((n) => n.id === id)))
   return (
     <>
-      <div className="param-row wide">
+      <div className={`param-row wide${mixed ? ' mixed' : ''}`}>
         <label title={TIPS.label}>Label</label>
-        <input value={p.label || ''} placeholder={name} onChange={(e) => updateParams(id, { label: e.target.value })} />
+        <input value={mixed ? '' : p.label || ''} placeholder={mixed ? MIXED : group ? '' : name} onChange={(e) => updateParams(id, { label: e.target.value })} />
         <span className="unit" />
       </div>
-      {num ? (
+      {group ? (
+        <div className="ts-hint wide">
+          A name typed here goes to all {group.ids.length}; each is then told apart by its number.
+        </div>
+      ) : num ? (
         <div className="ts-hint wide name-note">
           Another component is also called “{name}”, so this one is shown
           as {name} <span className="name-num">#{num}</span> on the canvas and in charts. Give it its own name to drop the number.
@@ -314,8 +409,9 @@ function LabelField({ id, p }) {
  * @sideEffect Subscribes to the store.
  */
 function NameNum({ id }) {
+  const group = useContext(Group)
   const num = useStore((s) => nameNumbers(s.nodes)[id])
-  return num ? <span className="name-num">#{num}</span> : null
+  return num && !group ? <span className="name-num">#{num}</span> : null
 }
 
 /**
@@ -448,10 +544,10 @@ const round3 = (v) => (typeof v === 'number' ? Math.round(v * 1000) / 1000 : v)
  * @sideEffect Subscribes to the store. Editing or toggling updates the node and triggers a resimulation.
  */
 function TSField({ id, field, value, held, unit, step }) {
-  const setDriverParam = useStore((s) => s.setDriverParam)
-  const setDriverLock = useStore((s) => s.setDriverLock)
+  const { setDriverParam, setDriverLock } = useEdit()
+  const mixed = isMixed(useContext(Group), field)
   return (
-    <div className={`param-row ts-row${held ? '' : ' derived'}`}>
+    <div className={`param-row ts-row${held ? '' : ' derived'}${mixed ? ' mixed' : ''}`}>
       <button
         className={`ts-lock${held ? ' held' : ''}`}
         aria-pressed={held}
@@ -465,7 +561,8 @@ function TSField({ id, field, value, held, unit, step }) {
       <NumInput
         step={step}
         above="0"
-        value={value}
+        value={mixed ? null : value}
+        placeholder={mixed ? MIXED : undefined}
         readOnly={!held}
         tabIndex={held ? undefined : -1}
         title={held ? '' : 'Derived from the held parameters — click the padlock to set it yourself'}
@@ -475,6 +572,19 @@ function TSField({ id, field, value, held, unit, step }) {
     </div>
   )
 }
+
+/**
+ * A form's title: the node's name, or how many are being edited together.
+ *
+ * @param {object|null} group - The group, or `null` for a single node.
+ * @param {object} node - The node, or the group's merged stand-in.
+ * @param {string} fallback - The name when the node has no label.
+ * @returns {React.ReactNode} The title.
+ * @pure
+ */
+const formTitle = (group, node, fallback) => (group
+  ? `${group.ids.length} ${plural(node.type)}`
+  : <>{node.data.params.label || fallback}<NameNum id={node.id} /></>)
 
 /**
  * Parameter form for a driver, with links to the library and the T/S solver.
@@ -492,13 +602,17 @@ function TSField({ id, field, value, held, unit, step }) {
 function DriverForm({ node }) {
   const p = node.data.params
   const id = node.id
+  const group = useContext(Group)
   const setShowDriverDB = useStore((s) => s.setShowDriverDB)
   const setShowTSCalc = useStore((s) => s.setShowTSCalc)
   const setSaveDriverFor = useStore((s) => s.setSaveDriverFor)
-  const restoreDriverParams = useStore((s) => s.restoreDriverParams)
+  const { restoreDriverParams } = useEdit()
+  // A group can be restored when any of its drivers can; each goes back to its own start.
+  const canRestore = useStore((s) => (group ? group.ids : [id])
+    .map((gid) => s.nodes.find((n) => n.id === gid))
+    .some((n) => n && baselineOf(n) != null && !matchesBaseline(n)))
   const basis = basisOf(node)
   const baseline = baselineOf(node)
-  const canRestore = baseline != null && !matchesBaseline(node)
   /**
    * One coupled T/S row, wired to this node and its current basis.
    *
@@ -514,11 +628,12 @@ function DriverForm({ node }) {
   const nominal = driverNominal(p)
   return (
     <Section
-      id="driver" title={<>{p.label || 'Driver'}<NameNum id={id} /></>} color="var(--s1)" focus fixed
+      id="driver" title={formTitle(group, node, 'Driver')} color="var(--s1)" focus fixed
       summary={`Fs ${short(p.Fs)} Hz · Qts ${short(p.Qts)}`}
       actions={<>
-        <button onClick={() => setShowDriverDB(true)}>Database</button>
-        <button onClick={() => setShowTSCalc(true)}>T/S solver</button>
+        <button onClick={() => setShowDriverDB(true)}
+          title={group ? `Load a driver from the library into all ${group.ids.length}` : undefined}>Database</button>
+        {!group && <button onClick={() => setShowTSCalc(true)}>T/S solver</button>}
       </>}
     >
       <div className="param-grid"><LabelField id={id} p={p} /></div>
@@ -552,7 +667,9 @@ function DriverForm({ node }) {
       </div>
       <div className="psec-caption">
         Array & wiring
-        <span className="psec-caption-note">{`${short(p.count)}× · ${nominal >= 1 ? nominal.toFixed(0) : nominal.toFixed(2)} Ω`}</span>
+        <span className="psec-caption-note">{Number.isFinite(nominal) && nominal > 0
+          ? `${short(p.count)}× · ${nominal >= 1 ? nominal.toFixed(0) : nominal.toFixed(2)} Ω`
+          : ''}</span>
       </div>
       <div className="param-grid">
         <NumField id={id} field="count" value={p.count} label="Drivers" step="1" min="1" />
@@ -566,16 +683,18 @@ function DriverForm({ node }) {
         the <a href="#" onClick={(e) => { e.preventDefault(); useStore.getState().layoutOps.open('wiring') }}>Wiring</a> panel.
       </div>
       <div className="drv-actions">
-        <button
+        {!group && <button
           onClick={() => setSaveDriverFor(id)}
           title="Store these parameters in the workspace's driver library under a name you choose"
-        >Save to library…</button>
+        >Save to library…</button>}
         <button
           disabled={!canRestore}
           onClick={() => restoreDriverParams(id)}
-          title={baseline
-            ? 'Put every T/S parameter back to what this driver started as'
-            : 'Nothing to restore — this driver has not been changed since it was loaded'}
+          title={group
+            ? 'Put each driver\'s T/S parameters back to what it started as'
+            : baseline
+              ? 'Put every T/S parameter back to what this driver started as'
+              : 'Nothing to restore — this driver has not been changed since it was loaded'}
         >Restore</button>
       </div>
     </Section>
@@ -596,11 +715,13 @@ function DriverForm({ node }) {
  * @sideEffect Subscribes to the store.
  */
 function DvcField({ id, p }) {
-  const updateParams = useStore((s) => s.updateParams)
+  const { updateParams } = useEdit()
+  const mixed = isMixed(useContext(Group), 'dvc')
   return (
-    <div className="param-row wide">
+    <div className={`param-row wide${mixed ? ' mixed' : ''}`}>
       <label title="Dual voice coil wiring. The driver's parameters are taken as both coils in series; parallel quarters Re (same Qes), one coil alone halves Re and Bl (double Qes).">Voice coils</label>
-      <select value={p.dvc?.coils || 'single'} onChange={(e) => updateParams(id, { dvc: e.target.value === 'single' ? null : { coils: e.target.value } })}>
+      <select value={mixed ? MIXED : p.dvc?.coils || 'single'} onChange={(e) => updateParams(id, { dvc: e.target.value === 'single' ? null : { coils: e.target.value } })}>
+        {mixed && <option value={MIXED} disabled>{MIXED}</option>}
         <option value="single">Single coil</option>
         <option value="series">Dual, in series</option>
         <option value="parallel">Dual, in parallel</option>
@@ -655,9 +776,20 @@ function NodeWarnings({ node }) {
  * @sideEffect Subscribes to the store.
  */
 function TapsSection({ id, p, from }) {
-  const setTaps = useStore((s) => s.setTaps)
+  const group = useContext(Group)
+  const { setTaps } = useEdit()
   const addProbe = useStore((s) => s.addProbe)
   const taps = p.taps || []
+  if (isMixed(group, 'taps')) {
+    return (
+      <Sub id="taps" title="Taps" summary="differ">
+        <div className="ts-hint">
+          The selected nodes have different taps, so they are edited one at a
+          time. Select a single node to change its taps.
+        </div>
+      </Sub>
+    )
+  }
   return (
     <Sub id={`taps`} title="Taps" summary={taps.length ? taps.map((t) => `${t.id} ${short(t.position)}`).join(' · ') : 'none'}>
       <div className="ts-hint" title="Points along the line where anything may join it — a driver, a port, another chamber. Each shows as a handle on the node's right side.">
@@ -669,7 +801,7 @@ function TapsSection({ id, p, from }) {
           <ExprInput value={t.position} min={0} onCommit={(v) => setTaps(id, taps.map((x, k) => (k === i ? { ...x, position: v } : x)))} title={`cm from the ${from} end`} />
           <span className="unit">
             cm
-            <button className="icon-btn" title="Add a pressure probe at this tap" onClick={() => addProbe({ kind: 'pressure', label: `${p.label || id} ${t.id}`, at: { node: id, handle: `tap:${t.id}` } })}>◎</button>
+            {!group && <button className="icon-btn" title="Add a pressure probe at this tap" onClick={() => addProbe({ kind: 'pressure', label: `${p.label || id} ${t.id}`, at: { node: id, handle: `tap:${t.id}` } })}>◎</button>}
             <button className="icon-btn" title="Remove this tap and anything joined to it" onClick={() => setTaps(id, taps.filter((x) => x.id !== t.id))}>✕</button>
           </span>
         </div>
@@ -767,10 +899,11 @@ function ThroatCalc({ id }) {
 function ChamberForm({ node }) {
   const p = node.data.params
   const id = node.id
+  const group = useContext(Group)
   const r = useResolvedParams(id, node.type, p)
   return (
-    <Section id="chamber" title={<>{p.label || 'Chamber'}<NameNum id={id} /></>} color="var(--s2)" focus initial
-      summary={`${short(r.volume)} L · ${short(r.length)} cm`}>
+    <Section id="chamber" title={formTitle(group, node, 'Chamber')} color="var(--s2)" focus initial
+      summary={group ? '' : `${short(r.volume)} L · ${short(r.length)} cm`}>
       <div className="param-grid">
         <LabelField id={id} p={p} />
         <NumField id={id} field="volume" value={p.volume} label="Volume" unit="L" above="0" />
@@ -781,11 +914,11 @@ function ChamberForm({ node }) {
       </div>
       <TapsSection id={id} p={p} from="in" />
       <ProbeSection id={id} p={p} />
-      <ThroatCalc id={id} />
+      {!group && <ThroatCalc id={id} />}
       <div className="ts-hint">
         Typical QL: 5–10 for a leaky box or car door, 15+ for a well-sealed enclosure.
-        First standing wave at c/2L = {(344 / (2 * r.length / 100)).toFixed(0)} Hz.
-        An end with nothing joined to it is a closed wall.
+        {!anyMixed(group, 'length') && Number(r.length) > 0 && <> First standing wave at c/2L = {(344 / (2 * r.length / 100)).toFixed(0)} Hz.</>}
+        {' '}An end with nothing joined to it is a closed wall.
       </div>
     </Section>
   )
@@ -808,12 +941,14 @@ function ChamberForm({ node }) {
  * @sideEffect Subscribes to the store.
  */
 function ProbeSection({ id, p }) {
-  const updateParams = useStore((s) => s.updateParams)
+  const { updateParams } = useEdit()
+  const group = useContext(Group)
+  const mixed = isMixed(group, 'probe')
   return (
-    <Sub id="probe" title="Interior SPL probe" summary={p.probe ? `on · ${p.probePos ?? 100}%` : 'off'}>
+    <Sub id="probe" title="Interior SPL probe" summary={mixed ? 'mixed' : p.probe ? `on · ${p.probePos ?? 100}%` : 'off'}>
       <label className="param-row" style={{ cursor: 'pointer' }}
         title="Report SPL inside this volume (virtual microphone). Shows on the Interior SPL chart tab.">
-        <input type="checkbox" checked={!!p.probe} onChange={(e) => updateParams(id, { probe: e.target.checked })} />
+        <Check checked={!!p.probe} mixed={mixed} onChange={(e) => updateParams(id, { probe: e.target.checked })} />
         <span style={{ fontSize: 12, color: 'var(--text-2)' }}>SPL probe (mic inside)</span>
       </label>
       {p.probe && (
@@ -827,7 +962,7 @@ function ProbeSection({ id, p }) {
               value={p.probePos ?? 100}
               onChange={(e) => updateParams(id, { probePos: parseFloat(e.target.value) })}
             />
-            <span className="unit" style={{ minWidth: 34, textAlign: 'right' }}>{p.probePos ?? 100}%</span>
+            <span className="unit" style={{ minWidth: 34, textAlign: 'right' }}>{isMixed(group, 'probePos') ? MIXED : `${p.probePos ?? 100}%`}</span>
           </div>
           <div className="ts-hint">
             Uniform below c/2L (cabin-gain region); position matters at the standing-wave modes.
@@ -855,11 +990,12 @@ const END_SPACES = [
 function WaveguideForm({ node }) {
   const p = node.data.params
   const id = node.id
+  const group = useContext(Group)
   const r = useResolvedParams(id, node.type, p)
   const vol = waveguideVolume(r.flare, r.S1 * 1e-4, r.S2 * 1e-4, r.length / 100) * 1000
   return (
-    <Section id="waveguide" title={<>{p.label || 'Waveguide'}<NameNum id={id} /></>} color="var(--s3)" focus initial
-      summary={`${short(r.S1)}→${short(r.S2)} cm² · ${short(r.length)} cm`}>
+    <Section id="waveguide" title={formTitle(group, node, 'Waveguide')} color="var(--s3)" focus initial
+      summary={group ? '' : `${short(r.S1)}→${short(r.S2)} cm² · ${short(r.length)} cm`}>
       <div className="param-grid">
         <LabelField id={id} p={p} />
         <NumField id={id} field="S1" value={p.S1} label="S1 throat" unit="cm²" above="0" />
@@ -885,7 +1021,7 @@ function WaveguideForm({ node }) {
       </Sub>
       <TapsSection id={id} p={p} from="throat" />
       <div className="ts-hint">
-        Internal volume <b className="node-readout">{vol.toFixed(2)} L</b>. Set S1 = S2 for a straight port.
+        {!anyMixed(group, 'flare', 'S1', 'S2', 'length') && Number.isFinite(vol) && <>Internal volume <b className="node-readout">{vol.toFixed(2)} L</b>. </>}Set S1 = S2 for a straight port.
       </div>
     </Section>
   )
@@ -902,15 +1038,16 @@ function WaveguideForm({ node }) {
 function PRForm({ node }) {
   const p = node.data.params
   const id = node.id
-  const updateParams = useStore((s) => s.updateParams)
+  const group = useContext(Group)
+  const { updateParams } = useEdit()
   const [calcOpen, setCalcOpen] = useState(false)
   const [calcFs, setCalcFs] = useState(30)
   const r = useResolvedParams(id, node.type, p)
   const m = (r.Mmd + (r.addedMass || 0)) / 1000
-  const fs = 1 / (2 * Math.PI * Math.sqrt(Math.max(m * (r.Cms / 1000), 1e-12)))
+  const fs = anyMixed(group, 'Mmd', 'Cms', 'addedMass') ? NaN : 1 / (2 * Math.PI * Math.sqrt(Math.max(m * (r.Cms / 1000), 1e-12)))
   return (
-    <Section id="pr" title={<>{p.label || 'Passive radiator'}<NameNum id={id} /></>} color="var(--s4)" focus initial
-      summary={`Fs ${fs.toFixed(1)} Hz · ${short(r.count)}×`}>
+    <Section id="pr" title={formTitle(group, node, 'Passive radiator')} color="var(--s4)" focus initial
+      summary={group ? '' : `Fs ${fs.toFixed(1)} Hz · ${short(r.count)}×`}>
       <div className="param-grid">
         <LabelField id={id} p={p} />
         <NumField id={id} field="Mmd" value={p.Mmd} unit="g" above="0" />
@@ -922,6 +1059,7 @@ function PRForm({ node }) {
         <NumField id={id} field="addedMass" value={p.addedMass} label="Added mass" unit="g" min="0" />
         <NumField id={id} field="count" value={p.count} label="Units" step="1" min="1" />
       </div>
+      {Number.isFinite(fs) && <>
       <Sub id="pr.tune" title="Tune to a resonance" summary={`now ${fs.toFixed(1)} Hz`} initial={calcOpen}>
         <div className="param-grid">
           <div className="param-row">
@@ -939,6 +1077,7 @@ function PRForm({ node }) {
         </div>
       </Sub>
       <div className="ts-hint">Resonance as configured: <b className="node-readout">{fs.toFixed(1)} Hz</b></div>
+      </>}
     </Section>
   )
 }
@@ -960,8 +1099,8 @@ function RadiationForm({ node }) {
     ['rigid', 'Rigid wall (reflective)'], ['anechoic', 'Anechoic (absorbing)'],
   ]
   return (
-    <Section id="radiation" title={<>{p.label || 'Radiation'}<NameNum id={id} /></>} color="var(--s5)" focus initial
-      summary={(SPACES.find(([k]) => k === p.space) || [, p.space])[1]}>
+    <Section id="radiation" title={formTitle(useContext(Group), node, 'Radiation')} color="var(--s5)" focus initial
+      summary={(SPACES.find(([k]) => k === p.space) || [, p.space ?? MIXED])[1]}>
       <div className="param-grid">
         <LabelField id={id} p={p} />
         <SelectField id={id} field="space" value={p.space} label="Boundary" options={SPACES} />
@@ -977,28 +1116,88 @@ function RadiationForm({ node }) {
 const FORMS = { driver: DriverForm, chamber: ChamberForm, waveguide: WaveguideForm, pr: PRForm, radiation: RadiationForm }
 
 /**
+ * The selected nodes when several are, as one stand-in node to edit them by.
+ *
+ * Re-derived only when the selection or one of its nodes changes, so the
+ * form underneath is not handed a new node on every unrelated store write.
+ * A dragged node is a changed node, so moving one of the group re-derives it.
+ *
+ * @param {string} key - The selected ids, joined by `|`.
+ * @returns {{group: object|null, node: object|null, kinds: string[]}} The group and its stand-in when the selection is two or more of one kind; the kinds selected otherwise.
+ * @sideEffect Subscribes to the store.
+ */
+function useSelectionGroup(key) {
+  const ids = useMemo(() => (key ? key.split('|') : []), [key])
+  const nodes = useStore((s) => s.nodes)
+  // The picked nodes themselves, kept while none of them changes — a drag
+  // elsewhere replaces the node list but should not re-derive the group.
+  const prev = useRef([])
+  const now = nodes.filter((n) => ids.includes(n.id))
+  const picked = now.length === prev.current.length && now.every((n, i) => n === prev.current[i]) ? prev.current : now
+  prev.current = picked
+  return useMemo(() => {
+    if (picked.length < 2) return { group: null, node: null, kinds: [] }
+    const kinds = [...new Set(picked.map((n) => n.type))]
+    if (kinds.length > 1) return { group: null, node: null, kinds }
+    const { params, mixed, locks } = mergeParams(picked)
+    const last = picked[picked.length - 1]
+    return {
+      group: { ids: picked.map((n) => n.id), mixed },
+      node: { id: last.id, type: last.type, data: { params, ...(locks ? { locks } : {}) } },
+      kinds,
+    }
+  }, [picked])
+}
+
+/**
  * The Parameters panel: the amplifier, the selected node's form, and the sweep.
  *
  * Which form is shown follows the selected node's type; with nothing
- * selected it prompts rather than rendering an empty panel.
+ * selected it prompts rather than rendering an empty panel. With several
+ * nodes of one kind selected, one form edits them all: a field they share
+ * shows its value, one they differ on shows as mixed, and whatever is typed
+ * goes to every one of them. Nodes of different kinds are not edited together.
  *
  * @returns {React.ReactElement} The panel.
  * @sideEffect Subscribes to the store.
  */
 export default function ParamPanel() {
-  const selectedNodeId = useStore((s) => s.selectedNodeId)
   const node = useStore((s) => s.nodes.find((n) => n.id === s.selectedNodeId))
-  const Form = node ? FORMS[node.type] : null
+  const selKey = useStore((s) => s.nodes.filter((n) => n.selected).map((n) => n.id).join('|'))
+  const { group, node: merged, kinds } = useSelectionGroup(selKey)
+  let body
+  if (group) {
+    const Form = FORMS[merged.type]
+    body = (
+      <Group.Provider value={group}>
+        <Form node={merged} key={selKey} />
+      </Group.Provider>
+    )
+  } else if (kinds.length > 1) {
+    body = (
+      <div className="ph-empty">
+        {selKey.split('|').length} nodes of different kinds are selected
+        ({kinds.map((k) => plural(k)).join(', ')}). Select nodes of one kind to
+        edit them together.
+      </div>
+    )
+  } else {
+    const Form = node ? FORMS[node.type] : null
+    body = (
+      <>
+        {node && <NodeWarnings node={node} key={`w_${node.id}`} />}
+        {Form
+          ? <Form node={node} key={node.id} />
+          : <div className="ph-empty">
+              Select an element on the canvas to edit it here.
+            </div>}
+      </>
+    )
+  }
   return (
     <div className="panel-scroll">
       <AmpSolver />
-      {node && <NodeWarnings node={node} key={`w_${node.id}`} />}
-      {Form
-        ? <Form node={node} key={node.id} />
-        : <div className="ph-empty">
-            Select an element on the canvas to edit it here.
-          </div>}
-      {selectedNodeId && !node && null}
+      {body}
       <SweepSection />
     </div>
   )

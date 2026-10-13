@@ -87,6 +87,8 @@ export default function ExprInput({ value, onCommit, step, min, above, placehold
         onKeyDown={(e) => {
           if ((e.key !== 'ArrowUp' && e.key !== 'ArrowDown') || isExpression(value)) { d.onKeyDown(e); return }
           e.preventDefault()
+          // Nothing to step from: an empty box — a mixed value, say — is not zero.
+          if (value == null || value === '') return
           const delta = (Number(step) || 1) * (e.key === 'ArrowUp' ? 1 : -1) * (e.shiftKey ? 10 : 1)
           const next = Number((Number(value || 0) + delta).toPrecision(12))
           if ((min != null && next < Number(min)) || (above != null && !(next > Number(above)))) return

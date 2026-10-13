@@ -1,7 +1,7 @@
 // Contract tests for src/groupEdit.js — joining a selection at once, and replacing nodes with a copy.
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { planGroupConnect, planReplace, hasHandle, handleName } from '../../src/groupEdit.js'
+import { planGroupConnect, planReplace, hasHandle, handleName, mergeParams, plural } from '../../src/groupEdit.js'
 
 const node = (id, type, params = {}, selected = false) => ({ id, type, selected, data: { params } })
 const join = (source, sourceHandle, target, targetHandle) => ({ source, sourceHandle, target, targetHandle })
@@ -69,4 +69,18 @@ test('planReplace: taps need not match', () => {
   const plan = planReplace(nodes, edges, clip, ['a'])
   assert.deepEqual(plan.edges.map((e) => e.id), ['e1', 'e3'])
   assert.equal(plan.dropped, 1)
+})
+
+// CONTRACT: a field every node holds the same value in keeps it; one they disagree on is left out and named as mixed.
+test('mergeParams: shared values kept, differing ones mixed, compared whole', () => {
+  const a = node('a', 'waveguide', { S1: 80, length: 10, taps: [{ id: 't1', position: 5 }] })
+  const b = node('b', 'waveguide', { S1: 80, length: 20, taps: [{ id: 't1', position: 6 }], loss: 1 })
+  const { params, mixed, locks } = mergeParams([a, b])
+  assert.deepEqual(params, { S1: 80 })
+  assert.deepEqual([...mixed].sort(), ['length', 'loss', 'taps'])
+  assert.equal(locks, undefined)
+  const d1 = { ...node('d1', 'driver', { Fs: 30 }), data: { params: { Fs: 30 }, locks: ['Fs'] } }
+  const d2 = { ...node('d2', 'driver', { Fs: 30 }), data: { params: { Fs: 30 }, locks: ['Fs'] } }
+  assert.deepEqual(mergeParams([d1, d2]).locks, ['Fs'])
+  assert.equal(plural('chamber'), 'Chambers')
 })

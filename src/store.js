@@ -48,6 +48,9 @@ import { channel, isPopout, openPanelWindow, openPanelGroupWindow, popoutPanelId
 import { loadBindings, saveBindings, DEFAULT_BINDINGS, COMMAND_IDS, findConflict } from './keymap'
 import { planGroupConnect, planReplace } from './groupEdit'
 
+/** True while `editGroup` runs, so the actions it calls do not each record history. */
+let inGroupEdit = false
+
 const POPOUT = isPopout()
 
 // ---- simulation worker ----
@@ -1140,6 +1143,8 @@ export const useStore = create((rawSet, get) => {
    * @sideEffect Writes store state. The history is capped at 80 entries, oldest discarded.
    */
   pushHistory: () => {
+    // Inside a group edit the whole change is one step, recorded once before it.
+    if (inGroupEdit) return
     const { nodes, edges, history, projectExtras } = get()
     const snap = JSON.parse(JSON.stringify({ nodes, edges, projectExtras }))
     // slice to one *below* the limit: the new entry is about to take the last
@@ -1455,6 +1460,24 @@ export const useStore = create((rawSet, get) => {
         : n)),
     })
     if (ok) get().scheduleCompute()
+  },
+
+  /**
+   * Make one edit to several nodes, as one step of history.
+   *
+   * What the Parameters panel does when several nodes of a kind are selected:
+   * the same action is run for each, and undo takes them all back together.
+   *
+   * @param {string[]} ids - The nodes.
+   * @param {Function} fn - Called with each node id; makes that node's change through the usual store actions.
+   * @returns {void}
+   * @sideEffect Records history once, then whatever `fn` does for each node.
+   */
+  editGroup: (ids, fn) => {
+    if (isLocked(get()) || !ids.length) return
+    get().pushHistory()
+    inGroupEdit = true
+    try { for (const id of ids) fn(id) } finally { inGroupEdit = false }
   },
 
   /**

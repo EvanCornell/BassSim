@@ -145,6 +145,8 @@ export default function NumInput({ value, onCommit, min, max, above, integer, al
       onKeyDown={(e) => {
         if ((e.key === 'ArrowUp' || e.key === 'ArrowDown') && !rest.readOnly) {
           e.preventDefault()
+          // Nothing to step from: an empty box — a mixed value, say — is not zero.
+          if (value == null && !d.editing) return
           const base = readNumber(d.text, { allowEmpty: false })
           const from = base.ok ? base.value : Number(value) || 0
           const delta = (Number(step) || 1) * (e.key === 'ArrowUp' ? 1 : -1) * (e.shiftKey ? 10 : 1)

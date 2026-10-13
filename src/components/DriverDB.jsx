@@ -111,7 +111,8 @@ export default function DriverDB() {
   if (!show) return null
 
   /**
-   * Apply a database row to the selected Driver node, or to a new one.
+   * Apply a database row to the selected Driver node — every selected one
+   * when only drivers are selected — or to a new one.
    *
    * Goes through `driverToParams`, so a record's provenance and construction
    * detail can never reach a node's params.
@@ -122,6 +123,14 @@ export default function DriverDB() {
    */
   const apply = (d) => {
     const params = driverToParams(d)
+    // Several drivers selected and nothing else: the record goes into all of them.
+    const st = useStore.getState()
+    const picked = st.nodes.filter((n) => n.selected)
+    if (picked.length > 1 && picked.every((n) => n.type === 'driver')) {
+      st.editGroup(picked.map((n) => n.id), (id) => applyDriverParams(id, params))
+      setShow(false)
+      return
+    }
     const target = node && node.type === 'driver' ? node.id : addNode('driver', { x: 100, y: 100 })
     applyDriverParams(target, params)
     setShow(false)

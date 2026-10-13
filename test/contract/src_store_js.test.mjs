@@ -2068,3 +2068,15 @@ test('replaceSelection: the copy\'s settings, in the target\'s place', () => {
   st().setSelection([r]); st().replaceSelection()
   assert.match(st().canvasAlert.text, /own kind/)
 })
+
+// CONTRACT: editGroup runs one edit for each node, recorded as one step of history.
+test('editGroup: one edit across several nodes, undone together', () => {
+  const a = st().addNode(T_CHAMBER, { x: 0, y: 0 })
+  const b = st().addNode(T_CHAMBER, { x: 0, y: 200 })
+  const before = st().history.length
+  st().editGroup([a, b], (id) => st().setTaps(id, [{ id: 't1', position: 3 }]))
+  assert.equal(st().history.length, before + 1, 'actions that record history on their own record nothing inside a group')
+  assert.deepEqual([paramsOf(a).taps, paramsOf(b).taps], [[{ id: 't1', position: 3 }], [{ id: 't1', position: 3 }]])
+  st().undo()
+  assert.deepEqual([paramsOf(a).taps || [], paramsOf(b).taps || []], [[], []])
+})
