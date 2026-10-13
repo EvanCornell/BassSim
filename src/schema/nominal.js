@@ -3,8 +3,8 @@
 // A channel stores volts, never watts. The watts it shows are its voltage
 // squared over the nominal load its wiring presents — the figure an amplifier
 // is rated against. Nominal is a label, not a measurement: it comes from each
-// driver's voice-coil resistance, rounded to the standard ratings, then
-// combined through the node's own arrangement and the cables of the Wiring
+// driver's voice-coil resistance, rounded to the standard ratings, then split
+// for a dual voice coil and combined through the node's own arrangement and the cables of the Wiring
 // window (`wires.js`). The minimum impedance the simulation finds is shown
 // separately.
 
@@ -30,28 +30,29 @@ export function ratingOf(re) {
 }
 
 /**
- * Re of one driver in a node after its dual voice coil option.
+ * The share of a driver's single-coil rating its dual voice coil option presents.
  *
  * A driver's figures are a single coil's; a dual-coil driver splits it into
  * two equal halves, so its coils in series are it, in parallel a quarter of
- * it and one alone half.
+ * it and one alone half. The split comes after rating, so a 6 Ω driver's
+ * coils in parallel read 1.5 Ω rather than a rating of their own.
  *
  * @param {object} p - Driver params, resolved.
- * @returns {number} Re, Ω.
+ * @returns {number} The factor.
  * @pure
  */
-function coilRe(p) {
-  const re = Number(p.Re) || 0
+function coilShare(p) {
   const coils = p.dvc?.coils
-  if (coils === 'parallel') return re / 4
-  if (coils === 'one') return re / 2
-  return re
+  if (coils === 'parallel') return 1 / 4
+  if (coils === 'one') return 1 / 2
+  return 1
 }
 
 /**
  * The nominal impedance of one driver node as its two terminals present it.
  *
- * Each driver is rated from its coil resistance first, then the node's own
+ * Each driver is rated from its coil resistance first, then split for a dual
+ * voice coil, then the node's own
  * arrangement combines those ratings, so four 4 Ω drivers in parallel read
  * 1 Ω. A node wired by hand coil by coil has no arrangement of its own; it
  * reads as its drivers in parallel, and the Wiring window rates the circuit
@@ -62,7 +63,7 @@ function coilRe(p) {
  * @pure
  */
 export function driverNominal(p) {
-  const one = ratingOf(coilRe(p))
+  const one = ratingOf(Number(p.Re) || 0) * coilShare(p)
   const n = Math.max(1, Math.round(Number(p.count) || 1))
   if (p.wiring === 'series') return one * n
   if (p.wiring === 'series-parallel') {
@@ -71,3 +72,12 @@ export function driverNominal(p) {
   }
   return one / n
 }
+
+/**
+ * An impedance as a label: up to three significant figures, no trailing zeros.
+ *
+ * @param {number} z - Ω.
+ * @returns {string} e.g. `0.75`, `1.5`, `16`, `10.7`.
+ * @pure
+ */
+export const fmtOhms = (z) => String(Number(z.toPrecision(3)))

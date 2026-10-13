@@ -4,7 +4,7 @@ import { LockNote } from './Records'
 import ExprInput from './ExprInput'
 import { useParamValues } from '../useResolved'
 import { valueOf } from '../schema/extras'
-import { driverNominal } from '../schema/nominal'
+import { driverNominal, fmtOhms } from '../schema/nominal'
 import { displayNames } from '../nodeNames'
 import { driverSummary } from './nodes'
 import DriveFields from './DriveFields'
@@ -30,10 +30,10 @@ const NOTE_MS = 5000
  * Ohms written short.
  *
  * @param {number} z - Ohms.
- * @returns {string} e.g. `4 Ω`, `5.3 Ω`, or `open`.
+ * @returns {string} e.g. `4 Ω`, `0.75 Ω`, or `open`.
  * @pure
  */
-const ohms = (z) => (Number.isFinite(z) && z > 0 ? `${z >= 10 ? z.toFixed(0) : Number(z.toPrecision(2))} Ω` : 'open')
+const ohms = (z) => (Number.isFinite(z) && z > 0 ? `${fmtOhms(z)} Ω` : 'open')
 
 /**
  * A channel's colours by its place in the list.
@@ -669,7 +669,7 @@ function ChannelCard({ ch, index, solved, toolbar, removable, onTerm }) {
         rg={ch.outputOhms} onRg={(v) => st().updateChannel(ch.id, { outputOhms: v })} />
       <div className="wr-channel-read">
         {Number.isFinite(solved?.ohms) ? <span>wiring <b>{ohms(solved.ohms)}</b> nominal</span> : <span>nothing wired</span>}
-        {zmin != null && Number.isFinite(solved?.ohms) && <span>min |Z| <b>{zmin.toFixed(1)} Ω</b></span>}
+        {zmin != null && Number.isFinite(solved?.ohms) && <span>min |Z| <b>{fmtOhms(zmin)} Ω</b></span>}
       </div>
       <span className="wr-chterm">
         <button className="wr-term plus" data-term={chTerm(ch.id, '+')} aria-label={`${ch.label || ch.id} +`} onPointerDown={(e) => onTerm(e, chTerm(ch.id, '+'))} />

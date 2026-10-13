@@ -6,7 +6,7 @@ import ExprInput from './ExprInput'
 import NumInput from './NumInput'
 import { useResolvedParams } from '../useResolved'
 import { freshId } from '../schema/extras'
-import { driverNominal } from '../schema/nominal'
+import { driverNominal, fmtOhms } from '../schema/nominal'
 import { baseName, nameNumbers } from '../nodeNames'
 import { mergeParams, plural } from '../groupEdit'
 import { driverStatus } from '../schema/wires'
@@ -643,7 +643,7 @@ function DriverForm({ node }) {
         <span className="psec-caption-note">{p.wiring === 'custom'
           ? `${short(p.count)}× · wired by hand`
           : Number.isFinite(nominal) && nominal > 0
-            ? `${short(p.count)}× · ${nominal >= 1 ? nominal.toFixed(0) : nominal.toFixed(2)} Ω`
+            ? `${short(p.count)}× · ${fmtOhms(nominal)} Ω`
             : ''}</span>
       </div>
       <ArrayField id={id} p={p} />

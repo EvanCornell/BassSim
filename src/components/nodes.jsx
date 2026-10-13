@@ -3,7 +3,7 @@ import { Handle, Position, useUpdateNodeInternals } from 'reactflow'
 import { useStore } from '../store'
 import { C_AIR, flareCutoff, endCorrectionLength, waveguideVolume } from '../engine/geometry'
 import { useResolvedParams } from '../useResolved'
-import { driverNominal } from '../schema/nominal'
+import { driverNominal, fmtOhms } from '../schema/nominal'
 import { driverStatus } from '../schema/wires'
 import { nameNumbers } from '../nodeNames'
 
@@ -137,7 +137,7 @@ export function driverSummary(p, channels) {
   if (p.wiring === 'custom') parts.push('wired by hand')
   else {
     const z = driverNominal(p)
-    parts.push(`${z >= 1 ? z.toFixed(0) : z.toFixed(2)} Ω`)
+    parts.push(`${fmtOhms(z)} Ω`)
   }
   parts.push(channels || 'not wired')
   return parts.join(' · ')

@@ -109,7 +109,7 @@ export function elementsOf(node) {
   if (!isCustom(p)) return [{ key: '', label: '', plus: nodeTerm(node.id, '', '+'), minus: nodeTerm(node.id, '', '-'), nominal: driverNominal(p) }]
   const coils = coilsOf(p)
   const n = unitsOf(p)
-  const coilOhms = ratingOf((Number(p.Re) || 0) / coils.length)
+  const coilOhms = ratingOf(Number(p.Re) || 0) / coils.length
   const out = []
   for (let u = 1; u <= n; u++) {
     for (const c of coils) {
