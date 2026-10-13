@@ -53,7 +53,7 @@ const KEYMAP_KEY = 'speakerspice:keymap'
 // `drive.upFine`, `drive.downFine`, `project.new`, `project.save`,
 // `sim.snapshot`, `sim.mask`, `sim.recompute`, `view.settings`, `view.maximize`, `view.popout`"
 const LISTED_COMMAND_KEYS = [
-  'edit.undo', 'edit.redo', 'edit.cut', 'edit.copy', 'edit.paste', 'edit.duplicate',
+  'edit.undo', 'edit.redo', 'edit.cut', 'edit.copy', 'edit.paste', 'edit.replace', 'edit.duplicate',
   'edit.selectAll', 'edit.delete', 'drive.up', 'drive.down', 'drive.upFine', 'drive.downFine',
   'project.new', 'project.save', 'sim.snapshot', 'sim.mask', 'sim.recompute',
   'view.settings', 'view.maximize', 'view.popout', 'view.timedomain',
@@ -65,7 +65,7 @@ const LISTED_COMMAND_KEYS = [
 // DEFAULT_BINDINGS", so every DEFAULT_BINDINGS key is also a command id.
 const ADD_COMMAND_IDS = ['add.driver', 'add.chamber', 'add.waveguide', 'add.pr', 'add.radiation']
 const DEFAULT_BINDING_KEYS = [
-  'edit.undo', 'edit.redo', 'edit.cut', 'edit.copy', 'edit.paste', 'edit.duplicate',
+  'edit.undo', 'edit.redo', 'edit.cut', 'edit.copy', 'edit.paste', 'edit.replace', 'edit.duplicate',
   'edit.selectAll', 'edit.delete', ...ADD_COMMAND_IDS,
   'drive.up', 'drive.down', 'drive.upFine', 'drive.downFine',
   'project.new', 'project.save', 'sim.snapshot', 'sim.mask', 'sim.recompute',

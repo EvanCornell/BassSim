@@ -2028,3 +2028,43 @@ test('runs: stored as a branch, listed with its level and record, viewed, restor
   assert.equal(runIndex(st()).length, 0)
   assert.deepEqual(st().tdView.runs, [], 'closed in the viewer')
 })
+
+// CONTRACT: a drag from a node in a selection joins every selected node; a refused group joins nothing and raises a canvas alert.
+test('onConnect: a selection is joined at once, and a mixed one is refused', () => {
+  const a = st().addNode('waveguide', { x: 0, y: 0 })
+  const b = st().addNode('waveguide', { x: 0, y: 200 })
+  const r = st().addNode('radiation', { x: 300, y: 0 })
+  st().setSelection([a, b])
+  st().onConnect({ source: a, sourceHandle: 'mouth', target: r, targetHandle: 'in' })
+  assert.deepEqual(edgesOf().map((e) => e.source).sort(), [a, b].sort())
+  st().undo()
+  assert.equal(edgesOf().length, 0, 'the group join is one step of history')
+  const c = st().addNode(T_CHAMBER, { x: 0, y: 400 })
+  st().setSelection([a, c])
+  st().onConnect({ source: a, sourceHandle: 'mouth', target: r, targetHandle: 'in' })
+  assert.equal(edgesOf().length, 0)
+  assert.match(st().canvasAlert.text, /mixes/)
+  st().showCanvasAlert(null)
+  assert.equal(st().canvasAlert, null)
+})
+
+// CONTRACT: replacing keeps each target's id, position, name and joins, and takes the copy's settings.
+test('replaceSelection: the copy\'s settings, in the target\'s place', () => {
+  const a = st().addNode('waveguide', { x: 0, y: 0 })
+  const b = st().addNode('waveguide', { x: 0, y: 200 })
+  const r = st().addNode('radiation', { x: 300, y: 0 })
+  st().updateParams(a, { label: 'Source', length: 77 })
+  st().updateParams(b, { label: 'Target' })
+  st().onConnect({ source: b, sourceHandle: 'mouth', target: r, targetHandle: 'in' })
+  st().setSelection([a]); st().copySelection(); st().setSelection([b])
+  const pos = { ...nodeById(b).position }
+  st().replaceSelection()
+  assert.equal(paramsOf(b).length, 77)
+  assert.equal(paramsOf(b).label, 'Target')
+  assert.deepEqual(nodeById(b).position, pos)
+  assert.equal(edgesOf().length, 1)
+  st().undo()
+  assert.notEqual(paramsOf(b).length, 77)
+  st().setSelection([r]); st().replaceSelection()
+  assert.match(st().canvasAlert.text, /own kind/)
+})

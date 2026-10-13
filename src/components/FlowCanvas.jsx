@@ -56,6 +56,34 @@ function swallowNextContextMenu() {
   setTimeout(() => window.removeEventListener('contextmenu', eat, true), 0)
 }
 
+/** How long a canvas alert stays up, ms. */
+const ALERT_MS = 5000
+
+/**
+ * The red bar across the top of the canvas that says why an action on the
+ * graph could not be done — a group join of mixed kinds, a replacement of the
+ * wrong kind. It clears itself after a few seconds, or on a click.
+ *
+ * @returns {React.ReactElement|null} The bar, or nothing when there is no alert.
+ * @sideEffect Subscribes to the store and runs a timer that clears the alert.
+ */
+function CanvasAlert() {
+  const alert = useStore((s) => s.canvasAlert)
+  useEffect(() => {
+    if (!alert) return undefined
+    const t = setTimeout(() => {
+      if (useStore.getState().canvasAlert === alert) useStore.getState().showCanvasAlert(null)
+    }, ALERT_MS)
+    return () => clearTimeout(t)
+  }, [alert])
+  if (!alert) return null
+  return (
+    <div className="canvas-alert" role="alert" key={alert.at} onClick={() => useStore.getState().showCanvasAlert(null)}>
+      {alert.text}
+    </div>
+  )
+}
+
 /**
  * The node editor canvas.
  *
@@ -305,6 +333,7 @@ function CanvasInner() {
         />
       </ReactFlow>
       <NodePalette />
+      <CanvasAlert />
       {marquee && (
         <div
           className="rf-marquee"

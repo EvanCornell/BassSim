@@ -387,6 +387,7 @@ export default function MenuBar() {
       { label: 'Redo', hint: key('edit.redo'), disabled: !store.future.length, onClick: store.redo },
       { label: '-' },
       { label: 'Duplicate Selection', hint: key('edit.duplicate'), onClick: store.duplicateSelected },
+      { label: 'Replace Selection with Copied', hint: key('edit.replace'), disabled: !store.clipboard?.nodes?.length, onClick: store.replaceSelection },
       { label: 'Select All Nodes', hint: key('edit.selectAll'), onClick: store.selectAll },
       { label: 'Delete Selection', hint: key('edit.delete'), danger: true, onClick: store.deleteSelected },
     ]],

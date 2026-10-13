@@ -46,6 +46,7 @@ import * as RUNS from './runs'
 import { DEFAULT_TOOLBAR, sanitizeToolbar } from './toolbarItems'
 import { channel, isPopout, openPanelWindow, openPanelGroupWindow, popoutPanelId, popoutPanelIds, SHARED_KEYS, SIM_INPUT_KEYS } from './popout'
 import { loadBindings, saveBindings, DEFAULT_BINDINGS, COMMAND_IDS, findConflict } from './keymap'
+import { planGroupConnect, planReplace } from './groupEdit'
 
 const POPOUT = isPopout()
 
@@ -1222,24 +1223,40 @@ export const useStore = create((rawSet, get) => {
     if (changes.some((c) => c.type === 'remove')) get().scheduleCompute()
   },
   /**
-   * Add an edge from a completed port-to-port drag.
+   * Add the edges a completed port-to-port drag makes.
+   *
+   * A drag that starts from a node in a selection of two or more joins every
+   * selected node from that same handle — see `planGroupConnect`. When the
+   * group cannot be joined (mixed kinds, or a tap some of them lack) nothing
+   * is, and the canvas says why.
    *
    * @param {object} conn - React Flow connection: source, sourceHandle, target, targetHandle.
    * @returns {void}
-   * @sideEffect Records history, writes store state and schedules a resimulation. Does nothing when the same two handles are already joined, in either order.
+   * @sideEffect Records history, writes store state and schedules a resimulation; or raises a canvas alert. Does nothing when every join already exists.
    */
   onConnect: (conn) => {
     if (isLocked(get())) return
-    // Connections have no direction, so a join already made the other way
-    // round is the same join.
-    const same = get().edges.some((e) =>
-      (e.source === conn.source && e.sourceHandle === conn.sourceHandle && e.target === conn.target && e.targetHandle === conn.targetHandle)
-      || (e.source === conn.target && e.sourceHandle === conn.targetHandle && e.target === conn.source && e.targetHandle === conn.sourceHandle))
-    if (same) return
+    const plan = planGroupConnect(get().nodes, get().edges, conn)
+    if (plan.error) { get().showCanvasAlert(plan.error); return }
+    if (!plan.conns.length) return
     get().pushHistory()
-    set({ edges: addEdge({ ...conn, type: 'default' }, get().edges) })
+    let edges = get().edges
+    for (const c of plan.conns) edges = addEdge({ ...c, type: 'default' }, edges)
+    set({ edges })
     get().scheduleCompute()
   },
+
+  /** A message across the top of the node editor, or `null`. Not saved and not shared with other windows. */
+  canvasAlert: null,
+  /**
+   * Say across the top of the node editor why something could not be done.
+   *
+   * @param {string|null} text - The message; `null` clears it.
+   * @returns {void}
+   * @sideEffect Writes store state. Each call is a fresh alert, so the same message twice restarts its timer.
+   */
+  showCanvasAlert: (text) => set({ canvasAlert: text ? { text, at: Date.now() + Math.random() } : null }),
+
   /**
    * Select a node, which drives what the Parameters panel edits.
    *
@@ -1582,7 +1599,10 @@ export const useStore = create((rawSet, get) => {
     const ids = new Set(sel.map((n) => n.id))
     set({
       clipboard: {
-        nodes: sel.map((n) => ({ type: n.type, id: n.id, position: { ...n.position }, params: JSON.parse(JSON.stringify(n.data.params)) })),
+        nodes: sel.map((n) => ({
+          type: n.type, id: n.id, position: { ...n.position }, params: JSON.parse(JSON.stringify(n.data.params)),
+          ...(n.data.baseline ? { baseline: { ...n.data.baseline } } : {}),
+        })),
         // only edges wholly inside the selection: a dangling half-edge would
         // have nothing to reconnect to on paste
         edges: edges
@@ -1641,7 +1661,10 @@ export const useStore = create((rawSet, get) => {
         type: n.type,
         position: { x: n.position.x + dx, y: n.position.y + dy },
         selected: true,
-        data: { params: JSON.parse(JSON.stringify({ ...DEFAULT_PARAMS[n.type], ...n.params })) },
+        data: {
+          params: JSON.parse(JSON.stringify({ ...DEFAULT_PARAMS[n.type], ...n.params })),
+          ...(n.baseline ? { baseline: { ...n.baseline } } : {}),
+        },
       }
     })
     const freshEdges = clip.edges.map((e) => ({
@@ -1654,6 +1677,36 @@ export const useStore = create((rawSet, get) => {
       edges: [...get().edges, ...freshEdges],
       selectedNodeId: fresh[fresh.length - 1].id,
     })
+    get().scheduleCompute()
+  },
+
+  /**
+   * Replace the selected nodes with the node on the clipboard.
+   *
+   * Each keeps its id, position and name and takes the copy's settings, so
+   * its joins, its place in the wiring and its probes all carry over — see
+   * `planReplace`. Joins to taps the copy does not have are removed, and the
+   * canvas says how many. When it cannot be done nothing changes and the
+   * canvas says why.
+   *
+   * @returns {void}
+   * @sideEffect Records history, writes store state and schedules a resimulation; or raises a canvas alert.
+   */
+  replaceSelection: () => {
+    if (isLocked(get())) return
+    const { nodes, edges, clipboard } = get()
+    const plan = planReplace(nodes, edges, clipboard, nodes.filter((n) => n.selected).map((n) => n.id))
+    if (plan.error) { get().showCanvasAlert(plan.error); return }
+    get().pushHistory()
+    set({
+      nodes: nodes.map((n) => {
+        if (!plan.params[n.id]) return n
+        const { baseline, ...data } = n.data
+        return { ...n, data: { ...data, params: { ...DEFAULT_PARAMS[n.type], ...plan.params[n.id] }, ...(plan.baseline ? { baseline: { ...plan.baseline } } : {}) } }
+      }),
+      edges: plan.edges,
+    })
+    if (plan.dropped) get().showCanvasAlert(`${plan.dropped} join${plan.dropped > 1 ? 's' : ''} to taps the copied node doesn't have ${plan.dropped > 1 ? 'were' : 'was'} removed.`)
     get().scheduleCompute()
   },
 

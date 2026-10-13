@@ -596,6 +596,7 @@ export default function ContextMenu() {
           onClick: () => { store.pasteClipboard(target.flowPos); close() },
         },
         { label: 'Duplicate', hint: key('edit.duplicate'), disabled: !hasSel, onClick: run(store.duplicateSelected) },
+        ...(onNode ? [{ label: 'Replace with Copied', hint: key('edit.replace'), disabled: !hasClip, onClick: run(store.replaceSelection) }] : []),
         { label: '-' },
         { label: 'Delete', hint: key('edit.delete'), danger: true, disabled: !hasSel, onClick: run(store.deleteSelected) },
       ]

@@ -106,6 +106,18 @@ export const COMMANDS = {
      */
     run: (s) => s.pasteClipboard(),
   },
+  'edit.replace': {
+    label: 'Replace with copied node',
+    group: 'Edit',
+    scope: 'canvas',
+    /**
+     * Give the selected nodes the copied node's settings, keeping their joins and names.
+     * @param {object} s - The store state, with actions bound.
+     * @returns {*} Whatever the store action returns; the key handler ignores it.
+     * @sideEffect Delegates to the store, mutating application state.
+     */
+    run: (s) => s.replaceSelection(),
+  },
   'edit.duplicate': {
     label: 'Duplicate selection',
     group: 'Edit',
@@ -352,6 +364,7 @@ export const DEFAULT_BINDINGS = {
   'edit.cut': ['mod+x'],
   'edit.copy': ['mod+c'],
   'edit.paste': ['mod+v'],
+  'edit.replace': ['mod+shift+v'],
   'edit.duplicate': ['mod+d'],
   'edit.selectAll': ['mod+a'],
   'edit.delete': ['delete', 'backspace'],

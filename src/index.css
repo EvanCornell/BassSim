@@ -1700,3 +1700,17 @@ button.nl-chip.add { background: var(--field); }
 .range-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .range-row input { width: 64px; }
 .td-runs .drawer { width: min(420px, calc(100% - 20px)); }
+
+/* Why a group join or a replacement could not be done, across the top of the canvas. */
+.canvas-alert {
+  position: absolute; z-index: 6;
+  top: calc(var(--tabbar, 0px) + 8px); left: 50%; transform: translateX(-50%);
+  width: max-content; max-width: min(620px, calc(100% - 24px));
+  padding: 7px 14px; border-radius: 8px;
+  background: color-mix(in oklch, var(--red) 16%, var(--panel));
+  border: 1px solid oklch(from var(--red) l c h / 0.55);
+  color: var(--red); font-size: 12.5px; font-weight: 500; line-height: 1.45;
+  box-shadow: 0 4px 14px oklch(0 0 0 / 0.18);
+  cursor: default; animation: canvas-alert-in 140ms ease-out;
+}
+@keyframes canvas-alert-in { from { opacity: 0; transform: translate(-50%, -4px); } }
