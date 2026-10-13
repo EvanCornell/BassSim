@@ -1483,7 +1483,7 @@ test('setAmp: the edited field is stored exactly as typed', () => {
   st().setAmp('impedance', 6.5)
   assert.equal(st().settings.impedance, 6.5)
   st().setAmp('power', 77.25)
-  assert.equal(st().settings.power, 77.25)
+  assert.ok(Math.abs(st().settings.power - 77.25) < 1e-9)
 })
 
 // CONTRACT: "Set one amplifier field and re-derive the others from P = V²/Z."
@@ -1842,15 +1842,20 @@ test('onConnect: a join made the other way round is the same join', () => {
   assert.equal(edgesOf().length, 4, 'the store does not second-guess other joins')
 })
 
-// CONTRACT (setAmp): "The typed figure stays exactly as typed; the master
-// moves to match it" — every channel keeps its own level.
-test('setAmp: the voltage moves the master, not the channels', () => {
+// CONTRACT (setAmp): the typed voltage is the toolbar channel's own; the
+// master stays at 0 dB and the other channels keep theirs.
+test('setAmp: the voltage sets the toolbar channel, not the master', () => {
   st().loadSerialized(m4())
   st().setAmp('voltage', 4)
   const w = st().projectExtras.wiring
-  assert.ok(Math.abs(w.masterDb - 20 * Math.log10(2)) < 1e-12)
-  assert.deepEqual(w.channels.map((c) => c.volts), [2, 4])
+  assert.equal(w.masterDb, 0)
+  assert.deepEqual(w.channels.map((c) => c.volts), [4, 4])
   assert.equal(st().settings.voltage, 4)
+  st().setChannelDrive('ch2', 'power', 8)
+  const ch2 = st().projectExtras.wiring.channels[1]
+  assert.ok(Math.abs(ch2.volts - Math.sqrt(8 * 4)) < 1e-6, 'power through the wiring\'s nominal 4 Ω')
+  st().setChannelDrive('ch2', 'impedance', 8)
+  assert.equal(st().projectExtras.wiring.channels[1].ohms, 8)
 })
 
 // CONTRACT (setExtra / _setExtras): "whenever the wiring changes, that figure
@@ -2129,7 +2134,8 @@ test('setToolbarChannel: the toolbar shows that channel', () => {
   st().setToolbarChannel('ch2')
   assert.equal(st().settings.voltage, 4)
   st().setAmp('voltage', 8)
-  assert.deepEqual(st().projectExtras.wiring.channels.map((c) => c.volts), [2, 4], 'the master moves, not the channels')
+  assert.deepEqual(st().projectExtras.wiring.channels.map((c) => c.volts), [2, 8], 'the toolbar channel moves, not the master')
+  assert.equal(st().projectExtras.wiring.masterDb, 0)
 })
 
 // CONTRACT (addChannel / removeChannel / resetWiring).

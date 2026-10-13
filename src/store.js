@@ -29,7 +29,7 @@ import { applyNodeChanges, applyEdgeChanges, addEdge } from 'reactflow'
 import { SCHEMA_VERSION, DEFAULT_PARAMS, DEFAULT_CHANNEL } from './schema/version'
 import { migrateProject } from './schema/migrate'
 import { toEditor, fromEditor } from './schema/editor'
-import { pruneExtras, driveOf, masterForVoltage, freshId } from './schema/extras'
+import { pruneExtras, driveOf, channelDrive, channelPatch, freshId } from './schema/extras'
 import * as WR from './schema/wires'
 import { getPool, relay, cancelLane } from './engine/poolHost'
 import { loadTheme, saveTheme, THEMES } from './theme'
@@ -1816,28 +1816,41 @@ export const useStore = create((rawSet, get) => {
     get().scheduleCompute()
   },
   /**
-   * Set one amplifier field and re-derive the others from P = V²/Z.
+   * Set the toolbar channel's voltage, impedance or power.
    *
-   * Voltage, impedance and power are three views of one setting, so editing
-   * any one has to update the rest. Which field was edited decides what is
-   * derived: it is the field the user typed in that stays exactly as typed.
+   * Voltage, impedance and power are three views of one channel, linked by
+   * P = V²/Z; see `setChannelDrive`. What the toolbar and the Parameters
+   * panel's Amplifier section type goes here.
    *
    * @param {'voltage'|'impedance'|'power'} field - The field that was edited.
-   * @param {number} value - Its new value.
+   * @param {number|null} value - Its new value; `null` empties an impedance back to following the wiring.
    * @returns {void}
    * @sideEffect Writes store state and schedules a resimulation.
    */
   setAmp: (field, value) => {
+    const ch = WR.toolbarChannel(get().projectExtras.wiring)
+    if (ch) get().setChannelDrive(ch.id, field, value, false)
+  },
+  /**
+   * Set a channel's voltage, impedance or power.
+   *
+   * The typed figure is the one that stays: a voltage is what the channel
+   * plays at, so it sets the channel's own volts and never the master; a
+   * power sets the volts through the impedance; an impedance fixes the figure
+   * watts are reckoned against, and an empty one follows the wiring again.
+   *
+   * @param {string} id - Channel id.
+   * @param {'voltage'|'impedance'|'power'} field - The field that was edited.
+   * @param {number|null} value - Its new value.
+   * @param {boolean} [undoable=true] - Record a history entry first.
+   * @returns {void}
+   * @sideEffect Writes store state and schedules a resimulation. Does nothing when the value cannot be applied.
+   */
+  setChannelDrive: (id, field, value, undoable = true) => {
     if (isLocked(get())) return
-    const s = { ...get().settings }
-    s[field] = value
-    if (field === 'voltage') s.power = (value * value) / s.impedance
-    else if (field === 'impedance') s.power = (s.voltage * s.voltage) / value
-    else if (field === 'power') s.voltage = Math.sqrt(value * s.impedance)
-    // The typed figure stays exactly as typed; the master moves to match it.
     const ex = get().projectExtras
-    set(field === 'impedance' ? { settings: s } : { settings: s, projectExtras: { ...ex, wiring: masterForVoltage(ex.wiring, ex.params, s.voltage) } })
-    get().scheduleCompute()
+    const patch = channelPatch(channelDrive(ex.wiring, get().nodes, ex.params, id), field, value)
+    if (patch) get().updateChannel(id, patch, undoable)
   },
 
   // ---- project sections beyond the graph ----
@@ -1853,9 +1866,13 @@ export const useStore = create((rawSet, get) => {
    */
   _setExtras: (extras) => {
     const { voltage, rg } = driveOf(extras.wiring, extras.params)
+    const d = channelDrive(extras.wiring, get().nodes, extras.params)
     const s = get().settings
     const settings = Number.isFinite(voltage)
-      ? { ...s, voltage, rg, power: (voltage * voltage) / (s.impedance || 4) }
+      ? (() => {
+        const impedance = Number.isFinite(d.ohms) ? d.ohms : s.impedance || 4
+        return { ...s, voltage, rg, impedance, power: (voltage * voltage) / impedance }
+      })()
       : s
     set({ projectExtras: extras, settings })
   },
@@ -2958,6 +2975,7 @@ export const useStore = create((rawSet, get) => {
       // time-domain results describe the project being replaced
       tdResults: { linear: null, transient: null, distortion: {} }, tdError: null,
     })
+    get()._setExtras(get().projectExtras)
     get().scheduleCompute()
   },
   /**

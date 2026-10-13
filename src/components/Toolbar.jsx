@@ -7,6 +7,7 @@
 // to the menu bar, not here — this strip is for per-design adjustments.
 import React from 'react'
 import { useStore, SNAPSHOT_LIMIT, isLocked } from '../store'
+import { useDrive } from '../useDrive'
 import { readSnapshots } from '../workspace'
 import { TOOLBAR_ITEMS, metricValue } from '../toolbarItems'
 import NumInput from './NumInput'
@@ -36,23 +37,26 @@ function UndoRedo() {
 /**
  * Drive-level control, with the resulting wattage beside it.
  *
- * Goes through `setAmp` rather than `updateSettings` so P = V²/Z stays
- * linked with the amplifier solver in the Parameters panel.
+ * The toolbar channel's voltage, as it plays. Goes through `setAmp`, which
+ * sets that channel's own volts and leaves the master alone, so P = V²/Z
+ * stays linked with the Amplifier section and the Wiring window.
  *
  * @returns {React.ReactElement} The drive control.
  * @sideEffect Subscribes to the store.
  */
 function VoltageControl() {
-  const settings = useStore((s) => s.settings)
+  const drive = useDrive()
   const setAmp = useStore((s) => s.setAmp)
   const locked = useStore(isLocked)
+  const name = drive.channel?.label || drive.channel?.id || 'the channel'
+  const watts = drive.watts
   return (
-    <div className="tb-pill tb-voltage" title="Amplifier drive voltage — power follows as V²/Z">
+    <div className="tb-pill tb-voltage" title={`${name}'s voltage — power follows as V²/Z`}>
       <label>Drive</label>
-      <NumInput step="0.01" min="0" value={settings.voltage} disabled={locked}
+      <NumInput step="0.01" min="0" value={Number.isFinite(drive.volts) ? Number(drive.volts.toPrecision(6)) : null} disabled={locked}
         onCommit={(x) => setAmp('voltage', x)} />
       <label>V</label>
-      <span className="tb-derived">{settings.power >= 100 ? settings.power.toFixed(0) : settings.power.toFixed(1)} W</span>
+      <span className="tb-derived">{watts >= 100 ? watts.toFixed(0) : watts.toFixed(1)} W</span>
     </div>
   )
 }

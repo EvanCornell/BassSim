@@ -1,12 +1,14 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useStore, isLocked } from '../store'
 import { LockNote } from './Records'
-import ExprInput, { shortNum } from './ExprInput'
+import ExprInput from './ExprInput'
 import { useParamValues } from '../useResolved'
 import { valueOf } from '../schema/extras'
 import { driverNominal } from '../schema/nominal'
 import { displayNames } from '../nodeNames'
 import { driverSummary } from './nodes'
+import DriveFields from './DriveFields'
+import { useDrive } from '../useDrive'
 import {
   elementsOf, allTerminals, liveWires, netsOf, driverStatus, nominalSolve, parseTerm,
   isCustom, unitsOf, chTerm, GROUND,
@@ -574,15 +576,17 @@ export default function WiringWindow() {
             </label>
           </div>
           {(wiring?.channels || []).map((c, i) => (
-            <ChannelCard key={c.id} ch={c} index={i} solved={solved.channels[c.id]} volts={volts[c.id]}
+            <ChannelCard key={c.id} ch={c} index={i} solved={solved.channels[c.id]}
               toolbar={(wiring.toolbar || wiring.channels[0].id) === c.id} removable={wiring.channels.length > 1}
               onTerm={startCable} />
           ))}
           <button className="wr-add" disabled={locked} onClick={() => useStore.getState().addChannel()}>+ Add channel</button>
           <div className="wr-hint">
-            The toolbar's drive level sets the volts of the channel marked Toolbar level; the
-            others keep their own. Rg is the amplifier's output resistance plus the cable.
-            A driver node added to the project goes on Channel 1, in parallel.
+            Each channel plays at the voltage it shows; the master moves them all
+            together and stays at 0 dB unless you change it. The toolbar's drive level
+            is the channel marked Toolbar level. An empty impedance follows the wiring.
+            Rg is the amplifier's output resistance plus the cable. A driver node added
+            to the project goes on Channel 1, in parallel.
           </div>
         </aside>
 
@@ -634,14 +638,14 @@ export default function WiringWindow() {
  * @param {object} props.ch - The channel.
  * @param {number} props.index - Its place in the list.
  * @param {{ohms: number, watts: number}} props.solved - Its nominal load and power.
- * @param {number} props.volts - Its volts at the master level.
  * @param {boolean} props.toolbar - Whether the toolbar's drive level sets it.
  * @param {boolean} props.removable - Whether it may be removed: never the last.
  * @param {Function} props.onTerm - Starts a cable from one of its terminals.
  * @returns {React.ReactElement} The card.
  * @sideEffect Subscribes to the store.
  */
-function ChannelCard({ ch, index, solved, volts, toolbar, removable, onTerm }) {
+function ChannelCard({ ch, index, solved, toolbar, removable, onTerm }) {
+  const drive = useDrive(ch.id)
   const zmin = useStore((s) => {
     const z = s.results?.zinByChannel?.[ch.id]?.mag
     return z?.length ? Math.min(...z) : null
@@ -660,18 +664,11 @@ function ChannelCard({ ch, index, solved, volts, toolbar, removable, onTerm }) {
         <button className="wr-dsp" disabled title="Filters, delay and polarity for this channel are coming">DSP <span>later</span></button>
         {removable && <button className="icon-btn" aria-label={`Remove ${ch.label || ch.id}`} title="Remove this channel and its cables" onClick={() => st().removeChannel(ch.id)}>✕</button>}
       </div>
-      <div className="wr-channel-grid">
-        <label>Volts @ 0 dB
-          <ExprInput value={ch.volts} min={0} step={0.1} onCommit={(v) => st().updateChannel(ch.id, { volts: v })} />
-        </label>
-        <label title="Amplifier output resistance plus cable, in series with this channel's load">Rg
-          <ExprInput value={ch.outputOhms ?? 0} min={0} step={0.01} onCommit={(v) => st().updateChannel(ch.id, { outputOhms: v })} />
-        </label>
-      </div>
+      <DriveFields drive={drive} onSet={(field, v) => st().setChannelDrive(ch.id, field, v)}
+        rg={ch.outputOhms} onRg={(v) => st().updateChannel(ch.id, { outputOhms: v })} />
       <div className="wr-channel-read">
-        <span><b>{Number.isFinite(volts) ? shortNum(volts) : '—'} V</b> now</span>
-        <span><b>{ohms(solved?.ohms)}</b> nominal</span>
-        {solved?.watts > 0 && <span><b>{solved.watts >= 100 ? solved.watts.toFixed(0) : solved.watts.toFixed(1)} W</b></span>}
+        {!drive.auto && <span>wiring <b>{ohms(solved?.ohms)}</b> nominal</span>}
+        {!Number.isFinite(solved?.ohms) && <span>nothing wired</span>}
         {zmin != null && Number.isFinite(solved?.ohms) && <span>min |Z| <b>{zmin.toFixed(1)} Ω</b></span>}
       </div>
       <span className="wr-chterm">

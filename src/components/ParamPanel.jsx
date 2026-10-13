@@ -9,7 +9,9 @@ import { freshId } from '../schema/extras'
 import { driverNominal } from '../schema/nominal'
 import { baseName, nameNumbers } from '../nodeNames'
 import { mergeParams, plural } from '../groupEdit'
-import { driverStatus, toolbarChannel } from '../schema/wires'
+import { driverStatus } from '../schema/wires'
+import { useDrive } from '../useDrive'
+import DriveFields from './DriveFields'
 
 /**
  * One-line physical explanation per parameter, shown as a label tooltip.
@@ -416,61 +418,30 @@ function NameNum({ id }) {
 }
 
 /**
- * The amplifier section: voltage, impedance and power, linked by P = V²/Z.
+ * The amplifier section: the toolbar channel's voltage, impedance and power,
+ * linked by P = V²/Z, and its Rg.
  *
  * Editing any one derives the others, so the drive level can be set in
- * whichever unit the user is thinking in.
+ * whichever unit the user is thinking in. The voltage is the channel's own:
+ * the master stays where it is.
  *
  * @returns {React.ReactElement} The amplifier section.
  * @sideEffect Subscribes to the store.
  */
 function AmpSolver() {
-  const settings = useStore((s) => s.settings)
+  const drive = useDrive()
   const setAmp = useStore((s) => s.setAmp)
   const updateSettings = useStore((s) => s.updateSettings)
-  const channel = useStore((s) => { const c = toolbarChannel(s.projectExtras.wiring); return c?.label || c?.id || 'The first channel' })
-  /**
-   * One linked amplifier field.
-   *
-   * Rejects zero and negative values: the relation divides by impedance, and
-   * a zero would propagate infinities through the settings.
-   *
-   * @param {'voltage'|'impedance'|'power'} field - Settings field to bind.
-   * @param {string} label - Display label.
-   * @param {string} unit - Unit shown after the input.
-   * @returns {React.ReactElement} The input row.
-   * @reads the enclosing `settings` and `setAmp`.
-   */
-  const f = (field, label, unit) => (
-    <div className="param-row">
-      <label title="Voltage, impedance and power are linked by P = V²/Z — edit any one.">{label}</label>
-      <NumInput
-        above="0"
-        value={settings[field]}
-        format={(v) => String(round3(v))}
-        onCommit={(v) => setAmp(field, v)}
-      />
-      <span className="unit">{unit}</span>
-    </div>
-  )
+  const ch = drive.channel
+  const channel = ch?.label || ch?.id || 'The first channel'
   return (
     <Section
       id="amp" title="Amplifier"
-      summary={`${short(settings.voltage)} V · ${short(settings.impedance)} Ω · ${short(settings.power)} W`}
+      summary={`${short(drive.volts)} V · ${Number.isFinite(drive.ohms) ? short(drive.ohms) : '—'} Ω · ${short(drive.watts)} W`}
       actions={<button onClick={() => useStore.getState().openWiring()}
-        title={`${channel} at the master level — the channel the toolbar's drive level sets. Changing the voltage moves the master, so every channel keeps its relative level.`}>Wiring…</button>}
+        title={`${channel} — the channel the toolbar's drive level sets. The other channels are in the Wiring window.`}>Wiring…</button>}
     >
-      <div className="param-grid">
-        {f('voltage', 'Voltage', 'V')}
-        {f('impedance', 'Impedance', 'Ω')}
-        {f('power', 'Power', 'W')}
-        <div className="param-row">
-          <label title={`${channel}'s Rg — amplifier output resistance plus cable — in series with its load.`}>Rg</label>
-          <NumInput step="0.01" min="0" value={settings.rg}
-            onCommit={(v) => updateSettings({ rg: v })} />
-          <span className="unit">Ω</span>
-        </div>
-      </div>
+      <DriveFields drive={drive} onSet={setAmp} rg={ch?.outputOhms} onRg={(v) => updateSettings({ rg: v })} />
     </Section>
   )
 }

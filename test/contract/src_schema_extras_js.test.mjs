@@ -1,7 +1,7 @@
 // Contract tests for src/schema/extras.js.
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { pruneExtras, valueOf, driveOf, masterForVoltage, freshId } from '../../src/schema/extras.js'
+import { pruneExtras, valueOf, driveOf, channelDrive, channelPatch, freshId } from '../../src/schema/extras.js'
 
 // CONTRACT (pruneExtras): cables and places of deleted drivers go, as do probes on deleted nodes.
 test('pruneExtras: forgets deleted nodes', () => {
@@ -34,17 +34,6 @@ test('driveOf: the toolbar channel at the master level', () => {
   assert.equal(valueOf(3, {}), 3)
 })
 
-// CONTRACT (masterForVoltage): "The master level that brings the first channel
-// to a voltage" — the channels themselves keep their levels; zero is −120 dB.
-test('masterForVoltage: moves only the master', () => {
-  const w = { masterDb: 0, channels: [{ id: 'a', volts: 2 }, { id: 'b', volts: 4 }] }
-  const out = masterForVoltage(w, [], 4)
-  assert.ok(Math.abs(out.masterDb - 20 * Math.log10(2)) < 1e-12)
-  assert.deepEqual(out.channels, w.channels)
-  assert.equal(masterForVoltage(w, [], 0).masterDb, -120)
-  assert.equal(masterForVoltage(w, [], -1), w)
-  assert.equal(masterForVoltage({ channels: [{ volts: 0 }] }, [], 5).masterDb, undefined)
-})
 
 // CONTRACT: "`prefix` followed by the lowest free number from 1".
 test('freshId: the lowest free number', () => {
@@ -56,5 +45,25 @@ test('freshId: the lowest free number', () => {
 test('driveOf and masterForVoltage: follow the toolbar channel', () => {
   const w = { masterDb: 0, toolbar: 'b', channels: [{ id: 'a', volts: 2, outputOhms: 0.1 }, { id: 'b', volts: 4, outputOhms: 0.3 }] }
   assert.deepEqual(driveOf(w, []), { voltage: 4, rg: 0.3 })
-  assert.ok(Math.abs(masterForVoltage(w, [], 8).masterDb - 20 * Math.log10(2)) < 1e-12)
+})
+
+// CONTRACT (channelDrive / channelPatch): voltage, impedance and power are one
+// channel's three views, P = V²/Z; the impedance follows the wiring unless typed;
+// a typed voltage or power sets the channel's own volts, never the master.
+test('channelDrive and channelPatch: V, Z and P of one channel', () => {
+  const nodes = [{ id: 'd', type: 'driver', params: { Re: 3.6, count: 1, wiring: 'parallel' } }]
+  const w = { masterDb: 6, channels: [{ id: 'c', volts: 2 }], wires: [{ a: 'ch:c:+', b: 'd:+' }, { a: 'ch:c:-', b: 'd:-' }] }
+  const d = channelDrive(w, nodes, [])
+  assert.ok(Math.abs(d.volts - 2 * Math.pow(10, 6 / 20)) < 1e-9)
+  assert.ok(Math.abs(d.ohms - 4) < 1e-6)
+  assert.equal(d.auto, true)
+  assert.ok(Math.abs(d.watts - d.volts ** 2 / 4) < 1e-6)
+  assert.ok(Math.abs(channelPatch(d, 'voltage', 4).volts * d.master - 4) < 1e-9, 'the typed voltage is what it plays at')
+  assert.ok(Math.abs(channelPatch(d, 'power', 16).volts * d.master - 8) < 1e-6)
+  assert.deepEqual(channelPatch(d, 'impedance', 8), { ohms: 8 })
+  assert.deepEqual(channelPatch(d, 'impedance', null), { ohms: null })
+  const fixed = channelDrive({ ...w, channels: [{ id: 'c', volts: 2, ohms: 8 }] }, nodes, [])
+  assert.equal(fixed.ohms, 8)
+  assert.equal(fixed.auto, false)
+  assert.equal(channelPatch(channelDrive({ ...w, wires: [] }, nodes, []), 'power', 10), null, 'nothing to reckon power by')
 })
