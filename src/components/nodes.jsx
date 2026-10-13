@@ -1,5 +1,5 @@
-import React from 'react'
-import { Handle, Position } from 'reactflow'
+import React, { useEffect } from 'react'
+import { Handle, Position, useUpdateNodeInternals } from 'reactflow'
 import { useStore } from '../store'
 import { C_AIR, flareCutoff, endCorrectionLength, waveguideVolume } from '../engine/geometry'
 import { useResolvedParams } from '../useResolved'
@@ -91,13 +91,23 @@ function Port({ id, side, at, label, title }) {
  * map of the line; a tap outside the length is pinned to the nearer end and
  * flagged by the node's warning.
  *
+ * React Flow measures a node's handles once, when the node first appears,
+ * and draws edges only to handles it has measured. A tap added later — or
+ * moved — is invisible to it until told, so an edge joined to the new tap
+ * would sit in the graph undrawn until the canvas was reloaded. The node is
+ * re-measured whenever its taps change.
+ *
  * @param {object} props - Component props.
+ * @param {string} props.id - The node's id.
  * @param {Array<{id: string, position: number}>} props.taps - Resolved taps.
  * @param {number} props.length - Resolved length, cm.
  * @returns {React.ReactElement} The handles.
- * @pure
+ * @sideEffect Asks React Flow to re-measure the node when its taps change.
  */
-function TapPorts({ taps, length }) {
+function TapPorts({ id, taps, length }) {
+  const updateInternals = useUpdateNodeInternals()
+  const shape = (taps || []).map((t) => `${t.id}@${t.position}`).join(',') + `/${length}`
+  useEffect(() => { updateInternals(id) }, [id, shape, updateInternals])
   return (
     <>
       {(taps || []).map((t) => {
@@ -164,7 +174,7 @@ export function ChamberNode({ id, data, selected }) {
       </div>
       <Port id="in" side="top" label="in" title="One end — anything may join it; unconnected, it is a closed wall" />
       <Port id="out" side="bottom" label="out" title="The other end — anything may join it; unconnected, it is a closed wall" />
-      <TapPorts taps={p.taps} length={p.length} />
+      <TapPorts id={id} taps={p.taps} length={p.length} />
     </div>
   )
 }
@@ -223,7 +233,7 @@ export function WaveguideNode({ id, data, selected }) {
       </div>
       <Port id="throat" side="top" label="throat" title={`Throat (S1) — unconnected, it ${p.throatSpace === 'rigid' ? 'is plugged' : 'radiates'}`} />
       <Port id="mouth" side="bottom" label="mouth" title={`Mouth (S2) — unconnected, it ${p.mouthSpace === 'rigid' ? 'is plugged' : 'radiates'}`} />
-      <TapPorts taps={p.taps} length={p.length} />
+      <TapPorts id={id} taps={p.taps} length={p.length} />
     </div>
   )
 }
