@@ -1853,7 +1853,7 @@ test('setAmp: the voltage sets the toolbar channel, not the master', () => {
   assert.equal(st().settings.voltage, 4)
   st().setChannelDrive('ch2', 'power', 8)
   const ch2 = st().projectExtras.wiring.channels[1]
-  assert.ok(Math.abs(ch2.volts - Math.sqrt(8 * 4)) < 1e-6, 'power through the wiring\'s nominal 4 Ω')
+  assert.ok(Math.abs(ch2.volts - 8) < 1e-9, 'power through the channel\'s 8 Ω')
   st().setChannelDrive('ch2', 'impedance', 8)
   assert.equal(st().projectExtras.wiring.channels[1].ohms, 8)
 })

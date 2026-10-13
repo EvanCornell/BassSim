@@ -201,7 +201,10 @@ function normalize(proj) {
   const channels = saved.map((c, i) => {
     const { load, dsp, ...rest } = clone(c)
     const label = !rest.label || /^Amp( \d+)?$/.test(rest.label) ? `Channel ${i + 1}` : rest.label
-    return { ...clone(DEFAULT_CHANNEL), ...rest, label }
+    // The impedance the toolbar's watts were reckoned against lived in the
+    // display; it is now the first channel's own.
+    const ohms = rest.ohms ?? (i === 0 && Number(proj.display?.nominalOhms) > 0 ? Number(proj.display.nominalOhms) : DEFAULT_CHANNEL.ohms)
+    return { ...clone(DEFAULT_CHANNEL), ...rest, label, ohms }
   })
   const driverIds = nodes.filter((n) => n.type === 'driver').map((n) => n.id)
   const cables = Array.isArray(w.wires) ? clone(w.wires) : wiresFromLoads(saved, driverIds)

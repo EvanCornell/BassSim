@@ -1823,7 +1823,7 @@ export const useStore = create((rawSet, get) => {
    * panel's Amplifier section type goes here.
    *
    * @param {'voltage'|'impedance'|'power'} field - The field that was edited.
-   * @param {number|null} value - Its new value; `null` empties an impedance back to following the wiring.
+   * @param {number} value - Its new value.
    * @returns {void}
    * @sideEffect Writes store state and schedules a resimulation.
    */
@@ -1837,11 +1837,11 @@ export const useStore = create((rawSet, get) => {
    * The typed figure is the one that stays: a voltage is what the channel
    * plays at, so it sets the channel's own volts and never the master; a
    * power sets the volts through the impedance; an impedance fixes the figure
-   * watts are reckoned against, and an empty one follows the wiring again.
+   * watts are reckoned against.
    *
    * @param {string} id - Channel id.
    * @param {'voltage'|'impedance'|'power'} field - The field that was edited.
-   * @param {number|null} value - Its new value.
+   * @param {number} value - Its new value.
    * @param {boolean} [undoable=true] - Record a history entry first.
    * @returns {void}
    * @sideEffect Writes store state and schedules a resimulation. Does nothing when the value cannot be applied.
@@ -2003,7 +2003,7 @@ export const useStore = create((rawSet, get) => {
     get().setWiring({ ...w, channels: w.channels.map((c) => (c.id === id ? { ...c, ...patch } : c)) }, undoable)
   },
   /**
-   * Add a channel at the first channel's level, with nothing on it yet.
+   * Add a channel at 2.83 V into 8 Ω, with nothing on it yet.
    *
    * @returns {string|undefined} The new channel's id; nothing when read-only.
    * @sideEffect Records history, writes store state and schedules a resimulation.
@@ -2012,7 +2012,7 @@ export const useStore = create((rawSet, get) => {
     if (isLocked(get())) return undefined
     const w = get().projectExtras.wiring
     const id = freshId('ch', w.channels.map((c) => c.id))
-    const ch = { ...DEFAULT_CHANNEL, id, label: `Channel ${w.channels.length + 1}`, volts: w.channels[0]?.volts ?? DEFAULT_CHANNEL.volts }
+    const ch = { ...DEFAULT_CHANNEL, id, label: `Channel ${w.channels.length + 1}` }
     get().setWiring({ ...w, channels: [...w.channels, ch] })
     return id
   },

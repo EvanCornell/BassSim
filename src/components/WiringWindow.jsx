@@ -584,7 +584,7 @@ export default function WiringWindow() {
           <div className="wr-hint">
             Each channel plays at the voltage it shows; the master moves them all
             together and stays at 0 dB unless you change it. The toolbar's drive level
-            is the channel marked Toolbar level. An empty impedance follows the wiring.
+            is the channel marked Toolbar level. A new channel starts at 2.83 V into 8 Ω.
             Rg is the amplifier's output resistance plus the cable. A driver node added
             to the project goes on Channel 1, in parallel.
           </div>
@@ -667,8 +667,7 @@ function ChannelCard({ ch, index, solved, toolbar, removable, onTerm }) {
       <DriveFields drive={drive} onSet={(field, v) => st().setChannelDrive(ch.id, field, v)}
         rg={ch.outputOhms} onRg={(v) => st().updateChannel(ch.id, { outputOhms: v })} />
       <div className="wr-channel-read">
-        {!drive.auto && <span>wiring <b>{ohms(solved?.ohms)}</b> nominal</span>}
-        {!Number.isFinite(solved?.ohms) && <span>nothing wired</span>}
+        {Number.isFinite(solved?.ohms) ? <span>wiring <b>{ohms(solved.ohms)}</b> nominal</span> : <span>nothing wired</span>}
         {zmin != null && Number.isFinite(solved?.ohms) && <span>min |Z| <b>{zmin.toFixed(1)} Ω</b></span>}
       </div>
       <span className="wr-chterm">

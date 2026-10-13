@@ -15,11 +15,10 @@ const tidy = (v) => (Number.isFinite(v) ? Math.round(v * 1000) / 1000 : null)
  *
  * The same rows in the Parameters panel's Amplifier section, for the toolbar
  * channel, and on every channel in the Wiring window. Whichever of the three
- * is typed stays as typed and the others follow. An emptied impedance goes
- * back to following the wiring, and shows the figure it follows.
+ * is typed stays as typed and the others follow.
  *
  * @param {object} props - Component props.
- * @param {{volts: number, ohms: number, auto: boolean, watts: number}} props.drive - The channel's drive, from `channelDrive`.
+ * @param {{volts: number, ohms: number, watts: number}} props.drive - The channel's drive, from `channelDrive`.
  * @param {Function} props.onSet - `(field, value)` for `voltage`, `impedance` or `power`.
  * @param {number|string} props.rg - The channel's Rg.
  * @param {Function} props.onRg - Called with a new Rg.
@@ -36,15 +35,13 @@ export default function DriveFields({ drive, onSet, rg, onRg }) {
         <span className="unit">V</span>
       </div>
       <div className="param-row">
-        <label title={`${linked} Leave it empty to follow the nominal load the wiring presents.`}>Impedance</label>
-        <NumInput above="0" allowEmpty value={drive.auto ? null : tidy(drive.ohms)}
-          placeholder={drive.auto ? (Number.isFinite(drive.ohms) ? `${tidy(drive.ohms)} auto` : 'open') : undefined}
-          onCommit={(v) => onSet('impedance', v)} />
+        <label title={linked}>Impedance</label>
+        <NumInput above="0" value={tidy(drive.ohms)} onCommit={(v) => onSet('impedance', v)} />
         <span className="unit">Ω</span>
       </div>
       <div className="param-row">
         <label title={linked}>Power</label>
-        <NumInput min="0" value={tidy(drive.watts)} disabled={!Number.isFinite(drive.ohms)} onCommit={(v) => onSet('power', v)} />
+        <NumInput min="0" value={tidy(drive.watts)} onCommit={(v) => onSet('power', v)} />
         <span className="unit">W</span>
       </div>
       <div className="param-row">

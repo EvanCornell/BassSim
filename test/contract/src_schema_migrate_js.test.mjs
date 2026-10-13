@@ -175,3 +175,12 @@ test('migrateProject: load trees become cables', () => {
   assert.equal(p.nodes[0].params.wiring, 'parallel')
   assert.deepEqual(migrateProject(p).wiring, p.wiring, 'idempotent')
 })
+
+// CONTRACT: a channel's watts are reckoned against 8 Ω, except that the first
+// channel keeps the impedance an older project's toolbar used.
+test('migrateProject: channel impedance', () => {
+  assert.deepEqual(migrateProject({ schemaVersion: 3, wiring: { channels: [{ id: 'a' }, { id: 'b' }] } }).wiring.channels.map((c) => c.ohms), [8, 8])
+  const old = migrateProject({ schemaVersion: 3, display: { nominalOhms: 4 }, wiring: { channels: [{ id: 'a' }, { id: 'b' }] } })
+  assert.deepEqual(old.wiring.channels.map((c) => c.ohms), [4, 8])
+  assert.equal(migrateProject(old).wiring.channels[0].ohms, 4, 'idempotent')
+})

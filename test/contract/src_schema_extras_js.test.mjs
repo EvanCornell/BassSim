@@ -48,22 +48,17 @@ test('driveOf and masterForVoltage: follow the toolbar channel', () => {
 })
 
 // CONTRACT (channelDrive / channelPatch): voltage, impedance and power are one
-// channel's three views, P = V²/Z; the impedance follows the wiring unless typed;
+// channel's three views, P = V²/Z, reckoned against 8 Ω until another is typed;
 // a typed voltage or power sets the channel's own volts, never the master.
 test('channelDrive and channelPatch: V, Z and P of one channel', () => {
-  const nodes = [{ id: 'd', type: 'driver', params: { Re: 3.6, count: 1, wiring: 'parallel' } }]
-  const w = { masterDb: 6, channels: [{ id: 'c', volts: 2 }], wires: [{ a: 'ch:c:+', b: 'd:+' }, { a: 'ch:c:-', b: 'd:-' }] }
-  const d = channelDrive(w, nodes, [])
+  const w = { masterDb: 6, channels: [{ id: 'c', volts: 2 }] }
+  const d = channelDrive(w, [], [])
   assert.ok(Math.abs(d.volts - 2 * Math.pow(10, 6 / 20)) < 1e-9)
-  assert.ok(Math.abs(d.ohms - 4) < 1e-6)
-  assert.equal(d.auto, true)
-  assert.ok(Math.abs(d.watts - d.volts ** 2 / 4) < 1e-6)
+  assert.equal(d.ohms, 8)
+  assert.ok(Math.abs(d.watts - d.volts ** 2 / 8) < 1e-9)
   assert.ok(Math.abs(channelPatch(d, 'voltage', 4).volts * d.master - 4) < 1e-9, 'the typed voltage is what it plays at')
-  assert.ok(Math.abs(channelPatch(d, 'power', 16).volts * d.master - 8) < 1e-6)
-  assert.deepEqual(channelPatch(d, 'impedance', 8), { ohms: 8 })
-  assert.deepEqual(channelPatch(d, 'impedance', null), { ohms: null })
-  const fixed = channelDrive({ ...w, channels: [{ id: 'c', volts: 2, ohms: 8 }] }, nodes, [])
-  assert.equal(fixed.ohms, 8)
-  assert.equal(fixed.auto, false)
-  assert.equal(channelPatch(channelDrive({ ...w, wires: [] }, nodes, []), 'power', 10), null, 'nothing to reckon power by')
+  assert.ok(Math.abs(channelPatch(d, 'power', 2).volts * d.master - 4) < 1e-9)
+  assert.deepEqual(channelPatch(d, 'impedance', 4), { ohms: 4 })
+  assert.equal(channelPatch(d, 'impedance', 0), null)
+  assert.equal(channelDrive({ channels: [{ id: 'c', volts: 2, ohms: 4 }] }, [], []).watts, 1)
 })

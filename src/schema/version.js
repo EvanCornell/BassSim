@@ -88,11 +88,12 @@ export const DEFAULT_ANALYSIS = {
 /**
  * The channel a new project drives its drivers with.
  *
- * `volts` is the channel's output at master 0 dB — its gain. `outputOhms` is
+ * `volts` is the channel's output at master 0 dB and `ohms` the impedance its
+ * watts are reckoned against — 2.83 V into 8 Ω, 1 W, to start. `outputOhms` is
  * Rg: the amplifier's output resistance plus the cable, in series with
  * whatever the channel drives.
  */
-export const DEFAULT_CHANNEL = { id: 'ch1', label: 'Channel 1', volts: 2.83, outputOhms: 0 }
+export const DEFAULT_CHANNEL = { id: 'ch1', label: 'Channel 1', volts: 2.83, ohms: 8, outputOhms: 0 }
 
 /**
  * Default wiring: a master level, one channel, and no cables yet.

@@ -437,7 +437,7 @@ function AmpSolver() {
   return (
     <Section
       id="amp" title="Amplifier"
-      summary={`${short(drive.volts)} V · ${Number.isFinite(drive.ohms) ? short(drive.ohms) : '—'} Ω · ${short(drive.watts)} W`}
+      summary={`${short(drive.volts)} V · ${short(drive.ohms)} Ω · ${short(drive.watts)} W`}
       actions={<button onClick={() => useStore.getState().openWiring()}
         title={`${channel} — the channel the toolbar's drive level sets. The other channels are in the Wiring window.`}>Wiring…</button>}
     >
