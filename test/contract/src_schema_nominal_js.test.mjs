@@ -18,19 +18,20 @@ test('estimateNominal: common drivers land on their usual ratings', () => {
   assert.equal(estimateNominal(3.2, 0.4), 4)
   assert.equal(estimateNominal(1.8, 0.5), 2)
   assert.equal(estimateNominal(6.4, 0.4), 8)
-  assert.equal(estimateNominal(4.7, 0.4), 6)
+  assert.equal(estimateNominal(4.4, 0.4), 6)
+  assert.equal(estimateNominal(4.7, 0.4), 8)
   assert.equal(estimateNominal(9, 0.4), 12)
   assert.equal(estimateNominal(0.4, 0.5), 0.5, 'any power of two, below 1 too')
   assert.equal(estimateNominal(25, 0.4), 32)
   assert.equal(estimateNominal(0, 0.4), 0)
 })
 
-// CONTRACT (estimateNominal): "gives the listed figure for all but a few drivers".
+// CONTRACT (POW_SLACK): "189 match" of the 192 listing a rating.
 test('estimateNominal: agrees with the catalogue listed ratings', () => {
   const listed = BUILTIN_DRIVERS.filter((d) => d.ext?.Znom && d.Re && d.Qes)
   const hits = listed.filter((d) => estimateNominal(d.Re, d.Qes) === d.ext.Znom).length
-  assert.ok(listed.length > 150)
-  assert.ok(hits / listed.length > 0.95, `${hits} of ${listed.length}`)
+  assert.equal(listed.length, 192)
+  assert.equal(hits, 189)
 })
 
 // CONTRACT (nominalOf): a typed or listed figure first, else the estimate.

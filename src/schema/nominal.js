@@ -18,8 +18,9 @@ const QES_TYPICAL = 0.4
  * Re is always some share of nominal, and how large a share depends on the
  * motor: a strong one (low Qes) holds the impedance well above Re past
  * resonance, so its Re is a smaller part of its nominal. The share is taken
- * as at most 0.7 + 0.25·Qes, capped at 0.85, so the low end is Re over that:
- * lower Qes raises it. Qes is held to 0.15–1, where real drivers lie.
+ * as at most 0.67 + 0.25·Qes, capped at 0.8, so the low end is Re over that:
+ * lower Qes raises it. Qes is held to 0.15–1, where real drivers lie. The
+ * constants are calibrated with `POW_SLACK` against the catalogue (see there).
  *
  * @param {number} re - DC resistance of one coil, Ω.
  * @param {number} [qes] - Electrical Q; a typical value when absent.
@@ -29,21 +30,30 @@ const QES_TYPICAL = 0.4
 export function nominalFloor(re, qes) {
   if (!(re > 0)) return 0
   const q = Number(qes) > 0 ? Math.min(1, Math.max(0.15, Number(qes))) : QES_TYPICAL
-  return re / Math.min(0.85, 0.7 + 0.25 * q)
+  return re / Math.min(0.8, 0.67 + 0.25 * q)
 }
 
-/** How far a power-of-two rating may sit below the low end and still be the one. */
-const POW_SLACK = 1.25
+/**
+ * How far a power-of-two rating may sit below the low end and still be the one.
+ *
+ * Tuned together with `nominalFloor`'s share to match as many listed ratings
+ * as possible: the 192 drivers in the library that list one, B&C's catalogue
+ * and the transcribed drivers whose names state it. 189 match; the misses are
+ * a 3 Ω driver, which no rating here is, and two drivers with an Re far off
+ * their rating's usual share. Among the settings that tie, this one leaves the
+ * drivers furthest from a band edge, while keeping a band for 6 Ω and 12 Ω.
+ * 6 Ω and 12 Ω take no such allowance.
+ */
+const POW_SLACK = 1.36
 
 /**
  * The nominal rating estimated for a driver with none listed.
  *
  * The first rating, going up, that fits above `nominalFloor`. Ratings are the
- * powers of two, any of them, plus 6 Ω and 12 Ω. A power of two still fits
- * when the low end overshoots it by up to a quarter, the way many 4 Ω drivers
- * have an Re near 4; 6 Ω and 12 Ω, rare but made, get no such allowance and
- * must sit above it. Checked against the catalogue's listed ratings, this
- * gives the listed figure for all but a few drivers.
+ * powers of two, any of them, plus 6 Ω and 12 Ω. The estimate may round
+ * down to a power of two the low end overshoots when it is close enough —
+ * within `POW_SLACK` — the way many 4 Ω drivers have an Re near 4; 6 Ω and
+ * 12 Ω, rare but made, get no such allowance and must sit above it.
  *
  * @param {number} re - DC resistance of one coil, Ω.
  * @param {number} [qes] - Electrical Q.
