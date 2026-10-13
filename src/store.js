@@ -1816,11 +1816,14 @@ export const useStore = create((rawSet, get) => {
     get().scheduleCompute()
   },
   /**
-   * Set the toolbar channel's voltage, impedance or power.
+   * Set the drive from the toolbar or the Parameters panel: the toolbar
+   * channel's voltage, impedance or power.
    *
-   * Voltage, impedance and power are three views of one channel, linked by
-   * P = V²/Z; see `setChannelDrive`. What the toolbar and the Parameters
-   * panel's Amplifier section type goes here.
+   * Voltage and power move every channel together: each channel's volts are
+   * scaled by the same ratio as the toolbar channel's, so their levels keep
+   * their relation and the master stays where it is. Impedance is the toolbar
+   * channel's alone. A channel whose volts are an expression, or zero, keeps
+   * them; the Wiring window sets one channel at a time.
    *
    * @param {'voltage'|'impedance'|'power'} field - The field that was edited.
    * @param {number} value - Its new value.
@@ -1828,8 +1831,21 @@ export const useStore = create((rawSet, get) => {
    * @sideEffect Writes store state and schedules a resimulation.
    */
   setAmp: (field, value) => {
-    const ch = WR.toolbarChannel(get().projectExtras.wiring)
-    if (ch) get().setChannelDrive(ch.id, field, value, false)
+    if (isLocked(get())) return
+    const ex = get().projectExtras
+    const w = ex.wiring
+    const ch = WR.toolbarChannel(w)
+    if (!ch) return
+    const patch = channelPatch(channelDrive(w, get().nodes, ex.params, ch.id), field, value)
+    if (!patch) return
+    const before = Number(ch.volts)
+    const ratio = 'volts' in patch && typeof ch.volts === 'number' && before > 0 ? patch.volts / before : null
+    const channels = w.channels.map((c) => {
+      if (c === ch) return { ...c, ...patch }
+      if (ratio == null || typeof c.volts !== 'number') return c
+      return { ...c, volts: Number((c.volts * ratio).toPrecision(12)) }
+    })
+    get().setWiring({ ...w, channels }, false)
   },
   /**
    * Set a channel's voltage, impedance or power.

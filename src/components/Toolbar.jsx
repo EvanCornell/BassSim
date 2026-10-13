@@ -38,8 +38,8 @@ function UndoRedo() {
  * Drive-level control, with the resulting wattage beside it.
  *
  * The toolbar channel's voltage, as it plays. Goes through `setAmp`, which
- * sets that channel's own volts and leaves the master alone, so P = V²/Z
- * stays linked with the Amplifier section and the Wiring window.
+ * scales every channel's volts with it and leaves the master alone, so
+ * P = V²/Z stays linked with the Amplifier section and the Wiring window.
  *
  * @returns {React.ReactElement} The drive control.
  * @sideEffect Subscribes to the store.
@@ -51,7 +51,7 @@ function VoltageControl() {
   const name = drive.channel?.label || drive.channel?.id || 'the channel'
   const watts = drive.watts
   return (
-    <div className="tb-pill tb-voltage" title={`${name}'s voltage — power follows as V²/Z`}>
+    <div className="tb-pill tb-voltage" title={`${name}'s voltage — power follows as V²/Z. Changing it scales every channel together.`}>
       <label>Drive</label>
       <NumInput step="0.01" min="0" value={Number.isFinite(drive.volts) ? Number(drive.volts.toPrecision(6)) : null} disabled={locked}
         onCommit={(x) => setAmp('voltage', x)} />

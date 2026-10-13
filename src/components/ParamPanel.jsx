@@ -422,8 +422,8 @@ function NameNum({ id }) {
  * linked by P = V²/Z, and its Rg.
  *
  * Editing any one derives the others, so the drive level can be set in
- * whichever unit the user is thinking in. The voltage is the channel's own:
- * the master stays where it is.
+ * whichever unit the user is thinking in. A new voltage or power scales
+ * every channel together; the master stays where it is.
  *
  * @returns {React.ReactElement} The amplifier section.
  * @sideEffect Subscribes to the store.
@@ -439,7 +439,7 @@ function AmpSolver() {
       id="amp" title="Amplifier"
       summary={`${short(drive.volts)} V · ${short(drive.ohms)} Ω · ${short(drive.watts)} W`}
       actions={<button onClick={() => useStore.getState().openWiring()}
-        title={`${channel} — the channel the toolbar's drive level sets. The other channels are in the Wiring window.`}>Wiring…</button>}
+        title={`${channel} — the channel the toolbar's drive level shows. Changing its voltage or power scales every channel together; each is set on its own in the Wiring window.`}>Wiring…</button>}
     >
       <DriveFields drive={drive} onSet={setAmp} rg={ch?.outputOhms} onRg={(v) => updateSettings({ rg: v })} />
     </Section>

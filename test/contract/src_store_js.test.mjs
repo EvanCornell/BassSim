@@ -1842,14 +1842,14 @@ test('onConnect: a join made the other way round is the same join', () => {
   assert.equal(edgesOf().length, 4, 'the store does not second-guess other joins')
 })
 
-// CONTRACT (setAmp): the typed voltage is the toolbar channel's own; the
-// master stays at 0 dB and the other channels keep theirs.
-test('setAmp: the voltage sets the toolbar channel, not the master', () => {
+// CONTRACT (setAmp): the typed voltage is the toolbar channel's own, and
+// every other channel scales with it; the master stays at 0 dB.
+test('setAmp: the voltage scales every channel, not the master', () => {
   st().loadSerialized(m4())
   st().setAmp('voltage', 4)
   const w = st().projectExtras.wiring
   assert.equal(w.masterDb, 0)
-  assert.deepEqual(w.channels.map((c) => c.volts), [4, 4])
+  assert.deepEqual(w.channels.map((c) => c.volts), [4, 8], 'every channel scales with the toolbar channel')
   assert.equal(st().settings.voltage, 4)
   st().setChannelDrive('ch2', 'power', 8)
   const ch2 = st().projectExtras.wiring.channels[1]
@@ -2134,7 +2134,7 @@ test('setToolbarChannel: the toolbar shows that channel', () => {
   st().setToolbarChannel('ch2')
   assert.equal(st().settings.voltage, 4)
   st().setAmp('voltage', 8)
-  assert.deepEqual(st().projectExtras.wiring.channels.map((c) => c.volts), [2, 8], 'the toolbar channel moves, not the master')
+  assert.deepEqual(st().projectExtras.wiring.channels.map((c) => c.volts), [4, 8], 'every channel moves with the toolbar channel, not the master')
   assert.equal(st().projectExtras.wiring.masterDb, 0)
 })
 

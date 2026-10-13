@@ -584,7 +584,8 @@ export default function WiringWindow() {
           <div className="wr-hint">
             Each channel plays at the voltage it shows; the master moves them all
             together and stays at 0 dB unless you change it. The toolbar's drive level
-            is the channel marked Toolbar level. A new channel starts at 2.83 V into 8 Ω.
+            shows the channel marked Toolbar level, and changing it there scales every
+            channel together. A new channel starts at 2.83 V into 8 Ω.
             Rg is the amplifier's output resistance plus the cable. A driver node added
             to the project goes on Channel 1, in parallel.
           </div>
