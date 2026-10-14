@@ -7,6 +7,7 @@ import { useStore } from '../store'
 import { readSnapshots } from '../workspace'
 import NumInput from './NumInput'
 import { displayName } from '../nodeNames'
+import { minorTicks } from './PlotChart'
 
 /**
  * Trace colours, cycled per series — theme tokens, so a chart follows the
@@ -247,6 +248,7 @@ function BaseChart({ chartId, data, lines, yLabel, yDomain, y2Label, y2Domain, r
     const t = TICKS.filter((v) => v >= xDomain[0] && v <= xDomain[1])
     return t.length >= 3 ? t : undefined // very narrow zoom: let recharts pick
   }, [xDomain[0], xDomain[1]])
+  const minorFreqs = useMemo(() => minorTicks(ticks || [], xDomain[0], xDomain[1], true), [ticks, xDomain[0], xDomain[1]])
   const hasY2 = lines.some((l) => l.yAxisId === 'right')
   /**
    * Apply a completed drag-select as an X zoom.
@@ -305,7 +307,9 @@ function BaseChart({ chartId, data, lines, yLabel, yDomain, y2Label, y2Domain, r
             <stop offset="1" stopColor="var(--c1)" stopOpacity="0" />
           </linearGradient>
         </defs>
-        <CartesianGrid stroke={GRID} strokeDasharray="3 4" vertical={true} />
+        <CartesianGrid stroke="var(--line-2)" vertical={true} />
+        {/* Fainter lines at every 1–9 of a decade between the labelled frequencies. */}
+        {minorFreqs.map((f) => <ReferenceLine key={`m${f}`} yAxisId="left" x={f} stroke={GRID} strokeWidth={1} ifOverflow="hidden" />)}
         <XAxis
           dataKey="f" type="number" scale="log" allowDataOverflow
           domain={xDomain}

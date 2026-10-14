@@ -41,7 +41,7 @@ export default function VelocityPopup() {
       <div style={{ flex: 1, minHeight: 0 }}>
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data} margin={{ top: 8, right: 16, bottom: 4, left: 0 }}>
-            <CartesianGrid stroke="var(--grid)" strokeDasharray="2 4" />
+            <CartesianGrid stroke="var(--line-2)" />
             <XAxis dataKey="f" type="number" scale="log" domain={[settings.fmin, settings.fmax]}
               ticks={ticks} tick={{ fill: 'var(--text-2)', fontSize: 10 }} stroke="var(--grid)" />
             <YAxis tick={{ fill: 'var(--text-2)', fontSize: 10 }} stroke="var(--grid)" width={40}

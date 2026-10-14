@@ -68,6 +68,46 @@ export function tickText(v) {
 }
 
 /**
+ * The fainter gridlines between labelled ticks.
+ *
+ * On a log axis, each whole multiple 1–9 of a decade that is not already a
+ * tick; on a linear one, the point halfway between neighbouring ticks, and
+ * half a step beyond the outer ones while still inside the range.
+ *
+ * @param {number[]} ticks - The labelled ticks, ascending.
+ * @param {number} lo - Range start.
+ * @param {number} hi - Range end.
+ * @param {boolean} log - A logarithmic axis.
+ * @returns {number[]} The minor positions, in data units.
+ * @pure
+ */
+export function minorTicks(ticks, lo, hi, log) {
+  const out = []
+  /**
+   * Whether a value is already a labelled tick.
+   *
+   * @param {number} v - The value.
+   * @returns {boolean} True when it is.
+   * @pure
+   */
+  const has = (v) => ticks.some((t) => Math.abs(t - v) <= Math.abs(v) * 1e-9)
+  if (log) {
+    if (!(lo > 0 && hi > lo)) return out
+    for (let e = Math.floor(Math.log10(lo)); e <= Math.ceil(Math.log10(hi)); e++) {
+      for (let m = 1; m <= 9; m++) {
+        const v = m * Math.pow(10, e)
+        if (v >= lo * (1 - 1e-9) && v <= hi * (1 + 1e-9) && !has(v)) out.push(v)
+      }
+    }
+    return out
+  }
+  if (ticks.length < 2) return out
+  const step = ticks[1] - ticks[0]
+  for (let v = ticks[0] - step / 2; v <= hi + 1e-9 * Math.abs(step); v += step) if (v >= lo - 1e-9 * Math.abs(step)) out.push(Number(v.toPrecision(12)))
+  return out
+}
+
+/**
  * The value range of some traces, over the part of x shown.
  *
  * @param {Array<{x: number[], y: number[]}>} series - The traces.
@@ -226,9 +266,14 @@ export default function PlotChart({ title, xunit, ylabel, y2label, series, xDoma
       ? yTicks.map((t) => ({ v: t.y, label: t.label, pos: Y(t.y) / VH }))
       : (logY ? logTicks(y0, y1) : niceTicks(y0, y1, 5)).map((v) => ({ v, label: tickText(v), pos: Y(v) / VH }))
     const grid = xt.map((t) => `M${(t.pos * VW).toFixed(1)} 0V${VH}`).join('') + yt.map((t) => `M0 ${(t.pos * VH).toFixed(1)}H${VW}`).join('')
+    // Fainter lines between the labelled ones: every 1–9 of a decade on a log
+    // axis, halfway between labels on a linear one.
+    const xm = minorTicks(xt.map((t) => t.v), x0, x1, logX).map((v) => X(v) / VW)
+    const ym = minorTicks(yt.map((t) => t.v), Math.min(y0, y1), Math.max(y0, y1), logY).map((v) => Y(v) / VH)
+    const gridMinor = xm.map((f) => `M${(f * VW).toFixed(1)} 0V${VH}`).join('') + ym.map((f) => `M0 ${(f * VH).toFixed(1)}H${VW}`).join('')
     const rl = refs.filter((r) => Number.isFinite(r.y) && r.y >= Math.min(y0, y1) && r.y <= Math.max(y0, y1)).map((r) => ({ ...r, pos: Y(r.y) / VH }))
     const y2t = right.length ? niceTicks(r0, r1, 5).map((v) => ({ v, label: tickText(v), pos: Y2(v) / VH })) : null
-    return { lines, xt, yt, y2t, grid, rl, x0, x1, logX }
+    return { lines, xt, yt, y2t, grid, gridMinor, rl, x0, x1, logX }
   }, [series, xDomain, yDomain, logX, logY, refs, yTicks])
 
   /**
@@ -265,6 +310,7 @@ export default function PlotChart({ title, xunit, ylabel, y2label, series, xDoma
         </div>
         <div className="pc-plot" ref={plotRef} onMouseMove={onMove} onMouseLeave={() => setHover(null)}>
           <svg viewBox={`0 0 ${VW} ${VH}`} preserveAspectRatio="none">
+            <path d={model.gridMinor} className="pc-grid minor" />
             <path d={model.grid} className="pc-grid" />
             {model.rl.map((r, i) => (
               <path key={`r${i}`} d={`M0 ${(r.pos * VH).toFixed(1)}H${VW}`} stroke={r.color || 'var(--red)'} strokeDasharray="5 4" className="pc-ref" />

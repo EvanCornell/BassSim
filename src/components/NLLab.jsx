@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
+import { minorTicks } from './PlotChart'
 import { useStore } from '../store'
 import { readRecord } from '../records'
 import {
@@ -404,17 +405,26 @@ function CurveEditor({ driverId, param, nl, xmax, width, height, refv, overlays 
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flex: 1, minHeight: 0 }}>
       <svg
         ref={svgRef} width={W} height={H}
-        style={{ background: 'var(--panel-2)', borderRadius: 14, cursor: 'crosshair' }}
+        style={{ background: 'var(--field)', borderRadius: 10, cursor: 'crosshair' }}
         onClick={onSvgClick} onPointerDown={onSvgPointerDown}
         onPointerMove={onSvgMove} onPointerLeave={() => setHover(null)}
       >
         <defs>
           <clipPath id="plotclip"><rect x={PAD} y={PAD - 20} width={W - 2 * PAD} height={H - 2 * PAD + 20} /></clipPath>
         </defs>
+        {/* Fainter lines halfway between the labelled ones, as on every chart. */}
+        {minorTicks(niceTicks(v.x0, v.x1, 10), v.x0, v.x1, false).map((x) => {
+          const [px] = toPx(x, v.y0)
+          return <line key={`mx${x}`} x1={px} y1={PAD} x2={px} y2={H - PAD} stroke="var(--grid)" />
+        })}
+        {minorTicks(niceTicks(v.y0, v.y1, 6), Math.min(v.y0, v.y1), Math.max(v.y0, v.y1), false).map((r) => {
+          const [, py] = toPx(v.x0, r)
+          return <line key={`my${r}`} x1={PAD} y1={py} x2={W - PAD} y2={py} stroke="var(--grid)" />
+        })}
         {niceTicks(v.x0, v.x1, 10).map((x) => {
           const [px] = toPx(x, v.y0)
           return <g key={`x${x}`}>
-            <line x1={px} y1={PAD} x2={px} y2={H - PAD} stroke="var(--grid)" strokeDasharray={Math.abs(x) < 1e-9 ? '' : '2 4'} />
+            <line x1={px} y1={PAD} x2={px} y2={H - PAD} stroke={Math.abs(x) < 1e-9 ? 'var(--text-4)' : 'var(--line-2)'} />
             <text x={px} y={H - PAD + 15} fill="var(--text-3)" fontSize="10" textAnchor="middle">{x}</text>
           </g>
         })}
@@ -422,7 +432,7 @@ function CurveEditor({ driverId, param, nl, xmax, width, height, refv, overlays 
           const [, py] = toPx(v.x0, r)
           const isRef = Math.abs(r - 1) < 1e-9
           return <g key={`y${r}`}>
-            <line x1={PAD} y1={py} x2={W - PAD} y2={py} stroke={isRef ? 'var(--line-2)' : 'var(--grid)'} strokeDasharray={isRef ? '' : '2 4'} />
+            <line x1={PAD} y1={py} x2={W - PAD} y2={py} stroke={isRef ? 'var(--text-4)' : 'var(--line-2)'} />
             <text x={PAD - 6} y={py + 3} fill={isRef ? 'var(--text-2)' : 'var(--text-3)'} fontSize="10" textAnchor="end">{fmtVal(r * refv.v)}</text>
           </g>
         })}
