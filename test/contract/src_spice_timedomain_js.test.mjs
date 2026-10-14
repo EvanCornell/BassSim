@@ -380,3 +380,15 @@ test('thdLimitAt: the level where THD reaches 10%', async () => {
   const above = await measureTone(p, 30, r.levelDb + 0.3, o)
   assert.ok(above.thd >= 0.1 * 0.95, `just above, THD ${above.thd}`)
 })
+
+// CONTRACT (dsp.js): the DSP is "ordinary circuit parts" that "hold in the
+// frequency sweep and a transient run alike" — a tone through it lands at the
+// level the sweep gives.
+test('channel DSP holds in a transient run', async () => {
+  const p = box()
+  p.wiring.channels[0].dsp = { gainDb: -3, invert: true, delayMs: 1.2, hpf: { on: true, shape: 'linkwitz-riley', slope: 24, hz: 30 }, peq: [{ id: 'b1', type: 'peak', hz: 45, db: -6, q: 2 }] }
+  for (const hz of [30, 45]) {
+    const m = await measureTone(p, hz, 0, { ...O, nonlinear: false })
+    assert.ok(Math.abs(m.spl - await linearLevel(p, hz, 0)) < 0.02, `${hz} Hz`)
+  }
+})

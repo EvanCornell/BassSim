@@ -78,12 +78,15 @@ export function adaptResults(raw, map) {
     splCombined: arr(), splDriver: new Array(n).fill(null), splPorts: {}, splInterior: {},
     zinMag: arr(), zinPhase: arr(), excursion: arr(), excursionByDriver: {}, excursionRatio: arr(),
     xmaxByDriver: {}, velocity: {}, power: arr(), peReal: arr(), peApparent: arr(),
-    zinByChannel: {}, probeFlow: {},
+    zinByChannel: {}, powerByChannel: {}, probeFlow: {},
     phase: arr(), phaseUnwrapped: null, groupDelay: null,
     nl: { active: false, iterations: 1 },
   }
   const ch = map.channels.map((c) => ({ ...c, I: raw.vec(`i(${c.sense})`), V: raw.vec(`v(${c.load})`) }))
-  for (const c of ch) res.zinByChannel[c.id] = { label: c.label, mag: arr(), phase: arr() }
+  for (const c of ch) {
+    res.zinByChannel[c.id] = { label: c.label, mag: arr(), phase: arr() }
+    res.powerByChannel[c.id] = { label: c.label, values: arr() }
+  }
   const drv = map.drivers.map((d) => ({ ...d, u: raw.vec(`i(${d.velocity})`) }))
   for (const d of drv) { res.excursionByDriver[d.id] = arr(); res.xmaxByDriver[d.id] = d.Xmax * 1000 }
   const wgs = map.waveguides.map((w) => ({ id: w.id, ends: Object.values(w.ends).map((e) => ({ S: e.S, U: raw.vec(`i(${e.sense})`) })) }))
@@ -102,6 +105,7 @@ export function adaptResults(raw, map) {
     ch.forEach((c, k) => {
       const Vr = c.V.re[i], Vi = c.V.im[i], Ir = c.I.re[i], Ii = c.I.im[i]
       res.peReal[i] += Vr * Ir + Vi * Ii
+      res.powerByChannel[c.id].values[i] = Vr * Ir + Vi * Ii
       res.peApparent[i] += Math.hypot(Vr, Vi) * Math.hypot(Ir, Ii)
       const d = Ir * Ir + Ii * Ii
       const zr = (Vr * Ir + Vi * Ii) / d

@@ -133,6 +133,28 @@ function WiringTab({ onHover }) {
 }
 
 /**
+ * The way into the DSP window and back, on the menu bar beside Wiring.
+ *
+ * @param {object} props - Component props.
+ * @param {Function} props.onHover - Called when the pointer enters it, to close an open menu.
+ * @returns {React.ReactElement} The button.
+ * @sideEffect Subscribes to the store; opens or closes the window.
+ */
+function DspTab({ onHover }) {
+  const open = useStore((s) => s.dspOpen)
+  return (
+    <button
+      className={`menu-title mb-td${open ? ' on' : ''}`}
+      onClick={(e) => { e.stopPropagation(); const st = useStore.getState(); if (open) st.closeDsp(); else st.openDsp() }}
+      onMouseEnter={onHover}
+      title={open ? 'Back to the editor (Alt+D)' : 'Gain, delay, polarity, crossovers and EQ for each channel (Alt+D)'}
+    >
+      DSP
+    </button>
+  )
+}
+
+/**
  * The application menu bar.
  *
  * Follows the native pattern: click a title to open, then hover any other
@@ -628,7 +650,6 @@ export default function MenuBar() {
   return (
     <div className="menubar" ref={barRef} onClick={() => setOpen(null)}>
       <span className="logo">Speaker<span>Spice</span></span>
-      <ProjectTitle />
       {MENUS.map(([title, items]) => (
         <React.Fragment key={title}>
           <Menu
@@ -642,6 +663,7 @@ export default function MenuBar() {
               goes there and back, beside the menu of what gets simulated. */}
           {title === 'Simulate' && <TimeDomainTab onHover={() => { if (open) setOpen(null) }} />}
           {title === 'Simulate' && <WiringTab onHover={() => { if (open) setOpen(null) }} />}
+          {title === 'Simulate' && <DspTab onHover={() => { if (open) setOpen(null) }} />}
         </React.Fragment>
       ))}
       {/* Settings is a section of its own rather than an item buried in a
@@ -651,6 +673,7 @@ export default function MenuBar() {
         onClick={(e) => { e.stopPropagation(); setOpen(null); store.setShowSettings(true) }}
         onMouseEnter={() => { if (open) setOpen(null) }}
       >Settings</button>
+      <ProjectTitle />
       <RecordsBar />
       <input ref={fileRef} type="file" accept=".json,application/json" style={{ display: 'none' }} onChange={onLoadFile} />
       <input ref={workspaceRef} type="file" accept=".zip,.json,application/zip,application/json" style={{ display: 'none' }} onChange={onLoadWorkspace} />

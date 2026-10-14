@@ -8,41 +8,13 @@ import { driverNominal, fmtOhms } from '../schema/nominal'
 import { displayNames } from '../nodeNames'
 import { driverSummary } from './nodes'
 import DriveFields from './DriveFields'
+import { colorsOf, LOOSE } from '../channelColors'
 import { useDrive } from '../useDrive'
 import {
   elementsOf, allTerminals, liveWires, netsOf, driverStatus, nominalSolve, parseTerm,
   isCustom, unitsOf, chTerm, GROUND,
 } from '../schema/wires'
 
-/** Each channel's cable colours, in channel order: the + side, then the − side. */
-const CHANNEL_COLORS = [
-  ['#3f86d6', '#24578f'], ['#d9822b', '#8f5317'], ['#2f9e78', '#1c6a50'],
-  ['#9466cc', '#5f3d8a'], ['#d1527a', '#8c3150'], ['#7d8792', '#4d555e'],
-]
-
-/** A cable no channel reaches. */
-const LOOSE = ['#9aa0aa', '#6b6e75']
-
-/** How long a message stays across the top of the window, ms. */
-const NOTE_MS = 5000
-
-/**
- * Ohms written short.
- *
- * @param {number} z - Ohms.
- * @returns {string} e.g. `4 Ω`, `0.75 Ω`, or `open`.
- * @pure
- */
-const ohms = (z) => (Number.isFinite(z) && z > 0 ? `${fmtOhms(z)} Ω` : 'open')
-
-/**
- * A channel's colours by its place in the list.
- *
- * @param {number} i - The channel's index.
- * @returns {string[]} The + and − colours.
- * @pure
- */
-const colorsOf = (i) => (i >= 0 ? CHANNEL_COLORS[i % CHANNEL_COLORS.length] : LOOSE)
 
 /**
  * A coil, drawn as a short spring between two leads.
@@ -662,7 +634,7 @@ function ChannelCard({ ch, index, solved, toolbar, removable, onTerm }) {
         {toolbar
           ? <span className="wr-toolbar on" title="The toolbar's drive level sets this channel's volts">Toolbar level</span>
           : <button className="wr-toolbar" title="Make the toolbar's drive level set this channel's volts" onClick={() => st().setToolbarChannel(ch.id)}>Use for toolbar</button>}
-        <button className="wr-dsp" disabled title="Filters, delay and polarity for this channel are coming">DSP <span>later</span></button>
+        <button className="wr-dsp" title="Gain, delay, polarity, crossovers and EQ for this channel" onClick={() => st().openDsp(ch.id)}>DSP</button>
         {removable && <button className="icon-btn" aria-label={`Remove ${ch.label || ch.id}`} title="Remove this channel and its cables" onClick={() => st().removeChannel(ch.id)}>✕</button>}
       </div>
       <DriveFields drive={drive} onSet={(field, v) => st().setChannelDrive(ch.id, field, v)}

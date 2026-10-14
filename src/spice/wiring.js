@@ -1,7 +1,8 @@
 // Channels as netlist sources, and the cables that join them to the drivers.
 //
 // Each channel is an AC voltage source at its level (volts at master 0 dB,
-// scaled by the master), then its Rg, then a current sense, then its output
+// scaled by the master, then by its DSP's gain, mute and polarity), then its
+// DSP's delay and filters, then its Rg, then a current sense, then its output
 // terminal. Every channel's return is the ground. Cables join terminals into
 // nets (`schema/wires.js`); each net is one netlist node, so the drivers
 // themselves never need to know how they are wired. A terminal no cable
@@ -9,6 +10,8 @@
 
 import { fmt, resistor } from './netlist.js'
 import { signalExpression, signalPoints } from './dsp.js'
+import { compileSections } from './filters.js'
+import { normalizeDsp, dspScale, dspSections, isFlat } from '../schema/dsp.js'
 import { allTerminals, liveWires, netsOf, chTerm, toolbarChannel, GROUND } from '../schema/wires.js'
 
 /**
@@ -50,7 +53,7 @@ function transientSource(ctx, node, volts, label) {
  * @param {object} ctx - Compile context.
  * @param {object} proj - The resolved project.
  * @returns {Function} Terminal id → its netlist node.
- * @throws {Error} When a channel's output is wired to the ground or to another channel's output.
+ * @throws {Error} When a channel's output is wired to the ground or to another channel's output, or a DSP stage is out of range.
  * @mutates ctx.nl and ctx.map.channels.
  */
 export function compileWiring(ctx, proj) {
@@ -94,9 +97,27 @@ export function compileWiring(ctx, proj) {
     nl.comment(`channel ${label}`)
     const src = nl.node()
     const volts = Number(c.volts) * master
-    if (ctx.tran) transientSource(ctx, src, volts, label)
-    else nl.add('V', [src, '0'], `DC 0 AC ${fmt(volts)} 0`, `${label} source`)
+    const dsp = normalizeDsp(c.dsp)
+    const flat = isFlat(dsp)
+    const k = flat ? 1 : dspScale(dsp)
+    if (ctx.tran) transientSource(ctx, src, volts * k, label)
+    else nl.add('V', [src, '0'], `DC 0 AC ${fmt(volts * Math.abs(k))} ${k < 0 ? 180 : 0}`, `${label} source`)
     let drive = src
+    const delay = (Number(dsp.delayMs) || 0) * 1e-3
+    if (!flat && delay > 0) {
+      // A lossless line matched at its far end is a pure delay.
+      const d = nl.node()
+      const out = nl.node()
+      nl.add('T', [src, '0', d, '0'], `Z0=1 TD=${fmt(delay)}`, `${label} DSP delay`)
+      resistor(nl, d, '0', 1)
+      nl.add('E', [out, '0', d, '0'], '1')
+      drive = out
+    }
+    if (!flat) {
+      let sections
+      try { sections = dspSections(dsp) } catch (err) { throw new Error(`${label} › DSP ${err.message}`) }
+      if (sections.length) drive = compileSections(nl, drive, sections, `${label} DSP`)
+    }
     if (Number(c.outputOhms) > 0) {
       const r = nl.node()
       resistor(nl, drive, r, Number(c.outputOhms), `${label} Rg`)

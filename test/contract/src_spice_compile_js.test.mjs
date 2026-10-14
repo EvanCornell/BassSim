@@ -15,6 +15,7 @@ import { simulateProject } from '../../src/engine/pipeline.js'
 import { migrateProject } from '../../src/schema/migrate.js'
 import { resolveProject } from '../../src/schema/params.js'
 import { junctionCorrection } from '../../src/engine/geometry.js'
+import { normalizeDsp, dspResponse } from '../../src/schema/dsp.js'
 
 // ---------- helpers ----------
 
@@ -398,6 +399,50 @@ test('wiring: each channel reports the impedance it sees', async () => {
     // two identical drivers in series, in free air, each see the same motion:
     // twice the impedance, and the output resistance is not part of the load
     assert.ok(Math.abs(r.zinByChannel.c2.mag[i] / r.zinByChannel.c1.mag[i] - 2) < 1e-6, `${r.freqs[i]} Hz`)
+  }
+})
+
+// CONTRACT (compileWiring): a channel's source is "scaled by the master,
+// then by its DSP's gain, mute and polarity, then its DSP's delay and
+// filters" — so in the sweep the response changes by exactly the DSP's
+// transfer function, and the load each channel sees does not change at all.
+test('wiring: channel DSP shapes the response by exactly its transfer function', async () => {
+  const dsp = normalizeDsp({
+    gainDb: -2, invert: true, delayMs: 0.8,
+    hpf: { on: true, shape: 'bessel', slope: 18, hz: 22 },
+    lpf: { on: true, shape: 'linkwitz-riley', slope: 24, hz: 120 },
+    lt: { on: true, f0: 40, q0: 0.9, fp: 28, qp: 0.6 },
+    peq: [{ id: 'b1', on: true, type: 'peak', hz: 55, db: -5, q: 3 }, { id: 'b2', on: true, type: 'notch', hz: 300, q: 4 }],
+  })
+  const base = { nodes: [{ id: 'a', type: 'driver', params: DRV }], edges: [] }
+  const ch = { id: 'c1', volts: 2.83 }
+  const { results: flat } = await sim({ ...base, wiring: { channels: [ch] } })
+  const { results: r } = await sim({ ...base, wiring: { channels: [{ ...ch, dsp }] } })
+  const h = dspResponse(dsp, r.freqs)
+  for (let i = 0; i < r.freqs.length; i++) {
+    if (h.db[i] < -100) continue
+    assert.ok(Math.abs(r.splCombined[i] - flat.splCombined[i] - h.db[i]) < 1e-6, `${r.freqs[i]} Hz level`)
+    const dp = ((r.phase[i] - flat.phase[i] - h.phase[i]) % 360 + 540) % 360 - 180
+    assert.ok(Math.abs(dp) < 1e-4, `${r.freqs[i]} Hz phase`)
+    assert.ok(Math.abs(r.zinMag[i] - flat.zinMag[i]) < 1e-9 * flat.zinMag[i], `${r.freqs[i]} Hz impedance`)
+  }
+})
+
+// CONTRACT (adaptResults): each channel's real power; together they are `peReal`.
+test('wiring: power per channel, and a muted channel goes quiet but still reads its load', async () => {
+  const nodes = [{ id: 'a', type: 'driver', params: DRV }, { id: 'b', type: 'driver', params: DRV }]
+  const wires = [{ a: 'ch:c1:+', b: 'a:+' }, { a: 'ch:c1:-', b: 'a:-' }, { a: 'ch:c2:+', b: 'b:+' }, { a: 'ch:c2:-', b: 'b:-' }]
+  const { results: r } = await sim({ nodes, edges: [], wiring: { channels: [{ id: 'c1', volts: 2.83 }, { id: 'c2', volts: 5.66 }], wires } })
+  for (let i = 0; i < r.freqs.length; i += 20) {
+    const sum = r.powerByChannel.c1.values[i] + r.powerByChannel.c2.values[i]
+    assert.ok(Math.abs(sum - r.peReal[i]) < 1e-9 * r.peReal[i])
+    assert.ok(Math.abs(r.powerByChannel.c2.values[i] / r.powerByChannel.c1.values[i] - 4) < 1e-6)
+  }
+  const { results: m } = await sim({ nodes, edges: [], wiring: { channels: [{ id: 'c1', volts: 2.83, dsp: { mute: true } }], wires: wires.slice(0, 2) } })
+  const { results: u } = await sim({ nodes, edges: [], wiring: { channels: [{ id: 'c1', volts: 2.83 }], wires: wires.slice(0, 2) } })
+  for (let i = 0; i < m.freqs.length; i += 20) {
+    assert.ok(u.splCombined[i] - m.splCombined[i] > 170)
+    assert.ok(Math.abs(m.zinMag[i] - u.zinMag[i]) < 1e-6 * u.zinMag[i])
   }
 })
 

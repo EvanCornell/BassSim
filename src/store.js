@@ -709,6 +709,10 @@ export const useStore = create((rawSet, get) => {
   wiringOpen: false,
   /** The driver node the Wiring window's inspector shows, or `null`. */
   wiringSel: null,
+  /** Whether the DSP window has the screen, in place of the dock. */
+  dspOpen: false,
+  /** The channel the DSP window is editing, or `null` for the toolbar's. */
+  dspChannel: null,
   tdTab: 'runs',
   tdJob: null,
   tdError: null,
@@ -2353,7 +2357,7 @@ export const useStore = create((rawSet, get) => {
   openTimeDomain: (tab) => {
     // Load an engine on every thread now, so the first run need not wait.
     if (typeof Worker !== 'undefined') getPool().warm()
-    set({ tdOpen: true, wiringOpen: false, ...(tab ? { tdTab: tab } : {}) })
+    set({ tdOpen: true, wiringOpen: false, dspOpen: false, ...(tab ? { tdTab: tab } : {}) })
   },
   /**
    * Open the Wiring window in place of the dock, optionally showing one driver.
@@ -2362,7 +2366,7 @@ export const useStore = create((rawSet, get) => {
    * @returns {void}
    * @sideEffect Writes store state.
    */
-  openWiring: (nodeId) => set({ wiringOpen: true, tdOpen: false, ...(nodeId ? { wiringSel: nodeId } : {}) }),
+  openWiring: (nodeId) => set({ wiringOpen: true, tdOpen: false, dspOpen: false, ...(nodeId ? { wiringSel: nodeId } : {}) }),
   /**
    * Return from the Wiring window to the editor.
    *
@@ -2378,6 +2382,42 @@ export const useStore = create((rawSet, get) => {
    * @sideEffect Writes store state.
    */
   setWiringSel: (id) => set({ wiringSel: id }),
+  /**
+   * Open the DSP window in place of the dock, optionally on one channel.
+   *
+   * @param {string} [channelId] - The channel to edit.
+   * @returns {void}
+   * @sideEffect Writes store state.
+   */
+  openDsp: (channelId) => set({ dspOpen: true, tdOpen: false, wiringOpen: false, ...(channelId ? { dspChannel: channelId } : {}) }),
+  /**
+   * Return from the DSP window to the editor.
+   *
+   * @returns {void}
+   * @sideEffect Writes store state.
+   */
+  closeDsp: () => set({ dspOpen: false }),
+  /**
+   * Choose the channel the DSP window edits.
+   *
+   * @param {string} id - Channel id.
+   * @returns {void}
+   * @sideEffect Writes store state.
+   */
+  setDspChannel: (id) => set({ dspChannel: id }),
+  /**
+   * Replace a channel's DSP.
+   *
+   * A drag sends its first step undoable and the rest not, so the whole drag
+   * is one step of history.
+   *
+   * @param {string} id - Channel id.
+   * @param {object} dsp - The channel's complete DSP block.
+   * @param {boolean} [undoable] - Whether to record history.
+   * @returns {void}
+   * @sideEffect Writes store state and schedules a resimulation; records history when undoable.
+   */
+  setChannelDsp: (id, dsp, undoable = true) => get().updateChannel(id, { dsp }, undoable),
   /**
    * Return to the editor. A running job carries on.
    *

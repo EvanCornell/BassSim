@@ -2150,3 +2150,23 @@ test('channels: add, remove, and reset the wiring', () => {
   st().resetWiring()
   assert.deepEqual(st().projectExtras.wiring.wires.map((w) => `${w.a}~${w.b}`).sort(), ['ch:ch1:+~d:+', 'ch:ch1:+~x:+', 'ch:ch1:-~d:-', 'ch:ch1:-~x:-'])
 })
+
+// CONTRACT (openDsp / setChannelDsp): "A drag sends its first step undoable and
+// the rest not, so the whole drag is one step of history."
+test('DSP: open on a channel, edit it, and undo a drag in one step', () => {
+  st().loadSerialized(m4())
+  st().openWiring()
+  st().openDsp('ch2')
+  assert.equal(st().dspOpen, true)
+  assert.equal(st().wiringOpen, false, 'one full-screen window at a time')
+  assert.equal(st().dspChannel, 'ch2')
+  const d = { ...st().projectExtras.wiring.channels[1].dsp }
+  st().setChannelDsp('ch2', { hpf: { on: true, shape: 'butterworth', slope: 24, hz: 20 } })
+  st().setChannelDsp('ch2', { hpf: { on: true, shape: 'butterworth', slope: 24, hz: 30 } }, false)
+  st().setChannelDsp('ch2', { hpf: { on: true, shape: 'butterworth', slope: 24, hz: 40 } }, false)
+  assert.equal(st().projectExtras.wiring.channels[1].dsp.hpf.hz, 40)
+  st().undo()
+  assert.deepEqual({ ...st().projectExtras.wiring.channels[1].dsp }, d)
+  st().closeDsp()
+  assert.equal(st().dspOpen, false)
+})

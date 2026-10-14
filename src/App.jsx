@@ -12,6 +12,7 @@ import WorkspacePrompt from './components/WorkspacePrompt'
 import ContextMenu from './components/ContextMenu'
 import TimeDomainWindow from './components/TimeDomainWindow'
 import WiringWindow from './components/WiringWindow'
+import DspWindow from './components/DspWindow'
 import { isPopout } from './popout'
 import { COMMANDS, comboFromEvent, resolve } from './keymap'
 
@@ -90,6 +91,7 @@ export default function App() {
   const loadSerialized = useStore((s) => s.loadSerialized)
   const tdOpen = useStore((s) => s.tdOpen)
   const wiringOpen = useStore((s) => s.wiringOpen)
+  const dspOpen = useStore((s) => s.dspOpen)
 
   // Initial load: open the workspace's active project. On a genuine first run
   // that file exists but is empty, so the demo graph goes into it — a new user
@@ -150,9 +152,10 @@ export default function App() {
       {/* The time-domain workspace replaces the dock rather than docking in
           it. The dock stays mounted underneath, hidden, so the canvas and
           charts come back exactly as they were. */}
-      <div className="dock-host" style={tdOpen || wiringOpen ? { display: 'none' } : undefined}><DockLayout /></div>
+      <div className="dock-host" style={tdOpen || wiringOpen || dspOpen ? { display: 'none' } : undefined}><DockLayout /></div>
       {tdOpen && <TimeDomainWindow />}
       {wiringOpen && <WiringWindow />}
+      {dspOpen && <DspWindow />}
       <DriverDB />
       <TSCalc />
       <SaveDriverPrompt />

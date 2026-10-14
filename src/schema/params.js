@@ -237,8 +237,8 @@ export function resolveNodeParams(node, values, errors = []) {
  * Replace every expression in a project with its value.
  *
  * Covers node params, tap positions, the master level, channel volts and
- * output resistance, DSP delay and filter values, analysis ranges and probe
- * positions. Anything that cannot be resolved is reported with where it is,
+ * output resistance, analysis ranges and probe positions. A channel's DSP
+ * holds plain numbers only. Anything that cannot be resolved is reported with where it is,
  * and left as `NaN` so a caller that ignores the errors still cannot mistake
  * it for a real value.
  *

@@ -20,13 +20,15 @@
 // Within v3, wiring moved from a series/parallel load tree on each channel to
 // cables between terminals (`wires.js`). A file without `wiring.wires` has its
 // trees turned into the cables that make the same circuit; channels lose the
-// tree and their old DSP. A driver node's `single` wiring is `parallel`.
+// tree, and any DSP they carry is brought to the current shape (`dsp.js`),
+// the old filter list included. A driver node's `single` wiring is `parallel`.
 
 import {
   SCHEMA_VERSION, DEFAULT_PARAMS, DEFAULT_ANALYSIS, DEFAULT_CHANNEL, DEFAULT_WIRING,
   DEFAULT_DISPLAY, DEFAULT_AIR,
 } from './version.js'
 import { wiresFromLoads, liveWires, allTerminals } from './wires.js'
+import { normalizeDsp } from './dsp.js'
 
 /**
  * The `ecFactor` that meant "no adjustment" before v2.
@@ -204,7 +206,7 @@ function normalize(proj) {
     // The impedance the toolbar's watts were reckoned against lived in the
     // display; it is now the first channel's own.
     const ohms = rest.ohms ?? (i === 0 && Number(proj.display?.nominalOhms) > 0 ? Number(proj.display.nominalOhms) : DEFAULT_CHANNEL.ohms)
-    return { ...clone(DEFAULT_CHANNEL), ...rest, label, ohms }
+    return { ...clone(DEFAULT_CHANNEL), ...rest, label, ohms, ...(dsp ? { dsp: normalizeDsp(dsp) } : {}) }
   })
   const driverIds = nodes.filter((n) => n.type === 'driver').map((n) => n.id)
   const cables = Array.isArray(w.wires) ? clone(w.wires) : wiresFromLoads(saved, driverIds)

@@ -169,7 +169,8 @@ test('migrateProject: load trees become cables', () => {
       { id: 'c2', label: 'Amp 2', load: { series: [{ driver: 'b' }] } },
     ] },
   })
-  assert.deepEqual(p.wiring.channels.map((c) => [c.label, 'dsp' in c, 'load' in c]), [['Channel 1', false, false], ['Channel 2', false, false]])
+  assert.deepEqual(p.wiring.channels.map((c) => [c.label, 'dsp' in c, 'load' in c]), [['Channel 1', true, false], ['Channel 2', false, false]])
+  assert.equal(p.wiring.channels[0].dsp.invert, true, 'the old polarity carries over')
   assert.deepEqual(p.wiring.wires, [{ a: 'ch:c1:+', b: 'a:+' }, { a: 'ch:c1:-', b: 'a:-' }, { a: 'ch:c2:+', b: 'b:+' }, { a: 'ch:c2:-', b: 'b:-' }])
   assert.equal(p.wiring.toolbar, 'c1')
   assert.equal(p.nodes[0].params.wiring, 'parallel')
@@ -183,4 +184,22 @@ test('migrateProject: channel impedance', () => {
   const old = migrateProject({ schemaVersion: 3, display: { nominalOhms: 4 }, wiring: { channels: [{ id: 'a' }, { id: 'b' }] } })
   assert.deepEqual(old.wiring.channels.map((c) => c.ohms), [4, 8])
   assert.equal(migrateProject(old).wiring.channels[0].ohms, 4, 'idempotent')
+})
+
+// CONTRACT: "any DSP they carry is brought to the current shape (`dsp.js`),
+// the old filter list included".
+test('migrateProject: an old filter list becomes the current DSP', () => {
+  const p = migrateProject({
+    schemaVersion: 3, nodes: [], edges: [],
+    wiring: { masterDb: 0, channels: [{ id: 'c1', volts: 2.83, dsp: { polarity: 1, delayMs: 1.5, filters: [
+      { type: 'highpass', shape: 'linkwitz-riley', order: 4, hz: 30 },
+      { type: 'peq', hz: 45, q: 3, db: -4 },
+      { type: 'lowshelf', hz: 30, q: 0.7, db: 3, bypass: true },
+    ] } }] },
+  })
+  const d = p.wiring.channels[0].dsp
+  assert.deepEqual(d.hpf, { on: true, shape: 'linkwitz-riley', slope: 24, hz: 30 })
+  assert.equal(d.lpf.on, false)
+  assert.equal(d.delayMs, 1.5)
+  assert.deepEqual(d.peq.map((b) => [b.type, b.hz, b.db, b.on]), [['peak', 45, -4, true], ['lowshelf', 30, 3, false]])
 })

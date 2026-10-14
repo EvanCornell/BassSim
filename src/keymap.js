@@ -334,6 +334,19 @@ export const COMMANDS = {
      */
     run: (s) => (s.wiringOpen ? s.closeWiring() : s.openWiring()),
   },
+  'view.dsp': {
+    label: 'DSP',
+    group: 'View',
+    scope: 'global',
+    /**
+     * Open the DSP window, or return to the editor from it.
+     * @param {object} s - The store state, with actions bound.
+     * @returns {*} Whatever the store action returns; the key handler ignores it.
+     * @sideEffect Swaps the dock and the DSP window.
+     * @reads `dspOpen`.
+     */
+    run: (s) => (s.dspOpen ? s.closeDsp() : s.openDsp()),
+  },
   'view.popout': {
     label: 'Open focused panel in a new tab',
     group: 'View',
@@ -405,6 +418,7 @@ export const DEFAULT_BINDINGS = {
   'view.popout': ['alt+o'],
   'view.timedomain': ['alt+t'],
   'view.wiring': ['alt+w'],
+  'view.dsp': ['alt+d'],
 }
 
 // ---------- combos ----------
