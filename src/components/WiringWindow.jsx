@@ -229,7 +229,6 @@ export default function WiringWindow() {
   const nodes = useStore((s) => s.nodes)
   const wiring = useStore((s) => s.projectExtras.wiring)
   const params = useStore((s) => s.projectExtras.params)
-  const projectName = useStore((s) => s.projectName)
   const sel = useStore((s) => s.wiringSel)
   const locked = useStore(isLocked)
   const { values } = useParamValues()
@@ -477,13 +476,6 @@ export default function WiringWindow() {
 
   return (
     <div className="td-window wr-window">
-      <div className="td-head">
-        <span className="td-title">Wiring</span>
-        <span className="wr-project">{projectName}</span>
-        <span style={{ flex: 1 }} />
-        <span className="wr-help">Drag between terminals to wire · Shift-drag for a second cable · drag a cable's end away to unplug it</span>
-        <button className="icon-btn wr-close" aria-label="Back to the editor" title="Back to the editor (Alt+W)" onClick={() => useStore.getState().closeWiring()}>✕</button>
-      </div>
       <LockNote />
       {note && <div className={`wr-note ${note.kind}`} role="alert" onClick={() => setNote(null)}>{note.text}</div>}
       <div className="wr-body" ref={body}>
@@ -516,6 +508,7 @@ export default function WiringWindow() {
 
         <section className="wr-center">
           <div className="wr-bench" ref={bench}>
+            <span className="wr-help">Drag between terminals to wire · Shift-drag for a second cable · drag a cable's end away to unplug it</span>
             {drivers.map((n, i) => {
               const at = place(n, i)
               const p = n.data.params

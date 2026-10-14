@@ -171,19 +171,21 @@ function useSize(ref) {
  * @param {Function} props.change - `(next, undoable)` to replace it.
  * @param {string|null} props.band - The selected band's id.
  * @param {Function} props.setBand - Selects a band.
- * @param {boolean} props.phase - Draw the phase too.
+ * @param {'phase'|'output'|null} props.overlay - What to draw over the transfer function: its phase, or the simulated output (SPL at 1 m) on its own scale at the right, a decibel to a decibel.
  * @param {boolean} props.locked - Whether edits are refused.
  * @returns {React.ReactElement} The chart.
  * @sideEffect Holds drag state; registers pointer listeners during a drag.
  */
-function TransferChart({ channels, index, dsp, change, band, setBand, phase, locked }) {
+function TransferChart({ channels, index, dsp, change, band, setBand, overlay, locked }) {
   const box = useRef(null)
   const { w, h } = useSize(box)
   const [hover, setHover] = useState(null)
   const [held, setHeld] = useState(null)
   const [F0, F1] = useSweep()
   const freqs = useMemo(() => curveFreqs(F0, F1), [F0, F1])
-  const pad = { l: 40, r: phase ? 40 : 14, t: 12, b: 24 }
+  const phase = overlay === 'phase'
+  const output = useStore((s) => (overlay === 'output' ? s.results : null))
+  const pad = { l: 40, r: overlay ? 44 : 14, t: 12, b: 24 }
   const pw = Math.max(1, w - pad.l - pad.r)
   const ph = Math.max(1, h - pad.t - pad.b)
   /**
@@ -230,6 +232,14 @@ function TransferChart({ channels, index, dsp, change, band, setBand, phase, loc
     { include: [0] },
   ), [curves, dsp, F0, F1])
   const [DB_LO, DB_HI] = held || fitted
+  // The output keeps its own dB scale, shifted so its peak sits at the top.
+  const out = useMemo(() => {
+    if (!output?.freqs?.length) return null
+    const pts = output.freqs.map((f, i) => [f, output.splCombined[i]]).filter(([f, v]) => f >= F0 * (1 - 1e-9) && f <= F1 * (1 + 1e-9) && Number.isFinite(v))
+    if (!pts.length) return null
+    const top = Math.ceil((Math.max(...pts.map((p) => p[1])) + 1.5) / 5) * 5
+    return { pts, shift: top - DB_HI }
+  }, [output, F0, F1, DB_HI])
   /**
    * An SVG path through a curve.
    *
@@ -354,12 +364,15 @@ function TransferChart({ channels, index, dsp, change, band, setBand, phase, loc
           {dbGrid.map((v) => <line key={`d${v}`} x1={pad.l} x2={pad.l + pw} y1={Y(v)} y2={Y(v)} className={v === 0 ? 'dsp-grid zero' : v % 10 === 0 ? 'dsp-grid major' : 'dsp-grid'} />)}
           {dbGrid.filter((v) => v % labelEvery === 0).map((v) => <text key={`t${v}`} x={pad.l - 6} y={Y(v) + 3.5} className="dsp-tick" textAnchor="end">{v === 0 ? '0 dB' : tickText(v)}</text>)}
           {logTicks(F0, F1).map((f) => <text key={`x${f}`} x={X(f)} y={pad.t + ph + 16} className="dsp-tick" textAnchor="middle">{tickText(f)}</text>)}
+          {out && dbGrid.filter((v) => v % labelEvery === 0).map((v) => <text key={`o${v}`} x={pad.l + pw + 6} y={Y(v) + 3.5} className="dsp-tick output">{tickText(v + out.shift)}</text>)}
+          {out && <text x={pad.l + pw + 6} y={pad.t - 2} className="dsp-tick output">SPL</text>}
           {phase && [-180, -90, 0, 90, 180].map((p) => <text key={`p${p}`} x={pad.l + pw + 6} y={Yp(p) + 3.5} className="dsp-tick phase">{`${p}°`}</text>)}
           <clipPath id="dsp-clip"><rect x={pad.l} y={pad.t} width={pw} height={ph} /></clipPath>
           <g clipPath="url(#dsp-clip)">
             {curves.map((c, i) => (i === index ? null : <path key={channels[i].id} d={path(c.db, Y)} stroke={colorsOf(i)[0]} className="dsp-curve other" />))}
             {bandCurve && <path d={path(bandCurve.db, Y)} className="dsp-curve band" />}
             {phase && <path d={path(mine.phase, Yp, true)} stroke={colorsOf(index)[0]} className="dsp-curve phase" />}
+            {out && <path d={out.pts.map(([f, v], i) => `${i ? 'L' : 'M'}${X(f).toFixed(1)} ${Y(v - out.shift).toFixed(1)}`).join('')} className="dsp-curve output" />}
             <path d={path(mine.db, Y)} className="dsp-curve mine" />
           </g>
           {dsp.hpf.on && (
@@ -684,7 +697,7 @@ function Controls({ ch, channels, dsp, change, band, setBand }) {
 /**
  * The DSP window, full screen in place of the dock.
  *
- * Closes back to the editor with ✕ or Alt+D.
+ * The DSP tab on the menu bar, or Alt+D, goes back to the editor.
  *
  * @returns {React.ReactElement|null} The window, or `null` when closed.
  * @sideEffect Subscribes to the store; changes channels' DSP.
@@ -694,11 +707,8 @@ export default function DspWindow() {
   const wiring = useStore((s) => s.projectExtras.wiring)
   const chosen = useStore((s) => s.dspChannel)
   const locked = useStore((s) => isLocked(s))
-  const busy = useStore((s) => s.simBusy)
-  const simError = useStore((s) => s.simError)
-  const projectName = useStore((s) => s.projectName)
   const [chart, setChart] = useState('transfer')
-  const [phase, setPhase] = useState(false)
+  const [overlay, setOverlay] = useState(null)
   const [band, setBand] = useState(null)
   if (!open || !wiring) return null
   const channels = wiring.channels || []
@@ -720,12 +730,6 @@ export default function DspWindow() {
 
   return (
     <div className="td-window dsp-window">
-      <div className="td-head">
-        <span className="td-title">DSP</span>
-        <span className="wr-project">{projectName}</span>
-        <span className="dsp-status">{simError ? <span className="err">{simError}</span> : busy ? 'simulating…' : ''}</span>
-        <button className="icon-btn wr-close" aria-label="Back to the editor" title="Back to the editor (Alt+D)" onClick={() => st().closeDsp()}>✕</button>
-      </div>
       <LockNote />
       <div className="dsp-card">
       <div className="dsp-channels" role="tablist" aria-label="Channels">
@@ -762,11 +766,18 @@ export default function DspWindow() {
             ))}
             <span className="dsp-charts-gap" />
             {chart === 'transfer' && (
-              <label className="dsp-check"><input type="checkbox" checked={phase} onChange={(e) => setPhase(e.target.checked)} /> Phase</label>
+              <span className="dsp-overlay" role="group" aria-label="Overlay">
+                <span>Overlay</span>
+                {[['output', 'Output'], ['phase', 'Phase']].map(([k, l]) => (
+                  <button key={k} aria-pressed={overlay === k} className={overlay === k ? 'on' : ''}
+                    title={k === 'output' ? 'The simulated response, SPL at 1 m, on its own scale at the right' : 'The processing\'s phase, on a scale at the right'}
+                    onClick={() => setOverlay(overlay === k ? null : k)}>{l}</button>
+                ))}
+              </span>
             )}
           </div>
           {chart === 'transfer'
-            ? <TransferChart channels={channels} index={index} dsp={dsp} change={change} band={band} setBand={setBand} phase={phase} locked={locked} />
+            ? <TransferChart channels={channels} index={index} dsp={dsp} change={change} band={band} setBand={setBand} overlay={overlay} locked={locked} />
             : <ResultChart kind={chart} channels={channels} selected={ch.id} />}
           {chart === 'transfer' && dspFilters(dsp).length + dsp.peq.length > 0 && (
             <div className="dsp-legend">Drag a numbered point to move a band; scroll over it for Q. Drag H or L to move a crossover.</div>

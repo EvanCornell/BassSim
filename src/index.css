@@ -1737,11 +1737,9 @@ button.nl-chip.add { background: var(--field); }
    selected one's arrangement below, the list of drivers on the left, and the
    cables drawn over all of it. */
 .wr-window { position: relative; }
-.wr-project { color: var(--text-2); font-size: 12.5px; }
-.wr-help { color: var(--text-3); font-size: 12px; margin-right: 8px; }
-.wr-close { font-size: 15px; }
+.wr-help { position: absolute; left: 12px; bottom: 8px; z-index: 1; color: var(--text-3); font-size: 11.5px; pointer-events: none; }
 .wr-note {
-  position: absolute; z-index: 10; top: 58px; left: 50%; transform: translateX(-50%);
+  position: absolute; z-index: 10; top: 10px; left: 50%; transform: translateX(-50%);
   max-width: min(640px, calc(100% - 32px)); padding: 8px 14px; border-radius: 8px;
   font-size: 12.5px; font-weight: 500; line-height: 1.45; box-shadow: 0 4px 14px oklch(0 0 0 / 0.18);
 }
@@ -1885,8 +1883,6 @@ button.nl-chip.add { background: var(--field); }
 
 /* ---------- DSP window ---------- */
 .dsp-window { position: relative; }
-.dsp-status { flex: 1; font-size: 11.5px; color: var(--text-3); text-align: right; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-.dsp-status .err { color: var(--red); }
 .dsp-card {
   flex: 1; min-height: 0; display: flex; flex-direction: column; padding-top: 12px;
   background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-card); overflow: hidden;
@@ -1927,6 +1923,11 @@ button.nl-chip.add { background: var(--field); }
 .dsp-curve.mine { stroke: var(--green); stroke-width: 2.2; }
 .dsp-curve.other { stroke-width: 1.2; opacity: 0.45; }
 .dsp-curve.band { stroke: var(--text-3); stroke-width: 1; stroke-dasharray: 4 3; }
+.dsp-curve.output { stroke: var(--accent-strong); stroke-width: 1.6; opacity: 0.9; }
+.dsp-tick.output { fill: var(--accent-strong); }
+.dsp-overlay { display: flex; align-items: center; gap: 2px; font-size: 11.5px; color: var(--text-3); }
+.dsp-overlay > span { margin-right: 4px; }
+.dsp-charts .dsp-overlay button { height: 24px; padding: 0 9px; font-size: 11.5px; }
 .dsp-curve.phase { stroke-width: 1.2; stroke-dasharray: 2 3; opacity: 0.8; }
 .dsp-handle { cursor: grab; }
 .dsp-handle circle { fill: #2fa7a0; stroke: rgba(0,0,0,0.35); stroke-width: 1; }
