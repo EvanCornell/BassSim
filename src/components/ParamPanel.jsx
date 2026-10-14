@@ -580,6 +580,7 @@ function znomSource(p, baseline) {
  * Empty means estimated, and the box shows the estimate greyed. A figure that
  * matches the driver's starting point is the listed one; anything else was
  * typed, and ↺ puts the listed figure back, or the estimate when none was.
+ * A typed figure that differs from that also gets a small dot by the label.
  *
  * @param {object} props - Component props.
  * @param {string} props.id - Driver node id.
@@ -596,9 +597,16 @@ function ZnomField({ id, p, r, baseline }) {
   const { set, listed } = z
   const estimate = estimateNominal(r.Re, r.Qes)
   const source = mixed ? null : z.source === 'estimated' ? 'estimated from Re and Qes' : z.source
+  // A typed figure that differs from what the driver would otherwise read, easy to forget about.
+  const fallback = listed ?? estimate
+  const differs = source === 'entered' && fallback > 0 && set !== fallback
   return (
     <div className={`param-row${mixed ? ' mixed' : ''}`}>
-      <label title={`${TIPS.Znom}${source ? ` Now ${source}.` : ''}`}>Nominal Z</label>
+      <label title={`${TIPS.Znom}${source ? ` Now ${source}.` : ''}`}>
+        {differs && <span className="override-dot"
+          title={`Entered by hand — the ${listed ? 'listed figure' : 'estimate'} is ${fmtOhms(fallback)} Ω`} />}
+        Nominal Z
+      </label>
       <NumInput
         value={mixed ? null : set}
         placeholder={mixed ? MIXED : estimate > 0 ? fmtOhms(estimate) : ''}
