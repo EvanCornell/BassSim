@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState, useCallback, useRef } from 'react'
+import React, { useEffect, useLayoutEffect, useMemo, useState, useCallback, useRef } from 'react'
 import {
   ComposedChart, Line, Area, XAxis, YAxis, CartesianGrid, Tooltip,
   ReferenceLine, ResponsiveContainer, ReferenceArea,
@@ -20,6 +20,11 @@ const SERIES = ['var(--c1)', 'var(--c2)', 'var(--c3)', 'var(--c4)', 'var(--c5)',
 const GRID = 'var(--grid)'
 /** Axis tick text. */
 const TICK = { fill: 'var(--text-3)', fontSize: 10.5 }
+/** The plot area's inset from the chart's top: its top margin. */
+const PLOT_TOP = 8
+/** The plot area's inset from the chart's bottom: its bottom margin and the X axis. */
+const PLOT_BOTTOM = 34
+
 /**
  * Preferred X-axis tick frequencies for the log scale.
  */
@@ -57,7 +62,7 @@ const fmt = (v, d = 1) => (v == null || !isFinite(v) ? '—' : v.toFixed(d))
  * @param {Array<object>} props.data - Recharts rows, each carrying `f` plus one field per series.
  * @param {Array<object>} props.lines - Series descriptors.
  * @param {string} props.yLabel - Left axis label.
- * @param {Array|undefined} props.yDomain - Left axis domain.
+ * @param {Array|undefined} props.yDomain - Left axis domain. A Fit domain (`fit: true`) is raised at the top by however much of the plot the series buttons, key and scale controls cover, so the highest point sits just below them rather than under them.
  * @param {string} [props.y2Label] - Right axis label.
  * @param {Array} [props.y2Domain] - Right axis domain.
  * @param {Array<React.ReactElement>} [props.refLines=[]] - Reference lines to overlay.
@@ -78,9 +83,50 @@ function BaseChart({ chartId, data, lines, yLabel, yDomain, y2Label, y2Domain, r
   const lastLabel = useRef(null) // exact data-x under cursor, from recharts
   const stateRef = useRef({})
   const xDomain = xZoom || [settings.fmin, settings.fmax]
+  const [cover, setCover] = useState({ px: 0, h: 0 })
+
+  // How far down into the plot the overlays reach — the floating tab bar's
+  // series buttons, key and scale controls — and how tall the plot is.
+  useLayoutEffect(() => {
+    const el = wrapRef.current
+    if (!el) return undefined
+    /**
+     * Measure the overlays against the plot area.
+     *
+     * The plot area is the element less the chart's own margins and the X
+     * axis, constants rather than drawn lines, so the measurement does not
+     * move when the range it sets does.
+     *
+     * @returns {void}
+     * @sideEffect Updates the held measurement when it has changed.
+     */
+    const measure = () => {
+      const r = el.getBoundingClientRect()
+      const top = r.top + PLOT_TOP
+      const h = r.height - PLOT_TOP - PLOT_BOTTOM
+      let bottom = top
+      for (const o of (el.parentElement || el).querySelectorAll('.plot-left, .plot-controls')) {
+        const b = o.getBoundingClientRect()
+        if (b.height > 0) bottom = Math.max(bottom, b.bottom)
+      }
+      const px = Math.max(0, bottom + 6 - top)
+      setCover((c) => (Math.abs(c.px - px) < 1 && Math.abs(c.h - h) < 1 ? c : { px, h }))
+    }
+    measure()
+    const ro = new ResizeObserver(measure)
+    ro.observe(el)
+    for (const o of (el.parentElement || el).querySelectorAll('.plot-left, .plot-controls')) ro.observe(o)
+    return () => ro.disconnect()
+  }, [lines, keyLines, toggles])
+  const shownY = useMemo(() => {
+    if (!yDomain?.fit || !isFinite(yDomain[0]) || !isFinite(yDomain[1]) || !(cover.h > 0)) return yDomain
+    const r = Math.min(cover.px, cover.h * 0.45)
+    const [lo, hi] = yDomain
+    return [lo, hi + ((hi - lo) * r) / (cover.h - r)]
+  }, [yDomain, cover])
 
   const yBounds = useMemo(() => {
-    if (Array.isArray(yDomain) && isFinite(yDomain[0]) && isFinite(yDomain[1])) return yDomain
+    if (Array.isArray(shownY) && isFinite(shownY[0]) && isFinite(shownY[1])) return shownY
     let lo = Infinity, hi = -Infinity
     const keys = lines.filter((l) => (l.yAxisId || 'left') === 'left').map((l) => l.dataKey)
     for (const r of data) for (const k of keys) {
@@ -88,7 +134,7 @@ function BaseChart({ chartId, data, lines, yLabel, yDomain, y2Label, y2Domain, r
       if (val != null && isFinite(val)) { if (val < lo) lo = val; if (val > hi) hi = val }
     }
     return isFinite(lo) && hi > lo ? [lo, hi] : [0, 1]
-  }, [yDomain, data, lines])
+  }, [shownY, data, lines])
   stateRef.current = { xDomain, chartId, full: [settings.fmin, settings.fmax], yBounds }
 
   /**
@@ -293,7 +339,7 @@ function BaseChart({ chartId, data, lines, yLabel, yDomain, y2Label, y2Domain, r
     )}
     <ResponsiveContainer width="100%" height="100%">
       <ComposedChart
-        data={data} margin={{ top: 8, right: hasY2 ? 8 : 20, bottom: 4, left: 0 }}
+        data={data} margin={{ top: PLOT_TOP, right: hasY2 ? 8 : 20, bottom: 4, left: 0 }}
         onMouseDown={(e) => { if (e && e.activeLabel != null) setDragL(e.activeLabel) }}
         onMouseMove={(e) => { if (e && e.activeLabel != null) { lastLabel.current = e.activeLabel; if (dragL != null) setDragR(e.activeLabel) } }}
         onMouseUp={commitZoom}
@@ -317,7 +363,7 @@ function BaseChart({ chartId, data, lines, yLabel, yDomain, y2Label, y2Domain, r
           stroke={GRID} tickLine={false} tickFormatter={(v) => (v >= 1000 ? `${v / 1000}k` : Math.round(v * 10) / 10)}
         />
         <YAxis
-          yAxisId="left" domain={yDomain || ['auto', 'auto']} allowDataOverflow
+          yAxisId="left" domain={shownY || ['auto', 'auto']} allowDataOverflow
           tick={TICK} stroke={GRID} tickLine={false} axisLine={false} width={44} tickFormatter={yTick}
           label={yLabel ? { value: yLabel, angle: -90, position: 'insideLeft', fill: 'var(--text-3)', fontSize: 10.5 } : undefined}
         />
@@ -340,7 +386,7 @@ function BaseChart({ chartId, data, lines, yLabel, yDomain, y2Label, y2Domain, r
         {lines.filter((l) => l.area).map((l) => (
           <Area
             key={`area_${l.dataKey}`} yAxisId={l.yAxisId || 'left'} type="monotone" dataKey={l.dataKey}
-            stroke="none" fill={`url(#fill_${chartId})`} baseValue={Array.isArray(yDomain) && isFinite(yDomain[0]) ? yDomain[0] : 'dataMin'}
+            stroke="none" fill={`url(#fill_${chartId})`} baseValue={Array.isArray(shownY) && isFinite(shownY[0]) ? shownY[0] : 'dataMin'}
             legendType="none" tooltipType="none" isAnimationActive={false} connectNulls={false} activeDot={false}
           />
         ))}
@@ -390,7 +436,7 @@ function useFitData(chartId, data) {
  *
  * @param {string} id - Chart id.
  * @param {Array|null} fitDomain - The computed Fit domain.
- * @returns {[Array, React.ReactElement]} The resolved Y domain and the control to render.
+ * @returns {[Array, React.ReactElement]} The resolved Y domain — carrying `fit: true` when it is Fit's — and the control to render.
  * @sideEffect Subscribes to the store.
  */
 function useYScale(id, fitDomain) {
@@ -408,7 +454,8 @@ function useYScale(id, fitDomain) {
     updateSettings({ yScales: { ...cur, [id]: { ...ys, ...patch } } })
   }
   let domain = ['auto', 'auto']
-  if (ys.mode === 'fit' && fitDomain) domain = fitDomain
+  // Marked, so the chart can leave the overlays room above a fitted range.
+  if (ys.mode === 'fit' && fitDomain) domain = Object.assign([...fitDomain], { fit: true })
   else if (ys.mode === 'manual' && ys.min !== '' && ys.max !== '') {
     const lo = parseFloat(ys.min); const hi = parseFloat(ys.max)
     if (isFinite(lo) && isFinite(hi) && hi > lo) domain = [lo, hi]
