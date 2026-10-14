@@ -15,6 +15,17 @@ import {
   isCustom, unitsOf, chTerm, GROUND,
 } from '../schema/wires'
 
+/** How long a message stays across the top of the window, ms. */
+const NOTE_MS = 5000
+
+/**
+ * Ohms written short.
+ *
+ * @param {number} z - Ohms.
+ * @returns {string} e.g. `4 Ω`, `0.75 Ω`, or `open`.
+ * @pure
+ */
+const ohms = (z) => (Number.isFinite(z) && z > 0 ? `${fmtOhms(z)} Ω` : 'open')
 
 /**
  * A coil, drawn as a short spring between two leads.
