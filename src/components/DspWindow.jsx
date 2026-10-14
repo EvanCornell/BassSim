@@ -417,10 +417,11 @@ function freshBandId(peq) {
  * @param {object} props - Component props.
  * @param {string} props.kind - Which chart: `response`, `excursion`, `velocity`, `power` or `impedance`.
  * @param {Array<object>} props.channels - Every channel, for colours and names.
+ * @param {string} props.selected - The selected channel's id: the impedance chart shows its load only.
  * @returns {React.ReactElement} The chart, or a note when there is nothing to show.
  * @sideEffect Subscribes to the store.
  */
-function ResultChart({ kind, channels }) {
+function ResultChart({ kind, channels, selected }) {
   const results = useStore((s) => s.results)
   const nodes = useStore((s) => s.nodes)
   const vThreshold = useStore((s) => Number(s.settings?.vThreshold) || 17)
@@ -467,9 +468,12 @@ function ResultChart({ kind, channels }) {
       yDomain: fitLog(ids.map((id) => results.powerByChannel[id].values), 3),
     }
   } else {
-    const ids = Object.keys(results.zinByChannel || {})
+    const ids = Object.keys(results.zinByChannel || {}).filter((id) => id === selected)
+    if (!ids.length) return <div className="dsp-empty">This channel has no results yet.</div>
+    // An unwired channel sees only the open terminal's leak, a gigaohm or so.
+    if (results.zinByChannel[ids[0]].mag.every((v) => !(v < 1e6))) return <div className="dsp-empty">Nothing is wired to this channel.</div>
     props = {
-      title: 'Impedance each channel sees', ylabel: 'Ω',
+      title: `Impedance ${results.zinByChannel[ids[0]].label} sees`, ylabel: 'Ω',
       series: ids.map((id) => ({ key: id, name: results.zinByChannel[id].label, color: colorsOf(chIndex.get(id) ?? -1)[0], x, y: results.zinByChannel[id].mag })),
       yDomain: fitFromZero(ids.map((id) => results.zinByChannel[id].mag)),
     }
@@ -763,7 +767,7 @@ export default function DspWindow() {
           </div>
           {chart === 'transfer'
             ? <TransferChart channels={channels} index={index} dsp={dsp} change={change} band={band} setBand={setBand} phase={phase} locked={locked} />
-            : <ResultChart kind={chart} channels={channels} />}
+            : <ResultChart kind={chart} channels={channels} selected={ch.id} />}
           {chart === 'transfer' && dspFilters(dsp).length + dsp.peq.length > 0 && (
             <div className="dsp-legend">Drag a numbered point to move a band; scroll over it for Q. Drag H or L to move a crossover.</div>
           )}
