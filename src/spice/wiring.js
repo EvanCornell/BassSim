@@ -13,6 +13,7 @@ import { signalExpression, signalPoints } from './dsp.js'
 import { compileSections } from './filters.js'
 import { normalizeDsp, dspScale, dspSections, isFlat } from '../schema/dsp.js'
 import { allTerminals, liveWires, netsOf, chTerm, toolbarChannel, GROUND } from '../schema/wires.js'
+import { channelNames } from '../nodeNames.js'
 
 /**
  * A channel's source for a transient run: the test signal at the channel's level.
@@ -88,8 +89,9 @@ export function compileWiring(ctx, proj) {
   const first = toolbarChannel(wiring)
   const channels = [first, ...(wiring.channels || []).filter((c) => c !== first)].filter(Boolean)
   const used = new Set()
+  const names = channelNames(wiring.channels)
   for (const c of channels) {
-    const label = c.label || c.id
+    const label = names[c.id] || c.id
     const net = nets.get(chTerm(c.id, '+'))
     if (net === GROUND) throw new Error(`${label} is shorted: its + is wired to the ground.`)
     if (used.has(net)) throw new Error(`${label} is wired directly to another channel's output.`)

@@ -169,7 +169,7 @@ test('migrateProject: load trees become cables', () => {
       { id: 'c2', label: 'Amp 2', load: { series: [{ driver: 'b' }] } },
     ] },
   })
-  assert.deepEqual(p.wiring.channels.map((c) => [c.label, 'dsp' in c, 'load' in c]), [['Channel 1', true, false], ['Channel 2', false, false]])
+  assert.deepEqual(p.wiring.channels.map((c) => [c.label, 'dsp' in c, 'load' in c]), [['Channel', true, false], ['Channel', false, false]], 'old numbered defaults become the plain name')
   assert.equal(p.wiring.channels[0].dsp.invert, true, 'the old polarity carries over')
   assert.deepEqual(p.wiring.wires, [{ a: 'ch:c1:+', b: 'a:+' }, { a: 'ch:c1:-', b: 'a:-' }, { a: 'ch:c2:+', b: 'b:+' }, { a: 'ch:c2:-', b: 'b:-' }])
   assert.equal(p.wiring.toolbar, 'c1')

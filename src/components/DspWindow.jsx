@@ -3,7 +3,7 @@ import { useStore, isLocked } from '../store'
 import NumInput from './NumInput'
 import { LockNote } from './Records'
 import PlotChart, { logTicks, tickText } from './PlotChart'
-import { displayNames } from '../nodeNames'
+import { displayNames, channelNames } from '../nodeNames'
 import { colorsOf } from '../channelColors'
 import { toolbarChannel } from '../schema/wires'
 import {
@@ -625,7 +625,7 @@ function Controls({ ch, channels, dsp, change, band, setBand }) {
             to.forEach((id, k) => st.setChannelDsp(id, clone(dsp), k === 0))
           }}>
             <option value="" disabled>Copy to…</option>
-            {others.map((c) => <option key={c.id} value={c.id}>{c.label || c.id}</option>)}
+            {others.map((c) => <option key={c.id} value={c.id}>{channelNames(channels)[c.id]}</option>)}
             {others.length > 1 && <option value="*">Every other channel</option>}
           </select>
         )}
@@ -659,6 +659,7 @@ export default function DspWindow() {
   const ch = channels.find((c) => c.id === chosen) || toolbarChannel(wiring) || channels[0]
   if (!ch) return null
   const index = channels.indexOf(ch)
+  const shown = channelNames(channels)
   const dsp = normalizeDsp(ch.dsp)
   const st = useStore.getState
   /**
@@ -696,7 +697,7 @@ export default function DspWindow() {
             <div key={c.id} role="tab" aria-selected={c === ch} className={`dsp-ch${c === ch ? ' sel' : ''}${d.mute ? ' muted' : ''}`}
               onClick={() => { st().setDspChannel(c.id); setBand(null) }}>
               <span className="dsp-ch-bar" style={{ background: colorsOf(i)[0] }} />
-              <span className="dsp-ch-name">{c.label || `Channel ${i + 1}`}</span>
+              <span className="dsp-ch-name">{shown[c.id]}</span>
               <span className="dsp-ch-sum">{dspSummary(d)}</span>
               <span className="dsp-ch-btns">
                 <button className={`dsp-mini${d.mute ? ' warn' : ''}`} title="Mute" aria-pressed={d.mute} disabled={locked} onClick={(e) => { e.stopPropagation(); set({ mute: !d.mute }) }}>M</button>
@@ -728,7 +729,7 @@ export default function DspWindow() {
         <fieldset className="dsp-side" disabled={locked}>
           <div className="dsp-side-head">
             <span className="dsp-ch-bar" style={{ background: colorsOf(index)[0] }} />
-            {ch.label || `Channel ${index + 1}`}
+            {shown[ch.id]}
           </div>
           <Controls ch={ch} channels={channels} dsp={dsp} change={change} band={band} setBand={setBand} />
         </fieldset>

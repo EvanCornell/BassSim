@@ -2,6 +2,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { TYPE_NAMES, baseName, nameNumbers, displayNames, displayName } from '../../src/nodeNames.js'
+import { channelBase, channelNumbers, channelNames, CHANNEL_NAME } from '../../src/nodeNames.js'
 
 const ed = (id, type, label) => ({ id, type, data: { params: label == null ? {} : { label } } })
 const saved = (id, type, label) => ({ id, type, params: label == null ? {} : { label } })
@@ -35,4 +36,15 @@ test('displayName: one component, or the id when there is none', () => {
 
 test('nameNumbers: not an array gives nothing', () => {
   assert.deepEqual(nameNumbers(null), {})
+})
+
+// CONTRACT: "Amplifier channels are named the same way: `Channel` unless
+// renamed, `Channel #2` when shared."
+test('channelNames: Channel by default, numbered while shared', () => {
+  const chs = [{ id: 'a', label: 'Channel' }, { id: 'b' }, { id: 'c', label: 'Sub' }, { id: 'd', label: ' Channel ' }]
+  assert.equal(channelBase(chs[1]), CHANNEL_NAME)
+  assert.deepEqual(channelNumbers(chs), { a: 1, b: 2, c: 0, d: 3 })
+  assert.deepEqual(channelNames(chs), { a: 'Channel #1', b: 'Channel #2', c: 'Sub', d: 'Channel #3' })
+  assert.deepEqual(channelNames([{ id: 'a', label: 'Channel' }, { id: 'c', label: 'Sub' }]), { a: 'Channel', c: 'Sub' })
+  assert.deepEqual(channelNumbers(null), {})
 })

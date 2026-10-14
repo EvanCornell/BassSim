@@ -31,6 +31,7 @@ import { migrateProject } from './schema/migrate'
 import { toEditor, fromEditor } from './schema/editor'
 import { pruneExtras, driveOf, channelDrive, channelPatch, freshId } from './schema/extras'
 import * as WR from './schema/wires'
+import { channelNames } from './nodeNames'
 import { getPool, relay, cancelLane } from './engine/poolHost'
 import { loadTheme, saveTheme, THEMES } from './theme'
 import * as L from './layout'
@@ -1958,7 +1959,7 @@ export const useStore = create((rawSet, get) => {
   addWire: (a, b) => {
     if (isLocked(get())) return 'This record is read-only.'
     const w = get().projectExtras.wiring
-    const why = WR.wireRefusal(w, a, b)
+    const why = WR.wireRefusal(w, a, b, channelNames(w.channels))
     if (why) return why
     get().setWiring({ ...w, wires: [...(w.wires || []), { a, b }] })
     return null
@@ -1990,7 +1991,7 @@ export const useStore = create((rawSet, get) => {
     if (!cable) return null
     const other = end === 'a' ? cable.b : cable.a
     const rest = { ...w, wires: w.wires.filter((_, i) => i !== index) }
-    const why = WR.wireRefusal(rest, other, to)
+    const why = WR.wireRefusal(rest, other, to, channelNames(rest.channels))
     if (why) return why
     get().setWiring({ ...w, wires: w.wires.map((c, i) => (i === index ? { ...c, [end]: to } : c)) })
     return null
@@ -2033,7 +2034,7 @@ export const useStore = create((rawSet, get) => {
     if (isLocked(get())) return undefined
     const w = get().projectExtras.wiring
     const id = freshId('ch', w.channels.map((c) => c.id))
-    const ch = { ...DEFAULT_CHANNEL, id, label: `Channel ${w.channels.length + 1}` }
+    const ch = { ...DEFAULT_CHANNEL, id, label: 'Channel' }
     get().setWiring({ ...w, channels: [...w.channels, ch] })
     return id
   },

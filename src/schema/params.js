@@ -13,6 +13,7 @@
 
 import { parse } from 'mathjs'
 import { DEFAULT_PARAMS } from './version.js'
+import { channelNames } from '../nodeNames.js'
 
 /** Functions an expression may call. */
 const FUNCTIONS = new Set(['sqrt', 'min', 'max', 'abs', 'log', 'log10', 'exp', 'pow', 'round', 'floor', 'ceil'])
@@ -265,13 +266,14 @@ export function resolveProject(proj) {
   }
   const nodes = (proj.nodes || []).map((n) => ({ ...n, params: resolveNodeParams(n, values, errors) }))
   const w = proj.wiring || { masterDb: 0, channels: [] }
+  const shown = channelNames(w.channels)
   const wiring = {
     ...w,
     masterDb: num(w.masterDb, 'master level'),
     channels: (w.channels || []).map((c) => ({
       ...c,
-      volts: num(c.volts, `${c.label || c.id} › volts`),
-      outputOhms: num(c.outputOhms, `${c.label || c.id} › Rg`),
+      volts: num(c.volts, `${shown[c.id]} › volts`),
+      outputOhms: num(c.outputOhms, `${shown[c.id]} › Rg`),
     })),
   }
   const analyses = (proj.analyses || []).map((a) => {

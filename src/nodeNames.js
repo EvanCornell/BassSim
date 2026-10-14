@@ -6,7 +6,8 @@
 // So when a name is shared, each holder is shown with a number after it,
 // `Woofer #1`, `Woofer #2`, counted in the order the components were added.
 // The number is never part of the label itself: it is not typed, not saved,
-// and goes away as soon as the name is unique again.
+// and goes away as soon as the name is unique again. Amplifier channels are
+// named the same way: `Channel` unless renamed, `Channel #2` when shared.
 
 /** What a component is called when it has no label, by type. */
 export const TYPE_NAMES = {
@@ -87,4 +88,58 @@ export function displayName(nodes, id) {
   if (!node) return id
   const num = nameNumbers(nodes)[id]
   return num ? `${baseName(node)} #${num}` : baseName(node)
+}
+
+/** What a channel is called when it has no label. */
+export const CHANNEL_NAME = 'Channel'
+
+/**
+ * A channel's own name: its label, else `Channel`.
+ *
+ * @param {object} c - A channel.
+ * @returns {string} e.g. `Sub amp`, or `Channel`.
+ * @pure
+ */
+export function channelBase(c) {
+  return String(c?.label ?? '').trim() || CHANNEL_NAME
+}
+
+/** Channel numbers already worked out, by the channel array they came from. */
+const channelCache = new WeakMap()
+
+/**
+ * Each channel's number among those sharing its name.
+ *
+ * @param {Array<object>} channels - The project's channels, in order.
+ * @returns {Object<string, number>} By channel id: 1, 2, … for a shared name, 0 for a unique one.
+ * @pure
+ */
+export function channelNumbers(channels) {
+  if (!Array.isArray(channels)) return {}
+  const hit = channelCache.get(channels)
+  if (hit) return hit
+  const groups = new Map()
+  for (const c of channels) {
+    const key = channelBase(c)
+    if (!groups.has(key)) groups.set(key, [])
+    groups.get(key).push(c.id)
+  }
+  const out = {}
+  for (const ids of groups.values()) ids.forEach((id, i) => { out[id] = ids.length > 1 ? i + 1 : 0 })
+  channelCache.set(channels, out)
+  return out
+}
+
+/**
+ * Every channel's name as it is shown: its own name, numbered when shared.
+ *
+ * @param {Array<object>} channels - The project's channels.
+ * @returns {Object<string, string>} By channel id, e.g. `Channel #2`.
+ * @pure
+ */
+export function channelNames(channels) {
+  const nums = channelNumbers(channels)
+  const out = {}
+  for (const c of channels || []) out[c.id] = nums[c.id] ? `${channelBase(c)} #${nums[c.id]}` : channelBase(c)
+  return out
 }

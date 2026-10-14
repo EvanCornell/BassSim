@@ -5,7 +5,7 @@ import ExprInput from './ExprInput'
 import { useParamValues } from '../useResolved'
 import { valueOf } from '../schema/extras'
 import { driverNominal, fmtOhms } from '../schema/nominal'
-import { displayNames } from '../nodeNames'
+import { displayNames, channelNames, channelNumbers, CHANNEL_NAME } from '../nodeNames'
 import { driverSummary } from './nodes'
 import DriveFields from './DriveFields'
 import { colorsOf, LOOSE } from '../channelColors'
@@ -636,17 +636,21 @@ function ChannelCard({ ch, index, solved, toolbar, removable, onTerm }) {
   })
   const st = useStore.getState
   const minus = colorsOf(index)[1]
+  const num = useStore((s) => channelNumbers(s.projectExtras.wiring.channels)[ch.id])
+  const shown = useStore((s) => channelNames(s.projectExtras.wiring.channels)[ch.id])
   return (
     <div className="wr-channel">
       <div className="wr-channel-head">
         <span className="wr-swatch" style={{ background: minus }} />
-        <input className="wr-channel-name" aria-label="Channel name" value={ch.label || ''} placeholder={`Channel ${index + 1}`}
+        <input className="wr-channel-name" aria-label="Channel name" value={ch.label || ''} placeholder={CHANNEL_NAME}
+          style={{ width: `calc(${Math.max(3, (ch.label || CHANNEL_NAME).length)} * 0.62em + 6px)` }}
           onChange={(e) => st().updateChannel(ch.id, { label: e.target.value }, false)} />
+        {num > 0 && <span className="name-num" title="Shown after the name while another channel shares it">#{num}</span>}
         {toolbar
           ? <span className="wr-toolbar on" title="The toolbar's drive level sets this channel's volts">Toolbar level</span>
           : <button className="wr-toolbar" title="Make the toolbar's drive level set this channel's volts" onClick={() => st().setToolbarChannel(ch.id)}>Use for toolbar</button>}
         <button className="wr-dsp" title="Gain, delay, polarity, crossovers and EQ for this channel" onClick={() => st().openDsp(ch.id)}>DSP</button>
-        {removable && <button className="icon-btn" aria-label={`Remove ${ch.label || ch.id}`} title="Remove this channel and its cables" onClick={() => st().removeChannel(ch.id)}>✕</button>}
+        {removable && <button className="icon-btn" aria-label={`Remove ${shown}`} title="Remove this channel and its cables" onClick={() => st().removeChannel(ch.id)}>✕</button>}
       </div>
       <DriveFields drive={drive} onSet={(field, v) => st().setChannelDrive(ch.id, field, v)}
         rg={ch.outputOhms} onRg={(v) => st().updateChannel(ch.id, { outputOhms: v })} />
@@ -655,9 +659,9 @@ function ChannelCard({ ch, index, solved, toolbar, removable, onTerm }) {
         {zmin != null && Number.isFinite(solved?.ohms) && <span>min |Z| <b>{fmtOhms(zmin)} Ω</b></span>}
       </div>
       <span className="wr-chterm">
-        <button className="wr-term plus" data-term={chTerm(ch.id, '+')} aria-label={`${ch.label || ch.id} +`} onPointerDown={(e) => onTerm(e, chTerm(ch.id, '+'))} />
+        <button className="wr-term plus" data-term={chTerm(ch.id, '+')} aria-label={`${shown} +`} onPointerDown={(e) => onTerm(e, chTerm(ch.id, '+'))} />
         <span className="wr-term-label plus">+</span>
-        <button className="wr-term minus" data-term={chTerm(ch.id, '-')} aria-label={`${ch.label || ch.id} −`} onPointerDown={(e) => onTerm(e, chTerm(ch.id, '-'))} />
+        <button className="wr-term minus" data-term={chTerm(ch.id, '-')} aria-label={`${shown} −`} onPointerDown={(e) => onTerm(e, chTerm(ch.id, '-'))} />
         <span className="wr-term-label minus">−</span>
       </span>
     </div>

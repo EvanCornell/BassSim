@@ -202,7 +202,8 @@ function normalize(proj) {
   const saved = w.channels && w.channels.length ? w.channels : DEFAULT_WIRING.channels
   const channels = saved.map((c, i) => {
     const { load, dsp, ...rest } = clone(c)
-    const label = !rest.label || /^Amp( \d+)?$/.test(rest.label) ? `Channel ${i + 1}` : rest.label
+    // The old numbered defaults become the plain name; the number is now shown, not stored.
+    const label = !rest.label || /^(Amp|Channel)( \d+)?$/.test(rest.label.trim()) ? 'Channel' : rest.label
     // The impedance the toolbar's watts were reckoned against lived in the
     // display; it is now the first channel's own.
     const ohms = rest.ohms ?? (i === 0 && Number(proj.display?.nominalOhms) > 0 ? Number(proj.display.nominalOhms) : DEFAULT_CHANNEL.ohms)

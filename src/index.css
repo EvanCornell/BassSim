@@ -1832,9 +1832,11 @@ button.nl-chip.add { background: var(--field); }
 }
 .wr-channel-head { display: flex; align-items: center; gap: 6px; }
 .wr-channel-name {
-  flex: 1; min-width: 0; background: transparent; border: none; box-shadow: none; padding: 2px 0;
+  flex: 0 1 auto; min-width: 3ch; max-width: 100%; background: transparent; border: none; box-shadow: none; padding: 2px 0;
   font-weight: 600; font-size: 13px; color: var(--text);
 }
+.wr-channel-head .name-num { margin-left: 0; }
+.wr-channel-head .name-num + .wr-toolbar, .wr-channel-name + .wr-toolbar { margin-left: auto; }
 .wr-toolbar {
   flex: none; height: 22px; padding: 0 9px; border: none; border-radius: 11px; font-size: 11px; line-height: 22px;
   background: transparent; box-shadow: inset 0 0 0 1px var(--line-2); color: var(--text-2);

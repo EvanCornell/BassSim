@@ -9,7 +9,7 @@
 
 import { DEFAULT_PARAMS, NODE_HANDLES, PROBE_KINDS } from './version.js'
 import { netsOf, liveWires, allTerminals, chTerm, driverStatus, GROUND } from './wires.js'
-import { displayNames } from '../nodeNames.js'
+import { displayNames, channelNames } from '../nodeNames.js'
 
 /**
  * Every handle a node exposes, taps included.
@@ -148,8 +148,9 @@ export function validateProject(proj) {
   const terms = allTerminals(proj.wiring, nodes)
   const nets = netsOf(liveWires(proj.wiring?.wires, terms), terms)
   const outputs = new Map()
+  const names = channelNames(channels)
   for (const c of channels) {
-    const name = c.label || c.id
+    const name = names[c.id] || c.id
     const net = nets.get(chTerm(c.id, '+'))
     if (net === GROUND) errors.push(`${name} is shorted: its + is wired to the ground.`)
     else if (outputs.has(net)) errors.push(`${outputs.get(net)} and ${name} are wired directly together.`)

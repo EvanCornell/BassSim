@@ -11,6 +11,7 @@ import { useDrive } from '../useDrive'
 import { readSnapshots } from '../workspace'
 import { TOOLBAR_ITEMS, metricValue } from '../toolbarItems'
 import NumInput from './NumInput'
+import { channelNames } from '../nodeNames'
 
 // ---------- individual controls ----------
 
@@ -48,7 +49,7 @@ function VoltageControl() {
   const drive = useDrive()
   const setAmp = useStore((s) => s.setAmp)
   const locked = useStore(isLocked)
-  const name = drive.channel?.label || drive.channel?.id || 'the channel'
+  const name = useStore((s) => (drive.channel ? channelNames(s.projectExtras.wiring.channels)[drive.channel.id] : 'the channel'))
   const watts = drive.watts
   return (
     <div className="tb-pill tb-voltage" title={`${name}'s voltage — power follows as V²/Z. Changing it scales every channel together.`}>

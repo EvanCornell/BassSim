@@ -7,7 +7,7 @@ import NumInput from './NumInput'
 import { useResolvedParams } from '../useResolved'
 import { freshId } from '../schema/extras'
 import { driverNominal, estimateNominal, fmtOhms } from '../schema/nominal'
-import { baseName, nameNumbers } from '../nodeNames'
+import { baseName, nameNumbers, channelNames } from '../nodeNames'
 import { mergeParams, plural } from '../groupEdit'
 import { driverStatus } from '../schema/wires'
 import { useDrive } from '../useDrive'
@@ -434,7 +434,7 @@ function AmpSolver() {
   const setAmp = useStore((s) => s.setAmp)
   const updateSettings = useStore((s) => s.updateSettings)
   const ch = drive.channel
-  const channel = ch?.label || ch?.id || 'The first channel'
+  const channel = useStore((s) => (ch ? channelNames(s.projectExtras.wiring.channels)[ch.id] : 'The first channel'))
   return (
     <Section
       id="amp" title="Amplifier"
@@ -761,7 +761,8 @@ function ArrayField({ id, p }) {
   const on = useStore((s) => {
     if (group) return null
     const st = driverStatus(s.projectExtras.wiring, s.nodes).get(id)
-    const names = (st?.channels || []).map((c) => s.projectExtras.wiring.channels.find((x) => x.id === c)?.label || c)
+    const shown = channelNames(s.projectExtras.wiring.channels)
+    const names = (st?.channels || []).map((c) => shown[c] || c)
     return names.join(' and ')
   })
   /**
