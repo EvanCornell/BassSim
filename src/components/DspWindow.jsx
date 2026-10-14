@@ -5,6 +5,7 @@ import { LockNote } from './Records'
 import PlotChart, { logTicks, tickText } from './PlotChart'
 import { displayNames, channelNames } from '../nodeNames'
 import { colorsOf } from '../channelColors'
+import { fitLevels, fitFromZero, fitLog } from '../chartFit'
 import { toolbarChannel } from '../schema/wires'
 import {
   normalizeDsp, dspResponse, dspFilters, isFlat, PASS_SLOPES, PASS_LABELS, BAND_TYPES, GAINED, DEFAULT_DSP,
@@ -21,12 +22,9 @@ import {
 // order the signal meets them. Every change resimulates, so the result charts
 // follow the controls.
 
-/** The transfer chart's frequency range, Hz. */
+/** The frequency sliders' range, Hz: wider than any sweep, so a crossover can sit anywhere. */
 const F_LO = 10
 const F_HI = 20000
-/** The transfer chart's level range, dB. */
-const DB_LO = -40
-const DB_HI = 20
 /** How far a band's gain may be dragged, dB. */
 const GAIN_MAX = 24
 /** Points drawn across a transfer curve. */
@@ -39,8 +37,27 @@ const CHARTS = [
   ['velocity', 'Port velocity'], ['power', 'Power'], ['impedance', 'Impedance'],
 ]
 
-/** Frequencies for drawing a transfer curve, log-spaced across the chart. */
-const CURVE_FREQS = Array.from({ length: CURVE_POINTS }, (_, i) => F_LO * Math.pow(F_HI / F_LO, i / (CURVE_POINTS - 1)))
+/**
+ * Frequencies for drawing a transfer curve, log-spaced across a range.
+ *
+ * @param {number} f0 - Lowest, Hz.
+ * @param {number} f1 - Highest, Hz.
+ * @returns {number[]} The frequencies.
+ * @pure
+ */
+const curveFreqs = (f0, f1) => Array.from({ length: CURVE_POINTS }, (_, i) => f0 * Math.pow(f1 / f0, i / (CURVE_POINTS - 1)))
+
+/**
+ * The simulation's sweep range, which every chart here spans.
+ *
+ * @returns {number[]} `[fmin, fmax]`, Hz.
+ * @sideEffect Subscribes to the store.
+ */
+function useSweep() {
+  const f0 = useStore((s) => Number(s.settings?.fmin) || 10)
+  const f1 = useStore((s) => Number(s.settings?.fmax) || 1000)
+  return f1 > f0 ? [f0, f1] : [10, 1000]
+}
 
 /**
  * A number held to a range.
@@ -138,6 +155,10 @@ function useSize(ref) {
 /**
  * The processor's transfer function, with its EQ bands and crossover corners to drag.
  *
+ * It spans the sweep range, and its level range fits the curves: the top
+ * just above the highest, the bottom no more than 48 dB below — holding still
+ * while a handle is dragged, so the chart does not move under the pointer.
+ *
  * Every channel's curve is drawn, the selected one bold. A band's handle sits
  * at its frequency and gain: drag it to move both, scroll over it to change
  * its Q. The H and L handles move the crossover corners. Double-click empty
@@ -159,6 +180,9 @@ function TransferChart({ channels, index, dsp, change, band, setBand, phase, loc
   const box = useRef(null)
   const { w, h } = useSize(box)
   const [hover, setHover] = useState(null)
+  const [held, setHeld] = useState(null)
+  const [F0, F1] = useSweep()
+  const freqs = useMemo(() => curveFreqs(F0, F1), [F0, F1])
   const pad = { l: 40, r: phase ? 40 : 14, t: 12, b: 24 }
   const pw = Math.max(1, w - pad.l - pad.r)
   const ph = Math.max(1, h - pad.t - pad.b)
@@ -169,7 +193,7 @@ function TransferChart({ channels, index, dsp, change, band, setBand, phase, loc
    * @returns {number} px.
    * @pure
    */
-  const X = (f) => pad.l + (Math.log(f / F_LO) / Math.log(F_HI / F_LO)) * pw
+  const X = (f) => pad.l + (Math.log(f / F0) / Math.log(F1 / F0)) * pw
   /**
    * y of a level.
    *
@@ -185,7 +209,7 @@ function TransferChart({ channels, index, dsp, change, band, setBand, phase, loc
    * @returns {number} Hz.
    * @pure
    */
-  const fAt = (x) => F_LO * Math.pow(F_HI / F_LO, (x - pad.l) / pw)
+  const fAt = (x) => F0 * Math.pow(F1 / F0, (x - pad.l) / pw)
   /**
    * The level at a y.
    *
@@ -195,16 +219,21 @@ function TransferChart({ channels, index, dsp, change, band, setBand, phase, loc
    */
   const dbAt = (y) => DB_HI - ((y - pad.t) / ph) * (DB_HI - DB_LO)
 
-  const curves = useMemo(() => channels.map((c) => dspResponse(normalizeDsp(c.dsp), CURVE_FREQS)), [channels])
-  const mine = useMemo(() => dspResponse(dsp, CURVE_FREQS), [dsp])
+  const curves = useMemo(() => channels.map((c) => dspResponse(normalizeDsp(c.dsp), freqs)), [channels, freqs])
+  const mine = useMemo(() => dspResponse(dsp, freqs), [dsp, freqs])
   const bandCurve = useMemo(() => {
     const b = dsp.peq.find((x) => x.id === band)
-    return b ? dspResponse({ ...DEFAULT_DSP, peq: [{ ...b, on: true }] }, CURVE_FREQS, { pass: false }) : null
-  }, [dsp, band])
+    return b ? dspResponse({ ...DEFAULT_DSP, peq: [{ ...b, on: true }] }, freqs, { pass: false }) : null
+  }, [dsp, band, freqs])
+  const fitted = useMemo(() => fitLevels(
+    [...curves.map((c) => c.db), dsp.peq.filter((b) => b.hz >= F0 && b.hz <= F1).map(bandY)],
+    { include: [0] },
+  ), [curves, dsp, F0, F1])
+  const [DB_LO, DB_HI] = held || fitted
   /**
    * An SVG path through a curve.
    *
-   * @param {number[]} ys - Values at `CURVE_FREQS`.
+   * @param {number[]} ys - Values at the drawn frequencies.
    * @param {Function} yOf - Value → px.
    * @param {boolean} [wrap] - The values are a wrapped phase.
    * @returns {string} The path.
@@ -213,7 +242,7 @@ function TransferChart({ channels, index, dsp, change, band, setBand, phase, loc
   const path = (ys, yOf, wrap = false) => ys.map((v, i) => {
     // A wrapped phase jumping a full turn starts a new stroke rather than crossing the chart.
     const lift = i === 0 || (wrap && Math.abs(v - ys[i - 1]) > 180)
-    return `${lift ? 'M' : 'L'}${X(CURVE_FREQS[i]).toFixed(1)} ${yOf(v).toFixed(1)}`
+    return `${lift ? 'M' : 'L'}${X(freqs[i]).toFixed(1)} ${yOf(v).toFixed(1)}`
   }).join('')
   /**
    * y of a phase on the right axis.
@@ -228,7 +257,7 @@ function TransferChart({ channels, index, dsp, change, band, setBand, phase, loc
    * Follow a drag from a handle, changing the DSP as the pointer moves.
    *
    * The first change is recorded in history and the rest are not, so the
-   * whole drag undoes in one step.
+   * whole drag undoes in one step. The level range holds still until release.
    *
    * @param {React.PointerEvent} e - The press.
    * @param {Function} apply - `(next, hz, db)` edits a copy of the DSP for a pointer position.
@@ -240,6 +269,8 @@ function TransferChart({ channels, index, dsp, change, band, setBand, phase, loc
     e.preventDefault()
     e.stopPropagation()
     const rect = box.current.getBoundingClientRect()
+    const range = [DB_LO, DB_HI]
+    setHeld(range)
     let first = true
     /**
      * Apply the pointer's position.
@@ -249,8 +280,8 @@ function TransferChart({ channels, index, dsp, change, band, setBand, phase, loc
      * @sideEffect Changes the channel's DSP.
      */
     const move = (ev) => {
-      const hz = roundHz(clamp(fAt(ev.clientX - rect.left), F_LO, F_HI))
-      const db = Math.round(clamp(dbAt(ev.clientY - rect.top), -GAIN_MAX, GAIN_MAX) * 10) / 10
+      const hz = roundHz(clamp(fAt(ev.clientX - rect.left), F0, F1))
+      const db = Math.round(clamp(dbAt(ev.clientY - rect.top), Math.max(-GAIN_MAX, range[0]), Math.min(GAIN_MAX, range[1])) * 10) / 10
       const next = clone(dsp)
       apply(next, hz, db)
       change(next, first)
@@ -260,9 +291,10 @@ function TransferChart({ channels, index, dsp, change, band, setBand, phase, loc
      * End the drag.
      *
      * @returns {void}
-     * @sideEffect Removes the listeners.
+     * @sideEffect Removes the listeners and lets the level range refit.
      */
     const up = () => {
+      setHeld(null)
       window.removeEventListener('pointermove', move)
       window.removeEventListener('pointerup', up)
     }
@@ -298,17 +330,19 @@ function TransferChart({ channels, index, dsp, change, band, setBand, phase, loc
     const rect = box.current.getBoundingClientRect()
     const next = clone(dsp)
     const id = freshBandId(next.peq)
-    next.peq.push({ id, on: true, type: 'peak', hz: roundHz(clamp(fAt(e.clientX - rect.left), F_LO, F_HI)), db: Math.round(clamp(dbAt(e.clientY - rect.top), -GAIN_MAX, GAIN_MAX) * 10) / 10, q: 2 })
+    next.peq.push({ id, on: true, type: 'peak', hz: roundHz(clamp(fAt(e.clientX - rect.left), F0, F1)), db: Math.round(clamp(dbAt(e.clientY - rect.top), -GAIN_MAX, GAIN_MAX) * 10) / 10, q: 2 })
     change(next, true)
     setBand(id)
   }
 
   const hpLevel = dsp.hpf.shape === 'linkwitz-riley' ? -6 : -3
   const lpLevel = dsp.lpf.shape === 'linkwitz-riley' ? -6 : -3
+  const span = DB_HI - DB_LO
   const dbGrid = []
-  for (let v = DB_LO; v <= DB_HI; v += 5) dbGrid.push(v)
+  for (let v = DB_LO; v <= DB_HI; v += span > 60 ? 10 : 5) dbGrid.push(v)
+  const labelEvery = span > 30 ? 10 : 5
   const fGrid = []
-  for (let e = 1; e <= 4; e++) for (let m = 1; m < 10; m++) { const f = m * 10 ** e; if (f >= F_LO && f <= F_HI) fGrid.push(f) }
+  for (let e = Math.floor(Math.log10(F0)); e <= Math.ceil(Math.log10(F1)); e++) for (let m = 1; m < 10; m++) { const f = m * 10 ** e; if (f >= F0 * (1 - 1e-9) && f <= F1 * (1 + 1e-9)) fGrid.push(f) }
   return (
     <div className="dsp-plot" ref={box}
       onDoubleClick={add}
@@ -318,8 +352,8 @@ function TransferChart({ channels, index, dsp, change, band, setBand, phase, loc
         <svg width={w} height={h} className="dsp-svg">
           {fGrid.map((f) => <line key={`f${f}`} x1={X(f)} x2={X(f)} y1={pad.t} y2={pad.t + ph} className={/^[125]0*$/.test(String(f)) ? 'dsp-grid major' : 'dsp-grid'} />)}
           {dbGrid.map((v) => <line key={`d${v}`} x1={pad.l} x2={pad.l + pw} y1={Y(v)} y2={Y(v)} className={v === 0 ? 'dsp-grid zero' : v % 10 === 0 ? 'dsp-grid major' : 'dsp-grid'} />)}
-          {dbGrid.filter((v) => v % 10 === 0).map((v) => <text key={`t${v}`} x={pad.l - 6} y={Y(v) + 3.5} className="dsp-tick" textAnchor="end">{v === 0 ? '0 dB' : tickText(v)}</text>)}
-          {logTicks(F_LO, F_HI).map((f) => <text key={`x${f}`} x={X(f)} y={pad.t + ph + 16} className="dsp-tick" textAnchor="middle">{tickText(f)}</text>)}
+          {dbGrid.filter((v) => v % labelEvery === 0).map((v) => <text key={`t${v}`} x={pad.l - 6} y={Y(v) + 3.5} className="dsp-tick" textAnchor="end">{v === 0 ? '0 dB' : tickText(v)}</text>)}
+          {logTicks(F0, F1).map((f) => <text key={`x${f}`} x={X(f)} y={pad.t + ph + 16} className="dsp-tick" textAnchor="middle">{tickText(f)}</text>)}
           {phase && [-180, -90, 0, 90, 180].map((p) => <text key={`p${p}`} x={pad.l + pw + 6} y={Yp(p) + 3.5} className="dsp-tick phase">{`${p}°`}</text>)}
           <clipPath id="dsp-clip"><rect x={pad.l} y={pad.t} width={pw} height={ph} /></clipPath>
           <g clipPath="url(#dsp-clip)">
@@ -329,22 +363,22 @@ function TransferChart({ channels, index, dsp, change, band, setBand, phase, loc
             <path d={path(mine.db, Y)} className="dsp-curve mine" />
           </g>
           {dsp.hpf.on && (
-            <g className="dsp-handle pass" transform={`translate(${X(clamp(dsp.hpf.hz, F_LO, F_HI))} ${Y(hpLevel)})`}
+            <g className={`dsp-handle pass${dsp.hpf.hz < F0 || dsp.hpf.hz > F1 ? ' edge' : ''}`} transform={`translate(${X(clamp(dsp.hpf.hz, F0, F1))} ${Y(hpLevel)})`}
               onPointerDown={(e) => drag(e, (n, hz) => { n.hpf.hz = hz })}>
               <title>{`High-pass ${hzText(dsp.hpf.hz)} — drag to move`}</title>
               <circle r="9" /><text y="3.5" textAnchor="middle">H</text>
             </g>
           )}
           {dsp.lpf.on && (
-            <g className="dsp-handle pass" transform={`translate(${X(clamp(dsp.lpf.hz, F_LO, F_HI))} ${Y(lpLevel)})`}
+            <g className={`dsp-handle pass${dsp.lpf.hz < F0 || dsp.lpf.hz > F1 ? ' edge' : ''}`} transform={`translate(${X(clamp(dsp.lpf.hz, F0, F1))} ${Y(lpLevel)})`}
               onPointerDown={(e) => drag(e, (n, hz) => { n.lpf.hz = hz })}>
               <title>{`Low-pass ${hzText(dsp.lpf.hz)} — drag to move`}</title>
               <circle r="9" /><text y="3.5" textAnchor="middle">L</text>
             </g>
           )}
           {dsp.peq.map((b, i) => (
-            <g key={b.id} className={`dsp-handle${b.id === band ? ' sel' : ''}${b.on ? '' : ' off'}`}
-              transform={`translate(${X(clamp(b.hz, F_LO, F_HI))} ${Y(bandY(b))})`}
+            <g key={b.id} className={`dsp-handle${b.id === band ? ' sel' : ''}${b.on ? '' : ' off'}${b.hz < F0 || b.hz > F1 ? ' edge' : ''}`}
+              transform={`translate(${X(clamp(b.hz, F0, F1))} ${Y(bandY(b))})`}
               onPointerDown={(e) => { setBand(b.id); drag(e, (n, hz, db) => { const t = n.peq.find((x) => x.id === b.id); t.hz = hz; if (GAINED.has(t.type)) t.db = db }) }}
               onWheel={(e) => wheel(e, b)}>
               <title>{`Band ${i + 1}: ${hzText(b.hz)}${GAINED.has(b.type) ? `, ${b.db} dB` : ''}, Q ${b.q} — drag to move, scroll for Q`}</title>
@@ -376,6 +410,10 @@ function freshBandId(peq) {
 /**
  * One of the simulation's charts, as the DSP leaves it.
  *
+ * Each spans the sweep and fits its curves: levels from just above the
+ * highest down a set span, quantities that start at zero from zero, with a
+ * limit line taken in when it is near the data.
+ *
  * @param {object} props - Component props.
  * @param {string} props.kind - Which chart: `response`, `excursion`, `velocity`, `power` or `impedance`.
  * @param {Array<object>} props.channels - Every channel, for colours and names.
@@ -403,13 +441,14 @@ function ResultChart({ kind, channels }) {
     const lines = [{ key: 'all', name: 'Combined', color: series(0), x, y: results.splCombined, width: 2 }]
     if (results.splDriver?.some((v) => v != null)) lines.push({ key: 'drv', name: 'Drivers', color: series(1), x, y: results.splDriver.map((v) => v ?? NaN) })
     Object.entries(results.splPorts || {}).forEach(([k, y], i) => lines.push({ key: k, name: names[k.split(':')[0]] || k, color: series(i + 2), x, y: y.map((v) => v ?? NaN) }))
-    props = { title: 'SPL at 1 m', ylabel: 'dB', series: lines }
+    props = { title: 'SPL at 1 m', ylabel: 'dB', series: lines, yDomain: fitLevels(lines.map((l) => l.y), { span: 50, minSpan: 20 }) }
   } else if (kind === 'excursion') {
     const ids = Object.keys(results.excursionByDriver || {})
     props = {
       title: 'Cone excursion, peak', ylabel: 'mm',
       series: ids.map((id, i) => ({ key: id, name: names[id] || id, color: series(i), x, y: results.excursionByDriver[id] })),
       refs: ids.map((id, i) => ({ y: results.xmaxByDriver[id], label: ids.length > 1 ? `Xmax ${names[id] || id}` : 'Xmax', color: ids.length > 1 ? series(i) : 'var(--red)' })).filter((r) => r.y > 0),
+      yDomain: fitFromZero(ids.map((id) => results.excursionByDriver[id]), ids.map((id) => results.xmaxByDriver[id])),
     }
   } else if (kind === 'velocity') {
     const ids = Object.keys(results.velocity || {})
@@ -418,18 +457,21 @@ function ResultChart({ kind, channels }) {
       title: 'Port air velocity, peak', ylabel: 'm/s',
       series: ids.map((id, i) => ({ key: id, name: names[id] || id, color: series(i), x, y: results.velocity[id] })),
       refs: [{ y: vThreshold, label: `turbulence ~${vThreshold} m/s` }],
+      yDomain: fitFromZero(ids.map((id) => results.velocity[id]), [vThreshold]),
     }
   } else if (kind === 'power') {
     const ids = Object.keys(results.powerByChannel || {})
     props = {
       title: 'Electrical power into the load, per channel', ylabel: 'W', logY: true,
       series: ids.map((id) => ({ key: id, name: results.powerByChannel[id].label, color: colorsOf(chIndex.get(id) ?? -1)[0], x, y: results.powerByChannel[id].values.map((v) => (v > 1e-9 ? v : NaN)) })),
+      yDomain: fitLog(ids.map((id) => results.powerByChannel[id].values), 3),
     }
   } else {
     const ids = Object.keys(results.zinByChannel || {})
     props = {
       title: 'Impedance each channel sees', ylabel: 'Ω',
       series: ids.map((id) => ({ key: id, name: results.zinByChannel[id].label, color: colorsOf(chIndex.get(id) ?? -1)[0], x, y: results.zinByChannel[id].mag })),
+      yDomain: fitFromZero(ids.map((id) => results.zinByChannel[id].mag)),
     }
   }
   return <div className="dsp-result"><PlotChart logX xunit="frequency, Hz" {...props} /></div>

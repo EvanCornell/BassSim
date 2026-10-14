@@ -1577,7 +1577,7 @@ button.nl-chip.add { background: var(--field); }
 .pc-y.right span { right: auto; left: 7px; }
 .pc-y .pc-ylabel { top: -2px; transform: translateY(-100%); color: var(--text-3); font-family: inherit; font-size: 10px; }
 .pc-plot { position: relative; min-height: 0; cursor: crosshair; }
-.pc-plot svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.pc-plot svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; clip-path: inset(-3px); } /* lines past a fitted range stop at the plot edge */
 .pc-grid { stroke: var(--grid); stroke-width: 1; fill: none; vector-effect: non-scaling-stroke; }
 .pc-ref { stroke-width: 1; fill: none; vector-effect: non-scaling-stroke; opacity: 0.85; }
 .pc-line { fill: none; vector-effect: non-scaling-stroke; stroke-linejoin: round; stroke-linecap: round; }
@@ -1934,6 +1934,7 @@ button.nl-chip.add { background: var(--field); }
 .dsp-handle.pass circle { fill: #2fa7a0; }
 .dsp-handle.sel circle { stroke: var(--text); stroke-width: 2; }
 .dsp-handle.off { opacity: 0.4; }
+.dsp-handle.edge { opacity: 0.45; } /* beyond the sweep: shown at the edge */
 .dsp-handle:hover circle { stroke: var(--text); }
 .dsp-readout { position: absolute; top: 8px; right: 10px; font-size: 11px; font-family: var(--mono-font); color: var(--text-2); pointer-events: none; }
 .dsp-hint { position: absolute; left: 50%; bottom: 34px; transform: translateX(-50%); font-size: 11.5px; color: var(--text-3); pointer-events: none; }
