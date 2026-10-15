@@ -568,3 +568,22 @@ test('chamber: leakage resistance and stuffed sound speed', () => {
   assert.ok(Math.abs(total - 0.5 / c) < 1e-9, `line delay ${total} vs ${0.5 / c}`)
   assert.ok(netlist.includes('stuffing'), 'stuffing adds flow resistance')
 })
+
+// CONTRACT (isobaric loading): two drivers may share a junction with nothing
+// else — face to face, or one end of a sealed box. Each solves, and cones
+// joined directly are the limit of an ever smaller chamber between them.
+test('isobaric: drivers sharing a junction solve; a direct join is a vanishing chamber', async () => {
+  const E = (s, sh, t, th) => ({ source: s, sourceHandle: sh, target: t, targetHandle: th })
+  const wiring = { channels: [{ id: 'ch', volts: 2.83 }], wires: [{ a: 'ch:ch:+', b: 'a:+' }, { a: 'ch:ch:-', b: 'a:-' }, { a: 'ch:ch:+', b: 'b:+' }, { a: 'ch:ch:-', b: 'b:-' }] }
+  const drv = [{ id: 'a', type: 'driver', params: DRV }, { id: 'b', type: 'driver', params: DRV }, { id: 'c', type: 'chamber', params: { volume: 60, length: 40 } }]
+  // Both on one end of a sealed 60 L box: once singular in ngspice's operating point.
+  const shared = (await sim({ nodes: drv, edges: [E('a', 'rear', 'c', 'in'), E('b', 'front', 'c', 'in')], wiring })).results
+  assert.ok(shared.zinMag.every(Number.isFinite))
+  const direct = (await sim({ nodes: drv, edges: [E('a', 'rear', 'b', 'front'), E('b', 'rear', 'c', 'in')], wiring })).results
+  const k = (await sim({ nodes: [...drv, { id: 'k', type: 'chamber', params: { volume: 0.01, length: 1 } }], edges: [E('a', 'rear', 'k', 'in'), E('b', 'front', 'k', 'in'), E('b', 'rear', 'c', 'in')], wiring })).results
+  for (let i = 0; i < k.freqs.length; i++) {
+    if (k.freqs[i] > 300) continue
+    assert.ok(Math.abs(k.splCombined[i] - direct.splCombined[i]) < 0.005, `SPL at ${k.freqs[i].toFixed(1)} Hz`)
+    assert.ok(Math.abs(k.zinMag[i] / direct.zinMag[i] - 1) < 5e-4, `Z at ${k.freqs[i].toFixed(1)} Hz`)
+  }
+})

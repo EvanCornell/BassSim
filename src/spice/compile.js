@@ -1,12 +1,15 @@
 // A resolved v3 project → a SPICE netlist, plus a map of what its outputs mean.
 
-import { createNetlist, fmt } from './netlist.js'
+import { createNetlist, fmt, resistor } from './netlist.js'
 import { RHO } from './physics.js'
 import { PROBE_KINDS } from '../schema/version.js'
 import { buildNets } from './nets.js'
 import { fitBand } from './networks.js'
 import { compileWiring } from './wiring.js'
 import { compileDriver, compileChamber, compileWaveguide, compilePR, compileRadiation } from './elements.js'
+
+/** Each junction's resistance to ground, Pa·s/m³: the same as ngspice's rshunt. */
+const JUNCTION_LEAK = 1e12
 
 /**
  * Points per decade for an `.ac dec` sweep that comes closest to `npts` points.
@@ -117,6 +120,13 @@ export function compileProject(proj, analysis, opts = {}) {
     }
   }
   nl.lines.push('.options rshunt=1e12')
+  // Every junction also gets that 1 TΩ to ground as a resistor of its own.
+  // At DC a junction's pressure is held by nothing else — the air in a box
+  // is a capacitor, a cone a current source — and ngspice's operating point
+  // does not always count the rshunt conductances: two cones joined face to
+  // face, or sharing one end of a sealed box, came out singular. Next to
+  // any acoustic impedance here it changes nothing.
+  for (const n of nets.all) resistor(nl, n, '0', JUNCTION_LEAK)
   const termOf = compileWiring(ctx, proj)
   for (const node of proj.nodes || []) {
     if (node.type === 'driver') compileDriver(ctx, node, termOf)

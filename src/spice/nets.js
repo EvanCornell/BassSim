@@ -32,7 +32,7 @@ export function faceArea(node, handle) {
  *
  * @param {object} proj - A resolved, valid v3 project.
  * @param {object} nl - The netlist builder, which names the nodes.
- * @returns {{netOf: Function, neighbours: Function, connected: Function}} Lookups: `netOf(id, handle)` → node name; `neighbours(id, handle)` → the `{node, handle}` list joined to it by edges directly; `connected(id, handle)` → whether anything is.
+ * @returns {{netOf: Function, neighbours: Function, connected: Function, all: string[]}} Lookups: `netOf(id, handle)` → node name; `neighbours(id, handle)` → the `{node, handle}` list joined to it by edges directly; `connected(id, handle)` → whether anything is. `all` is every net's node name.
  * @mutates nl — allocates one node per net.
  */
 export function buildNets(proj, nl) {
@@ -100,6 +100,7 @@ export function buildNets(proj, nl) {
      * @reads the adjacency index.
      */
     connected: (id, handle) => (adj.get(`${id}:${handle}`) || []).length > 0,
+    all: [...new Set(names.values())],
   }
 }
 
