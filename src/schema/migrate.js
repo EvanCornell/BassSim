@@ -22,6 +22,9 @@
 // trees turned into the cables that make the same circuit; channels lose the
 // tree, and any DSP they carry is brought to the current shape (`dsp.js`),
 // the old filter list included. A driver node's `single` wiring is `parallel`.
+// A waveguide no longer says what its open ends radiate into — an open end is
+// half space, and a Radiation node joined to it says otherwise — so an end
+// that said anything else, plugged included, gains that Radiation node.
 
 import {
   SCHEMA_VERSION, DEFAULT_PARAMS, DEFAULT_ANALYSIS, DEFAULT_CHANNEL, DEFAULT_WIRING,
@@ -180,7 +183,23 @@ function normalize(proj) {
     if (n.type === 'driver' && (params.wiring === 'single' || !params.wiring)) params.wiring = 'parallel'
     return { id: n.id, type: n.type, position: clone(n.position) || { x: 0, y: 0 }, params }
   })
-  const used = new Set((proj.edges || []).map((e) => e.id).filter(Boolean))
+  const rawEdges = [...(proj.edges || [])]
+  for (const n of [...nodes]) {
+    if (n.type !== 'waveguide') continue
+    const p = n.params
+    for (const h of ['throat', 'mouth']) {
+      const space = p[`${h}Space`]
+      delete p[`${h}Space`]
+      if (!space || space === 'half') continue
+      if (rawEdges.some((e) => (e.source === n.id && e.sourceHandle === h) || (e.target === n.id && e.targetHandle === h))) continue
+      let id = `${n.id}_${h}_radiation`
+      while (nodes.some((m) => m.id === id)) id += '_'
+      const at = n.position || { x: 0, y: 0 }
+      nodes.push({ id, type: 'radiation', position: { x: at.x, y: at.y + (h === 'mouth' ? 160 : -120) }, params: { ...clone(DEFAULT_PARAMS.radiation), space } })
+      rawEdges.push({ source: n.id, sourceHandle: h, target: id, targetHandle: 'in' })
+    }
+  }
+  const used = new Set(rawEdges.map((e) => e.id).filter(Boolean))
   let k = 0
   /**
    * An edge id no other edge in this project uses.
@@ -193,7 +212,7 @@ function normalize(proj) {
     used.add(`e_${k}`)
     return `e_${k}`
   }
-  const edges = (proj.edges || []).map((e) => ({
+  const edges = rawEdges.map((e) => ({
     id: e.id || freshId(),
     source: e.source, sourceHandle: e.sourceHandle,
     target: e.target, targetHandle: e.targetHandle,

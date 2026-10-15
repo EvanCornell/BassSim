@@ -55,7 +55,7 @@ export const DEFAULT_PARAMS = {
   },
   waveguide: {
     S1: 80, S2: 80, length: 30, flare: 'conical', ecFactor: 1,
-    throatSpace: 'half', mouthSpace: 'half', loss: 1, throatK: 0.5, mouthK: 0.5, taps: [], label: 'Port',
+    loss: 1, throatK: 0.5, mouthK: 0.5, taps: [], label: 'Port',
   },
   pr: { Mmd: 85, Cms: 0.35, Rms: 3, Sd: 480, addedMass: 0, count: 1, label: 'Passive Radiator' },
   radiation: { space: 'half', label: 'Radiation' },

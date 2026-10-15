@@ -6,7 +6,7 @@
 // speaker quantities without knowing how the netlist was built.
 
 import { areaProfile } from '../engine/geometry.js'
-import { RHO, C_AIR, SOLID_ANGLE, perimeter, viscousCoeff, flowResistivity, stuffedSoundSpeed, driverSI } from './physics.js'
+import { RHO, C_AIR, perimeter, viscousCoeff, flowResistivity, stuffedSoundSpeed, driverSI } from './physics.js'
 import { fmt, resistor, sense } from './netlist.js'
 import { radiationLoad, fractionalSeries } from './networks.js'
 import { compileLine } from './line.js'
@@ -180,9 +180,9 @@ function exitLoss(ctx, from, to, senseName, K, S, note) {
  * Compile a waveguide — port, duct or horn segment.
  *
  * Every end gets a flow sense. A connected end joins its junction through the
- * end correction it owns. An unconnected end radiates into its own solid
- * angle, or is closed when that is `rigid`; the air the radiation carries is
- * given the duct's wall loss over its equivalent length.
+ * end correction it owns. An unconnected end radiates into half space, the
+ * air the radiation carries given the duct's wall loss over its equivalent
+ * length; anything else is a Radiation node joined to the end.
  *
  * @param {object} ctx - Compile context.
  * @param {object} node - The waveguide node.
@@ -208,7 +208,7 @@ export function compileWaveguide(ctx, node) {
   placeProbes(ctx, node, line, probes, area, ['throat', 'mouth'])
   const k = p.ecFactor ?? 1
   const ends = {}
-  for (const [h, endNode, S, space] of [['throat', line.start, S1, p.throatSpace], ['mouth', line.end, S2, p.mouthSpace]]) {
+  for (const [h, endNode, S] of [['throat', line.start, S1], ['mouth', line.end, S2]]) {
     const K = Number(h === 'throat' ? p.throatK : p.mouthK) || 0
     if (ctx.nets.connected(node.id, h)) {
       const step = endCorrection(ctx.nets, node, h) > 0
@@ -220,17 +220,16 @@ export function compileWaveguide(ctx, node) {
       if (dl > 0) endMass(ctx, at, endNode, dl, S, loss, `${note} ${h}`)
       ends[h] = { sense: s.name, S }
       recordFlow(ctx, node.id, h, s.name, 1, S)
-    } else if ((space || 'half') !== 'rigid') {
+    } else {
       const s = sense(ctx.nl, endNode, `${note} ${h} radiates`)
-      const n = (2 * Math.PI) / (SOLID_ANGLE[space] ?? SOLID_ANGLE.half)
-      const radLen = (8 / (3 * Math.PI)) * Math.sqrt(S / Math.PI) * Math.sqrt(n)
+      const radLen = (8 / (3 * Math.PI)) * Math.sqrt(S / Math.PI)
       let radIn = ctx.nonlinear && K > 0 ? exitLoss(ctx, s.out, undefined, s.name, K, S, `${note} ${h}`) : s.out
       if (loss > 0) {
         const from = radIn
         radIn = ctx.nl.node()
         fractionalSeries(ctx.nl, from, radIn, 0.5, loss * viscousCoeff(S, perimeter(S)) * radLen, ctx.band, `${note} ${h} radiation-air loss`)
       }
-      const omega = radiationLoad(ctx.nl, radIn, S, space || 'half', `${note} ${h} radiation`)
+      const omega = radiationLoad(ctx.nl, radIn, S, 'half', `${note} ${h} radiation`)
       ends[h] = { sense: s.name, S }
       recordFlow(ctx, node.id, h, s.name, 1, S)
       ctx.map.radiators.push({ key: h === 'mouth' ? node.id : `${node.id}:throat`, sense: s.name, node: radIn, omega, counts: true, driver: false })

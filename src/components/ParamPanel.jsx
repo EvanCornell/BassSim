@@ -38,8 +38,6 @@ const TIPS = {
   leakQL: 'Box leakage as the familiar QL: lower = leakier. Compiled to the equivalent leak resistance at the reference frequency.',
   leakHz: 'Frequency QL is referred to — conventionally the box tuning.',
   loss: 'Scales the wall loss worked out from this duct’s size and shape: 1 is the physical estimate, 0 is lossless, above 1 adds loss the model misses.',
-  throatSpace: 'Solid angle the throat radiates into when nothing is connected to it; plugged closes it.',
-  mouthSpace: 'Solid angle the mouth radiates into when nothing is connected to it; plugged closes it.',
   count: 'Number of identical units.',
   wiring: 'Electrical wiring of the array — changes Re, Le and Bl of the equivalent driver.',
   volume: 'Internal net air volume.',
@@ -1038,12 +1036,6 @@ function ProbeSection({ id, p }) {
   )
 }
 
-/** Choices for what an unconnected waveguide end opens into. */
-const END_SPACES = [
-  ['free', 'Free space 4π'], ['half', 'Half space 2π'], ['quarter', 'Quarter space π'],
-  ['eighth', 'Eighth space π/2'], ['rigid', 'Plugged (closed)'],
-]
-
 /**
  * Parameter form for a waveguide, with derived cutoff and volume readouts.
  *
@@ -1072,16 +1064,15 @@ function WaveguideForm({ node }) {
           ['hypex', 'Hyperbolic-exp (hypex)'], ['tractrix', 'Tractrix ≈'], ['lecleach', 'Le Cléac’h ≈'],
         ]} />
       </div>
-      <Sub id="waveguide.ends" title="Ends" summary={`${p.throatSpace} · ${p.mouthSpace} · end corr. ×${short(p.ecFactor)}`}>
+      <Sub id="waveguide.ends" title="Ends" summary={`end corr. ×${short(p.ecFactor)}`}>
         <div className="param-grid">
-          <SelectField id={id} field="throatSpace" value={p.throatSpace} label="Open throat into" options={END_SPACES} />
-          <SelectField id={id} field="mouthSpace" value={p.mouthSpace} label="Open mouth into" options={END_SPACES} />
           <NumField id={id} field="ecFactor" value={p.ecFactor} label="End corr. ×" step="0.05" min="0" />
         </div>
         <div className="ts-hint">
           End corrections come from what each end meets, so splitting a duct into
-          several segments does not change it. An end's solid angle applies only
-          while nothing is connected to it.
+          several segments does not change it. An end with nothing connected
+          radiates into half space; connect a Radiation node to it for another
+          space, a closed end or an anechoic one.
         </div>
       </Sub>
       <TapsSection id={id} p={p} from="throat" />

@@ -255,8 +255,8 @@ export function WaveguideNode({ id, data, selected }) {
           ⇥ {vmax != null ? vmax.toFixed(1) : '—'} m/s
         </span>
       </div>
-      <Port id="throat" side="top" label="throat" title={`Throat (S1) — unconnected, it ${p.throatSpace === 'rigid' ? 'is plugged' : 'radiates'}`} />
-      <Port id="mouth" side="bottom" label="mouth" title={`Mouth (S2) — unconnected, it ${p.mouthSpace === 'rigid' ? 'is plugged' : 'radiates'}`} />
+      <Port id="throat" side="top" label="throat" title="Throat (S1) — unconnected, it radiates into half space" />
+      <Port id="mouth" side="bottom" label="mouth" title="Mouth (S2) — unconnected, it radiates into half space" />
       <TapPorts id={id} taps={p.taps} length={p.length} />
     </div>
   )

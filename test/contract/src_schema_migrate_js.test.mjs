@@ -64,11 +64,17 @@ test('migrateProject: settings split into analysis, channel and display', () => 
 })
 
 // CONTRACT: "waveguide `space` → `mouthSpace`; `Q` → `loss: 1` ...; `lossless` → `loss: 0`."
-test('migrateProject: waveguide space moves to the mouth and Q becomes loss', () => {
+// and: an open end that said anything but half space "gains that Radiation node".
+test('migrateProject: waveguide space moves to a Radiation node on the mouth and Q becomes loss', () => {
   const p = migrateProject(v2())
   const w = p.nodes.find((n) => n.id === 'w').params
-  assert.equal(w.mouthSpace, 'quarter')
-  assert.equal(w.throatSpace, 'half')
+  for (const gone of ['mouthSpace', 'throatSpace']) assert.equal(gone in w, false, `${gone} must be removed`)
+  const e = p.edges.filter((x) => x.source === 'w')
+  assert.equal(e.length, 1, 'only the mouth said anything but half space')
+  assert.equal(e[0].sourceHandle, 'mouth')
+  const rad = p.nodes.find((n) => n.id === e[0].target)
+  assert.equal(rad.type, 'radiation')
+  assert.equal(rad.params.space, 'quarter')
   assert.equal(w.loss, 1)
   assert.equal(w.ecFactor, 1.5, 'a v2 ecFactor is already a multiplier')
   for (const gone of ['space', 'Q', 'lossless']) assert.equal(gone in w, false, `${gone} must be removed`)
@@ -202,4 +208,29 @@ test('migrateProject: an old filter list becomes the current DSP', () => {
   assert.equal(d.lpf.on, false)
   assert.equal(d.delayMs, 1.5)
   assert.deepEqual(d.peq.map((b) => [b.type, b.hz, b.db, b.on]), [['peak', 45, -4, true], ['lowshelf', 30, 3, false]])
+})
+
+// CONTRACT: a v3 waveguide's non-half open ends — plugged included — become
+// Radiation nodes; a connected end or a half-space one gains nothing; and
+// migrating again changes nothing.
+test('migrateProject: stored end spaces become Radiation nodes, once', () => {
+  const p = migrateProject({
+    schemaVersion: 3,
+    nodes: [
+      { id: 'w', type: 'waveguide', params: { throatSpace: 'rigid', mouthSpace: 'free' } },
+      { id: 'v', type: 'waveguide', params: { throatSpace: 'eighth', mouthSpace: 'half' } },
+      { id: 'c', type: 'chamber', params: {} },
+    ],
+    edges: [{ source: 'c', sourceHandle: 'out', target: 'v', targetHandle: 'throat' }],
+  })
+  const spaceAt = (id, h) => {
+    const e = p.edges.find((x) => x.source === id && x.sourceHandle === h && p.nodes.find((n) => n.id === x.target)?.type === 'radiation')
+    return e && p.nodes.find((n) => n.id === e.target).params.space
+  }
+  assert.equal(spaceAt('w', 'throat'), 'rigid')
+  assert.equal(spaceAt('w', 'mouth'), 'free')
+  assert.equal(spaceAt('v', 'throat'), undefined, 'a connected end is left alone')
+  assert.equal(spaceAt('v', 'mouth'), undefined, 'half space is the default')
+  assert.equal(p.nodes.filter((n) => n.type === 'radiation').length, 2)
+  assert.deepEqual(migrateProject(p), p)
 })
