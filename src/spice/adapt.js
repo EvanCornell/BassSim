@@ -49,7 +49,8 @@ export function phaseAndDelay(phase, freqs) {
  * Turn a SPICE run into the results object.
  *
  * - Impedance is the load each channel sees, excluding its output
- *   resistance; `zinMag` is the first channel's. Electrical power sums over
+ *   resistance, and marks whether it reaches any driver (`loaded`);
+ *   `zinMag` is the first loaded channel's, or the first's when none is. Electrical power sums over
  *   every channel.
  * - Flow probes are volume flow, m³/s peak; velocity probes are that flow
  *   over the local area, m/s peak.
@@ -84,7 +85,7 @@ export function adaptResults(raw, map) {
   }
   const ch = map.channels.map((c) => ({ ...c, I: raw.vec(`i(${c.sense})`), V: raw.vec(`v(${c.load})`) }))
   for (const c of ch) {
-    res.zinByChannel[c.id] = { label: c.label, mag: arr(), phase: arr() }
+    res.zinByChannel[c.id] = { label: c.label, loaded: c.loaded !== false, mag: arr(), phase: arr() }
     res.powerByChannel[c.id] = { label: c.label, values: arr() }
   }
   const drv = map.drivers.map((d) => ({ ...d, u: raw.vec(`i(${d.velocity})`) }))
@@ -98,6 +99,7 @@ export function adaptResults(raw, map) {
   const flows = (map.flowProbes || []).map((p) => ({ ...p, U: p.sense ? raw.vec(`i(${p.sense})`) : null }))
   for (const p of flows) res.probeFlow[p.key] = { kind: p.kind, values: arr() }
   let anyDriverFace = false
+  const shown = Math.max(0, ch.findIndex((c) => c.loaded !== false))
 
   for (let i = 0; i < n; i++) {
     const w = 2 * Math.PI * freqs[i]
@@ -113,7 +115,7 @@ export function adaptResults(raw, map) {
       const z = res.zinByChannel[c.id]
       z.mag[i] = Math.hypot(zr, zi)
       z.phase[i] = (Math.atan2(zi, zr) * 180) / Math.PI
-      if (k === 0) {
+      if (k === shown) {
         res.zinMag[i] = z.mag[i]
         res.zinPhase[i] = z.phase[i]
       }

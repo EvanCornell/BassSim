@@ -733,9 +733,12 @@ function ImpedanceTab() {
   const snapshots = useStore((s) => readSnapshots(s.workspace))
   const metrics = useStore((s) => s.metrics)
   const channels = useStore((s) => s.results?.zinByChannel) || {}
-  const ids = Object.keys(channels)
-  // One channel: its magnitude and phase. Several: a magnitude per channel,
-  // since each amplifier sees its own load.
+  // A channel that reaches no driver sees only an open terminal, a gigohm
+  // that would flatten every real load on the scale; it is not drawn.
+  const ids = Object.keys(channels).filter((c) => channels[c].loaded !== false)
+  // One loaded channel: its magnitude and phase (`zmag` is the first loaded
+  // channel's). Several: a magnitude per channel, since each amplifier sees
+  // its own load.
   const lines = ids.length > 1
     ? [
         ...ids.map((cid, i) => ({ dataKey: `zch_${cid}`, name: `|Z| ${channels[cid].label || cid}`, color: SERIES[i % SERIES.length], width: i ? 1.5 : 2.5 })),

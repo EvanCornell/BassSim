@@ -12,7 +12,7 @@ import { fmt, resistor } from './netlist.js'
 import { signalExpression, signalPoints } from './dsp.js'
 import { compileSections } from './filters.js'
 import { normalizeDsp, dspScale, dspSections, isFlat } from '../schema/dsp.js'
-import { allTerminals, liveWires, netsOf, chTerm, toolbarChannel, GROUND } from '../schema/wires.js'
+import { allTerminals, liveWires, netsOf, chTerm, toolbarChannel, driverStatus, GROUND } from '../schema/wires.js'
 import { channelNames } from '../nodeNames.js'
 
 /**
@@ -90,6 +90,8 @@ export function compileWiring(ctx, proj) {
   const channels = [first, ...(wiring.channels || []).filter((c) => c !== first)].filter(Boolean)
   const used = new Set()
   const names = channelNames(wiring.channels)
+  // A channel that reaches no driver has no load: its impedance is the open terminal's.
+  const loaded = new Set([...driverStatus(wiring, proj.nodes).values()].flatMap((s) => s.channels))
   for (const c of channels) {
     const label = names[c.id] || c.id
     const net = nets.get(chTerm(c.id, '+'))
@@ -100,7 +102,8 @@ export function compileWiring(ctx, proj) {
     const src = nl.node()
     const volts = Number(c.volts) * master
     const dsp = normalizeDsp(c.dsp)
-    const flat = isFlat(dsp)
+    // A DSP switched off passes the signal untouched; its settings stay.
+    const flat = dsp.on === false || isFlat(dsp)
     const k = flat ? 1 : dspScale(dsp)
     if (ctx.tran) transientSource(ctx, src, volts * k, label)
     else nl.add('V', [src, '0'], `DC 0 AC ${fmt(volts * Math.abs(k))} ${k < 0 ? 180 : 0}`, `${label} source`)
@@ -127,7 +130,7 @@ export function compileWiring(ctx, proj) {
     }
     const load = termOf(chTerm(c.id, '+'))
     const sense = nl.add('V', [drive, load], 'DC 0', `${label} current`)
-    ctx.map.channels.push({ id: c.id, label, sense, load, volts })
+    ctx.map.channels.push({ id: c.id, label, sense, load, volts, loaded: loaded.has(c.id) })
   }
   return termOf
 }

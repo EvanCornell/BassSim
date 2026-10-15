@@ -14,6 +14,10 @@ test('normalizeDsp: nothing is the flat default', () => {
   const d = normalizeDsp({ hpf: { on: true, hz: 30 } })
   assert.deepEqual(d.hpf, { on: true, shape: 'butterworth', slope: 24, hz: 30 })
   assert.equal(d.lpf.on, false)
+  assert.equal(d.on, true, 'a block is on unless switched off')
+  const off = normalizeDsp({ on: false, gainDb: -3 })
+  assert.equal(off.on, false)
+  assert.equal(off.gainDb, -3, 'switching off keeps the settings')
 })
 
 // CONTRACT (fitSlope): "the nearest at or above the one asked for".

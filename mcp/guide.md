@@ -43,12 +43,15 @@ the project's `wiring.wires` says otherwise — cables between terminals such as
 `ch:ch1:+` and `<node id>:-`.
 
 Each channel in `wiring.channels` may carry a `dsp` block, simulated as part of
-the circuit (sweep and time domain alike): `gainDb`, `mute`, `invert`,
+the circuit (sweep and time domain alike): `on` (false bypasses the whole
+block, its settings kept), `gainDb`, `mute`, `invert`,
 `delayMs`; `hpf` and `lpf` as `{on, shape: butterworth|linkwitz-riley|bessel,
 slope (dB/oct, multiples of 6; Linkwitz-Riley 12–48), hz}`; `lt` (Linkwitz
 transform) `{on, f0, q0, fp, qp}`; and `peq`, any number of bands
 `{id, on, type: peak|lowshelf|highshelf|notch|allpass, hz, db, q}`. Results
-include `powerByChannel` alongside `zinByChannel`.
+include `powerByChannel` alongside `zinByChannel`, whose entries carry
+`loaded: false` for a channel that reaches no driver (its impedance is then
+the open terminal's); `zinMag` is the first loaded channel's.
 
 ### chamber — lumped/TL volume
 Handles: `in` (in), `out` (out). A chamber with only `in` connected is a

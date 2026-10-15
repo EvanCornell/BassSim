@@ -101,7 +101,7 @@ const clone = (v) => JSON.parse(JSON.stringify(v))
  * One line of what a channel's DSP is doing, for its strip.
  *
  * @param {object} d - A complete DSP block.
- * @returns {string} e.g. `HP 25 · LP 80 · 3 EQ`, or `flat`.
+ * @returns {string} e.g. `HP 25 · LP 80 · 3 EQ`, or `flat`; led by `off ·` when bypassed.
  * @pure
  */
 export function dspSummary(d) {
@@ -113,7 +113,8 @@ export function dspSummary(d) {
   if (bands) parts.push(`${bands} EQ`)
   if (Number(d.gainDb)) parts.push(`${d.gainDb > 0 ? '+' : ''}${Number(d.gainDb.toFixed(1))} dB`)
   if (Number(d.delayMs) > 0) parts.push(`${Number(Number(d.delayMs).toFixed(2))} ms`)
-  return parts.length ? parts.join(' · ') : 'flat'
+  const what = parts.length ? parts.join(' · ') : 'flat'
+  return d.on === false ? `off · ${what}` : what
 }
 
 /**
@@ -369,11 +370,11 @@ function TransferChart({ channels, index, dsp, change, band, setBand, overlay, l
           {phase && [-180, -90, 0, 90, 180].map((p) => <text key={`p${p}`} x={pad.l + pw + 6} y={Yp(p) + 3.5} className="dsp-tick phase">{`${p}°`}</text>)}
           <clipPath id="dsp-clip"><rect x={pad.l} y={pad.t} width={pw} height={ph} /></clipPath>
           <g clipPath="url(#dsp-clip)">
-            {curves.map((c, i) => (i === index ? null : <path key={channels[i].id} d={path(c.db, Y)} stroke={colorsOf(i)[0]} className="dsp-curve other" />))}
+            {curves.map((c, i) => (i === index ? null : <path key={channels[i].id} d={path(c.db, Y)} stroke={colorsOf(i)[0]} className={`dsp-curve other${channels[i].dsp?.on === false ? ' off' : ''}`} />))}
             {bandCurve && <path d={path(bandCurve.db, Y)} className="dsp-curve band" />}
             {phase && <path d={path(mine.phase, Yp, true)} stroke={colorsOf(index)[0]} className="dsp-curve phase" />}
             {out && <path d={out.pts.map(([f, v], i) => `${i ? 'L' : 'M'}${X(f).toFixed(1)} ${Y(v - out.shift).toFixed(1)}`).join('')} className="dsp-curve output" />}
-            <path d={path(mine.db, Y)} className="dsp-curve mine" />
+            <path d={path(mine.db, Y)} className={`dsp-curve mine${dsp.on === false ? ' off' : ''}`} />
           </g>
           {dsp.hpf.on && (
             <g className={`dsp-handle pass${dsp.hpf.hz < F0 || dsp.hpf.hz > F1 ? ' edge' : ''}`} transform={`translate(${X(clamp(dsp.hpf.hz, F0, F1))} ${Y(hpLevel)})`}
@@ -484,7 +485,7 @@ function ResultChart({ kind, channels, selected }) {
     const ids = Object.keys(results.zinByChannel || {}).filter((id) => id === selected)
     if (!ids.length) return <div className="dsp-empty">This channel has no results yet.</div>
     // An unwired channel sees only the open terminal's leak, a gigaohm or so.
-    if (results.zinByChannel[ids[0]].mag.every((v) => !(v < 1e6))) return <div className="dsp-empty">Nothing is wired to this channel.</div>
+    if (results.zinByChannel[ids[0]].loaded === false) return <div className="dsp-empty">Nothing is wired to this channel.</div>
     props = {
       title: `Impedance ${results.zinByChannel[ids[0]].label} sees`, ylabel: 'Ω',
       series: ids.map((id) => ({ key: id, name: results.zinByChannel[id].label, color: colorsOf(chIndex.get(id) ?? -1)[0], x, y: results.zinByChannel[id].mag })),
@@ -626,7 +627,10 @@ function Controls({ ch, channels, dsp, change, band, setBand }) {
   return (
     <div className="dsp-controls">
       <div className="dsp-block">
-        <div className="dsp-block-head"><span className="dsp-block-title">Output</span></div>
+        <div className="dsp-block-head">
+          <OnOff on={dsp.on !== false} label="DSP" onChange={(on) => edit((n) => { n.on = on })} />
+          <span className="dsp-block-note">{dsp.on === false ? 'Bypassed · settings kept' : 'Output'}</span>
+        </div>
         <div className="dsp-fields">
           <label>Gain</label>
           <span className="dsp-num"><NumInput value={dsp.gainDb} min={-60} max={24} step="0.5" onCommit={(v) => edit((n) => { n.gainDb = v })} /><span>dB</span></span>
@@ -744,12 +748,13 @@ export default function DspWindow() {
            */
           const set = (patch) => st().setChannelDsp(c.id, { ...d, ...patch })
           return (
-            <div key={c.id} role="tab" aria-selected={c === ch} className={`dsp-ch${c === ch ? ' sel' : ''}${d.mute ? ' muted' : ''}`}
+            <div key={c.id} role="tab" aria-selected={c === ch} className={`dsp-ch${c === ch ? ' sel' : ''}${d.mute ? ' muted' : ''}${d.on === false ? ' bypassed' : ''}`}
               onClick={() => { st().setDspChannel(c.id); setBand(null) }}>
               <span className="dsp-ch-bar" style={{ background: colorsOf(i)[0] }} />
               <span className="dsp-ch-name">{shown[c.id]}</span>
               <span className="dsp-ch-sum">{dspSummary(d)}</span>
               <span className="dsp-ch-btns">
+                <button className={`dsp-mini power${d.on === false ? '' : ' live'}`} title={d.on === false ? 'DSP off — turn on' : 'DSP on — turn off, keeping its settings'} aria-pressed={d.on !== false} disabled={locked} onClick={(e) => { e.stopPropagation(); set({ on: d.on === false }) }}>⏻</button>
                 <button className={`dsp-mini${d.mute ? ' warn' : ''}`} title="Mute" aria-pressed={d.mute} disabled={locked} onClick={(e) => { e.stopPropagation(); set({ mute: !d.mute }) }}>M</button>
                 <button className={`dsp-mini${d.invert ? ' on' : ''}`} title="Invert polarity" aria-pressed={d.invert} disabled={locked} onClick={(e) => { e.stopPropagation(); set({ invert: !d.invert }) }}>Ø</button>
               </span>

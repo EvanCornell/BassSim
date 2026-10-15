@@ -624,8 +624,8 @@ export default function WiringWindow() {
 function ChannelCard({ ch, index, solved, toolbar, removable, onTerm }) {
   const drive = useDrive(ch.id)
   const zmin = useStore((s) => {
-    const z = s.results?.zinByChannel?.[ch.id]?.mag
-    return z?.length ? Math.min(...z) : null
+    const z = s.results?.zinByChannel?.[ch.id]
+    return z?.loaded !== false && z?.mag?.length ? Math.min(...z.mag) : null
   })
   const st = useStore.getState
   const minus = colorsOf(index)[1]

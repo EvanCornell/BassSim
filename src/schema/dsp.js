@@ -28,9 +28,9 @@ export const BAND_TYPES = [
 /** Band types that have a gain. */
 export const GAINED = new Set(['peak', 'lowshelf', 'highshelf'])
 
-/** A channel's DSP with nothing switched on: flat, in phase, undelayed. */
+/** A channel's DSP with nothing switched on: flat, in phase, undelayed. `on: false` bypasses the whole block, settings kept. */
 export const DEFAULT_DSP = {
-  gainDb: 0, mute: false, invert: false, delayMs: 0,
+  on: true, gainDb: 0, mute: false, invert: false, delayMs: 0,
   hpf: { on: false, shape: 'butterworth', slope: 24, hz: 25 },
   lpf: { on: false, shape: 'linkwitz-riley', slope: 24, hz: 80 },
   lt: { on: false, f0: 40, q0: 0.9, fp: 25, qp: 0.6 },
@@ -93,7 +93,7 @@ export function normalizeDsp(d) {
     }
     return out
   }
-  for (const k of ['gainDb', 'mute', 'invert', 'delayMs']) if (d[k] != null) out[k] = d[k]
+  for (const k of ['on', 'gainDb', 'mute', 'invert', 'delayMs']) if (d[k] != null) out[k] = d[k]
   for (const k of ['hpf', 'lpf', 'lt']) out[k] = { ...out[k], ...(d[k] || {}) }
   for (const k of ['hpf', 'lpf']) out[k].slope = fitSlope(out[k].shape, out[k].slope)
   out.peq = (Array.isArray(d.peq) ? d.peq : []).map((b, i) => ({ id: b.id || `b${i + 1}`, on: b.on !== false, type: b.type || 'peak', hz: Number(b.hz) || 100, db: Number(b.db) || 0, q: Number(b.q) || 1 }))

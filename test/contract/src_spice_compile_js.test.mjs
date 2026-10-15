@@ -446,6 +446,34 @@ test('wiring: power per channel, and a muted channel goes quiet but still reads 
   }
 })
 
+// CONTRACT (dsp `on`): a block switched off passes the channel untouched,
+// exactly as if it had none, whatever its settings.
+test('wiring: a DSP switched off is no DSP at all', async () => {
+  const nodes = [{ id: 'a', type: 'driver', params: DRV }]
+  const wires = [{ a: 'ch:c1:+', b: 'a:+' }, { a: 'ch:c1:-', b: 'a:-' }]
+  const dsp = { on: false, gainDb: -6, invert: true, delayMs: 2, hpf: { on: true, shape: 'butterworth', slope: 24, hz: 40 }, peq: [{ id: 'b1', on: true, type: 'peak', hz: 60, db: 6, q: 2 }] }
+  const { results: off } = await sim({ nodes, edges: [], wiring: { channels: [{ id: 'c1', volts: 2.83, dsp }], wires } })
+  const { results: none } = await sim({ nodes, edges: [], wiring: { channels: [{ id: 'c1', volts: 2.83 }], wires } })
+  const { results: on } = await sim({ nodes, edges: [], wiring: { channels: [{ id: 'c1', volts: 2.83, dsp: { ...dsp, on: true } }], wires } })
+  for (let i = 0; i < off.freqs.length; i++) {
+    assert.equal(off.splCombined[i], none.splCombined[i])
+    assert.equal(off.phase[i], none.phase[i])
+  }
+  assert.ok(on.splCombined.some((v, i) => Math.abs(v - none.splCombined[i]) > 3), 'switched on, it acts')
+})
+
+// CONTRACT (adapt): a channel that reaches no driver is `loaded: false`, and
+// `zinMag` is the first loaded channel's, even when an unloaded one comes first.
+test('wiring: an unloaded channel is marked, and zinMag skips it', async () => {
+  const nodes = [{ id: 'a', type: 'driver', params: DRV }]
+  const wires = [{ a: 'ch:c2:+', b: 'a:+' }, { a: 'ch:c2:-', b: 'a:-' }]
+  const { results: r } = await sim({ nodes, edges: [], wiring: { toolbar: 'c1', channels: [{ id: 'c1', volts: 2.83 }, { id: 'c2', volts: 2.83 }], wires } })
+  assert.equal(r.zinByChannel.c1.loaded, false)
+  assert.equal(r.zinByChannel.c2.loaded, true)
+  assert.ok(r.zinByChannel.c1.mag.every((v) => v > 1e6), 'an open terminal')
+  assert.deepEqual(r.zinMag, r.zinByChannel.c2.mag)
+})
+
 // ---------- probes ----------
 
 /** A driver into a tapped chamber whose tap feeds a port. */
