@@ -707,6 +707,19 @@ function MmField({ label, value, onChange, placeholder, zero, title }) {
 }
 
 /**
+ * Which driver a node holds, for keying the parts that keep state about it:
+ * loading another driver into the node starts them afresh.
+ *
+ * @param {object} driver - The driver node.
+ * @returns {string} Its id and the figures that say which driver it is.
+ * @pure
+ */
+const driverKey = (driver) => {
+  const b = driver.data.baseline || {}
+  return `${driver.id}|${b.Fs}|${b.Bl}|${b.Mms}|${b.Xmax}`
+}
+
+/**
  * Build Bl(x) and Kms(x) for a driver, as a form behind a button.
  *
  * From the motor: Bl(x) follows the coil and gap heights and the fringe
@@ -1127,7 +1140,7 @@ export default function NLLab() {
         <span style={{ flex: 1 }} />
         <button onClick={() => fileRef.current?.click()}>Import CSV…</button>
         <PolyButton curve={curve} param={param} refv={refv} setCurve={setCurve} />
-        <RatingsButton driver={driver} nl={nl} />
+        <RatingsButton key={driverKey(driver)} driver={driver} nl={nl} />
         <input ref={fileRef} type="file" accept=".csv,.txt" style={{ display: 'none' }} onChange={importCSV} />
         {curve.table && <button className="danger" onClick={() => setCurve({ table: null })}>Clear table</button>}
         {curve.poly && <button className="danger" onClick={() => setCurve({ poly: null })}>Clear polynomial</button>}
@@ -1149,7 +1162,7 @@ export default function NLLab() {
         ))}
         <AddOverlay driver={driver} />
       </div>
-      <CurveEditor key={driver.id + param} driverId={driver.id} param={param} nl={nl} xmax={xmax} width={size.w} height={size.h} refv={refv} overlays={shown} />
+      <CurveEditor key={driverKey(driver) + param} driverId={driver.id} param={param} nl={nl} xmax={xmax} width={size.w} height={size.h} refv={refv} overlays={shown} />
     </div>
   )
 }

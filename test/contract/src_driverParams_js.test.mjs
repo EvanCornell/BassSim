@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import {
   COUPLED, BASIS_SIZE, DEFAULT_BASIS, RELATIONS, TS_FIELDS,
   round6, derive, canSolve, lockParam, unlockParam, basisOf,
-  pickTS, baselineOf, matchesBaseline,
+  pickTS, baselineOf, matchesBaseline, withCurvesFor,
 } from '../../src/driverParams.js'
 import { RHO, C_AIR } from '../../src/engine/geometry.js'
 
@@ -387,4 +387,16 @@ test('matchesBaseline: an unset Znom matches a baseline without one', () => {
   const base = pickTS(DRIVER)
   assert.equal(matchesBaseline({ data: { params: { ...DRIVER, Znom: null }, baseline: base } }), true)
   assert.equal(matchesBaseline({ data: { params: { ...DRIVER, Znom: 4 }, baseline: base } }), false)
+})
+
+// CONTRACT (withCurvesFor): "A different driver clears them ...; the same
+// driver applied again ... keeps them."
+test('withCurvesFor: a different driver clears the curves, the same one keeps them', () => {
+  const params = { label: 'B', Fs: 30, Re: 3.6, Bl: 15, Xmax: 12, Znom: null }
+  const node = { data: { params: { nl: { Bl: { points: [[0, 1]] } } }, baseline: { Fs: 32, Re: 3.6, Bl: 14, Xmax: 10 } } }
+  assert.equal(withCurvesFor(node, params).nl, null, 'another driver')
+  const same = { data: { params: {}, baseline: { Fs: 30, Re: 3.6, Bl: 15, Xmax: 12 } } }
+  assert.equal('nl' in withCurvesFor(same, params), false, 'the same driver again')
+  assert.equal(withCurvesFor(undefined, params).nl, null, 'a node with no starting point')
+  assert.deepEqual(params, { label: 'B', Fs: 30, Re: 3.6, Bl: 15, Xmax: 12, Znom: null }, 'params are not modified')
 })

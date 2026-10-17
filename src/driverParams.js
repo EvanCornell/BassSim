@@ -338,6 +338,25 @@ export function baselineOf(node) {
 }
 
 /**
+ * The params a database driver writes onto a node, curves included.
+ *
+ * A node's large-signal curves (`nl`) and the coil, gap and Xmax they were
+ * built from describe the driver they were made for. A different driver
+ * clears them, so the curve builder starts from the new one; the same driver
+ * applied again — its T/S figures those the node started from — keeps them.
+ *
+ * @param {object|undefined} node - The driver node the params go onto, if it exists yet.
+ * @param {object} params - From `driverToParams`.
+ * @returns {object} The params to write.
+ * @pure
+ */
+export function withCurvesFor(node, params) {
+  const base = baselineOf(node)
+  const same = base && Object.entries(pickTS(params)).every(([k, v]) => base[k] === v)
+  return same ? params : { ...params, nl: null }
+}
+
+/**
  * Whether a driver still matches the starting point it was recorded at.
  *
  * Compared over the driver's own fields only, and on the stored values

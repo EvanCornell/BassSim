@@ -5,6 +5,7 @@ import {
   BUILTIN_DRIVERS, DRIVER_BRANDS, EXT_FIELDS, EXT_GROUPS, driverToParams,
 } from '../data/drivers'
 import { useBackdropDismiss } from '../utils/backdrop'
+import { withCurvesFor } from '../driverParams'
 
 /**
  * The expanded extended-parameter view for one driver.
@@ -125,14 +126,22 @@ export default function DriverDB() {
     const params = driverToParams(d)
     // Several drivers selected and nothing else: the record goes into all of them.
     const st = useStore.getState()
+    /**
+     * Apply the record to one node, clearing curves made for another driver.
+     *
+     * @param {string} id - Driver node id.
+     * @returns {void}
+     * @sideEffect Updates the node's params, which triggers a resimulation.
+     */
+    const onto = (id) => applyDriverParams(id, withCurvesFor(useStore.getState().nodes.find((n) => n.id === id), params))
     const picked = st.nodes.filter((n) => n.selected)
     if (picked.length > 1 && picked.every((n) => n.type === 'driver')) {
-      st.editGroup(picked.map((n) => n.id), (id) => applyDriverParams(id, params))
+      st.editGroup(picked.map((n) => n.id), onto)
       setShow(false)
       return
     }
     const target = node && node.type === 'driver' ? node.id : addNode('driver', { x: 100, y: 100 })
-    applyDriverParams(target, params)
+    onto(target)
     setShow(false)
   }
 
