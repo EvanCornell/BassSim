@@ -1305,6 +1305,7 @@ svg.ws-chevron.toggle:hover { color: var(--text); background: var(--panel-2); }
 .ratings-pop .seg { align-self: flex-start; }
 .ratings-fields label { display: flex; align-items: center; gap: 6px; font-size: 12.5px; }
 .ratings-fields input { width: 64px; }
+.ratings-fields .ratings-check input { width: auto; margin: 0; }
 .ratings-fields input::placeholder { font-size: 11px; }
 .ratings-out { font-size: 12px; line-height: 1.5; color: var(--text); background: var(--panel-2); border-radius: 10px; padding: 7px 10px; display: flex; flex-direction: column; gap: 3px; }
 .ratings-out .bad, .ratings-out.bad { color: var(--amber); }

@@ -373,6 +373,12 @@ function withSuspension(bl, span, xvar) {
 // An overhung coil (Hvc > Hg) holds full Bl until an end reaches a plate face,
 // at (Hvc − Hg)/2, and loses it as that end crosses the gap. An underhung coil
 // (Hvc < Hg) holds it until it starts to leave the gap, at (Hg − Hvc)/2.
+//
+// A split winding leaves a band of width s unwound at the middle of the coil
+// — two windings of (Hvc − s)/2 each, Hvc still end to end — so it links the
+// field over both and none across the split. At rest the split sits in the
+// gap; as the coil moves, one winding moves into the field it leaves, so Bl
+// holds, and may rise, further out before it falls.
 
 /** The field at the fringe height, as a share of the gap's. */
 export const FRINGE_LEVEL = 0.1
@@ -393,16 +399,19 @@ function logCosh(t) {
 }
 
 /**
- * Bl(x) from the coil height, gap height and fringe height.
+ * Bl(x) from the coil height, gap height and fringe height, and a split in the winding.
  *
- * @param {{coil: number, gap: number, fringe?: number}} g - Coil (winding) height, magnetic gap height and fringe height, mm. The fringe defaults to a quarter of the gap; 0 is a hard-edged field.
- * @returns {Function} `x ↦ Bl(x)/Bl(0)`, x in mm: even, 1 at rest, falling towards 0.
- * @throws {Error} When the coil or gap height is not positive, or the fringe is negative.
+ * @param {{coil: number, gap: number, fringe?: number, split?: number}} g - Coil (winding) height end to end, magnetic gap height, fringe height and the unwound split at the coil's middle, mm. The fringe defaults to a quarter of the gap; 0 is a hard-edged field. No split, or 0, is a plain winding.
+ * @returns {Function} `x ↦ Bl(x)/Bl(0)`, x in mm: even, 1 at rest, falling towards 0 — after rising, for some split windings.
+ * @throws {Error} When the coil or gap height is not positive, the fringe is negative, or the split is negative, leaves no winding, or leaves none in the field at rest.
  * @pure
  */
-export function blFromGeometry({ coil, gap, fringe }) {
+export function blFromGeometry({ coil, gap, fringe, split }) {
   if (!(coil > 0)) throw new Error('Coil height must be a positive number of mm.')
   if (!(gap > 0)) throw new Error('Gap height must be a positive number of mm.')
+  const s = split == null || split === '' ? 0 : Number(split)
+  if (!(s >= 0)) throw new Error('Split must be 0 or more mm.')
+  if (!(s < coil)) throw new Error('Split must be less than the coil height, which includes it.')
   const h = fringe == null || fringe === '' ? DEFAULT_FRINGE_SHARE * gap : Number(fringe)
   if (!(h >= 0)) throw new Error('Fringe height must be 0 or more mm.')
   const f = (2 * h) / Math.log((1 - FRINGE_LEVEL) / FRINGE_LEVEL)
@@ -423,24 +432,34 @@ export function blFromGeometry({ coil, gap, fringe }) {
    * @returns {number} ∫ B over the coil.
    * @pure
    */
-  const linked = (x) => F(x + coil / 2) - F(x - coil / 2)
+  const linked = (x) => F(x + coil / 2) - F(x + s / 2) + F(x - s / 2) - F(x - coil / 2)
   const rest = linked(0)
+  if (!(rest > 0.02 * Math.min(gap, (coil - s) / 2))) throw new Error('At rest the windings sit outside the field: the split must be narrower than the gap and its fringe.')
   return (x) => linked(x) / rest
 }
 
 /**
- * The excursion at which a falling, even ratio function first reaches a level.
+ * The excursion at which an even ratio function first falls to a level.
  *
- * @param {Function} fn - The ratio at an excursion, mm; 1 at rest and falling.
+ * It need not fall all the way: a split winding's Bl may rise first. The
+ * first crossing is found on a fine scan, then refined.
+ *
+ * @param {Function} fn - The ratio at an excursion, mm; 1 at rest.
  * @param {number} level - The level, below 1.
  * @param {number} limit - The furthest excursion to look, mm.
  * @returns {number|null} The excursion, mm, or `null` when it does not get there within `limit`.
  * @pure
  */
 export function excursionAt(fn, level, limit) {
-  if (fn(limit) > level) return null
+  const steps = 800
   let lo = 0
-  let hi = limit
+  let hi = null
+  for (let i = 1; i <= steps; i++) {
+    const x = (limit * i) / steps
+    if (fn(x) <= level) { hi = x; break }
+    lo = x
+  }
+  if (hi == null) return null
   for (let i = 0; i < 60; i++) {
     const mid = (lo + hi) / 2
     if (fn(mid) > level) lo = mid
@@ -456,21 +475,32 @@ export function excursionAt(fn, level, limit) {
  * as with `curvesFromRatings`. Xmax plays no part in the curves: when given,
  * `info.blAtXmax` reports what Bl comes to at the rated Xmax, as a check.
  *
- * @param {{coil: number, gap: number, fringe?: number, xvar?: number|null, xmax?: number|null}} g - Coil and gap heights, fringe height, Xvar and Xmax, mm.
- * @returns {{Bl: object, Kms: object, info: object}} The curves, and what they come to: the fringe used, where full Bl ends (`flat`), where Bl reaches 82% (`bl82At`), 70% (`bl70At`) and 6 dB (`blSixDbAt`), Bl at Xmax, and the Xvar split.
+ * @param {{coil: number, gap: number, fringe?: number, split?: number|null, xvar?: number|null, xmax?: number|null}} g - Coil and gap heights, fringe height, split winding, Xvar and Xmax, mm.
+ * @returns {{Bl: object, Kms: object, info: object}} The curves, and what they come to: the fringe used, where full Bl ends (`flat`, for a plain winding), the split and each winding's height, the highest Bl and where (`blPeak`, `blPeakAt`), where Bl reaches 82% (`bl82At`), 70% (`bl70At`) and 6 dB (`blSixDbAt`), Bl at Xmax, and the Xvar split.
  * @throws {Error} When a height is not usable, or Xvar is given but not positive.
  * @pure
  */
-export function curvesFromGeometry({ coil, gap, fringe, xvar, xmax }) {
+export function curvesFromGeometry({ coil, gap, fringe, split, xvar, xmax }) {
   checkXvar(xvar)
-  const bl = blFromGeometry({ coil, gap, fringe })
+  const bl = blFromGeometry({ coil, gap, fringe, split })
+  const s = Number(split) > 0 ? Number(split) : 0
   const h = fringe == null || fringe === '' ? DEFAULT_FRINGE_SHARE * gap : Number(fringe)
   const reach = (coil + gap) / 2 + 4 * h
   const span = Math.max(reach + 2, xvar > 0 ? 2 * xvar : 0, xmax > 0 ? 4 * xmax : 0, 20)
   const out = withSuspension(bl, span, xvar)
+  let blPeak = 1
+  let blPeakAt = 0
+  for (let i = 1; i <= 800; i++) {
+    const x = (span * i) / 800
+    if (bl(x) > blPeak) { blPeak = bl(x); blPeakAt = x }
+  }
   Object.assign(out.info, {
     fringe: h,
-    flat: Math.abs(coil - gap) / 2,
+    split: s,
+    winding: (coil - s) / 2,
+    blPeak,
+    blPeakAt,
+    flat: s ? null : Math.abs(coil - gap) / 2,
     overhung: coil >= gap,
     bl82At: excursionAt(bl, 0.82, span),
     bl70At: excursionAt(bl, BL_AT_XMAX, span),

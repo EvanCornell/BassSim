@@ -650,3 +650,45 @@ test('curvesFromGeometry: Bl from coil and gap, Kms from Xvar', () => {
   assert.equal(curvesFromGeometry({ coil: 11, gap: 7, xvar: 5.7 }).info.blAlone, true)
   assert.throws(() => curvesFromGeometry({ coil: 11, gap: 7, xvar: -2 }), /Xvar/)
 })
+
+// CONTRACT (blFromGeometry, split): "A split winding leaves a band of width s
+// unwound at the middle of the coil — two windings of (Hvc − s)/2 each, Hvc
+// still end to end — so it links the field over both and none across the split."
+test('blFromGeometry: a split winding links the field over its two windings only', () => {
+  // Hard edge, 14 mm gap, 34 mm coil split 4: windings 15 mm each, from 2 to 17 mm off centre.
+  const bl = blFromGeometry({ coil: 34, gap: 14, fringe: 0, split: 4 })
+  // At rest 5 + 5 mm of winding in the gap; at 5 mm, 0 + 10; at 9 and 10 mm, all 14 mm of gap on one winding.
+  for (const [x, r] of [[0, 1], [5, 1], [9, 1.4], [10, 1.4], [-10, 1.4], [17, 0.7]]) {
+    assert.ok(Math.abs(bl(x) - r) < 1e-9, `${x} mm: ${bl(x)} vs ${r}`)
+  }
+  const plain = blFromGeometry({ coil: 34, gap: 14 })
+  const none = blFromGeometry({ coil: 34, gap: 14, split: 0 })
+  for (const x of [0, 5, 12, 20]) assert.equal(none(x), plain(x), 'a split of 0 is a plain winding')
+  assert.throws(() => blFromGeometry({ coil: 34, gap: 14, split: 34 }), /less than the coil height/)
+  assert.throws(() => blFromGeometry({ coil: 34, gap: 14, split: -1 }), /0 or more/)
+  assert.throws(() => blFromGeometry({ coil: 34, gap: 14, split: 30 }), /outside the field/)
+})
+
+// CONTRACT (excursionAt): "It need not fall all the way: a split winding's Bl
+// may rise first." The first crossing is the one returned.
+test('excursionAt: the first fall to a level, after a rise', () => {
+  const fn = (x) => 1 + 0.5 * Math.sin((Math.PI * Math.abs(x)) / 10) - 0.06 * Math.abs(x)
+  const at = excursionAt(fn, 0.82, 40)
+  assert.ok(Math.abs(fn(at) - 0.82) < 1e-9)
+  for (let x = 0; x < at - 1e-6; x += 0.01) assert.ok(fn(x) > 0.82, `no earlier crossing at ${x}`)
+  assert.equal(excursionAt(() => 1, 0.5, 10), null)
+})
+
+// CONTRACT (curvesFromGeometry): reports "the split and each winding's
+// height, the highest Bl and where (`blPeak`, `blPeakAt`)".
+test('curvesFromGeometry: a split winding reports its windings and its peak', () => {
+  const { info, Bl } = curvesFromGeometry({ coil: 34, gap: 14, split: 4, xvar: 16 })
+  assert.equal(info.split, 4)
+  assert.equal(info.winding, 15)
+  assert.equal(info.flat, null)
+  assert.ok(info.blPeak > 1.1 && info.blPeakAt > 5, `peak ${info.blPeak} at ${info.blPeakAt}`)
+  assert.ok(Math.max(...Bl.table.map((r) => r[1])) > 1.1, 'the table carries the rise')
+  const plain = curvesFromGeometry({ coil: 34, gap: 14, xvar: 16 }).info
+  assert.equal(plain.blPeak, 1)
+  assert.ok(info.bl70At > plain.bl70At, 'the split holds Bl further out')
+})

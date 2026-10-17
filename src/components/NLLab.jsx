@@ -645,8 +645,8 @@ function fitFor(p, custom) {
   const geo = method === 'geometry' ? (r?.method === 'geometry' ? r : catalogueGeometry(p, custom)) : null
   try {
     if (geo) {
-      const c = curvesFromGeometry({ coil: geo.coil, gap: geo.gap, fringe: geo.fringe, xvar })
-      return { Bl: c.Bl, Kms: c.Kms, label: `Motor ${geo.coil}/${geo.gap} mm${xvar ? ` & Xvar ${xvar}` : ''} fit` }
+      const c = curvesFromGeometry({ coil: geo.coil, gap: geo.gap, fringe: geo.fringe, split: geo.split, xvar })
+      return { Bl: c.Bl, Kms: c.Kms, label: `Motor ${geo.coil}/${geo.gap} mm${geo.split > 0 ? `, split ${geo.split}` : ''}${xvar ? ` & Xvar ${xvar}` : ''} fit` }
     }
     const xmax = Number(r?.xmax ?? p.Xmax)
     if (xmax > 0) {
@@ -665,6 +665,18 @@ function fitFor(p, custom) {
  * @pure
  */
 const pct = (r) => `${(r * 100).toFixed(0)}%`
+
+/**
+ * A length without trailing zeros.
+ *
+ * @param {number} v - mm.
+ * @returns {string} e.g. `3.5`, `10`.
+ * @pure
+ */
+const trim = (v) => v.toFixed(2).replace(/\.?0+$/, '')
+
+/** B&C model names from the split-winding lines: SW and IPAL. */
+const SPLIT_LINES = /^\d+(SW|IPAL)\d*/i
 
 /**
  * A level in dB.
@@ -741,7 +753,8 @@ function RatingsButton({ driver, nl }) {
   const p = driver.data.params
   const [open, setOpen] = useState(false)
   const [method, setMethod] = useState('geometry')
-  const [f, setF] = useState({ coil: '', gap: '', fringe: '', xmax: '', xvar: '' })
+  const [f, setF] = useState({ coil: '', gap: '', fringe: '', split: '', xmax: '', xvar: '' })
+  const [splitOn, setSplitOn] = useState(false)
   /**
    * Open the form, filled from the last build, or the driver and its catalogue entry.
    *
@@ -761,9 +774,10 @@ function RatingsButton({ driver, nl }) {
     const str = (v) => (v == null || v === '' ? '' : String(v))
     setMethod(buildMethod(nl.ratings, geo))
     setF({
-      coil: str(r.coil ?? geo?.coil), gap: str(r.gap ?? geo?.gap), fringe: str(r.fringe),
+      coil: str(r.coil ?? geo?.coil), gap: str(r.gap ?? geo?.gap), fringe: str(r.fringe), split: str(r.split),
       xmax: str(r.xmax ?? p.Xmax), xvar: str(r.xvar ?? catalogueXvar(p, custom)),
     })
+    setSplitOn(r.split > 0)
     setOpen(!open)
   }
   /**
@@ -785,14 +799,18 @@ function RatingsButton({ driver, nl }) {
   const coil = num(f.coil)
   const gap = num(f.gap)
   const fringe = num(f.fringe)
+  const split = splitOn ? num(f.split) : null
   const xmax = num(f.xmax)
   const xvar = num(f.xvar)
   let out = null
   let error = null
   try {
-    out = method === 'geometry'
-      ? curvesFromGeometry({ coil, gap, fringe, xvar, xmax: Number(p.Xmax) || null })
-      : curvesFromRatings(xmax, xvar)
+    if (method === 'geometry' && splitOn && split == null) error = 'Enter the split width: the unwound band between the two windings.'
+    else {
+      out = method === 'geometry'
+        ? curvesFromGeometry({ coil, gap, fringe, split, xvar, xmax: Number(p.Xmax) || null })
+        : curvesFromRatings(xmax, xvar)
+    }
   } catch (err) { error = err.message }
   const i = out?.info
   /**
@@ -805,7 +823,7 @@ function RatingsButton({ driver, nl }) {
     if (!out) return
     const has = curveHasContent(nl.Bl) || curveHasContent(nl.Kms) || curveHasContent(nl.Cms)
     if (has && !confirm('Replace this driver\'s Bl(x) and Kms(x) curves (and clear any Cms(x))?')) return
-    const ratings = method === 'geometry' ? { method, coil, gap, fringe, xvar } : { method, xmax, xvar }
+    const ratings = method === 'geometry' ? { method, coil, gap, fringe, split: splitOn ? split : null, xvar } : { method, xmax, xvar }
     updateParams(driver.id, {
       ...(method === 'xmax' ? { Xmax: xmax } : {}),
       nl: { ...nl, Bl: out.Bl, Kms: out.Kms, Cms: emptyCurve(), ratings },
@@ -829,6 +847,10 @@ function RatingsButton({ driver, nl }) {
                 over the fringe height (where it is down to {pct(FRINGE_LEVEL)}). It holds full strength until an end of the
                 coil reaches a plate face, then falls as that end crosses the gap. An empty fringe is a quarter of the gap
                 height. Xmax is not used and stays as it is.
+                {splitOn && <> A split winding leaves the middle of the coil unwound; the coil height still runs end to end,
+                  the split included.</>}
+                {!splitOn && SPLIT_LINES.test(p.label || '') && <> This looks like one of B&amp;C&apos;s split-winding lines: tick
+                  Split winding and enter its split width.</>}
               </div>
             )
             : (
@@ -843,6 +865,11 @@ function RatingsButton({ driver, nl }) {
                 <MmField label="Gap height" value={f.gap} onChange={field('gap')} title="Magnetic gap height: the top plate's thickness" />
                 <MmField label="Fringe" value={f.fringe} onChange={field('fringe')} zero placeholder={autoFringe}
                   title={`How far past each plate face the field reaches before it is down to ${pct(FRINGE_LEVEL)}; 0 is a hard edge. Empty uses a quarter of the gap height.`} />
+                <label className="ratings-check" title="A coil wound in two sections with an unwound band between them, as in B&C's SW and IPAL lines">
+                  <input type="checkbox" checked={splitOn} onChange={(e) => setSplitOn(e.target.checked)} /> Split winding
+                </label>
+                {splitOn && <MmField label="Split" value={f.split} onChange={field('split')} zero placeholder="width"
+                  title="The unwound band at the middle of the coil, between its two windings" />}
               </>
             )}
             {method === 'xmax' && <MmField label="Xmax" value={f.xmax} onChange={field('xmax')} />}
@@ -853,8 +880,14 @@ function RatingsButton({ driver, nl }) {
           {i && method === 'geometry' && (
             <div className="ratings-out">
               <div>
-                {i.overhung ? 'Overhung' : 'Underhung'} by {(Math.abs(coil - gap) / 2).toFixed(2).replace(/\.?0+$/, '')} mm each way, fringe {i.fringe.toFixed(2).replace(/\.?0+$/, '')} mm.
+                {i.split > 0
+                  ? <>Two windings of {trim(i.winding)} mm, {trim(i.split)} mm apart, fringe {trim(i.fringe)} mm.</>
+                  : <>{i.overhung ? 'Overhung' : 'Underhung'} by {trim(Math.abs(coil - gap) / 2)} mm each way, fringe {trim(i.fringe)} mm.</>}
               </div>
+              {i.blPeak > 1.005 && <div className={i.blPeak > 1.5 ? 'bad' : ''}>
+                Bl rises to {pct(i.blPeak)} of its rest value at {mmText(i.blPeakAt)}.
+                {i.blPeak > 1.5 && ' That is more than real split windings show: the split is probably wider than this motor\'s.'}
+              </div>}
               <div>Bl is 82% at {mmText(i.bl82At)}, {pct(BL_AT_XMAX)} at {mmText(i.bl70At)}, and {XVAR_DB} dB down at {mmText(i.blSixDbAt)}.</div>
               {i.blAtXmax != null && <div>At the listed Xmax ({p.Xmax} mm), Bl is {pct(i.blAtXmax)}.</div>}
             </div>
