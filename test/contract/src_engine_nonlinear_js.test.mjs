@@ -651,12 +651,12 @@ test('curvesFromGeometry: Bl from coil and gap, Kms from Xvar', () => {
   assert.throws(() => curvesFromGeometry({ coil: 11, gap: 7, xvar: -2 }), /Xvar/)
 })
 
-// CONTRACT (blFromGeometry, split): "A split winding leaves a band of width s
-// unwound at the middle of the coil — two windings of (Hvc − s)/2 each, Hvc
-// still end to end — so it links the field over both and none across the split."
-test('blFromGeometry: a split winding links the field over its two windings only', () => {
-  // Hard edge, 14 mm gap, 34 mm coil split 4: windings 15 mm each, from 2 to 17 mm off centre.
-  const bl = blFromGeometry({ coil: 34, gap: 14, fringe: 0, split: 4 })
+// CONTRACT (blFromGeometry, split): "A split winding is the coil's winding
+// height Hvc in two halves with an unwound band of width s between them —
+// Hvc + s end to end — so it links the field over both halves and none across the split."
+test('blFromGeometry: a split winding links the field over its two halves only', () => {
+  // Hard edge, 14 mm gap, 30 mm of winding split 4: halves of 15 mm, from 2 to 17 mm off centre.
+  const bl = blFromGeometry({ coil: 30, gap: 14, fringe: 0, split: 4 })
   // At rest 5 + 5 mm of winding in the gap; at 5 mm, 0 + 10; at 9 and 10 mm, all 14 mm of gap on one winding.
   for (const [x, r] of [[0, 1], [5, 1], [9, 1.4], [10, 1.4], [-10, 1.4], [17, 0.7]]) {
     assert.ok(Math.abs(bl(x) - r) < 1e-9, `${x} mm: ${bl(x)} vs ${r}`)
@@ -664,7 +664,13 @@ test('blFromGeometry: a split winding links the field over its two windings only
   const plain = blFromGeometry({ coil: 34, gap: 14 })
   const none = blFromGeometry({ coil: 34, gap: 14, split: 0 })
   for (const x of [0, 5, 12, 20]) assert.equal(none(x), plain(x), 'a split of 0 is a plain winding')
-  assert.throws(() => blFromGeometry({ coil: 34, gap: 14, split: 34 }), /less than the coil height/)
+  // 32 mm of winding split 2 is two 16 mm halves, 34 mm end to end.
+  const wide = blFromGeometry({ coil: 32, gap: 14, fringe: 0, split: 2 })
+  // Halves from 1 to 17 mm off centre: at rest 6 + 6 mm in the gap; from 8 to
+  // 10 mm one half spans all 14; at 17 mm 7 mm of it is left.
+  for (const [x, r] of [[0, 1], [8, 14 / 12], [9, 14 / 12], [10, 14 / 12], [17, 7 / 12]]) {
+    assert.ok(Math.abs(wide(x) - r) < 1e-9, `${x} mm: ${wide(x)} vs ${r}`)
+  }
   assert.throws(() => blFromGeometry({ coil: 34, gap: 14, split: -1 }), /0 or more/)
   assert.throws(() => blFromGeometry({ coil: 34, gap: 14, split: 30 }), /outside the field/)
 })
@@ -684,7 +690,7 @@ test('excursionAt: the first fall to a level, after a rise', () => {
 test('curvesFromGeometry: a split winding reports its windings and its peak', () => {
   const { info, Bl } = curvesFromGeometry({ coil: 34, gap: 14, split: 4, xvar: 16 })
   assert.equal(info.split, 4)
-  assert.equal(info.winding, 15)
+  assert.equal(info.winding, 17)
   assert.equal(info.flat, null)
   assert.ok(info.blPeak > 1.1 && info.blPeakAt > 5, `peak ${info.blPeak} at ${info.blPeakAt}`)
   assert.ok(Math.max(...Bl.table.map((r) => r[1])) > 1.1, 'the table carries the rise')

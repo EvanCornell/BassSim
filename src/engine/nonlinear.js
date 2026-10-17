@@ -374,9 +374,9 @@ function withSuspension(bl, span, xvar) {
 // at (Hvc − Hg)/2, and loses it as that end crosses the gap. An underhung coil
 // (Hvc < Hg) holds it until it starts to leave the gap, at (Hg − Hvc)/2.
 //
-// A split winding leaves a band of width s unwound at the middle of the coil
-// — two windings of (Hvc − s)/2 each, Hvc still end to end — so it links the
-// field over both and none across the split. At rest the split sits in the
+// A split winding is the coil's winding height Hvc in two halves with an
+// unwound band of width s between them — Hvc + s end to end — so it links the
+// field over both halves and none across the split. At rest the split sits in the
 // gap; as the coil moves, one winding moves into the field it leaves, so Bl
 // holds, and may rise, further out before it falls.
 
@@ -401,9 +401,9 @@ function logCosh(t) {
 /**
  * Bl(x) from the coil height, gap height and fringe height, and a split in the winding.
  *
- * @param {{coil: number, gap: number, fringe?: number, split?: number}} g - Coil (winding) height end to end, magnetic gap height, fringe height and the unwound split at the coil's middle, mm. The fringe defaults to a quarter of the gap; 0 is a hard-edged field. No split, or 0, is a plain winding.
+ * @param {{coil: number, gap: number, fringe?: number, split?: number}} g - Coil winding height (the wire, a split not included), magnetic gap height, fringe height and the unwound split between the winding's two halves, mm. The fringe defaults to a quarter of the gap; 0 is a hard-edged field. No split, or 0, is a plain winding.
  * @returns {Function} `x ↦ Bl(x)/Bl(0)`, x in mm: even, 1 at rest, falling towards 0 — after rising, for some split windings.
- * @throws {Error} When the coil or gap height is not positive, the fringe is negative, or the split is negative, leaves no winding, or leaves none in the field at rest.
+ * @throws {Error} When the coil or gap height is not positive, the fringe is negative, or the split is negative or leaves no winding in the field at rest.
  * @pure
  */
 export function blFromGeometry({ coil, gap, fringe, split }) {
@@ -411,7 +411,6 @@ export function blFromGeometry({ coil, gap, fringe, split }) {
   if (!(gap > 0)) throw new Error('Gap height must be a positive number of mm.')
   const s = split == null || split === '' ? 0 : Number(split)
   if (!(s >= 0)) throw new Error('Split must be 0 or more mm.')
-  if (!(s < coil)) throw new Error('Split must be less than the coil height, which includes it.')
   const h = fringe == null || fringe === '' ? DEFAULT_FRINGE_SHARE * gap : Number(fringe)
   if (!(h >= 0)) throw new Error('Fringe height must be 0 or more mm.')
   const f = (2 * h) / Math.log((1 - FRINGE_LEVEL) / FRINGE_LEVEL)
@@ -425,6 +424,8 @@ export function blFromGeometry({ coil, gap, fringe, split }) {
   const F = f > 1e-9
     ? (z) => (f / 2) * (logCosh((z + gap / 2) / f) - logCosh((z - gap / 2) / f))
     : (z) => (Math.min(Math.max(z, -gap / 2), gap / 2))
+  // Each half of the winding runs from s/2 to s/2 + Hvc/2 off centre.
+  const end = s / 2 + coil / 2
   /**
    * The field the coil sits in when centred at x, unnormalized.
    *
@@ -432,9 +433,9 @@ export function blFromGeometry({ coil, gap, fringe, split }) {
    * @returns {number} ∫ B over the coil.
    * @pure
    */
-  const linked = (x) => F(x + coil / 2) - F(x + s / 2) + F(x - s / 2) - F(x - coil / 2)
+  const linked = (x) => F(x + end) - F(x + s / 2) + F(x - s / 2) - F(x - end)
   const rest = linked(0)
-  if (!(rest > 0.02 * Math.min(gap, (coil - s) / 2))) throw new Error('At rest the windings sit outside the field: the split must be narrower than the gap and its fringe.')
+  if (!(rest > 0.02 * Math.min(gap, coil / 2))) throw new Error('At rest the windings sit outside the field: the split must be narrower than the gap and its fringe.')
   return (x) => linked(x) / rest
 }
 
@@ -485,7 +486,7 @@ export function curvesFromGeometry({ coil, gap, fringe, split, xvar, xmax }) {
   const bl = blFromGeometry({ coil, gap, fringe, split })
   const s = Number(split) > 0 ? Number(split) : 0
   const h = fringe == null || fringe === '' ? DEFAULT_FRINGE_SHARE * gap : Number(fringe)
-  const reach = (coil + gap) / 2 + 4 * h
+  const reach = (coil + s + gap) / 2 + 4 * h
   const span = Math.max(reach + 2, xvar > 0 ? 2 * xvar : 0, xmax > 0 ? 4 * xmax : 0, 20)
   const out = withSuspension(bl, span, xvar)
   let blPeak = 1
@@ -497,7 +498,7 @@ export function curvesFromGeometry({ coil, gap, fringe, split, xvar, xmax }) {
   Object.assign(out.info, {
     fringe: h,
     split: s,
-    winding: (coil - s) / 2,
+    winding: s ? coil / 2 : coil,
     blPeak,
     blPeakAt,
     flat: s ? null : Math.abs(coil - gap) / 2,

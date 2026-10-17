@@ -847,8 +847,7 @@ function RatingsButton({ driver, nl }) {
                 over the fringe height (where it is down to {pct(FRINGE_LEVEL)}). It holds full strength until an end of the
                 coil reaches a plate face, then falls as that end crosses the gap. An empty fringe is a quarter of the gap
                 height. Xmax is not used and stays as it is.
-                {splitOn && <> A split winding leaves the middle of the coil unwound; the coil height still runs end to end,
-                  the split included.</>}
+                {splitOn && <> A split winding is the coil height in two halves with the split between them.</>}
                 {!splitOn && SPLIT_LINES.test(p.label || '') && <> This looks like one of B&amp;C&apos;s split-winding lines: tick
                   Split winding and enter its split width.</>}
               </div>
