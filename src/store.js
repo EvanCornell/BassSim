@@ -2998,8 +2998,10 @@ export const useStore = create((rawSet, get) => {
    * which also fills every param from the defaults, so a project saved by an
    * older build gains any parameter added since and edges missing an id get
    * one. A bare `{name, nodes, edges}` — a new empty file — keeps the current
-   * sweep, drive, channels and display settings rather than resetting them,
-   * and its drivers go on the first channel in parallel.
+   * sweep, drive level and display settings rather than resetting them. Its
+   * channels are its own: one fresh channel at the drive level in use, with
+   * no DSP, and its drivers on it in parallel. Channels, their DSP and their
+   * cables belong to the project they were set up in.
    *
    * History, redo and selection are all cleared: they describe the project
    * being replaced and would be meaningless against the new one. Snapshots are
@@ -3014,10 +3016,12 @@ export const useStore = create((rawSet, get) => {
     const ed = toEditor(migrateProject(proj))
     const bare = !proj.settings && !proj.analyses && !proj.wiring && !proj.display
     const cur = get()
-    // A bare file keeps the channels in use, with its own drivers on the first.
+    // A bare file keeps only the drive level in use, on one fresh channel.
     const keep = cur.projectExtras.wiring
-    const wiring = bare && keep?.channels?.length
-      ? { ...keep, wires: WR.parallelWires(ed.nodes.filter((n) => n.type === 'driver'), keep.channels[0].id), layout: {} }
+    const was = keep?.channels?.find((c) => c.id === keep.toolbar) || keep?.channels?.[0]
+    const fresh = { ...DEFAULT_CHANNEL, ...(was ? { volts: was.volts } : {}) }
+    const wiring = bare
+      ? { ...ed.extras.wiring, masterDb: keep?.masterDb ?? 0, toolbar: fresh.id, channels: [fresh], wires: WR.parallelWires(ed.nodes.filter((n) => n.type === 'driver'), fresh.id), layout: {} }
       : ed.extras.wiring
     set({
       nodes: ed.nodes, edges: ed.edges,

@@ -2170,3 +2170,31 @@ test('DSP: open on a channel, edit it, and undo a drag in one step', () => {
   st().closeDsp()
   assert.equal(st().dspOpen, false)
 })
+
+// CONTRACT (loadSerialized, newFile): a new empty file "keeps the current
+// sweep, drive level and display settings"; "Channels, their DSP and their
+// cables belong to the project they were set up in."
+test('newFile: a new project starts with its own channel; DSP stays with its project', () => {
+  st().loadSerialized(blank({ name: 'with dsp' }))
+  const first = st().projectExtras.wiring.channels[0].id
+  st().updateChannel(first, { volts: 8 })
+  st().setChannelDsp(first, { on: true, gainDb: -6, hpf: { on: true, shape: 'butterworth', slope: 24, hz: 30 } })
+  st().addChannel()
+  const was = st().newFile('')
+  st().loadSerialized(blank({ name: 'with dsp' }))
+  st().updateChannel(st().projectExtras.wiring.channels[0].id, { volts: 8 })
+  st().setChannelDsp(st().projectExtras.wiring.channels[0].id, { on: true, gainDb: -6 })
+  st().addChannel()
+  const path = st().newFile('')
+  const w = st().projectExtras.wiring
+  assert.equal(w.channels.length, 1, 'one channel')
+  assert.equal(w.channels[0].dsp, undefined, 'no DSP carried over')
+  assert.equal(w.channels[0].volts, 8, 'the drive level is kept')
+  assert.equal(w.toolbar, w.channels[0].id)
+  st().openFile(was)
+  const back = st().projectExtras.wiring.channels
+  assert.equal(back.length, 2, 'the first project keeps its channels')
+  assert.equal(back[0].dsp.gainDb, -6, 'and its DSP')
+  st().openFile(path)
+  assert.equal(st().projectExtras.wiring.channels[0].dsp, undefined, 'the new one stays clean')
+})
