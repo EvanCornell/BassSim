@@ -75,16 +75,6 @@ custom connector) or ChatGPT, pointing at `https://your-host/mcp` with the
 bearer token. Put it behind TLS (a reverse proxy or the platform's ingress) —
 the server speaks plain HTTP and expects to be terminated upstream.
 
-### Docker
-
-```sh
-docker build -t speakerspice-mcp .
-docker run -e SPEAKERSPICE_TOKEN=your-secret -p 8787:8787 speakerspice-mcp
-```
-
-The image installs only the engine + MCP SDK (no build/UI deps) and includes
-a `/healthz` HEALTHCHECK.
-
 ## Smoke tests
 
 ```sh

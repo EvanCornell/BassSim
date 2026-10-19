@@ -12,33 +12,17 @@ arrangement is saved and restored automatically.
 
 ## Run it
 
-Simulations run **server-side** — the browser bundle contains the UI only,
-no engine code. Development therefore needs both processes:
+The app is fully client-side: the simulation engine (ngspice, compiled to
+WebAssembly) runs in Web Workers in the browser, and projects are stored in
+the browser. There is no server.
 
 ```bash
 npm install
-npm run server  # simulation backend on :8788 (terminal 1)
-npm run dev     # UI on http://localhost:5173, proxies /api to :8788 (terminal 2)
+npm run dev     # http://localhost:5173
+npm run build   # static site in dist/
 ```
 
-Production is a single process serving the built app, the simulation API,
-and the MCP endpoint:
-
-```bash
-npm start       # build + serve everything on http://localhost:8788
-```
-
-Or with Docker: `docker build -t speakerspice . && docker run -p 8788:8788 -v speakerspice-data:/data speakerspice`
-
-### Accounts
-
-The server includes an account system ([Better Auth](https://better-auth.com)
-on SQLite): email + password with reset, plus optional social sign-in
-(Google, Apple, Facebook, GitHub) and post-signup account linking — manage it
-all under **Settings ▸ Account** in the app. Copy `.env.example` to `.env`:
-`BETTER_AUTH_SECRET` is required in production, each social provider appears
-automatically once its OAuth credentials are set, and password-reset email
-uses SMTP (without it, reset links print to the server log).
+`dist/` can be served from any static host, including from a subdirectory.
 
 ## Workspace
 
@@ -119,11 +103,11 @@ brings the edges that were wholly inside the selection, rewired to the copies.
 
 ## How it works
 
-The connected graph is converted into a chain of complex 2×2 ABCD transfer
-matrices in `[pressure; volume velocity]` state, solved at 512 log-spaced
-frequencies (10–1000 Hz by default, adjustable). Parallel branches are
-combined in shunt at junctions; multiple drivers are handled by superposition
-with inactive drivers present as passive impedances.
+Each project is compiled to an ngspice netlist (`src/spice/`) — acoustic,
+mechanical and electrical parts as one circuit — and solved by ngspice
+(WebAssembly) in a pool of Web Workers, one engine per processor thread. A
+frequency sweep is split across the free workers. Because everything is one
+circuit, drivers that share a chamber or port load each other exactly.
 
 ### Node types
 
@@ -131,7 +115,7 @@ with inactive drivers present as passive impedances.
 |---|---|
 | **Driver** | Electro-mechano-acoustic source with full T/S set, semi-inductance Le·(jω)ⁿ, series/parallel arrays, and a T/S solver (datasheet, added-mass, known-box methods) plus a searchable [driver database](#driver-database) of 197 drivers (LocalStorage-extensible). |
 | **Chamber** | Finite transmission line (area = Volume/Length) so longitudinal standing waves at n·c/2L appear as real response features. Stuffing slows sound and adds loss. |
-| **Waveguide Segment** | Any duct/port/horn: conical, exponential, parabolic, hypex, tractrix≈, Le Cléac'h≈ profiles discretized into 24 exact-area slices. Straight port when S1 = S2. Per-node velocity readout on canvas with a click-through velocity chart and turbulence threshold. |
+| **Waveguide Segment** | Any duct/port/horn: conical, exponential, parabolic, hypex, tractrix≈, Le Cléac'h≈ profiles, compiled as a transmission line stepped along its area profile, with distributed viscous and thermal wall loss. Straight port when S1 = S2. Per-node velocity readout on canvas with a click-through velocity chart and turbulence threshold. |
 | **Passive Radiator** | Mechanical resonator in shunt with added-mass tuning and a Cms-from-Fs calculator. |
 | **Radiation Termination** | Circular-piston radiation impedance (Bessel/Struve) into 4π/2π/π/π⁄2 space, rigid wall, or anechoic ρc termination. |
 
@@ -284,16 +268,16 @@ judgement call that needs both in view.
 The simulation engine is also exposed as an [MCP](https://modelcontextprotocol.io)
 server so AI assistants can search drivers, build and calibrate enclosures,
 simulate, optimize against goals, and compare designs directly — see
-[`mcp/README.md`](mcp/README.md). Run it locally over stdio (`npm run mcp`,
-for Claude Desktop/Code) or as a hosted HTTP connector for claude.ai/ChatGPT
-(`npm run mcp:http`, also Dockerized). `npm run test:mcp`,
+[`mcp/README.md`](mcp/README.md). It is an optional Node companion, not part
+of the web app: run it locally over stdio (`npm run mcp`, for Claude
+Desktop/Code) or as an HTTP connector (`npm run mcp:http`). `npm run test:mcp`,
 `npm run test:http`, `npm run test:drivers` and `npm run test:contract`
 run the checks.
 
 ## Stack
 
-React 18, React Flow 11, Zustand, math.js (complex arithmetic), Recharts,
-React Hook Form, Vite.
+React 18, React Flow 11, Zustand, Recharts, Vite; ngspice via
+`eecircuit-engine`; isomorphic-git for records.
 
 ## Caveats
 
@@ -302,9 +286,3 @@ approximate — the ⚠ label marks the ones known to contradict themselves.
 Prefer `official` rows. Tractrix and Le Cléac'h flares are approximated by
 hypex area profiles. The model is lumped/1-D (plane-wave): higher-order cross modes and
 diffraction are out of scope.
-
-Drivers that feed the *same* port — two woofers whose rears enter one chamber —
-are superposed but do not currently load each other, so each sees the full
-enclosure rather than its share of it; the affected nodes carry a warning in
-the app. For identical drivers on one enclosure, use the driver node's array
-count instead, which models the shared loading correctly.

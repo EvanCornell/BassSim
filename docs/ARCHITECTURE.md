@@ -3,6 +3,16 @@
 Status: **proposal, not yet implemented.** This document exists to be argued
 with. Nothing in `src/` has moved.
 
+> **Superseded in part.** This plan was written when the app had a server
+> (`server/index.js`, `/api/simulate`, Better Auth accounts). That server was
+> removed in August 2026 and **no server is planned**. The app is fully
+> client-side: projects compile to ngspice netlists in `src/spice/`, ngspice
+> (WebAssembly) runs them in Web Workers (`src/engine/worker.js` →
+> `pool.js`), and projects live in the browser. §1 and §5 describe that
+> current state. The commercial sections that presuppose a hosted compute
+> service — §5.4, §6, and the job, entitlement and cloud steps in §8 — are
+> kept as a record of the earlier plan, not as current direction.
+
 It plans for a suite of independently-developed tools sharing one acoustic
 model — a free frequency-domain simulator, a paid time-domain engine, a 3D
 enclosure designer, a baffle and far-field tool, and a music-playback analyser
@@ -18,36 +28,38 @@ to serve that.
 
 Worth stating precisely, because the starting position is better than it looks.
 
-**The engine boundary already exists.** `server/index.js` is explicit: *"The
-engine runs ONLY here — the browser bundle contains no solver code."* The client
-POSTs a project to `/api/simulate` and receives results. That is exactly the
-split this document is asked to design.
+**The engine boundary already exists, inside the browser.** A project is
+compiled to an ngspice netlist (`src/spice/compile.js`), run by ngspice
+WebAssembly in a pool of Web Workers (`src/engine/worker.js`, `pool.js`,
+`poolHost.js`), and the raw vectors are turned into results
+(`src/spice/adapt.js`). The UI never touches the solver directly.
 
-**What is missing is not the split. It is the contract across it.**
-`handleSimulate` accepts a parameter documented only as *"a serialized
-project"* and passes it to `hydrateProject`. There is no schema, no version, no
-negotiation, and no conformance suite. `/mcp` is a second consumer of the same
-undocumented vocabulary and can drift from the first without anything noticing.
+**What is missing is not the split. It is the contract across it.** The worker
+accepts a resolved project whose shape is defined by the schema migrations
+rather than a versioned, negotiated contract, and there is no conformance suite
+on the seam. The MCP companion (`mcp/`) is a second consumer of the same
+vocabulary and can drift from the app without anything noticing.
 
 So the work is not "separate the components." It is **make the seams real.**
 
-**The physics core is sound and well factored.** `src/engine/` has a clean
-dependency order — `complex → geometry/acoustics → solver → metrics` — with no
-cycles and no UI leakage. It is the asset to protect.
+**The physics core is sound and well factored.** The engine has a clean
+dependency order — `schema → spice (compile → run → adapt) → engine/metrics` —
+with no cycles and no UI leakage. It is the asset to protect.
 
 **The one structural defect that blocks everything.** There is no node-type
 registry. A node type is a bare string scattered across the tree:
 
-| Type | Files hardcoding it |
+| Type | Files in `src/` naming it |
 |---|---|
-| `driver` | 11 |
-| `chamber`, `waveguide` | 7 each |
-| `radiation` | 5 |
-| `pr` | 4 |
+| `driver` | 20 |
+| `chamber`, `waveguide` | 13 each |
+| `radiation`, `pr` | 7 each |
 
-`solver.js` alone dispatches on `node.type` in **six separate if/else chains**
-across four functions. Every new node type needs six correct branches and nine
-file edits, with nothing to tell you what you missed.
+The SPICE compiler dispatches on `node.type` in one chain
+(`src/spice/compile.js`), which is an improvement on the removed transfer-matrix
+solver's six, but the parameter panel, the canvas nodes, the schema, metrics and
+the MCP builders each still carry their own branches. Every new node type needs
+edits across that whole set, with nothing to tell you what you missed.
 
 This matters more than it appears, because almost every planned tool is a new
 way of authoring node types. The 3D designer, the baffle builder and the
@@ -140,11 +152,10 @@ for far-field prediction later.
 Pure functions of `(Model, AnalysisSpec) → Results`. No framework, no store, no
 I/O, no knowledge of who called them.
 
-All engines run **server-side** (§5). Purity is still a hard rule, for two
-reasons that survive that decision: an engine must be runnable from a headless
-fixture with no HTTP server and no UI, which is what lets one session test one
-package; and an engine that has never assumed a host can later acquire a
-different one without a rewrite.
+Engines run **in the browser**, in Web Workers (§5). Purity is still a hard
+rule: an engine must be runnable from a headless fixture with no worker, no
+store and no UI, which is what lets one session test one package — the Node
+test suite and the MCP companion already run the same compiler this way.
 
 Each engine **declares which node types and analyses it supports**, so a surface
 can grey out what an engine cannot do, and adding a node type cannot silently
@@ -227,80 +238,40 @@ instead of a method.
 
 ---
 
-## 5. Hosting: everything server-side
+## 5. Hosting: everything client-side
 
-**Decision: all engines run on the server.** No solver ships to the browser.
-This continues what `server/index.js` already does rather than reversing it.
+**Decision: the engine runs in the browser, and there is no server.** This
+reverses the earlier server-side decision, which was implemented and then
+removed along with accounts (August 2026).
 
-The alternative — moving the free frequency-domain engine into the browser for
-instant response — was considered and rejected. The deciding argument is the
-language split: the time-domain engine will be **C/C++**, and the clean
-long-run answer to numerics drift (below) is a single C++ core serving both
-engines. In that end state a client-side JavaScript engine is a host that gets
-built, maintained, and then deleted. Server-side avoids constructing a dead end.
-
-Onshape is the reference case here — a fully cloud CAD system whose Parasolid
-kernel never leaves the server and whose browser client receives only
-tessellated triangles. Worth noting what does *not* transfer: Onshape is
-server-side partly by necessity (a closed, licensed kernel that legally cannot
-ship to a client) and operates on assemblies orders of magnitude larger than a
-lumped-element network. The reasons here are different, which is why the
-interaction budget below has to be taken seriously rather than assumed away.
+- **Engine.** ngspice, compiled to WebAssembly (`eecircuit-engine`), runs in a
+  pool of Web Workers. A coordinating worker compiles netlists and hands each
+  run to the pool through the main thread (`src/engine/remote.js`).
+- **State.** Projects, records, layout and keybindings live in the browser —
+  LocalStorage and IndexedDB — with an optional local workspace folder through
+  the File System Access API. Records are git commits made in memory by
+  isomorphic-git.
+- **Deployment.** A static build (`npm run build` → `dist/`) servable from any
+  static host or subdirectory.
+- **MCP.** `mcp/` is an optional Node companion that runs the same compiler and
+  engine headlessly over stdio or HTTP. It is not part of the web app.
 
 ### 5.1 What this buys
 
-- One code path per engine. No dual-host conformance burden, no proving two
-  implementations agree.
-- The commercial boundary is physical by default. Entitlement cannot be
-  bypassed by reading the bundle.
-- All usage is measurable — necessary for capacity planning and abuse limits.
-- Offline is explicitly not a goal, which simplifies the platform tier.
+- No hosting cost per user, no round trip on a slider drag, and offline use for
+  free.
+- One code path per engine, shared by the app, the tests and MCP.
 
-### 5.2 What it costs, and the budget that has to be met
+### 5.2 What it costs
 
-Every parameter change is now a network round trip. **Dragging a slider and
-watching the response curve move is the core interaction of this tool**, and
-that interaction is now latency-bound. The compute is milliseconds; the network
-is not. This is the single risk the decision creates, and it must be designed
-for rather than discovered.
+- The engine ships to every user, so there is no physical commercial boundary.
+- Usage is not measurable, and a heavy analysis is bounded by the user's own
+  machine.
 
-Targets, to be treated as requirements and not aspirations:
+### 5.3 Numerics in two languages
 
-| Interaction | Budget | Mechanism |
-|---|---|---|
-| Pan, zoom, cursor readout, trace toggle, comparing stored curves | **0 ms** | Never leaves the client. Must not invalidate results at all. |
-| Dragging a continuous parameter | **< 60 ms** perceived | Coarse preview sweep (~64 points), debounced, in-flight requests cancelled on new input. |
-| Release / commit | **< 300 ms** | Full-resolution sweep at the configured `npts`. |
-| Time-domain or far-field analysis | Async job | Progress reported; never blocks the editor. |
-
-Two rules follow, and both belong in the Results tier:
-
-1. **Display transforms never invalidate results.** Borrowed directly from
-   Onshape: only a change to the *model* costs a round trip. Axis ranges,
-   cursors, visibility, and overlay comparisons operate on cached results.
-2. **Invalidation is per-parameter, not per-project.** Changing a driver
-   parameter must not discard an unrelated stored comparison curve.
-
-If these budgets cannot be met in practice, the client-side option should be
-reopened for the free engine specifically. Recording that here so the decision
-is revisited on evidence rather than defended by default.
-
-### 5.3 Numerics drift between the two languages
-
-Radiation impedance, the Bessel and Struve approximations, air constants and
-end corrections will exist in both JavaScript and C++ for as long as both
-engines exist. The contract audit already found a real defect in exactly this
-area — the Bessel cancellation in `radiationImpedance` — so this is not
-hypothetical.
-
-> **Mitigation: a shared golden-fixture set at Tier 0.** One
-> language-independent file of inputs and expected outputs, with both
-> implementations tested against it in their own CI. Drift becomes a failing
-> test rather than a discrepancy someone notices in a plot months later.
-
-Because both engines now run in the same environment, consolidating onto one
-C++ numerics core later is a straightforward option rather than a rewrite. The
-fixtures make deferring that safe.
+Not a current concern: all numerics run in one engine. It returns only if a
+second engine in another language is ever added.
 
 ### 5.4 The one remaining exception
 
@@ -426,7 +397,7 @@ the information" — it is "store it or regenerate it for a fraction of a cent."
 
 ### 6.5 Job model
 
-Two shapes the current `/api/simulate` does not have:
+Two shapes the current worker interface does not have:
 
 - **Fan-out.** One `AnalysisSpec` expands into many independent runs (a
   distortion sweep is ~240), aggregated on completion. Embarrassingly parallel,
@@ -501,8 +472,8 @@ contract has to carry, see [`SOLVER-ARCHITECTURE.md`](./SOLVER-ARCHITECTURE.md).
    alone removes the nine-file tax on every future node type.
 3. Define the results envelope as a tagged union, with **per-outlet complex data
    retained** and `metricSetVersion` in the header.
-4. Version `/api/simulate` and put a conformance suite on it. Point `/mcp` at
-   the same contract so the two consumers cannot drift.
+4. Version the worker's project interface and put a conformance suite on it.
+   Point `mcp/` at the same contract so the two consumers cannot drift.
 5. Extract Tier 0 numerics and write the golden-fixture set.
 6. Benchmark a prototype integrator on one ported box. The ~20× real-time
    estimate in §6.1 underpins the whole cost model and is currently unverified.
@@ -510,14 +481,12 @@ contract has to carry, see [`SOLVER-ARCHITECTURE.md`](./SOLVER-ARCHITECTURE.md).
 **Phase 1 — prove the boundaries are real, and meet the interaction budget**
 
 7. *The test of Phase 0:* every engine must run from a headless fixture runner
-   with no HTTP server, no store and no React, and the node-editor package must
+   with no worker, no store and no React, and the node-editor package must
    run its full suite without compiling the C++ engine. If either is untrue the
    boundary has failed regardless of what §2 says.
-8. Implement the §5.2 interaction budget: results caching, per-parameter
-   invalidation, request cancellation, and coarse-preview/full-commit sweeps.
-   This is now load-bearing rather than an optimisation — it is what makes the
-   server-side decision survivable.
-9. Split `store.js` — 1435 lines currently holding dock layout, keybindings,
+8. Results caching, per-parameter invalidation and request cancellation, so
+   a slider drag stays responsive on a slow machine.
+9. Split `store.js` — over 4000 lines currently holding dock layout, keybindings,
    graph editing, simulation orchestration and persistence — along the tier
    lines the model extraction reveals.
 
@@ -551,13 +520,10 @@ contract has to carry, see [`SOLVER-ARCHITECTURE.md`](./SOLVER-ARCHITECTURE.md).
   genuinely real-time or a render-and-audition feature. Building the engine to
   a streaming interface keeps both answers available, so this blocks Phase 2
   less than it appears — but it should still be answered deliberately.
-- **Can the §5.2 interaction budget actually be met** over real connections? If
-  not, the client-side free engine is reopened for that reason and no other.
 - **Does the frequency-domain engine eventually become C++ too**, sharing the
   numerics core with the time-domain engine? It removes the drift risk entirely
   at the cost of rewriting working, well-tested code. The golden fixtures make
-  deferring this safe, so it should be deferred — but not forgotten. Fully
-  server-side hosting makes this a later option rather than a fork in the road.
+  deferring this safe, so it should be deferred — but not forgotten.
 - **Where is it hosted?** §6.2 makes this architectural rather than
   operational: AWS on-demand cannot fund a 24/7 core at $15/month, and the
   spread between hosting options is 3–4× on unit economics.

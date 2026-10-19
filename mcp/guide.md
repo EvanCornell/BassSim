@@ -1,7 +1,7 @@
 # SpeakerSpice modeling guide (for AI agents)
 
-SpeakerSpice simulates loudspeaker enclosures as free-form acoustic circuits using
-transfer (ABCD) matrices — Hornresp-class physics without the fixed topology.
+SpeakerSpice simulates loudspeaker enclosures as free-form acoustic circuits: each
+project compiles to an ngspice netlist and is solved as a circuit, with no fixed topology.
 A **project** is plain JSON; the same format the visual editor saves as
 `.speakerspice.json`, so anything you build here opens in the app unchanged.
 
