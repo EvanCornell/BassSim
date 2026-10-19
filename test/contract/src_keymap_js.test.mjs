@@ -296,7 +296,7 @@ test('saveBindings: persists only the differences and removes the key when nothi
 // well-typed however corrupt the stored object is."
 test('loadBindings: corrupt stored values are filtered to strings and every command still has an entry', () => {
   localStorage.clear()
-  const defaults = loadBindings()
+  loadBindings()
   const id = COMMAND_IDS[0]
   const KEY = KEYMAP_KEY
 

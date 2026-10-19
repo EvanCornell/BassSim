@@ -228,7 +228,6 @@ const defaultSpot = (i) => ({ x: 40 + (i % 2) * 300, y: 30 + Math.floor(i / 2) *
 export default function WiringWindow() {
   const nodes = useStore((s) => s.nodes)
   const wiring = useStore((s) => s.projectExtras.wiring)
-  const params = useStore((s) => s.projectExtras.params)
   const sel = useStore((s) => s.wiringSel)
   const locked = useStore(isLocked)
   const { values } = useParamValues()

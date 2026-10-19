@@ -14,16 +14,6 @@ export const SERIES = ['var(--c1)', 'var(--c2)', 'var(--c3)', 'var(--c4)', 'var(
 const MAX_POINTS = 1600
 
 /**
- * Format a number for a readout.
- *
- * @param {number} v - The value.
- * @param {number} [d=1] - Decimals.
- * @returns {string} The text, or a dash for a missing value.
- * @pure
- */
-const f = (v, d = 1) => (v == null || !Number.isFinite(v) ? '—' : v.toFixed(d))
-
-/**
  * Rows for a time chart from sample times and named series, thinned for drawing.
  *
  * @param {ArrayLike<number>} t - Sample times, s.

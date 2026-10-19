@@ -1156,7 +1156,7 @@ function RadiationForm({ node }) {
   ]
   return (
     <Section id="radiation" title={formTitle(useContext(Group), node, 'Radiation')} color="var(--s5)" focus initial
-      summary={(SPACES.find(([k]) => k === p.space) || [, p.space ?? MIXED])[1]}>
+      summary={SPACES.find(([k]) => k === p.space)?.[1] ?? p.space ?? MIXED}>
       <div className="param-grid">
         <LabelField id={id} p={p} />
         <SelectField id={id} field="space" value={p.space} label="Boundary" options={SPACES} />

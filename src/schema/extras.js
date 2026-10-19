@@ -4,9 +4,6 @@
 import { evaluateParams, evaluateExpression, isExpression } from './params.js'
 import { parseTerm, toolbarChannel } from './wires.js'
 
-/** The master level zero volts is stored as, dB. */
-const MUTE_DB = -120
-
 /**
  * Drop what referred to nodes that no longer exist.
  *

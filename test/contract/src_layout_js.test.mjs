@@ -687,7 +687,7 @@ test('openPanel: works with no hint at all', () => {
 
 // CONTRACT: "`hint.zone` — `'center'|'left'|'right'|'top'|'bottom'` — How to dock beside the neighbour."
 test('openPanel: an edge zone splits beside the neighbour instead of tabbing in', () => {
-  const { root, c } = fixture()
+  const { root } = fixture()
   const out = openPanel(root, 'pNew', { nextTo: 'pC', zone: 'bottom' })
   assert.deepEqual(panelsOf(out), ['pA', 'pB', 'pC', 'pD', 'pNew'])
   assert.notEqual(findPanelStack(out, 'pNew').id, findPanelStack(out, 'pC').id)
