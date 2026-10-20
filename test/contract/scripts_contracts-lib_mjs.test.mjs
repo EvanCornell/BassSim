@@ -76,12 +76,12 @@ test('ROOTS: names exactly the documented directories', () => {
   assert.deepEqual([...ROOTS].sort(), ['mcp', 'scripts', 'server', 'src', 'test'])
 })
 
-// CONTRACT: "### `IGNORE_FILES` — Values: `src/data/drivers.bc.js`,
-// `src/data/drivers.legacy.js`, `test/support/env.mjs`"
+// CONTRACT: "### `IGNORE_FILES` — Values: `src/data/drivers.library.js`,
+// `test/support/env.mjs`"
 test('IGNORE_FILES: names exactly the documented files', () => {
   assert.deepEqual(
     [...IGNORE_FILES].sort(),
-    ['src/data/drivers.bc.js', 'src/data/drivers.legacy.js', 'test/support/env.mjs'],
+    ['src/data/drivers.library.js', 'test/support/env.mjs'],
   )
 })
 

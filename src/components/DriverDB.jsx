@@ -89,7 +89,7 @@ export default function DriverDB() {
   const custom = useMemo(() => readDrivers(workspace), [workspace])
 
   const all = useMemo(() => [
-    ...custom.map((d) => ({ ...d, ext: d.ext || {}, source: 'custom', custom: true })),
+    ...custom.map((d) => ({ ...d, ext: d.ext || {}, custom: true })),
     ...BUILTIN_DRIVERS,
   ], [custom])
 

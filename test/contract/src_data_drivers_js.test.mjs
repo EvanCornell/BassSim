@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { BUILTIN_DRIVERS, DRIVER_BRANDS, POPULATED_EXT_KEYS } from '../../src/data/drivers.js'
-import { EXT_BY_KEY, SOURCE_LABELS } from '../../src/data/driver-fields.js'
+import { EXT_BY_KEY } from '../../src/data/driver-fields.js'
 import { auditDriver } from '../../src/data/driver-audit.js'
 
 // UNREACHABLE — not covered directly:
@@ -101,15 +101,6 @@ test('BUILTIN_DRIVERS: is sorted by brand then model', () => {
     sortedUnder(locale) || sortedUnder(codeUnit),
     'BUILTIN_DRIVERS is not in non-decreasing brand-then-model order under either collation'
   )
-})
-
-// CONTRACT: "consumers filter on `source` when provenance matters" + SOURCE_LABELS are
-// "Human-readable provenance labels keyed by a record's `source`."
-test('BUILTIN_DRIVERS: every record has a source SOURCE_LABELS can label', () => {
-  BUILTIN_DRIVERS.forEach((row, i) => {
-    assert.equal(typeof row.source, 'string', `BUILTIN_DRIVERS[${i}]: source`)
-    assert.ok(row.source in SOURCE_LABELS, `BUILTIN_DRIVERS[${i}]: unlabelled source ${row.source}`)
-  })
 })
 
 // CONTRACT: "The importer runs this at generation time and the test suite enforces that

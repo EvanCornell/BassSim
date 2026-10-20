@@ -1379,7 +1379,7 @@ export const useStore = create((rawSet, get) => {
     const node = get().nodes.find((n) => n.id === id)
     const model = (name || '').trim()
     if (!node || node.type !== 'driver' || !model) return
-    const entry = { brand: 'Custom', model, source: 'custom', ...D.pickTS(node.data.params) }
+    const entry = { brand: 'Custom', model, ...D.pickTS(node.data.params) }
     const drivers = W.readDrivers(get().workspace)
     const at = drivers.findIndex((d) => d.model === model)
     get().setCustomDrivers(at < 0

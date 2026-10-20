@@ -39,10 +39,9 @@ const IGNORE_PATHS = new Set([join(REPO, 'data')])
 const SOURCE_EXT = new Set(['.js', '.jsx', '.mjs'])
 
 // Pure-data modules. These hold no executable surface — a contract on a
-// 172-element array literal would be noise.
+// 197-element array literal would be noise.
 export const IGNORE_FILES = new Set([
-  'src/data/drivers.bc.js',
-  'src/data/drivers.legacy.js',
+  'src/data/drivers.library.js',
   // Browser-API stubs. Every "method" here is an inert impersonation of a DOM
   // or Storage call that exists only so app modules import cleanly under the
   // test runner; contracting `setAttribute() {}` would be pure noise.

@@ -12,7 +12,7 @@ import { validateProject } from '../src/schema/validate.js'
 import { toEditor, fromEditor } from '../src/schema/editor.js'
 import { searchDrivers, BUILDERS, calibratePort, optimizeProject } from './builders.js'
 import {
-  CORE_FIELDS, EXT_FIELDS, POPULATED_EXT_KEYS, DRIVER_BRANDS, SOURCE_LABELS,
+  CORE_FIELDS, EXT_FIELDS, POPULATED_EXT_KEYS, DRIVER_BRANDS,
 } from '../src/data/drivers.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -623,7 +623,6 @@ server.registerTool('driver_fields', {
         populated: POPULATED_EXT_KEYS.includes(f.key),
       })),
       brands: DRIVER_BRANDS,
-      sources: SOURCE_LABELS,
       note: 'Extended fields are sparse — check for null. Only fields marked populated appear anywhere in the current library.',
     })
   } catch (e) { return errResult(e) }
@@ -635,8 +634,6 @@ server.registerTool('driver_search', {
   inputSchema: {
     query: z.string().optional().describe('Substring of brand/model, e.g. "sundown", "18SW115"'),
     brand: z.string().optional().describe('Exact brand, e.g. "B&C"'),
-    source: z.enum(['official', 'datasheet']).optional()
-      .describe('"official" = imported from the manufacturer\'s own catalog export; "datasheet" = hand transcribed, less reliable'),
     fs_min: z.number().optional().describe('Only drivers with Fs at or above this, Hz'),
     fs_max: z.number().optional().describe('Only drivers with Fs at or below this, Hz'),
     xmax_min: z.number().optional().describe('Only drivers with Xmax at or above this, mm'),
@@ -660,14 +657,14 @@ server.registerTool('driver_search', {
         ? 'Narrow the filters or raise limit to see the rest.' : undefined,
       units: 'Fs Hz, Vas L, Re ohm, Bl T·m, Mms g, Cms mm/N, Sd cm², Le mH, Xmax mm',
       drivers: capped.map((d) => {
-        const { brand, model, ext, source, suspect, name, ...ts } = d
+        const { brand, model, ext, suspect, name, ...ts } = d
         return {
-          name, source, ...ts,
+          name, ...ts,
           ...(detail === 'full' ? { ext } : {}),
           ...(suspect ? { suspect } : {}),
         }
       }),
-      note: 'source "official" rows come from a manufacturer catalog export; "datasheet" rows are hand transcribed and approximate. A "suspect" field means the row\'s published Qes/Qts/Vas disagree with its own Bl/Re/Mms/Cms — the simulation follows the latter.',
+      note: 'A "suspect" field means the row\'s published Qes/Qts/Vas disagree with its own Bl/Re/Mms/Cms — the simulation follows the latter.',
     })
   } catch (e) { return errResult(e) }
 })

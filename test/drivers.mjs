@@ -68,9 +68,6 @@ check('brand and model are non-empty strings', (d) =>
   (typeof d.brand === 'string' && d.brand && typeof d.model === 'string' && d.model)
     ? null : 'missing brand/model')
 
-check('source is declared', (d) =>
-  ['official', 'datasheet', 'custom'].includes(d.source) ? null : `source = ${d.source}`)
-
 check('every ext key is declared in the schema', (d) => {
   const undeclared = Object.keys(d.ext).filter((k) => !EXT_BY_KEY[k])
   return undeclared.length ? `undeclared: ${undeclared.join(', ')}` : null
@@ -148,15 +145,6 @@ if (clashes.length) {
 
 // --- summary ---
 
-const bySource = {}
-for (const d of BUILTIN_DRIVERS) {
-  const s = (bySource[d.source] ||= { n: 0, suspect: 0 })
-  s.n++
-  if (d.suspect) s.suspect++
-}
-console.log()
-for (const [src, s] of Object.entries(bySource)) {
-  console.log(`  ${src.padEnd(10)} ${String(s.n).padStart(4)} drivers, ${s.suspect} labelled inconsistent`)
-}
+console.log(`\n  ${BUILTIN_DRIVERS.filter((d) => d.suspect).length} drivers labelled inconsistent`)
 console.log(`\n${BUILTIN_DRIVERS.length} drivers, ${checks - fails}/${checks} checks passed`)
 process.exit(fails ? 1 : 0)

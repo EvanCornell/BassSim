@@ -24,7 +24,6 @@ import { C_AIR } from '../src/engine/geometry.js'
  *
  * @param {string} [criteria.query] - Substring of "brand model".
  * @param {string} [criteria.brand] - Exact brand name.
- * @param {'official'|'datasheet'|'custom'} [criteria.source] - Provenance.
  * @param {number} [criteria.fs_min] - Minimum Fs, Hz.
  * @param {number} [criteria.fs_max] - Maximum Fs, Hz.
  * @param {number} [criteria.xmax_min] - Minimum Xmax, mm.
@@ -37,7 +36,7 @@ import { C_AIR } from '../src/engine/geometry.js'
  * @pure
  */
 export function searchDrivers({
-  query, brand, source, fs_min, fs_max, xmax_min, sd_min, sd_max, ext,
+  query, brand, fs_min, fs_max, xmax_min, sd_min, sd_max, ext,
 } = {}) {
   let rows = BUILTIN_DRIVERS
   if (query) {
@@ -48,7 +47,6 @@ export function searchDrivers({
     const b = String(brand).toLowerCase()
     rows = rows.filter((d) => d.brand.toLowerCase() === b)
   }
-  if (source) rows = rows.filter((d) => d.source === source)
   if (fs_min != null) rows = rows.filter((d) => d.Fs >= fs_min)
   if (fs_max != null) rows = rows.filter((d) => d.Fs <= fs_max)
   if (xmax_min != null) rows = rows.filter((d) => d.Xmax >= xmax_min)

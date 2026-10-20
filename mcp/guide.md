@@ -120,12 +120,12 @@ You rarely need to hand-write project JSON from scratch:
 
 - `driver_search` — browse the built-in T/S library; pass a result as
   `driver: { db: "UM18", count: 2, wiring: "parallel" }` to a builder. Beyond
-  the T/S set, rows imported from a manufacturer catalog carry extended
+  the T/S set, rows whose datasheet publishes them carry extended
   parameters (power handling, sensitivity, voice coil and motor construction,
   recommended enclosure) that you can filter on — `ext: { pNom: { min: 1500 } }`
   — and read back with `detail: "full"`. `driver_fields` lists what is
   available; extended fields are sparse, so check for null.
-  Prefer rows with `source: "official"`. A row carrying `suspect` has published
+  A row carrying `suspect` has published
   Q or Vas figures that disagree with its own Bl/Re/Mms/Cms — the simulation
   follows the latter, so the headline Qts may not be what you get.
 - `build_enclosure` — sealed / ported / bandpass4 / bandpass6 topologies with

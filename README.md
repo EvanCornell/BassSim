@@ -144,25 +144,14 @@ as data in `src/data/driver-fields.js` rather than hardcoded, which is what
 lets the browser, the CSV export and the MCP tools stay correct as fields are
 added. `driver_fields` hands an agent the same list.
 
-| Source | Drivers | Meaning |
-|---|---|---|
-| `official` | 172 (B&C) | Generated from the manufacturer's own catalog export; full extended parameter set. |
-| `datasheet` | 25 | Hand-transcribed from individual spec sheets; core T/S only. |
+Every driver is one record type, in one file (`src/data/drivers.library.js`):
+a driver whose datasheet publishes more simply carries more `ext` fields.
 
-The catalog-sourced entries were generated once from the manufacturer's own
-export and are now plain committed data. Cms and Rms are *derived* from the
-published Fs, Mms and Qms rather than transcribed, so the modeled driver
-resonates at exactly the frequency and mechanical Q its datasheet claims;
-every other value is copied verbatim.
-
-`npm run test:drivers` checks the library: schema conformance, the identities
-the importer is responsible for, and a consistency audit. A T/S set is
+`npm run test:drivers` checks the library: schema conformance, derived identities, and a consistency audit. A T/S set is
 over-determined, so a row's published Qes, Qts and Vas can be checked against
 the Bl, Re, Mms and Cms the solver actually runs on. Rows that fail carry a
 `suspect` label, shown as ⚠ in the browser, and the test asserts every failing
-row is labelled — the count cannot grow unnoticed. 3 of the 172 catalog rows
-are flagged; 18 of the 25 hand-transcribed ones are, which is the honest
-measure of the difference between the two sources.
+row is labelled — the count cannot grow unnoticed.
 
 ### Outputs
 
@@ -281,8 +270,7 @@ React 18, React Flow 11, Zustand, Recharts, Vite; ngspice via
 
 ## Caveats
 
-Driver T/S values sourced `datasheet` are hand transcriptions and are
-approximate — the ⚠ label marks the ones known to contradict themselves.
-Prefer `official` rows. Tractrix and Le Cléac'h flares are approximated by
+Rows marked ⚠ have published T/S values that contradict themselves; check
+them against the datasheet. Tractrix and Le Cléac'h flares are approximated by
 hypex area profiles. The model is lumped/1-D (plane-wave): higher-order cross modes and
 diffraction are out of scope.

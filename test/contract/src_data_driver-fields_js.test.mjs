@@ -6,8 +6,7 @@ import {
   CORE_FIELDS,
   EXT_FIELDS,
   EXT_BY_KEY,
-  EXT_GROUPS,
-  SOURCE_LABELS
+  EXT_GROUPS
 } from '../../src/data/driver-fields.js'
 
 // UNREACHABLE — not covered:
@@ -168,16 +167,6 @@ test('EXT_GROUPS: are the groups EXT_FIELDS declares, in declaration order', () 
     if (!seen.includes(f.group)) seen.push(f.group)
   }
   assert.deepEqual(EXT_GROUPS, seen)
-})
-
-// CONTRACT: "`SOURCE_LABELS` — Human-readable provenance labels keyed by a record's
-// `source`. ... Keys: `official`, `datasheet`, `custom`"
-test('SOURCE_LABELS: has exactly the documented keys, each a human-readable label', () => {
-  assert.deepEqual(Object.keys(SOURCE_LABELS).sort(), ['custom', 'datasheet', 'official'])
-  for (const label of Object.values(SOURCE_LABELS)) {
-    assert.equal(typeof label, 'string')
-    assert.notEqual(label.length, 0)
-  }
 })
 
 // ===========================================================================

@@ -145,8 +145,8 @@ let builtPorted = null
   const j = JSON.parse(text)
   const d = j.drivers[0]
   // Core rows must stay lean: extended fields only on request.
-  check('driver_search core detail omits ext', d && d.ext === undefined && d.source === 'official',
-    `${d?.name} Fs=${d?.Fs} source=${d?.source}`)
+  check('driver_search core detail omits ext', d && d.ext === undefined,
+    `${d?.name} Fs=${d?.Fs}`)
 }
 {
   const { text } = await call('build_enclosure', {
