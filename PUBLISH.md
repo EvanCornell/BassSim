@@ -1,116 +1,140 @@
 # Publishing the open-source release
 
-**This file is private and must not appear in the public repository.** It is
-listed in its own exclusion table below.
+**This file is private.** `EvanCornell/BassSim` stays private permanently and
+is never made public. A release is a **tree export** into a brand-new
+repository, with no shared git history, made by `scripts/export-public.sh`.
 
-`EvanCornell/BassSim` is private and has never been public (0 forks, never
-published). That is the only reason a clean release is possible, and it is a
-property to preserve: **this repository must never be made public.**
+There are two public repositories:
 
-The public release is a *tree export* into a brand-new repository, not a
-history transfer or a visibility flip.
-
----
-
-## Why not just flip this repo to public
-
-Git history cannot be reliably scrubbed after the fact. Deleting a file in a
-new commit leaves it in every earlier one, and GitHub keeps unreachable commits
-retrievable by SHA — through the web UI and the API — until support purges
-them. Add forks, caches and any reference that pins an old SHA, and "deleted"
-stops meaning removed.
-
-A repository that never contained the history has no such problem. That is the
-whole strategy.
+| Repository | Contents | Export command |
+|---|---|---|
+| SpeakerSpice | The web app | `scripts/export-public.sh <dir>` |
+| SpeakerSpice MCP | The MCP server, with the engine modules it imports | `scripts/export-public.sh --mcp <dir>` |
 
 ---
 
-## Export procedure
+## Why a tree export
 
-Copy the tree with **no `.git` directory at all**. Do not use
-`git checkout --orphan`: a fresh copy cannot carry a ref, a reflog or a
-dangling object across, and an orphan branch shares a repository with the
-history it is trying to escape.
+Git history cannot be reliably scrubbed. A file deleted in a later commit is
+still in every earlier one, and GitHub keeps unreachable commits retrievable
+by SHA until support purges them. A repository that never contained the
+history has no such problem.
 
-```bash
-rsync -a --exclude='.git' BassSim/ speakerspice-public/
-cd speakerspice-public
-# apply the exclusions below
-rm -rf node_modules dist
-git init
-git add -A
-git commit -m "Initial public release"
-```
-
-A single initial commit is normal for a first open-source release and reads as
-exactly what it is. Do not synthesise a plausible-looking history — commits
-sharing one timestamp look worse than one honest commit.
+The script copies files with no `.git` directory, so no ref, reflog or
+dangling object can come across. Each public repository starts from a single
+initial commit.
 
 ---
 
-## Exclusions
+## Decisions
 
-Everything here must be absent from the exported tree.
-
-| Path | Reason |
+| Question | Decision |
 |---|---|
-| `PUBLISH.md` | This file |
-| `docs/ARCHITECTURE.md` | Commercial product plan, tiering, hosting economics |
-| `docs/SOLVER-ARCHITECTURE.md` | Paid engine design |
-| `docs/ENGINE-CONTRACT.md` | Contract for the commercial engine |
-| `docs/analysis-metrics.md` | Paid analysis feature set |
-| `docs/BACKLOG.md` | Internal work queue and known defects |
-| `docs/SPICE-PLAN.md` | Internal engine plan |
-| `.claude/` | Agent configuration and workflow |
-| `test/contract/TRIAGE.md` | Internal audit findings |
-| `test/contract/FINDINGS.md` | Internal audit findings |
-| `node_modules/`, `dist/` | Build output |
-
-### Decide before exporting
-
-| Path | Question |
-|---|---|
-| `docs/contracts/`, `docs/api.json` | ~27k lines of generated specification. Legitimate engineering output and useful to contributors, but it documents every internal decision in detail. Publish or not — deliberately, not by default. |
-| `data/catalogs/bc-speakers-comparison-matrix.xml`, `src/data/drivers.bc.js` | **Resolve before release.** If this is a manufacturer's published parameter catalogue, redistributing it under an open-source licence is a licensing question, not a technical one. Manufacturer T/S data is frequently asserted as proprietary. Options: ship an empty catalogue with the importer, obtain permission, or include only independently measured data. This surfaces *after* release if ignored. |
+| Licence | MIT (`release/LICENSE`) |
+| Driver library | Ships. One record type for every driver, in `src/data/drivers.library.js`. |
+| MCP server | Ships as its own repository, separate from the app. |
+| Contracts, specs, tests | Never ship. `docs/`, `test/`, `docs/api.json` and the contract pipeline stay private. |
+| Comments | Stripped from all exported code. The public trees are code only. |
+| Docs | None beyond a short README, LICENSE and THIRD_PARTY_NOTICES in each repository. |
+| Source of truth | **This repository.** Every release is a fresh export from it. Changes made in a public repository are brought back here by hand, never merged back. |
 
 ---
 
-## Pre-flight checklist
+## What the script exports
 
-Run in order. Step 6 is a one-way door — forks can appear within hours.
+It copies only an allowlist. A new file in this repository is private unless
+the allowlist reaches it.
 
-1. [ ] `npm ci && npm test` passes on the exported tree
-2. [ ] `npm run build` succeeds; serve `dist/` and confirm a simulation runs
-       and `/panel?id=spl` renders
-3. [ ] Exclusions above applied; `grep -ri` the tree for `better-auth`,
-       `SPEAKERSPICE_TOKEN`, `SMTP`, `BETTER_AUTH_SECRET` — all should be absent
-4. [ ] Secret scan the final tree (test fixtures are the usual culprit)
-5. [ ] `LICENSE`, `README.md`, `CONTRIBUTING.md` present and accurate.
-       The simulation engine is ngspice compiled to WebAssembly
-       (`eecircuit-engine`, MIT wrapper). ngspice is Modified BSD, but the
-       build statically includes KLU (LGPLv2) and very likely numparam
-       (LGPLv2). Credit ngspice and its components in the README and a
-       `THIRD_PARTY_NOTICES` file, and point to the eecircuit-engine and
-       ngspice sources, which satisfies LGPL for an unmodified library. The
-       build has no XSPICE code models, so the GPLv2 `icm/table` model is not
-       included — recheck this whenever the engine version changes.
-       Runtime dependencies are all permissive — React, reactflow, recharts,
-       zustand (MIT), mathjs (Apache-2.0) — so MIT or Apache-2.0 are both open.
-       Note that Boundary Lab is GPL-3; there is no shared code, so no
-       constraint follows from it, but choose deliberately.
-6. [ ] Create the new repository, push the single commit, then make it public
+### App
+
+- The modules `src/main.jsx` imports, followed through static and dynamic
+  imports, workers and `new URL(…)`. A module only the tests use (for example
+  `src/data/driver-audit.js`) is not reached, so it is not exported.
+- `src/assets/` (fonts and their licences), `public/`, `index.html`,
+  `vite.config.js`, `.gitignore`
+- `package.json`, rebuilt:
+  - scripts: `dev`, `build`, `postbuild` and `preview` only;
+  - dependencies: exactly the packages the exported code imports;
+  - dev dependencies: Vite and its React plugin.
+- `package-lock.json`, pruned from this repository's lockfile, so versions
+  match.
+- From `release/`: `LICENSE`, `THIRD_PARTY_NOTICES`, and `app/README.md` as
+  `README.md`.
+
+### MCP
+
+- The modules `mcp/server.js` and `mcp/http.js` import, which includes the
+  engine, schema and driver library under `src/`. Paths keep their place in
+  the tree.
+- `mcp/guide.md`, which the server reads at runtime.
+- `package.json` (scripts `start` and `start:http`, and the MCP SDK, zod,
+  mathjs and eecircuit-engine), plus the pruned lockfile.
+- From `release/`: `LICENSE`, `THIRD_PARTY_NOTICES`, and `mcp/README.md` as
+  `README.md`.
+
+### Never exported
+
+Everything else, including:
+
+- `PUBLISH.md`, `README.md` (the private one), `docs/`, `test/`, `scripts/`,
+  `release/` itself, `.claude/`, `.github/`, `eslint.config.js`
+- `mcp/README.md`, `mcp/test-client.mjs`, `mcp/test-http.mjs`
+- `node_modules/` and `dist/`
 
 ---
 
-## What the public repository contains
+## What the script checks
 
-A fully client-side app with no backend:
+It exits non-zero on any failure:
 
-- Solver runs in a Web Worker (`src/engine/worker.js`)
-- Projects, presets, layout and keybindings in LocalStorage
-- Static build; `public/_redirects` and a `404.html` postbuild step cover SPA
-  routing on Netlify, Cloudflare Pages and GitHub Pages
-- Relative asset and popout URLs, so it serves correctly from a subdirectory
-- MCP server (`npm run mcp`) as an optional Node companion, not part of the app
+1. The target directory is missing or empty, and is outside this repository.
+2. Every comment is stripped. Stripping is verified, not trusted: each file's
+   tokens, comments aside, must be identical before and after. Comments a
+   bundler needs (`@vite-ignore`, `__PURE__`) and licence comments are kept.
+3. `npm ci` and `npm run build` succeed in the app export. For the MCP export,
+   `npm ci` succeeds and the private stdio and HTTP smoke tests pass against
+   the exported server.
+4. No denylisted term appears:
+   - better-auth, BETTER_AUTH, SMTP;
+   - the private doc names: PUBLISH.md, ARCHITECTURE.md, SOLVER-ARCHITECTURE,
+     ENGINE-CONTRACT, SPICE-PLAN, analysis-metrics, BACKLOG, TRIAGE.md,
+     FINDINGS.md;
+   - docs/contracts, api.json, .claude;
+   - commit trailers;
+   - the export scripts' own names.
 
-No accounts, no telemetry, no network calls at runtime.
+   `SPEAKERSPICE_TOKEN` is allowed only in the MCP export's `mcp/http.js` and
+   README.
+5. `docs/`, `test/`, `scripts/`, `.claude/`, `.github/` and the MCP test
+   files are absent, and the app export has no `mcp/`.
+6. A secret scan passes. It uses gitleaks when installed, and otherwise a
+   built-in scan for keys, tokens and private keys.
+
+At the end it removes `node_modules/` and `dist/` and prints the file count,
+total size and top-level paths.
+
+---
+
+## Release checklist
+
+Run in order. Step 6 is a one-way door: forks can appear within hours.
+
+1. [ ] `npm test` and `npm run build` pass here, on `main`.
+2. [ ] `scripts/export-public.sh <app-dir>` and
+       `scripts/export-public.sh --mcp <mcp-dir>` both end with `OK`.
+3. [ ] Serve the app export (`npm ci && npm run build && npm run preview`)
+       and confirm the app loads, a simulation runs, and `/panel?id=spl`
+       renders.
+4. [ ] Read both trees' top-level files: README, LICENSE (copyright holder
+       and year), THIRD_PARTY_NOTICES.
+5. [ ] Recheck THIRD_PARTY_NOTICES whenever `eecircuit-engine` changes
+       version. The current build includes ngspice (Modified BSD) with KLU
+       and numparam (LGPL), and no XSPICE code models, so the GPL
+       `icm/table` model is not included. The circuit-diagram export bundles
+       elkjs (EPL-1.0).
+6. [ ] In each export: `git init`, one commit ("Initial public release"),
+       create the repository, push, then make it public.
+
+For later releases, export again into an empty directory and copy the result
+over a clone of the public repository. Deletions then show up as deletions,
+and the release is one commit. Do not synthesise history.

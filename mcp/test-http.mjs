@@ -93,7 +93,7 @@ try {
     await client.connect(transport)
 
     const tools = (await client.listTools()).tools.map((t) => t.name)
-    check('tools/list over HTTP', tools.length === 9 && tools.includes('build_enclosure'), `${tools.length} tools`)
+    check('tools/list over HTTP', tools.length === 10 && tools.includes('build_enclosure') && tools.includes('design_guide'), `${tools.length} tools`)
 
     const sim = await client.callTool({ name: 'simulate', arguments: { project: ported } })
     const j = JSON.parse(sim.content[0].text)

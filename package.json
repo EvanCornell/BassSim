@@ -11,7 +11,7 @@
     "mcp": "node mcp/server.js",
     "mcp:http": "node mcp/http.js",
     "lint": "eslint .",
-    "test": "npm run lint && npm run test:contract-lint && npm run test:contract && npm run test:drivers && npm run test:mcp",
+    "test": "npm run lint && npm run test:contract-lint && npm run test:contract && npm run test:drivers && npm run test:mcp && npm run test:http",
     "test:contract": "node --test --import ./test/support/setup.mjs test/contract/*.test.mjs",
     "test:contract-lint": "node test/contracts.mjs",
     "test:drivers": "node test/drivers.mjs",
