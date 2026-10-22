@@ -12,7 +12,7 @@
 // what the code does.
 
 import { readFileSync, writeFileSync, existsSync, statSync, readdirSync } from 'node:fs'
-import { resolve, dirname, relative, extname, join } from 'node:path'
+import { resolve, dirname, relative, extname, join, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { parse } from '@babel/parser'
 
@@ -232,7 +232,8 @@ export function stripHtml(html) {
  */
 export function stripFile(file) {
   const ext = extname(file)
-  const text = readFileSync(file, 'utf8')
+  // A Windows checkout may have CRLF line endings; the public tree uses LF.
+  const text = readFileSync(file, 'utf8').replace(/\r\n/g, '\n')
   let out
   if (['.js', '.jsx', '.mjs'].includes(ext)) out = stripJs(text, file)
   else if (ext === '.css') out = stripCss(text)
@@ -299,7 +300,8 @@ export function closure(entries) {
     }
   }
   for (const e of entries) visit(resolve(REPO, e))
-  return { files: [...seen].map((f) => relative(REPO, f)).sort(), packages: [...packages].sort(), missing }
+  // Forward slashes on every platform: the shell script builds paths from these.
+  return { files: [...seen].map((f) => relative(REPO, f).split(sep).join('/')).sort(), packages: [...packages].sort(), missing }
 }
 
 /** Scripts the public app keeps; every other script points at something not exported. */
